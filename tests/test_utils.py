@@ -320,6 +320,7 @@ class TestBuildSourceContext:
             "source_text_status": "available",
             "source_truncated": False,
         }
+        assert result["total_tokens"] == token_count(_format_source_context(result))
 
     @pytest.mark.asyncio
     async def test_preserves_insights_that_fit_token_budget(self):
@@ -384,6 +385,7 @@ class TestBuildSourceContext:
         assert first["total_tokens"] <= 120
         assert first["metadata"]["source_text_status"] == "truncated"
         assert first["metadata"]["source_truncated"] is True
+        assert first["total_tokens"] == token_count(_format_source_context(first))
         assert _source_content_is_available(first["sources"][0], first)
 
         formatted = _format_source_context(first)
@@ -465,10 +467,25 @@ class TestBuildSourceContext:
             **source_context,
             "full_text": SOURCE_TRUNCATION_NOTICE,
         }
+        one_character = {
+            **source_context,
+            "full_text": "e" + SOURCE_TRUNCATION_NOTICE,
+        }
+        notice_tokens = token_count(
+            _format_source_context(
+                {"sources": [notice_only], "insights": []}
+            )
+        )
+        one_character_tokens = token_count(
+            _format_source_context(
+                {"sources": [one_character], "insights": []}
+            )
+        )
+        assert notice_tokens < one_character_tokens
 
         budgeted_source, source_truncated = _truncate_source_to_token_budget(
             source_context,
-            token_count(str(notice_only)),
+            one_character_tokens - 1,
         )
 
         assert budgeted_source is None
@@ -488,10 +505,9 @@ class TestBuildSourceContext:
             def encode(self, text, **_kwargs):
                 if text == full_text:
                     return list(range(len(full_text)))
-                serialized_notice = repr(SOURCE_TRUNCATION_NOTICE)[1:-1]
-                if serialized_notice in text:
-                    prefix = text.split("'full_text': '", maxsplit=1)[1].split(
-                        serialized_notice,
+                if SOURCE_TRUNCATION_NOTICE in text:
+                    prefix = text.split("**Content:**\n", maxsplit=1)[1].split(
+                        SOURCE_TRUNCATION_NOTICE,
                         maxsplit=1,
                     )[0]
                     token_counts = {8: 11, 9: 10, 10: 12}
@@ -534,10 +550,9 @@ class TestBuildSourceContext:
                 self.encode_calls += 1
                 if text == full_text:
                     return list(range(len(full_text)))
-                serialized_notice = repr(SOURCE_TRUNCATION_NOTICE)[1:-1]
-                if serialized_notice in text:
-                    prefix = text.split("'full_text': '", maxsplit=1)[1].split(
-                        serialized_notice,
+                if SOURCE_TRUNCATION_NOTICE in text:
+                    prefix = text.split("**Content:**\n", maxsplit=1)[1].split(
+                        SOURCE_TRUNCATION_NOTICE,
                         maxsplit=1,
                     )[0]
                     return list(range(len(prefix) + 20))
@@ -557,6 +572,36 @@ class TestBuildSourceContext:
         assert budgeted_source["full_text"].startswith("x" * 980)
         assert source_truncated is True
         assert encoding.encode_calls < 35
+
+    def test_incomplete_utf8_prefix_is_not_reported_as_source_text(self):
+        """A decoded-empty token prefix follows the omitted-budget path."""
+        full_text = "🙂"
+        source_context = {
+            "id": "source:123",
+            "title": "T",
+            "full_text": full_text,
+            "insights": [],
+        }
+
+        class IncompleteEncoding:
+            def encode(self, text, **_kwargs):
+                if text == full_text:
+                    return [1]
+                if SOURCE_TRUNCATION_NOTICE in text:
+                    return [1]
+                return list(range(20))
+
+            def decode_bytes(self, _tokens):
+                return b"\xf0"
+
+        with patch("tiktoken.get_encoding", return_value=IncompleteEncoding()):
+            budgeted_source, source_truncated = _truncate_source_to_token_budget(
+                source_context,
+                max_tokens=10,
+            )
+
+        assert budgeted_source is None
+        assert source_truncated is True
 
     def test_word_fallback_search_has_logarithmic_candidate_checks(self):
         """Offline fallback does not repeatedly scan every word prefix."""
@@ -611,8 +656,9 @@ class TestBuildSourceContext:
 
         assert full_text in formatted
         formatted_content = formatted.split("**Content:**\n", maxsplit=1)[1]
-        assert formatted_content.startswith(f"{full_text}\n\n")
+        assert formatted_content == f"{full_text}\n"
         assert "[Content truncated]" not in formatted
+        assert "CONTEXT METADATA" not in formatted
 
     @pytest.mark.asyncio
     async def test_missing_source_text_is_reported_honestly(self):

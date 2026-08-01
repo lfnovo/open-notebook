@@ -38,6 +38,58 @@ SOURCE_INSIGHT_BUDGET_RATIO = 0.2
 TOKEN_PREFIX_VALIDATION_WINDOW = 16
 
 
+def format_source_context(context_data: Dict[str, Any]) -> str:
+    """Render the exact source/insight Markdown supplied to Source Chat."""
+    context_parts = []
+
+    if context_data.get("sources"):
+        context_parts.append("## SOURCE CONTENT")
+        for source in context_data["sources"]:
+            if isinstance(source, dict):
+                context_parts.append(f"**Source ID:** {source.get('id', 'Unknown')}")
+                context_parts.append(f"**Title:** {source.get('title', 'No title')}")
+                full_text = source.get("full_text")
+                if isinstance(full_text, str) and full_text.strip():
+                    context_parts.append(f"**Content:**\n{full_text}")
+                else:
+                    context_parts.append(
+                        "**Content:**\n[Source text is unavailable in this context.]"
+                    )
+                context_parts.append("")
+
+    if context_data.get("insights"):
+        context_parts.append("## SOURCE INSIGHTS")
+        for insight in context_data["insights"]:
+            if isinstance(insight, dict):
+                context_parts.append(
+                    f"**Insight ID:** {insight.get('id', 'Unknown')}"
+                )
+                context_parts.append(
+                    f"**Type:** {insight.get('insight_type', 'Unknown')}"
+                )
+                context_parts.append(
+                    f"**Content:** {insight.get('content', 'No content')}"
+                )
+                context_parts.append("")
+
+    return "\n".join(context_parts)
+
+
+def _rendered_source_context_tokens(
+    source: Optional[Dict[str, Any]],
+    insights: list[Dict[str, Any]],
+) -> int:
+    """Count the same Markdown payload that Source Chat sends to its prompt."""
+    return token_count(
+        format_source_context(
+            {
+                "sources": [source] if source is not None else [],
+                "insights": insights,
+            }
+        )
+    )
+
+
 def _ensure_prefix(table: str, record_id: str) -> str:
     """Ensure a record ID carries its table prefix (`table:id`)."""
     prefix = f"{table}:"
@@ -47,6 +99,7 @@ def _ensure_prefix(table: str, record_id: str) -> str:
 def _truncate_source_to_token_budget(
     source_context: Dict[str, Any],
     max_tokens: int,
+    insights: Optional[list[Dict[str, Any]]] = None,
 ) -> tuple[Optional[Dict[str, Any]], bool]:
     """Truncate source text to a token budget while retaining source metadata.
 
@@ -56,13 +109,18 @@ def _truncate_source_to_token_budget(
 
     Args:
         source_context: Long source context containing ``full_text``.
-        max_tokens: Maximum tokens available for the serialized source context.
+        max_tokens: Maximum tokens available for rendered source context.
+        insights: Already selected insights that share the rendered budget.
 
     Returns:
         The budgeted source context (or ``None`` when even an explicit notice
         cannot fit) and whether its text was truncated.
     """
-    if token_count(str(source_context)) <= max_tokens:
+    selected_insights = insights or []
+    if (
+        _rendered_source_context_tokens(source_context, selected_insights)
+        <= max_tokens
+    ):
         return source_context, False
 
     full_text = source_context.get("full_text")
@@ -78,7 +136,10 @@ def _truncate_source_to_token_budget(
     # A very small budget may not even fit source metadata plus the notice.
     # Omit the item; the caller records an explicit status in context metadata.
     notice_only = candidate("")
-    if token_count(str(notice_only)) > max_tokens:
+    if (
+        _rendered_source_context_tokens(notice_only, selected_insights)
+        > max_tokens
+    ):
         return None, True
 
     def find_fitting_prefix(
@@ -91,10 +152,16 @@ def _truncate_source_to_token_budget(
 
         def evaluate(prefix_count: int) -> tuple[Dict[str, Any], bool]:
             if prefix_count not in evaluated:
-                truncated = candidate(prefix_for_count(prefix_count))
+                prefix = prefix_for_count(prefix_count)
+                truncated = candidate(prefix)
                 evaluated[prefix_count] = (
                     truncated,
-                    token_count(str(truncated)) <= max_tokens,
+                    bool(prefix.strip())
+                    and _rendered_source_context_tokens(
+                        truncated,
+                        selected_insights,
+                    )
+                    <= max_tokens,
                 )
             return evaluated[prefix_count]
 
@@ -304,7 +371,7 @@ async def build_source_context(
             source_context = {**source_context, "insights": []}
             budgeted_source: Optional[Dict[str, Any]] = source_context
 
-            insight_items = []
+            insight_items: list[Dict[str, Any]] = []
             for insight in insight_objects:
                 insight_content = {
                     "id": insight.id,
@@ -312,45 +379,40 @@ async def build_source_context(
                     "insight_type": insight.insight_type,
                     "content": insight.content,
                 }
-                insight_items.append(
-                    (insight_content, token_count(str(insight_content)))
-                )
+                insight_items.append(insight_content)
 
-            source_tokens = token_count(str(source_context))
-            selected_insight_tokens = 0
+            source_tokens = _rendered_source_context_tokens(source_context, [])
 
-            if max_tokens is not None and source_tokens > max_tokens:
+            if max_tokens is None:
+                insights.extend(insight_items)
+            elif source_tokens > max_tokens:
                 # Large documents would otherwise consume the entire budget and
                 # silently remove every insight. Reserve a bounded share for
                 # insights, then give all unused space back to the source text.
                 insight_budget = int(max_tokens * SOURCE_INSIGHT_BUDGET_RATIO)
-                for insight_content, insight_tokens in insight_items:
-                    if selected_insight_tokens + insight_tokens > insight_budget:
-                        continue
-                    insights.append(insight_content)
-                    selected_insight_tokens += insight_tokens
-
-                source_budget = max_tokens - selected_insight_tokens
-                budgeted_source, source_truncated = _truncate_source_to_token_budget(
-                    source_context,
-                    source_budget,
-                )
-                source_tokens = (
-                    token_count(str(budgeted_source))
-                    if budgeted_source is not None
-                    else 0
-                )
-            else:
-                total_tokens = source_tokens
-                for insight_content, insight_tokens in insight_items:
+                for insight_content in insight_items:
+                    candidate_insights = [*insights, insight_content]
                     if (
-                        max_tokens is not None
-                        and total_tokens + insight_tokens > max_tokens
+                        _rendered_source_context_tokens(None, candidate_insights)
+                        > insight_budget
                     ):
                         continue
                     insights.append(insight_content)
-                    selected_insight_tokens += insight_tokens
-                    total_tokens += insight_tokens
+
+                budgeted_source, source_truncated = _truncate_source_to_token_budget(
+                    source_context,
+                    max_tokens,
+                    insights,
+                )
+            else:
+                for insight_content in insight_items:
+                    candidate_insights = [*insights, insight_content]
+                    if _rendered_source_context_tokens(
+                        source_context,
+                        candidate_insights,
+                    ) > max_tokens:
+                        continue
+                    insights.append(insight_content)
 
             if budgeted_source is None:
                 source_text_status = "omitted_budget"
@@ -365,7 +427,10 @@ async def build_source_context(
 
             if budgeted_source is not None:
                 sources.append(budgeted_source)
-            total_tokens = source_tokens + selected_insight_tokens
+            total_tokens = _rendered_source_context_tokens(
+                budgeted_source,
+                insights,
+            )
         else:
             logger.warning(f"Source {source_id} not found")
             total_tokens = 0

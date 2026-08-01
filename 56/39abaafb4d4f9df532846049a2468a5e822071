@@ -1,0 +1,26 @@
+tests/test_utils.py
+  s_11868ff5e2011d::t_c5579fee737a72 470-484,488,508-510,553-555,576-605,659,661
+  s_11868ff5e2011d::t_ca0c45c989e19e 323,388
+open_notebook/graphs/source_chat.py
+  s_11868ff5e2011d::t_6d9820f9ee5ec2 18-21,210-211
+open_notebook/utils/context_builder.py
+  s_11868ff5e2011d::t_6d9820f9ee5ec2 41-92,102,112-113,119-123,139-142,155-156,159-164,374,382,384,386-388,393-398,404-405,408-413,430-433
+docs/7-DEVELOPMENT/content-processing.md
+  s_11868ff5e2011d::t_6d9820f9ee5ec2 41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.19",
+  "base_commit_sha": "5639abaafb4d4f9df532846049a2468a5e822071",
+  "prompts": {},
+  "sessions": {
+    "s_11868ff5e2011d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9f23-2f93-7613-9620-28845eb2c16d",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

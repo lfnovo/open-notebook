@@ -323,7 +323,7 @@ class TestBuildSourceContext:
     @pytest.mark.asyncio
     async def test_preserves_insights_that_fit_token_budget(self):
         """Insights are retained in order while they fit the token budget."""
-        big = "word " * 500
+        big = "word " * 300
         source = _mock_source(
             [_insight("source_insight:1", big), _insight("source_insight:2", big)]
         )
@@ -383,6 +383,25 @@ class TestBuildSourceContext:
         assert first["total_tokens"] <= 120
         assert first["metadata"]["source_text_status"] == "truncated"
         assert first["metadata"]["source_truncated"] is True
+
+    @pytest.mark.asyncio
+    async def test_large_source_reserves_budget_for_insights(self):
+        """An oversized source leaves deterministic headroom for insights."""
+        full_text = "evidence " * 1000
+        source = _mock_source([_insight("source_insight:1")])
+        source.get_context.return_value["full_text"] = full_text
+
+        with patch(
+            "open_notebook.utils.context_builder.Source.get",
+            new=AsyncMock(return_value=source),
+        ):
+            result = await build_source_context("source:123", max_tokens=500)
+
+        assert [insight["id"] for insight in result["insights"]] == ["source_insight:1"]
+        assert result["sources"][0]["full_text"].endswith(SOURCE_TRUNCATION_NOTICE)
+        assert result["total_tokens"] <= 500
+        assert result["metadata"]["insight_count"] == 1
+        assert result["metadata"]["source_text_status"] == "truncated"
 
     def test_formatter_does_not_apply_a_second_character_limit(self):
         """Formatting preserves text already accepted by the token budget."""

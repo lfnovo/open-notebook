@@ -33,6 +33,7 @@ from .token_utils import token_count
 SOURCE_TRUNCATION_NOTICE = (
     "\n\n[Source content truncated to fit the context token budget.]"
 )
+SOURCE_INSIGHT_BUDGET_RATIO = 0.2
 
 
 def _ensure_prefix(table: str, record_id: str) -> str:
@@ -199,8 +200,9 @@ async def build_source_context(
 
     Used by the source-chat graph. If ``max_tokens`` is given, the source text
     is kept in full when it fits, then insights are retained in fetch order
-    while space remains. A source that exceeds the budget is truncated with an
-    explicit notice instead of being dropped.
+    while space remains. When the source alone exceeds the budget, a bounded
+    share is reserved for insights and the source is explicitly truncated into
+    the remaining space instead of being dropped.
 
     Returns a dict with "sources", "notes" (always empty), "insights",
     "total_tokens", "total_items" and per-type counts in "metadata".
@@ -227,22 +229,7 @@ async def build_source_context(
             # copy would double-count them while the formatter ignores it.
             source_context = {**source_context, "insights": []}
 
-            if max_tokens is not None:
-                source_context, source_truncated = _truncate_source_to_token_budget(
-                    source_context,
-                    max_tokens,
-                )
-
-            sources.append(source_context)
-            source_tokens = token_count(str(source_context))
-
-            full_text = source_context.get("full_text")
-            if isinstance(full_text, str) and full_text.strip():
-                source_text_status = "truncated" if source_truncated else "available"
-            else:
-                source_text_status = "missing"
-
-            total_tokens = source_tokens
+            insight_items = []
             for insight in insight_objects:
                 insight_content = {
                     "id": insight.id,
@@ -250,14 +237,50 @@ async def build_source_context(
                     "insight_type": insight.insight_type,
                     "content": insight.content,
                 }
-                insight_tokens = token_count(str(insight_content))
-                if (
-                    max_tokens is not None
-                    and total_tokens + insight_tokens > max_tokens
-                ):
-                    break
-                insights.append(insight_content)
-                total_tokens += insight_tokens
+                insight_items.append(
+                    (insight_content, token_count(str(insight_content)))
+                )
+
+            source_tokens = token_count(str(source_context))
+            selected_insight_tokens = 0
+
+            if max_tokens is not None and source_tokens > max_tokens:
+                # Large documents would otherwise consume the entire budget and
+                # silently remove every insight. Reserve a bounded share for
+                # insights, then give all unused space back to the source text.
+                insight_budget = int(max_tokens * SOURCE_INSIGHT_BUDGET_RATIO)
+                for insight_content, insight_tokens in insight_items:
+                    if selected_insight_tokens + insight_tokens > insight_budget:
+                        continue
+                    insights.append(insight_content)
+                    selected_insight_tokens += insight_tokens
+
+                source_budget = max_tokens - selected_insight_tokens
+                source_context, source_truncated = _truncate_source_to_token_budget(
+                    source_context,
+                    source_budget,
+                )
+                source_tokens = token_count(str(source_context))
+            else:
+                total_tokens = source_tokens
+                for insight_content, insight_tokens in insight_items:
+                    if (
+                        max_tokens is not None
+                        and total_tokens + insight_tokens > max_tokens
+                    ):
+                        continue
+                    insights.append(insight_content)
+                    selected_insight_tokens += insight_tokens
+                    total_tokens += insight_tokens
+
+            full_text = source_context.get("full_text")
+            if isinstance(full_text, str) and full_text.strip():
+                source_text_status = "truncated" if source_truncated else "available"
+            else:
+                source_text_status = "missing"
+
+            sources.append(source_context)
+            total_tokens = source_tokens + selected_insight_tokens
         else:
             logger.warning(f"Source {source_id} not found")
             total_tokens = 0

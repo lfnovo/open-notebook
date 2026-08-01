@@ -383,6 +383,39 @@ class TestBuildSourceContext:
         assert first["total_tokens"] <= 120
         assert first["metadata"]["source_text_status"] == "truncated"
         assert first["metadata"]["source_truncated"] is True
+        assert _source_content_is_available(first["sources"][0], first)
+
+        formatted = _format_source_context(first)
+        assert first_text in formatted
+        assert SOURCE_TRUNCATION_NOTICE in formatted
+
+    @pytest.mark.parametrize(
+        ("status", "full_text", "expected"),
+        [
+            ("available", "complete text", True),
+            ("truncated", "partial text", True),
+            ("missing", "", False),
+            ("omitted_budget", "stale text", False),
+            (None, "legacy text", True),
+            (None, "", False),
+        ],
+    )
+    def test_source_content_availability_rules(
+        self,
+        status,
+        full_text,
+        expected,
+    ):
+        """Explicit statuses win, while legacy contexts fall back to their text."""
+        metadata = {} if status is None else {"source_text_status": status}
+
+        assert (
+            _source_content_is_available(
+                {"id": "source:123", "full_text": full_text},
+                {"metadata": metadata},
+            )
+            is expected
+        )
 
     @pytest.mark.asyncio
     async def test_large_source_reserves_budget_for_insights(self):

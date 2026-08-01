@@ -516,6 +516,77 @@ class TestBuildSourceContext:
         )
         assert source_truncated is True
 
+    def test_token_prefix_search_has_bounded_candidate_checks(self):
+        """Large tokenized sources do not trigger a linear re-encode scan."""
+        full_text = "x" * 10_000
+        source_context = {
+            "id": "source:123",
+            "title": "T",
+            "full_text": full_text,
+            "insights": [],
+        }
+
+        class CountingEncoding:
+            def __init__(self):
+                self.encode_calls = 0
+
+            def encode(self, text, **_kwargs):
+                self.encode_calls += 1
+                if text == full_text:
+                    return list(range(len(full_text)))
+                serialized_notice = repr(SOURCE_TRUNCATION_NOTICE)[1:-1]
+                if serialized_notice in text:
+                    prefix = text.split("'full_text': '", maxsplit=1)[1].split(
+                        serialized_notice,
+                        maxsplit=1,
+                    )[0]
+                    return list(range(len(prefix) + 20))
+                return list(range(len(full_text) + 20))
+
+            def decode_bytes(self, tokens):
+                return ("x" * len(tokens)).encode()
+
+        encoding = CountingEncoding()
+        with patch("tiktoken.get_encoding", return_value=encoding):
+            budgeted_source, source_truncated = _truncate_source_to_token_budget(
+                source_context,
+                max_tokens=1_000,
+            )
+
+        assert budgeted_source is not None
+        assert budgeted_source["full_text"].startswith("x" * 980)
+        assert source_truncated is True
+        assert encoding.encode_calls < 35
+
+    def test_word_fallback_search_has_logarithmic_candidate_checks(self):
+        """Offline fallback does not repeatedly scan every word prefix."""
+        full_text = "word " * 1_000
+        source_context = {
+            "id": "source:123",
+            "title": "T",
+            "full_text": full_text,
+            "insights": [],
+        }
+
+        def fallback_count(text):
+            return int(len(text.split()) * 1.3)
+
+        with (
+            patch("tiktoken.get_encoding", side_effect=OSError("offline")),
+            patch(
+                "open_notebook.utils.context_builder.token_count",
+                side_effect=fallback_count,
+            ) as mock_token_count,
+        ):
+            budgeted_source, source_truncated = _truncate_source_to_token_budget(
+                source_context,
+                max_tokens=100,
+            )
+
+        assert budgeted_source is not None
+        assert source_truncated is True
+        assert mock_token_count.call_count < 15
+
     def test_formatter_does_not_apply_a_second_character_limit(self):
         """Formatting preserves text already accepted by the token budget."""
         full_text = "x" * 6000

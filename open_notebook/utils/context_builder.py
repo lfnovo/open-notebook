@@ -35,6 +35,7 @@ SOURCE_TRUNCATION_NOTICE = (
     "\n\n[Source content truncated to fit the context token budget.]"
 )
 SOURCE_INSIGHT_BUDGET_RATIO = 0.2
+TOKEN_PREFIX_VALIDATION_WINDOW = 16
 
 
 def _ensure_prefix(table: str, record_id: str) -> str:
@@ -49,10 +50,9 @@ def _truncate_source_to_token_budget(
 ) -> tuple[Optional[Dict[str, Any]], bool]:
     """Truncate source text to a token budget while retaining source metadata.
 
-    The longest fitting token-aligned prefix is retained without assuming that
-    BPE token counts grow monotonically with character length. The truncation
-    notice is part of the budget so downstream formatters never need a second
-    size policy.
+    A near-maximal token-aligned prefix is retained with bounded validation for
+    local BPE non-monotonicity. The truncation notice is part of the budget so
+    downstream formatters never need a second size policy.
 
     Args:
         source_context: Long source context containing ``full_text``.
@@ -81,37 +81,86 @@ def _truncate_source_to_token_budget(
     if token_count(str(notice_only)) > max_tokens:
         return None, True
 
+    def find_fitting_prefix(
+        upper_bound: int,
+        prefix_for_count,
+        validation_window: int,
+    ) -> Optional[Dict[str, Any]]:
+        """Find a large fitting prefix with bounded candidate re-encoding."""
+        evaluated: Dict[int, tuple[Dict[str, Any], bool]] = {}
+
+        def evaluate(prefix_count: int) -> tuple[Dict[str, Any], bool]:
+            if prefix_count not in evaluated:
+                truncated = candidate(prefix_for_count(prefix_count))
+                evaluated[prefix_count] = (
+                    truncated,
+                    token_count(str(truncated)) <= max_tokens,
+                )
+            return evaluated[prefix_count]
+
+        low = 1
+        high = upper_bound
+        best_count = 0
+        best: Optional[Dict[str, Any]] = None
+        while low <= high:
+            midpoint = (low + high) // 2
+            truncated, fits = evaluate(midpoint)
+            if fits:
+                best_count = midpoint
+                best = truncated
+                low = midpoint + 1
+            else:
+                high = midpoint - 1
+
+        # BPE counts can be locally non-monotonic. Check a bounded window past
+        # the binary-search result without stopping at an over-budget candidate.
+        validation_start = best_count + 1 if best_count else 1
+        validation_end = min(
+            upper_bound,
+            best_count + validation_window,
+        )
+        for prefix_count in range(validation_start, validation_end + 1):
+            truncated, fits = evaluate(prefix_count)
+            if fits and prefix_count > best_count:
+                best_count = prefix_count
+                best = truncated
+
+        return best
+
     try:
         import tiktoken
 
         encoding = tiktoken.get_encoding("o200k_base")
         source_tokens = encoding.encode(full_text, disallowed_special=())
 
-        # Examine token prefixes from longest to shortest. Unlike a character
-        # binary search, this remains correct when a BPE merge makes a longer
-        # character prefix use fewer tokens than a shorter one.
-        for prefix_token_count in range(
-            min(len(source_tokens), max_tokens),
-            0,
-            -1,
-        ):
-            prefix = encoding.decode_bytes(
+        def token_prefix(prefix_token_count: int) -> str:
+            return encoding.decode_bytes(
                 source_tokens[:prefix_token_count]
             ).decode("utf-8", errors="ignore")
-            if not prefix:
-                continue
-            truncated = candidate(prefix)
-            if token_count(str(truncated)) <= max_tokens:
-                return truncated, True
+
+        best = find_fitting_prefix(
+            min(len(source_tokens), max_tokens),
+            token_prefix,
+            TOKEN_PREFIX_VALIDATION_WINDOW,
+        )
+        if best is not None:
+            return best, True
     except (ImportError, OSError):
         # Match token_count's offline fallback with deterministic word-boundary
-        # prefixes. Descending evaluation preserves the same no-monotonicity
-        # assumption as the tokenizer path.
+        # prefixes. Its split-based estimate is monotonic, so binary search does
+        # not need the tokenizer path's validation window.
         word_ends = [match.end() for match in re.finditer(r"\S+", full_text)]
-        for word_count in range(min(len(word_ends), max_tokens), 0, -1):
-            truncated = candidate(full_text[: word_ends[word_count - 1]])
-            if token_count(str(truncated)) <= max_tokens:
-                return truncated, True
+
+        def word_prefix(word_count: int) -> str:
+            return full_text[: word_ends[word_count - 1]]
+
+        best = find_fitting_prefix(
+            min(len(word_ends), max_tokens),
+            word_prefix,
+            0,
+        )
+        if best is not None:
+            return best, True
 
     # A notice without any source characters is not useful source context.
     # Omit it so callers can report ``omitted_budget`` honestly.

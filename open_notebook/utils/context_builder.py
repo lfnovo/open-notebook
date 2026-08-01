@@ -36,6 +36,7 @@ SOURCE_TRUNCATION_NOTICE = (
 )
 SOURCE_INSIGHT_BUDGET_RATIO = 0.2
 TOKEN_PREFIX_VALIDATION_WINDOW = 16
+_TOKENIZER_UNSET = object()
 
 
 def format_source_context(context_data: Dict[str, Any]) -> str:
@@ -78,16 +79,20 @@ def format_source_context(context_data: Dict[str, Any]) -> str:
 def _rendered_source_context_tokens(
     source: Optional[Dict[str, Any]],
     insights: list[Dict[str, Any]],
+    encoding: Any = _TOKENIZER_UNSET,
 ) -> int:
     """Count the same Markdown payload that Source Chat sends to its prompt."""
-    return token_count(
-        format_source_context(
-            {
-                "sources": [source] if source is not None else [],
-                "insights": insights,
-            }
-        )
+    rendered = format_source_context(
+        {
+            "sources": [source] if source is not None else [],
+            "insights": insights,
+        }
     )
+    if encoding is _TOKENIZER_UNSET:
+        return token_count(rendered)
+    if encoding is None:
+        return int(len(rendered.split()) * 1.3)
+    return len(encoding.encode(rendered, disallowed_special=()))
 
 
 def _ensure_prefix(table: str, record_id: str) -> str:
@@ -100,6 +105,10 @@ def _truncate_source_to_token_budget(
     source_context: Dict[str, Any],
     max_tokens: int,
     insights: Optional[list[Dict[str, Any]]] = None,
+    *,
+    encoding: Any = _TOKENIZER_UNSET,
+    source_tokens: Optional[list[int]] = None,
+    source_is_over_budget: bool = False,
 ) -> tuple[Optional[Dict[str, Any]], bool]:
     """Truncate source text to a token budget while retaining source metadata.
 
@@ -111,14 +120,23 @@ def _truncate_source_to_token_budget(
         source_context: Long source context containing ``full_text``.
         max_tokens: Maximum tokens available for rendered source context.
         insights: Already selected insights that share the rendered budget.
+        encoding: Reusable tokenizer, ``None`` for the word-count fallback, or
+            the internal sentinel when the helper should resolve it itself.
+        source_tokens: Precomputed tokens for ``full_text``.
+        source_is_over_budget: Skip recounting the full rendered source when
+            the caller has already established that it exceeds ``max_tokens``.
 
     Returns:
         The budgeted source context (or ``None`` when even an explicit notice
         cannot fit) and whether its text was truncated.
     """
     selected_insights = insights or []
-    if (
-        _rendered_source_context_tokens(source_context, selected_insights)
+    if not source_is_over_budget and (
+        _rendered_source_context_tokens(
+            source_context,
+            selected_insights,
+            encoding,
+        )
         <= max_tokens
     ):
         return source_context, False
@@ -137,7 +155,11 @@ def _truncate_source_to_token_budget(
     # Omit the item; the caller records an explicit status in context metadata.
     notice_only = candidate("")
     if (
-        _rendered_source_context_tokens(notice_only, selected_insights)
+        _rendered_source_context_tokens(
+            notice_only,
+            selected_insights,
+            encoding,
+        )
         > max_tokens
     ):
         return None, True
@@ -160,6 +182,7 @@ def _truncate_source_to_token_budget(
                     and _rendered_source_context_tokens(
                         truncated,
                         selected_insights,
+                        encoding,
                     )
                     <= max_tokens,
                 )
@@ -195,10 +218,14 @@ def _truncate_source_to_token_budget(
         return best
 
     try:
-        import tiktoken
+        if encoding is _TOKENIZER_UNSET:
+            import tiktoken
 
-        encoding = tiktoken.get_encoding("o200k_base")
-        source_tokens = encoding.encode(full_text, disallowed_special=())
+            encoding = tiktoken.get_encoding("o200k_base")
+        if encoding is None:
+            raise ImportError
+        if source_tokens is None:
+            source_tokens = encoding.encode(full_text, disallowed_special=())
 
         def token_prefix(prefix_token_count: int) -> str:
             return encoding.decode_bytes(
@@ -381,11 +408,22 @@ async def build_source_context(
                 }
                 insight_items.append(insight_content)
 
-            source_tokens = _rendered_source_context_tokens(source_context, [])
+            try:
+                import tiktoken
+
+                encoding = tiktoken.get_encoding("o200k_base")
+            except (ImportError, OSError):
+                encoding = None
+
+            rendered_source_tokens = _rendered_source_context_tokens(
+                source_context,
+                [],
+                encoding,
+            )
 
             if max_tokens is None:
                 insights.extend(insight_items)
-            elif source_tokens > max_tokens:
+            elif rendered_source_tokens > max_tokens:
                 # Large documents would otherwise consume the entire budget and
                 # silently remove every insight. Reserve a bounded share for
                 # insights, then give all unused space back to the source text.
@@ -393,16 +431,30 @@ async def build_source_context(
                 for insight_content in insight_items:
                     candidate_insights = [*insights, insight_content]
                     if (
-                        _rendered_source_context_tokens(None, candidate_insights)
+                        _rendered_source_context_tokens(
+                            None,
+                            candidate_insights,
+                            encoding,
+                        )
                         > insight_budget
                     ):
                         continue
                     insights.append(insight_content)
 
+                full_text = source_context.get("full_text")
+                encoded_source = (
+                    encoding.encode(full_text, disallowed_special=())
+                    if encoding is not None and isinstance(full_text, str)
+                    else None
+                )
+
                 budgeted_source, source_truncated = _truncate_source_to_token_budget(
                     source_context,
                     max_tokens,
                     insights,
+                    encoding=encoding,
+                    source_tokens=encoded_source,
+                    source_is_over_budget=True,
                 )
             else:
                 for insight_content in insight_items:
@@ -410,6 +462,7 @@ async def build_source_context(
                     if _rendered_source_context_tokens(
                         source_context,
                         candidate_insights,
+                        encoding,
                     ) > max_tokens:
                         continue
                     insights.append(insight_content)
@@ -430,6 +483,7 @@ async def build_source_context(
             total_tokens = _rendered_source_context_tokens(
                 budgeted_source,
                 insights,
+                encoding,
             )
         else:
             logger.warning(f"Source {source_id} not found")

@@ -573,6 +573,50 @@ class TestBuildSourceContext:
         assert source_truncated is True
         assert encoding.encode_calls < 35
 
+    @pytest.mark.asyncio
+    async def test_large_source_reuses_initial_tokenization(self):
+        """Source Chat does not re-tokenize the full document during truncation."""
+        full_text = "x" * 10_000
+        source = _mock_source([])
+        source.get_context.return_value["full_text"] = full_text
+
+        class CountingEncoding:
+            def __init__(self):
+                self.full_text_calls = 0
+                self.full_render_calls = 0
+
+            def encode(self, text, **_kwargs):
+                if text == full_text:
+                    self.full_text_calls += 1
+                    return list(range(len(full_text)))
+                if full_text in text:
+                    self.full_render_calls += 1
+                    return list(range(len(full_text) + 20))
+                if SOURCE_TRUNCATION_NOTICE in text:
+                    prefix = text.split("**Content:**\n", maxsplit=1)[1].split(
+                        SOURCE_TRUNCATION_NOTICE,
+                        maxsplit=1,
+                    )[0]
+                    return list(range(len(prefix) + 20))
+                return []
+
+            def decode_bytes(self, tokens):
+                return ("x" * len(tokens)).encode()
+
+        encoding = CountingEncoding()
+        with (
+            patch(
+                "open_notebook.utils.context_builder.Source.get",
+                new=AsyncMock(return_value=source),
+            ),
+            patch("tiktoken.get_encoding", return_value=encoding),
+        ):
+            result = await build_source_context("source:123", max_tokens=1_000)
+
+        assert result["metadata"]["source_truncated"] is True
+        assert encoding.full_render_calls == 1
+        assert encoding.full_text_calls == 1
+
     def test_incomplete_utf8_prefix_is_not_reported_as_source_text(self):
         """A decoded-empty token prefix follows the omitted-budget path."""
         full_text = "🙂"

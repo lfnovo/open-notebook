@@ -1,0 +1,22 @@
+open_notebook/utils/context_builder.py
+  s_11868ff5e2011d::t_72f0c37073108f 135-139,434-438
+  s_11868ff5e2011d::t_c9c788844ee8b6 39,82,85-89,91-95,108-111,123-127,134,158-162,185,221-222,224-228,411-422,426,444-450,455-457,465,486
+tests/test_utils.py
+  s_11868ff5e2011d::t_01c96c6f976f1a 576-619
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.19",
+  "base_commit_sha": "756aa73daf0389aa2d902d64b543123de04fb582",
+  "prompts": {},
+  "sessions": {
+    "s_11868ff5e2011d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9f23-2f93-7613-9620-28845eb2c16d",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

@@ -79,9 +79,9 @@ def _truncate_source_to_token_budget(
     if token_count(str(notice_only)) > max_tokens:
         return None, True
 
-    low = 0
+    low = 1
     high = len(full_text)
-    best = notice_only
+    best: Optional[Dict[str, Any]] = None
     while low <= high:
         midpoint = (low + high) // 2
         truncated = candidate(midpoint)
@@ -91,6 +91,8 @@ def _truncate_source_to_token_budget(
         else:
             high = midpoint - 1
 
+    # A notice without any source characters is not useful source context.
+    # Omit it so callers can report ``omitted_budget`` honestly.
     return best, True
 
 

@@ -26,6 +26,7 @@ from open_notebook.utils import (
 )
 from open_notebook.utils.context_builder import (
     SOURCE_TRUNCATION_NOTICE,
+    _truncate_source_to_token_budget,
     build_source_context,
 )
 
@@ -451,6 +452,27 @@ class TestBuildSourceContext:
         assert result["sources"] == []
         assert result["total_tokens"] <= 1
         assert result["metadata"]["source_text_status"] == "omitted_budget"
+
+    def test_notice_only_budget_omits_source(self):
+        """A truncation notice alone is not reported as available source text."""
+        source_context = {
+            "id": "source:123",
+            "title": "T",
+            "full_text": "evidence " * 100,
+            "insights": [],
+        }
+        notice_only = {
+            **source_context,
+            "full_text": SOURCE_TRUNCATION_NOTICE,
+        }
+
+        budgeted_source, source_truncated = _truncate_source_to_token_budget(
+            source_context,
+            token_count(str(notice_only)),
+        )
+
+        assert budgeted_source is None
+        assert source_truncated is True
 
     def test_formatter_does_not_apply_a_second_character_limit(self):
         """Formatting preserves text already accepted by the token budget."""

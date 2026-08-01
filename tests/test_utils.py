@@ -474,6 +474,48 @@ class TestBuildSourceContext:
         assert budgeted_source is None
         assert source_truncated is True
 
+    def test_truncation_handles_non_monotonic_bpe_counts(self):
+        """A longer fitting token prefix survives a shorter over-budget one."""
+        full_text = "abcdefghij"
+        source_context = {
+            "id": "source:123",
+            "title": "T",
+            "full_text": full_text,
+            "insights": [],
+        }
+
+        class NonMonotonicEncoding:
+            def encode(self, text, **_kwargs):
+                if text == full_text:
+                    return list(range(len(full_text)))
+                serialized_notice = repr(SOURCE_TRUNCATION_NOTICE)[1:-1]
+                if serialized_notice in text:
+                    prefix = text.split("'full_text': '", maxsplit=1)[1].split(
+                        serialized_notice,
+                        maxsplit=1,
+                    )[0]
+                    token_counts = {8: 11, 9: 10, 10: 12}
+                    return list(range(token_counts.get(len(prefix), len(prefix) + 1)))
+                return list(range(20))
+
+            def decode_bytes(self, tokens):
+                return full_text[: len(tokens)].encode()
+
+        with patch(
+            "tiktoken.get_encoding",
+            return_value=NonMonotonicEncoding(),
+        ):
+            budgeted_source, source_truncated = _truncate_source_to_token_budget(
+                source_context,
+                max_tokens=10,
+            )
+
+        assert budgeted_source is not None
+        assert budgeted_source["full_text"] == (
+            full_text[:9] + SOURCE_TRUNCATION_NOTICE
+        )
+        assert source_truncated is True
+
     def test_formatter_does_not_apply_a_second_character_limit(self):
         """Formatting preserves text already accepted by the token budget."""
         full_text = "x" * 6000

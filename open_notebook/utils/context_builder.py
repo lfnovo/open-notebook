@@ -16,6 +16,7 @@ the frontend — do not change it here.
 
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, Optional, Tuple
 
 from loguru import logger
@@ -48,9 +49,10 @@ def _truncate_source_to_token_budget(
 ) -> tuple[Optional[Dict[str, Any]], bool]:
     """Truncate source text to a token budget while retaining source metadata.
 
-    The longest deterministic character prefix whose serialized source context
-    fits the budget is retained. The truncation notice is part of the budget so
-    downstream formatters never need a second size policy.
+    The longest fitting token-aligned prefix is retained without assuming that
+    BPE token counts grow monotonically with character length. The truncation
+    notice is part of the budget so downstream formatters never need a second
+    size policy.
 
     Args:
         source_context: Long source context containing ``full_text``.
@@ -67,33 +69,53 @@ def _truncate_source_to_token_budget(
     if not isinstance(full_text, str) or not full_text.strip():
         return None, False
 
-    def candidate(prefix_length: int) -> Dict[str, Any]:
+    def candidate(prefix: str) -> Dict[str, Any]:
         return {
             **source_context,
-            "full_text": full_text[:prefix_length] + SOURCE_TRUNCATION_NOTICE,
+            "full_text": prefix + SOURCE_TRUNCATION_NOTICE,
         }
 
     # A very small budget may not even fit source metadata plus the notice.
     # Omit the item; the caller records an explicit status in context metadata.
-    notice_only = candidate(0)
+    notice_only = candidate("")
     if token_count(str(notice_only)) > max_tokens:
         return None, True
 
-    low = 1
-    high = len(full_text)
-    best: Optional[Dict[str, Any]] = None
-    while low <= high:
-        midpoint = (low + high) // 2
-        truncated = candidate(midpoint)
-        if token_count(str(truncated)) <= max_tokens:
-            best = truncated
-            low = midpoint + 1
-        else:
-            high = midpoint - 1
+    try:
+        import tiktoken
+
+        encoding = tiktoken.get_encoding("o200k_base")
+        source_tokens = encoding.encode(full_text, disallowed_special=())
+
+        # Examine token prefixes from longest to shortest. Unlike a character
+        # binary search, this remains correct when a BPE merge makes a longer
+        # character prefix use fewer tokens than a shorter one.
+        for prefix_token_count in range(
+            min(len(source_tokens), max_tokens),
+            0,
+            -1,
+        ):
+            prefix = encoding.decode_bytes(
+                source_tokens[:prefix_token_count]
+            ).decode("utf-8", errors="ignore")
+            if not prefix:
+                continue
+            truncated = candidate(prefix)
+            if token_count(str(truncated)) <= max_tokens:
+                return truncated, True
+    except (ImportError, OSError):
+        # Match token_count's offline fallback with deterministic word-boundary
+        # prefixes. Descending evaluation preserves the same no-monotonicity
+        # assumption as the tokenizer path.
+        word_ends = [match.end() for match in re.finditer(r"\S+", full_text)]
+        for word_count in range(min(len(word_ends), max_tokens), 0, -1):
+            truncated = candidate(full_text[: word_ends[word_count - 1]])
+            if token_count(str(truncated)) <= max_tokens:
+                return truncated, True
 
     # A notice without any source characters is not useful source context.
     # Omit it so callers can report ``omitted_budget`` honestly.
-    return best, True
+    return None, True
 
 
 async def build_notebook_context(

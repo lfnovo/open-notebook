@@ -403,6 +403,22 @@ class TestBuildSourceContext:
         assert result["metadata"]["insight_count"] == 1
         assert result["metadata"]["source_text_status"] == "truncated"
 
+    @pytest.mark.asyncio
+    async def test_tiny_budget_omits_source_with_explicit_status(self):
+        """A budget smaller than source metadata never returns oversized context."""
+        source = _mock_source([])
+        source.get_context.return_value["full_text"] = "evidence " * 1000
+
+        with patch(
+            "open_notebook.utils.context_builder.Source.get",
+            new=AsyncMock(return_value=source),
+        ):
+            result = await build_source_context("source:123", max_tokens=1)
+
+        assert result["sources"] == []
+        assert result["total_tokens"] <= 1
+        assert result["metadata"]["source_text_status"] == "omitted_budget"
+
     def test_formatter_does_not_apply_a_second_character_limit(self):
         """Formatting preserves text already accepted by the token budget."""
         full_text = "x" * 6000

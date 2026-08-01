@@ -45,7 +45,7 @@ def _ensure_prefix(table: str, record_id: str) -> str:
 def _truncate_source_to_token_budget(
     source_context: Dict[str, Any],
     max_tokens: int,
-) -> tuple[Dict[str, Any], bool]:
+) -> tuple[Optional[Dict[str, Any]], bool]:
     """Truncate source text to a token budget while retaining source metadata.
 
     The longest deterministic character prefix whose serialized source context
@@ -57,14 +57,15 @@ def _truncate_source_to_token_budget(
         max_tokens: Maximum tokens available for the serialized source context.
 
     Returns:
-        The budgeted source context and whether its text was truncated.
+        The budgeted source context (or ``None`` when even an explicit notice
+        cannot fit) and whether its text was truncated.
     """
-    full_text = source_context.get("full_text")
-    if not isinstance(full_text, str) or not full_text.strip():
-        return source_context, False
-
     if token_count(str(source_context)) <= max_tokens:
         return source_context, False
+
+    full_text = source_context.get("full_text")
+    if not isinstance(full_text, str) or not full_text.strip():
+        return None, False
 
     def candidate(prefix_length: int) -> Dict[str, Any]:
         return {
@@ -73,10 +74,10 @@ def _truncate_source_to_token_budget(
         }
 
     # A very small budget may not even fit source metadata plus the notice.
-    # Keep the explicit reason rather than silently returning title-only context.
+    # Omit the item; the caller records an explicit status in context metadata.
     notice_only = candidate(0)
     if token_count(str(notice_only)) > max_tokens:
-        return notice_only, True
+        return None, True
 
     low = 0
     high = len(full_text)
@@ -228,6 +229,7 @@ async def build_source_context(
             # Insights have their own budgeted items below. Keeping the nested
             # copy would double-count them while the formatter ignores it.
             source_context = {**source_context, "insights": []}
+            budgeted_source: Optional[Dict[str, Any]] = source_context
 
             insight_items = []
             for insight in insight_objects:
@@ -256,11 +258,15 @@ async def build_source_context(
                     selected_insight_tokens += insight_tokens
 
                 source_budget = max_tokens - selected_insight_tokens
-                source_context, source_truncated = _truncate_source_to_token_budget(
+                budgeted_source, source_truncated = _truncate_source_to_token_budget(
                     source_context,
                     source_budget,
                 )
-                source_tokens = token_count(str(source_context))
+                source_tokens = (
+                    token_count(str(budgeted_source))
+                    if budgeted_source is not None
+                    else 0
+                )
             else:
                 total_tokens = source_tokens
                 for insight_content, insight_tokens in insight_items:
@@ -273,13 +279,19 @@ async def build_source_context(
                     selected_insight_tokens += insight_tokens
                     total_tokens += insight_tokens
 
-            full_text = source_context.get("full_text")
-            if isinstance(full_text, str) and full_text.strip():
-                source_text_status = "truncated" if source_truncated else "available"
+            if budgeted_source is None:
+                source_text_status = "omitted_budget"
             else:
-                source_text_status = "missing"
+                full_text = budgeted_source.get("full_text")
+                if isinstance(full_text, str) and full_text.strip():
+                    source_text_status = (
+                        "truncated" if source_truncated else "available"
+                    )
+                else:
+                    source_text_status = "missing"
 
-            sources.append(source_context)
+            if budgeted_source is not None:
+                sources.append(budgeted_source)
             total_tokens = source_tokens + selected_insight_tokens
         else:
             logger.warning(f"Source {source_id} not found")

@@ -15,6 +15,7 @@ from open_notebook.exceptions import OpenNotebookError
 from open_notebook.utils import clean_thinking_content
 from open_notebook.utils.error_classifier import classify_error
 from open_notebook.utils.text_utils import extract_text_content
+from open_notebook.config import ASK_MAX_TOKENS
 
 
 class SubGraphState(TypedDict):
@@ -60,7 +61,7 @@ async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -
             system_prompt,
             config.get("configurable", {}).get("strategy_model"),
             "tools",
-            max_tokens=2000,
+            max_tokens=ASK_MAX_TOKENS,
             structured=dict(type="json"),
         )
         # model = model.bind_tools(tools)

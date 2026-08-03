@@ -24,3 +24,6 @@ os.makedirs(PODCASTS_FOLDER, exist_ok=True)
 # pre-baked encoding baked into the image at build time).
 TIKTOKEN_CACHE_DIR = os.environ.get("TIKTOKEN_CACHE_DIR", "").strip() or f"{DATA_FOLDER}/tiktoken-cache"
 os.makedirs(TIKTOKEN_CACHE_DIR, exist_ok=True)
+
+# ASK GRAPH CONFIGURATION
+ASK_MAX_TOKENS = int(os.environ.get("ASK_MAX_TOKENS", "2000"))

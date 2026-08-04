@@ -195,6 +195,7 @@ class TestTransformationFullContentPath:
             result = await try_full_content(state, {"configurable": {}})
 
         assert result == {"output": "summary", "needs_chunking": False}
+        assert provision.await_args is not None
         assert provision.await_args.kwargs["max_tokens"] == 8192
 
 
@@ -205,9 +206,9 @@ class TestProcessChunk:
     async def test_chunk_sent_verbatim_with_hint_in_system_prompt(self):
         """The section hint must live in the system prompt, not the user
         content, so it can't bleed into extraction-style outputs."""
-        from open_notebook.graphs.transformation import process_chunk
+        from open_notebook.graphs.transformation import ChunkState, process_chunk
 
-        state = {
+        state: ChunkState = {
             "system_prompt": "Extract all names.",
             "model_id": None,
             "output_buffer": 800,

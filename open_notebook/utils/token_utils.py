@@ -75,7 +75,7 @@ def token_cost(token_count: int, cost_per_million: float = 0.150) -> float:
     return cost_per_million * (token_count / 1_000_000)
 
 
-def parse_context_limit_error(error: Exception) -> Optional[Tuple[int, int]]:
+def parse_context_limit_error(error: Exception) -> Optional[Tuple[Optional[int], int]]:
     """Extract token counts from a context-limit error message.
 
     Context-limit detection is inherently provider-format-dependent: providers

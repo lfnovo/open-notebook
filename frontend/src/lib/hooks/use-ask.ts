@@ -5,8 +5,8 @@ import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { getApiErrorMessage } from '@/lib/utils/error-handler'
 import { searchApi } from '@/lib/api/search'
+import { AskRequest, AskStreamEvent } from '@/lib/types/search'
 import { API_TIMEOUT_MS } from '@/lib/api/client'
-import { AskStreamEvent } from '@/lib/types/search'
 
 interface AskModels {
   strategy: string
@@ -96,7 +96,7 @@ export function useAsk() {
     }
   }, [clearStreamTimeout])
 
-  const sendAsk = useCallback(async (question: string, models: AskModels) => {
+  const sendAsk = useCallback(async (question: string, models: AskModels, notebook_ids?: string[]) => {
     // Validate inputs
     if (!question.trim()) {
       toast.error(t('apiErrors.pleaseEnterQuestion'))
@@ -128,12 +128,17 @@ export function useAsk() {
     armStreamTimeout()
 
     try {
-      const response = await searchApi.askKnowledgeBase({
+      const askRequest: AskRequest = {
         question,
         strategy_model: models.strategy,
         answer_model: models.answer,
-        final_answer_model: models.finalAnswer
-      }, signal)
+        final_answer_model: models.finalAnswer,
+      }
+      if (notebook_ids && notebook_ids.length > 0) {
+        askRequest.notebook_ids = notebook_ids
+      }
+
+      const response = await searchApi.askKnowledgeBase(askRequest, signal)
 
       if (!response) {
         stopStreaming()

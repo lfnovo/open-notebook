@@ -1,8 +1,14 @@
 blank_issues_enabled: false
 contact_links:
+  - name: 💡 Feature Requests and Ideas
+    url: https://github.com/lfnovo/open-notebook/discussions/new?category=ideas
+    about: Discuss features, product direction, design, architecture, and contribution proposals before they become work items
+  - name: ❓ Questions and Community Support
+    url: https://github.com/lfnovo/open-notebook/discussions/new?category=q-a
+    about: Ask questions and get help from maintainers and the community
   - name: 💬 Discord Community
     url: https://discord.gg/37XJPXfz2w
-    about: Get help from the community and share ideas
+    about: Get real-time help and talk with the community
   - name: 🤖 Installation Assistant (ChatGPT)
     url: https://chatgpt.com/g/g-68776e2765b48191bd1bae3f30212631-open-notebook-installation-assistant
     about: CustomGPT that knows all our docs. Really useful. Try it.

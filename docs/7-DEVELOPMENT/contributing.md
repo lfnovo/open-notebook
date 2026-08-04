@@ -2,27 +2,34 @@
 
 Thank you for your interest in contributing to Open Notebook! We welcome contributions from developers of all skill levels. This guide will help you understand our contribution workflow and what makes a good contribution.
 
-## 🚦 Issue-First Workflow (for anything non-trivial)
+## 🚦 Discussions for Ideas, Issues for Work
 
-**To maintain project coherence and avoid wasted effort, non-trivial work starts with an issue:**
+Open Notebook separates **exploration** from **execution**:
 
-1. **Create an issue first** - Before writing any code, create an issue describing the bug or feature
-2. **Propose your solution** - Explain how you plan to implement the fix or feature
-3. **Wait for assignment** - A maintainer will review and assign the issue to you if approved
-4. **Only then start coding** - This ensures your work aligns with the project's vision and architecture
+- **Feature requests, ideas, behavior changes, product/design/architecture proposals, and contribution proposals start in [GitHub Discussions](https://github.com/lfnovo/open-notebook/discussions/new?category=ideas).** This is where the community explores the problem and maintainers make the product or design decision.
+- **Reproducible bugs start in [GitHub Issues](https://github.com/lfnovo/open-notebook/issues/new/choose).**
+- **Implementation starts from an approved Issue.** Once an idea is sufficiently clear and accepted, a maintainer creates an Issue from the Discussion, scopes it, and assigns it before coding begins.
 
-**When you can skip the issue and just open a PR:**
+This means non-trivial contributions follow one of two paths:
+
+```text
+Idea or feature → Discussion → decision → approved Issue → code → PR
+Reproducible bug               → triaged Issue  → code → PR
+```
+
+**When you can skip both and just open a PR:**
 - Typos, broken links, and small documentation clarifications
 - Small, obvious bug fixes — a few lines, one clear right answer, no design decisions
 - Translation fixes or completing missing i18n keys
 
-**When an issue is definitely required first:**
+**When a Discussion is definitely required first:**
 - New features, of any size
 - Architecture or structural changes
 - Breaking changes
+- Product, UX, or behavior changes
 - Anything where the *how* has more than one reasonable answer
 
-**Already coded something sizeable without an issue?** Don't throw it away: mark the PR as **draft**, open an issue describing the problem and your approach, and link it from the PR. Our triage is fast — expect a call within 1–2 days.
+**Already coded something sizeable without prior discussion or an approved Issue?** Don't throw it away: mark the PR as **draft**. Open a Discussion for a feature or design proposal, or an Issue for a reproducible bug, and link it from the PR. A maintainer will help route the work.
 
 **Why this process?**
 - Prevents duplicate work
@@ -30,7 +37,7 @@ Thank you for your interest in contributing to Open Notebook! We welcome contrib
 - Saves your time by getting feedback before coding
 - Helps maintainers manage the project direction
 
-> ⚠️ **Non-trivial pull requests without an issue may be closed**, even if the code is good. We want to respect your time by making sure work is aligned before it starts.
+> ⚠️ **Non-trivial pull requests without an approved Issue may be closed**, even if the code is good. A Discussion is where an idea is explored; an Issue is the project's commitment to execute it.
 
 ## Code of Conduct
 
@@ -51,15 +58,16 @@ By participating in this project, you are expected to uphold our [Code of Conduc
 
 ### Suggesting Features
 
-1. **Search existing issues** - Check if the feature was already suggested
-2. **Create a feature request** - Use the [Feature Request template](https://github.com/lfnovo/open-notebook/issues/new?template=feature_request.yml)
-3. **Explain the value** - Describe why this feature would be helpful
-4. **Propose implementation** - If you have ideas on how to implement it, share them
-5. **Indicate if you want to build it** - Check the "I would like to work on this" box if you're interested
+1. **Search existing Discussions and Issues** - Check whether the problem is already being explored or worked on
+2. **Start an Idea Discussion** - Use the [Ideas form](https://github.com/lfnovo/open-notebook/discussions/new?category=ideas)
+3. **Start with the problem and outcome** - Explain what you are trying to do, what is difficult today, and what success would look like
+4. **Add possible directions if useful** - Implementation ideas and references are welcome, but not required
+5. **Join the exploration** - Help answer questions, evaluate trade-offs, or test prototypes
+6. **Wait for graduation before coding** - If accepted, the proposal becomes one or more approved Issues that can be assigned
 
 ### Contributing Code (Pull Requests)
 
-**IMPORTANT: Follow the issue-first workflow above before starting any PR**
+**IMPORTANT: For non-trivial work, start from an approved and assigned Issue before coding. Ideas reach that point through Discussions; reproducible bugs reach it through Issue triage.**
 
 Once your issue is assigned:
 
@@ -85,7 +93,7 @@ Once your issue is assigned:
 - Have clear commit messages
 
 ❌ **We may close PRs that:**
-- Are non-trivial and don't have an associated approved issue (small obvious fixes are exempt — see the issue-first workflow above)
+- Are non-trivial and don't have an associated approved Issue (small obvious fixes are exempt — see the workflow above)
 - Introduce breaking changes without discussion
 - Conflict with our architectural vision
 - Lack tests or documentation
@@ -96,7 +104,7 @@ Once your issue is assigned:
 A large share of contributions — including our own — are written with coding agents (Claude Code, Cursor, Copilot, etc.). That's welcome. The tool doesn't change the contract; **the operator does not stop being the author**:
 
 1. **You own the PR.** You must have read, understood, and be able to explain every line of the diff. "The agent wrote it" is never an answer in review.
-2. **Issue-first still applies to anything non-trivial.** Agents make it cheap to produce large unsolicited PRs — those get closed like any other unassigned PR, regardless of code quality. (Small obvious fixes are exempt, same as for humans; a sizeable PR without an issue can be converted to draft while its issue goes through triage.)
+2. **Discussion before commitment; approved Issue before implementation.** Agents make it cheap to produce large unsolicited PRs — those get closed like any other unassigned PR, regardless of code quality. Small obvious fixes are exempt. For larger work, use a Discussion to shape an idea or an Issue to report a reproducible bug, then wait for an approved work item.
 3. **Tests must have actually run.** Paste real output. An agent *claiming* tests pass is not test evidence.
 4. **Point your agent at the right context.** The repo ships `AGENTS.md` files (root, `open_notebook/`, `frontend/`) with the normative rules, and [change-playbooks.md](change-playbooks.md) with step-by-step recipes — agents that read them produce PRs that pass review faster.
 5. **Keep it scoped.** Agents tend to "improve" surrounding code along the way. Unrelated refactors belong in separate issues/PRs.
@@ -200,8 +208,8 @@ We're actively looking for contributions in these areas:
 ### Community Support
 
 - **Discord**: [Join our Discord server](https://discord.gg/37XJPXfz2w) for real-time help
-- **GitHub Discussions**: For longer-form questions and ideas
-- **GitHub Issues**: For bug reports and feature requests
+- **GitHub Discussions**: For questions, ideas, features, product direction, design, and architecture
+- **GitHub Issues**: For reproducible bugs and approved work items
 
 ### Documentation References
 

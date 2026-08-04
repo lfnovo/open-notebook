@@ -1,0 +1,73 @@
+title: "[Idea]: "
+labels: ["needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping shape Open Notebook.
+
+        Ideas, feature requests, behavior changes, product/design/architecture proposals, and contribution proposals start here so the community can explore the problem before it becomes an implementation commitment. Reproducible bugs belong in [Issues](https://github.com/lfnovo/open-notebook/issues/new/choose).
+
+        You do not need to know how to implement the idea. Start with the outcome you need and the context behind it.
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: What are you trying to do?
+      description: Describe the goal or workflow in your own words.
+      placeholder: "I am trying to..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What feels difficult or missing today?
+      description: Tell us what happens now and where the current experience falls short.
+      placeholder: "Today I have to... which makes it difficult to..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: What outcome would help?
+      description: Describe what success would look like without needing to prescribe the implementation.
+      placeholder: "A good outcome would let me..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: How do you handle this today?
+      description: Share any workaround, alternative tool, or process you currently use.
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context, examples, or possible directions
+      description: Screenshots, references, constraints, and implementation ideas are welcome, but optional.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: participation
+    attributes:
+      label: How would you like to participate?
+      description: This is not a commitment; it helps us know whom to involve if the idea moves forward.
+      options:
+        - label: I can add use cases or join the product/design discussion.
+        - label: I can help explore the technical approach.
+        - label: I can help implement an approved work item.
+        - label: I can test or validate a proposed solution.
+
+  - type: checkboxes
+    id: searched
+    attributes:
+      label: Before posting
+      options:
+        - label: I searched existing Discussions and Issues for related proposals.
+          required: true

@@ -61,11 +61,14 @@ class TestAddInsightRaisesOnSubmissionFailure:
 
 
 class TestTransformationGraphPropagatesFailure:
-    """open_notebook/graphs/transformation.py: run_transformation()."""
+    """open_notebook/graphs/transformation.py: try_full_content()."""
 
     @pytest.mark.asyncio
-    async def test_add_insight_failure_propagates_out_of_run_transformation(self):
-        from open_notebook.graphs.transformation import run_transformation
+    async def test_add_insight_failure_propagates_out_of_try_full_content(self):
+        from open_notebook.graphs.transformation import (
+            TransformationState,
+            try_full_content,
+        )
 
         source = make_source()
         transformation = MagicMock(title="Summary", prompt="Summarize this")
@@ -86,9 +89,7 @@ class TestTransformationGraphPropagatesFailure:
                 "open_notebook.graphs.transformation.DefaultPrompts",
                 return_value=MagicMock(transformation_instructions=None),
             ),
-            patch(
-                "open_notebook.graphs.transformation.Prompter"
-            ) as mock_prompter_cls,
+            patch("open_notebook.graphs.transformation.Prompter") as mock_prompter_cls,
             patch(
                 "open_notebook.graphs.transformation.provision_langchain_model",
                 new=AsyncMock(return_value=fake_chain),
@@ -103,13 +104,19 @@ class TestTransformationGraphPropagatesFailure:
             source.full_text = "full text of the source"
 
             with pytest.raises(DatabaseOperationError):
-                await run_transformation(state, config={"configurable": {}})
+                await try_full_content(
+                    cast(TransformationState, state),
+                    config={"configurable": {}},
+                )
 
         mock_add_insight.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_successful_add_insight_returns_output_normally(self):
-        from open_notebook.graphs.transformation import run_transformation
+        from open_notebook.graphs.transformation import (
+            TransformationState,
+            try_full_content,
+        )
 
         source = make_source()
         transformation = MagicMock(title="Summary", prompt="Summarize this")
@@ -130,9 +137,7 @@ class TestTransformationGraphPropagatesFailure:
                 "open_notebook.graphs.transformation.DefaultPrompts",
                 return_value=MagicMock(transformation_instructions=None),
             ),
-            patch(
-                "open_notebook.graphs.transformation.Prompter"
-            ) as mock_prompter_cls,
+            patch("open_notebook.graphs.transformation.Prompter") as mock_prompter_cls,
             patch(
                 "open_notebook.graphs.transformation.provision_langchain_model",
                 new=AsyncMock(return_value=fake_chain),
@@ -144,10 +149,13 @@ class TestTransformationGraphPropagatesFailure:
             mock_prompter_cls.return_value.render.return_value = "rendered prompt"
             source.full_text = "full text of the source"
 
-            result = await run_transformation(state, config={"configurable": {}})
+            result = await try_full_content(
+                cast(TransformationState, state), config={"configurable": {}}
+            )
 
         mock_add_insight.assert_awaited_once()
-        assert result == {"output": "the transformation output"}
+        assert result["output"] == "the transformation output"
+        assert result.get("chunks") == []
 
 
 class TestSourceGraphTransformContentPropagatesFailure:

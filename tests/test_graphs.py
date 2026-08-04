@@ -16,8 +16,9 @@ from open_notebook.domain.notebook import Source
 from open_notebook.graphs.prompt import PatternChainState, graph
 from open_notebook.graphs.tools import get_current_timestamp
 from open_notebook.graphs.transformation import (
+    ChunkState,
     TransformationState,
-    run_transformation,
+    try_full_content,
 )
 from open_notebook.graphs.transformation import (
     graph as transformation_graph,
@@ -121,6 +122,9 @@ class TestTransformationGraph:
             source=mock_source,
             transformation=mock_transformation,
             output="",
+            chunks=[],
+            chunk_results=[],
+            total_chunks=0,
         )
 
         assert state["input_text"] == "Test text"
@@ -129,8 +133,8 @@ class TestTransformationGraph:
         assert state["output"] == ""
 
     @pytest.mark.asyncio
-    async def test_run_transformation_assertion_no_content(self):
-        """Test transformation raises assertion with no content."""
+    async def test_try_full_content_assertion_no_content(self):
+        """Test try_full_content raises assertion with no content."""
         from unittest.mock import MagicMock
 
         from open_notebook.domain.transformation import Transformation
@@ -146,7 +150,7 @@ class TestTransformationGraph:
         config: RunnableConfig = {"configurable": {"model_id": None}}
 
         with pytest.raises(AssertionError, match="No content to transform"):
-            await run_transformation(state, config)
+            await try_full_content(cast(TransformationState, state), config)
 
     def test_transformation_graph_compilation(self):
         """Test that transformation graph compiles correctly."""
@@ -154,9 +158,398 @@ class TestTransformationGraph:
         assert hasattr(transformation_graph, "invoke")
         assert hasattr(transformation_graph, "ainvoke")
 
+    def test_transformation_state_with_chunking_fields(self):
+        """Test TransformationState accepts the new chunking fields."""
+        from unittest.mock import MagicMock
+
+        from open_notebook.domain.notebook import Source
+        from open_notebook.domain.transformation import Transformation
+
+        mock_source = MagicMock(spec=Source)
+        mock_transformation = MagicMock(spec=Transformation)
+
+        state = TransformationState(
+            input_text="Test text",
+            source=mock_source,
+            transformation=mock_transformation,
+            output="",
+            chunks=["chunk1", "chunk2"],
+            chunk_results=[{"index": 0, "output": "result1"}],
+            total_chunks=2,
+            context_limit=8192,
+        )
+
+        assert state["chunks"] == ["chunk1", "chunk2"]
+        assert state["chunk_results"] == [{"index": 0, "output": "result1"}]
+        assert state["total_chunks"] == 2
+        assert state["context_limit"] == 8192
+
 
 # ============================================================================
-# TEST SUITE 4: Source Graph - Title Preservation
+# TEST SUITE 4: Synthesize Results (parallel chunking)
+# ============================================================================
+
+
+class TestSynthesizeResults:
+    """Test suite for synthesize_results progress guard and edge cases."""
+
+    @pytest.mark.asyncio
+    async def test_no_chunking_passthrough(self):
+        """When output is already set (no chunking), pass through."""
+        from open_notebook.graphs.transformation import synthesize_results
+
+        state = {"output": "direct output"}
+        result = await synthesize_results(
+            cast(TransformationState, state), {"configurable": {}}
+        )
+        assert result == {"output": "direct output"}
+
+    @pytest.mark.asyncio
+    async def test_empty_chunk_results(self):
+        """No chunk results returns empty output."""
+        from unittest.mock import MagicMock
+
+        from open_notebook.graphs.transformation import synthesize_results
+
+        state = {
+            "output": "",
+            "chunk_results": [],
+            "transformation": MagicMock(title="Test"),
+        }
+        result = await synthesize_results(
+            cast(TransformationState, state), {"configurable": {}}
+        )
+        assert result == {"output": ""}
+
+    @pytest.mark.asyncio
+    async def test_single_chunk_result(self):
+        """Single chunk result returns its output directly."""
+        from unittest.mock import MagicMock
+
+        from open_notebook.graphs.transformation import synthesize_results
+
+        mock_source = MagicMock()
+        mock_source.add_insight = AsyncMock()
+
+        state = {
+            "output": "",
+            "chunk_results": [{"index": 0, "output": "single result"}],
+            "source": mock_source,
+            "transformation": MagicMock(title="Test"),
+        }
+
+        result = await synthesize_results(
+            cast(TransformationState, state), {"configurable": {}}
+        )
+        assert result == {"output": "single result"}
+
+    @pytest.mark.asyncio
+    async def test_progress_guard_fallback_on_single_item_groups(self):
+        """
+        When every merge round produces only single-item groups (because
+        each chunk result exceeds the grouping threshold), the fallback
+        re-chunks oversized texts and continues merging instead of hanging.
+        """
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from open_notebook.graphs.transformation import synthesize_results
+
+        # Each text must exceed the single-group budget (~6873 tokens for
+        # default context_limit=8192) so every group has exactly one item.
+        big_text = "Large content. " * 3000  # ~9000 tokens each
+        chunk_results = [
+            {"index": i, "output": big_text} for i in range(5)
+        ]
+
+        fake_response = MagicMock()
+        fake_response.content = "merged output"
+        fake_chain = AsyncMock()
+        fake_chain.ainvoke = AsyncMock(return_value=fake_response)
+
+        state = {
+            "output": "",
+            "chunk_results": chunk_results,
+            "source": None,
+            "transformation": MagicMock(title="Test", prompt="Summarize"),
+            "context_limit": 8192,
+        }
+
+        with (
+            patch(
+                "open_notebook.graphs.transformation.DefaultPrompts",
+                return_value=MagicMock(transformation_instructions=None),
+            ),
+            patch(
+                "open_notebook.graphs.transformation.provision_langchain_model",
+                new=AsyncMock(return_value=fake_chain),
+            ) as mock_provision,
+        ):
+            result = await synthesize_results(
+            cast(TransformationState, state), {"configurable": {}}
+        )
+
+        # Should return a single merged output without hanging
+        assert result["output"]
+        assert isinstance(result["output"], str)
+        # Verify the LLM was called at least once (merge happened)
+        assert mock_provision.await_count >= 1
+
+    @pytest.mark.asyncio
+    async def test_stalled_synthesis_rechunk_fallback(self):
+        """
+        When even the smallest adjacent pair exceeds the context window,
+        the fallback re-chunks oversized texts and continues merging
+        instead of returning raw partial outputs.
+        """
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from open_notebook.graphs.transformation import (
+            synthesize_results,
+        )
+
+        # Create texts that are each larger than the group budget and
+        # whose combined size also exceeds the context window.
+        extra_large = "Huge content for testing rechunk fallback path. " * 2000
+        chunk_results = [
+            {"index": i, "output": extra_large} for i in range(3)
+        ]
+
+        fake_response = MagicMock()
+        fake_response.content = "synthesized output"
+        fake_chain = AsyncMock()
+        fake_chain.ainvoke = AsyncMock(return_value=fake_response)
+
+        state = {
+            "output": "",
+            "chunk_results": chunk_results,
+            "source": None,
+            "transformation": MagicMock(title="Test", prompt="Summarize"),
+            "context_limit": 8192,
+        }
+
+        with (
+            patch(
+                "open_notebook.graphs.transformation.DefaultPrompts",
+                return_value=MagicMock(transformation_instructions=None),
+            ),
+            patch(
+                "open_notebook.graphs.transformation.provision_langchain_model",
+                new=AsyncMock(return_value=fake_chain),
+            ) as mock_provision,
+        ):
+            result = await synthesize_results(
+            cast(TransformationState, state), {"configurable": {}}
+        )
+
+        assert result["output"]
+        assert isinstance(result["output"], str)
+        # Verify the LLM was called — re-chunked texts merge in subsequent
+        # rounds so at least one merge call should happen
+        assert mock_provision.await_count >= 1
+
+    @pytest.mark.asyncio
+    async def test_rechunk_guard_raises_on_infeasible_context(self):
+        """
+        When the context window is too small for even re-chunked texts to be
+        merged (2 * re_chunk_budget + overhead > context_limit), the guard
+        raises ConfigurationError instead of silently building oversized pairs.
+        """
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from open_notebook.exceptions import ConfigurationError
+        from open_notebook.graphs.transformation import synthesize_results
+
+        # Create oversized texts that will stall in single-item groups.
+        big_text = "X" * 20000  # ~5000 tokens
+        chunk_results = [
+            {"index": i, "output": big_text} for i in range(3)
+        ]
+
+        fake_response = MagicMock()
+        fake_response.content = "merged output"
+        fake_chain = AsyncMock()
+        fake_chain.ainvoke = AsyncMock(return_value=fake_response)
+
+        # Use a tiny context_limit so re-chunking is infeasible:
+        #   overhead = token_count("Summarize") + 300 ~= 304
+        #   available = context_limit - overhead = 600 - 304 = 296
+        #   re_chunk_budget = max(200, int(296 * 0.4)) = max(200, 118) = 200
+        #   2 * 200 + 304 = 704 > 600 -> guard fires -> ConfigurationError
+        state = {
+            "output": "",
+            "chunk_results": chunk_results,
+            "source": None,
+            "transformation": MagicMock(title="Test", prompt="Summarize"),
+            "context_limit": 600,
+        }
+
+        with (
+            patch(
+                "open_notebook.graphs.transformation.DefaultPrompts",
+                return_value=MagicMock(transformation_instructions=None),
+            ),
+            patch(
+                "open_notebook.graphs.transformation.provision_langchain_model",
+                new=AsyncMock(return_value=fake_chain),
+            ),
+        ):
+            with pytest.raises(
+                ConfigurationError,
+                match="context window is too small",
+            ):
+                await synthesize_results(
+                    cast(TransformationState, state),
+                    {"configurable": {}},
+                )
+
+    @pytest.mark.asyncio
+    async def test_rechunk_actually_splits_texts(self):
+        """
+        When the smallest adjacent pair exceeds the context window and
+        re-chunking is feasible, verify that the LLM is called enough
+        times to indicate re-chunking + multiple merge rounds occurred.
+        """
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from open_notebook.graphs.transformation import (
+            synthesize_results,
+        )
+
+        # Extra-large texts that stall in single-item groups and whose
+        # adjacent pairs exceed context_limit = 4000.
+        extra_large = "Huge chunk content for re-chunk verification. " * 1000
+        chunk_results = [
+            {"index": i, "output": extra_large} for i in range(3)
+        ]
+
+        fake_response = MagicMock()
+        fake_response.content = "merged output"
+        fake_chain = AsyncMock()
+        fake_chain.ainvoke = AsyncMock(return_value=fake_response)
+
+        state = {
+            "output": "",
+            "chunk_results": chunk_results,
+            "source": None,
+            "transformation": MagicMock(title="Test", prompt="Summarize"),
+            "context_limit": 4000,
+        }
+
+        with (
+            patch(
+                "open_notebook.graphs.transformation.DefaultPrompts",
+                return_value=MagicMock(transformation_instructions=None),
+            ),
+            patch(
+                "open_notebook.graphs.transformation.provision_langchain_model",
+                new=AsyncMock(return_value=fake_chain),
+            ) as mock_provision,
+        ):
+            result = await synthesize_results(
+                cast(TransformationState, state),
+                {"configurable": {}},
+            )
+
+        assert result["output"]
+        assert isinstance(result["output"], str)
+        # Multiple LLM calls = first merge round + re-chunked merge rounds
+        assert mock_provision.await_count >= 2
+
+    @pytest.mark.asyncio
+    async def test_process_chunk_success(self):
+        """
+        process_chunk produces a correctly-indexed ChunkResult.
+        """
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from open_notebook.graphs.transformation import process_chunk
+
+        fake_response = MagicMock()
+        fake_response.content = "chunk output"
+        fake_chain = AsyncMock()
+        fake_chain.ainvoke = AsyncMock(return_value=fake_response)
+
+        state = {
+            "input_text": "source text",
+            "source": None,
+            "transformation": MagicMock(title="T", prompt="Summarize"),
+            "chunk_index": 2,
+            "chunk_text": "This is the third chunk content.",
+            "total_chunks": 5,
+            "output_budget": 1024,
+        }
+
+        with (
+            patch(
+                "open_notebook.graphs.transformation.DefaultPrompts",
+                return_value=MagicMock(transformation_instructions=None),
+            ),
+            patch(
+                "open_notebook.graphs.transformation.provision_langchain_model",
+                new=AsyncMock(return_value=fake_chain),
+            ),
+        ):
+            result = await process_chunk(cast(ChunkState, state), {"configurable": {}})
+
+        assert result == {
+            "chunk_results": [{"index": 2, "output": "chunk output"}]
+        }
+
+    @pytest.mark.asyncio
+    async def test_process_chunk_error_classified(self):
+        """
+        When process_chunk's LLM call fails, the error is classified and
+        stored in the ChunkResult (not re-raised), so sibling chunks can
+        still complete.
+        """
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from open_notebook.graphs.transformation import process_chunk
+
+        class FakeConnectionError(Exception):
+            pass
+
+        fake_chain = AsyncMock()
+        fake_chain.ainvoke = AsyncMock(
+            side_effect=FakeConnectionError("connection reset")
+        )
+
+        state = {
+            "input_text": "src",
+            "source": None,
+            "transformation": MagicMock(title="T", prompt="Summarize"),
+            "chunk_index": 0,
+            "chunk_text": "text",
+            "total_chunks": 1,
+            "output_budget": 1024,
+        }
+
+        with (
+            patch(
+                "open_notebook.graphs.transformation.DefaultPrompts",
+                return_value=MagicMock(transformation_instructions=None),
+            ),
+            patch(
+                "open_notebook.graphs.transformation.provision_langchain_model",
+                new=AsyncMock(return_value=fake_chain),
+            ),
+            patch(
+                "open_notebook.graphs.transformation.classify_error",
+                return_value=(Exception, "Network error occurred"),
+            ),
+        ):
+            result = await process_chunk(cast(ChunkState, state), {"configurable": {}})
+
+        assert "chunk_results" in result
+        assert len(result["chunk_results"]) == 1
+        err = result["chunk_results"][0]
+        assert err["index"] == 0
+        assert err["output"] == ""
+        assert "error_message" in err
+
+
+# ============================================================================
+# TEST SUITE 5: Source Graph - Title Preservation
 # ============================================================================
 
 
@@ -275,7 +668,7 @@ class TestSaveSourceTitlePreservation:
 
 
 # ============================================================================
-# TEST SUITE 5: Source Graph - content_process (content-core 2.x)
+# TEST SUITE 6: Source Graph - content_process (content-core 2.x)
 # ============================================================================
 
 

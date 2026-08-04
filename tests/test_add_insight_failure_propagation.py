@@ -61,11 +61,19 @@ class TestAddInsightRaisesOnSubmissionFailure:
 
 
 class TestTransformationGraphPropagatesFailure:
-    """open_notebook/graphs/transformation.py: run_transformation()."""
+    """open_notebook/graphs/transformation.py: try_full_content().
+
+    Upstream tested this contract on run_transformation(), the single node the
+    transformation graph used to have. Chunking split that node into
+    try_full_content -> (fan_out_chunks -> process_chunk) -> synthesize_results;
+    try_full_content is the direct analogue — it owns the non-chunking path and
+    its add_insight() call. The contract is unchanged: a failed insight
+    submission must propagate instead of being reported as success.
+    """
 
     @pytest.mark.asyncio
     async def test_add_insight_failure_propagates_out_of_run_transformation(self):
-        from open_notebook.graphs.transformation import run_transformation
+        from open_notebook.graphs.transformation import try_full_content
 
         source = make_source()
         transformation = MagicMock(title="Summary", prompt="Summarize this")
@@ -103,13 +111,13 @@ class TestTransformationGraphPropagatesFailure:
             source.full_text = "full text of the source"
 
             with pytest.raises(DatabaseOperationError):
-                await run_transformation(state, config={"configurable": {}})
+                await try_full_content(state, config={"configurable": {}})
 
         mock_add_insight.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_successful_add_insight_returns_output_normally(self):
-        from open_notebook.graphs.transformation import run_transformation
+        from open_notebook.graphs.transformation import try_full_content
 
         source = make_source()
         transformation = MagicMock(title="Summary", prompt="Summarize this")
@@ -144,10 +152,14 @@ class TestTransformationGraphPropagatesFailure:
             mock_prompter_cls.return_value.render.return_value = "rendered prompt"
             source.full_text = "full text of the source"
 
-            result = await run_transformation(state, config={"configurable": {}})
+            result = await try_full_content(state, config={"configurable": {}})
 
         mock_add_insight.assert_awaited_once()
-        assert result == {"output": "the transformation output"}
+        # needs_chunking=False: the full content fit, so the graph skips chunking.
+        assert result == {
+            "output": "the transformation output",
+            "needs_chunking": False,
+        }
 
 
 class TestSourceGraphTransformContentPropagatesFailure:

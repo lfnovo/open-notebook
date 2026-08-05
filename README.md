@@ -394,3 +394,8 @@ Open Notebook is MIT licensed. See the [LICENSE](LICENSE) file for details.
 [LangChain-url]: https://www.langchain.com/
 [SurrealDB]: https://img.shields.io/badge/SurrealDB-FF5E00?style=for-the-badge&logo=databricks&logoColor=white
 [SurrealDB-url]: https://surrealdb.com/
+
+
+## Hosted demo
+
+Try [Open Notebook in 即时演示](https://demo.autoclaude.cn) for a one-hour, no-setup evaluation in a hosted environment. This is an independent community demo and is not an official Open Notebook service.

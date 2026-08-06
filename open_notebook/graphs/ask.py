@@ -1,4 +1,5 @@
 import operator
+import os
 from typing import Annotated, List
 
 from ai_prompter import Prompter
@@ -6,6 +7,7 @@ from langchain_core.output_parsers.pydantic import PydanticOutputParser
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
+from loguru import logger
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
@@ -15,6 +17,36 @@ from open_notebook.exceptions import OpenNotebookError
 from open_notebook.utils import clean_thinking_content
 from open_notebook.utils.error_classifier import classify_error
 from open_notebook.utils.text_utils import extract_text_content
+
+DEFAULT_ASK_MAX_TOKENS = 8192
+ASK_STRATEGY_MAX_TOKENS = 2000
+ASK_MAX_TOKENS_ENV_VAR = "OPEN_NOTEBOOK_ASK_MAX_TOKENS"
+
+
+def get_ask_max_tokens() -> int:
+    """Read the configured output budget for Ask's prose responses."""
+    raw = os.environ.get(ASK_MAX_TOKENS_ENV_VAR)
+    if raw is None:
+        return DEFAULT_ASK_MAX_TOKENS
+
+    raw = raw.strip()
+    try:
+        max_tokens = int(raw)
+    except ValueError:
+        logger.warning(
+            f"{ASK_MAX_TOKENS_ENV_VAR}={raw!r} is not a valid integer; "
+            f"using the default of {DEFAULT_ASK_MAX_TOKENS}"
+        )
+        return DEFAULT_ASK_MAX_TOKENS
+
+    if max_tokens <= 0:
+        logger.warning(
+            f"{ASK_MAX_TOKENS_ENV_VAR}={raw!r} is not positive; "
+            f"using the default of {DEFAULT_ASK_MAX_TOKENS}"
+        )
+        return DEFAULT_ASK_MAX_TOKENS
+
+    return max_tokens
 
 
 class SubGraphState(TypedDict):
@@ -60,7 +92,7 @@ async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -
             system_prompt,
             config.get("configurable", {}).get("strategy_model"),
             "tools",
-            max_tokens=2000,
+            max_tokens=ASK_STRATEGY_MAX_TOKENS,
             structured=dict(type="json"),
         )
         # model = model.bind_tools(tools)
@@ -109,12 +141,14 @@ async def provide_answer(state: SubGraphState, config: RunnableConfig) -> dict:
         payload["results"] = results
         ids = [r["id"] for r in results]
         payload["ids"] = ids
-        system_prompt = Prompter(prompt_template="ask/query_process").render(data=payload)  # type: ignore[arg-type]
+        system_prompt = Prompter(prompt_template="ask/query_process").render(
+            data=payload,  # type: ignore[arg-type]
+        )
         model = await provision_langchain_model(
             system_prompt,
             config.get("configurable", {}).get("answer_model"),
             "tools",
-            max_tokens=2000,
+            max_tokens=get_ask_max_tokens(),
         )
         ai_message = await model.ainvoke(system_prompt)
         ai_content = extract_text_content(ai_message.content)
@@ -133,7 +167,7 @@ async def write_final_answer(state: ThreadState, config: RunnableConfig) -> dict
             system_prompt,
             config.get("configurable", {}).get("final_answer_model"),
             "tools",
-            max_tokens=2000,
+            max_tokens=get_ask_max_tokens(),
         )
         ai_message = await model.ainvoke(system_prompt)
         final_content = extract_text_content(ai_message.content)

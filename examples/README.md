@@ -144,11 +144,10 @@ volumes:
 ### Add Reverse Proxy
 See [Reverse Proxy Guide](../docs/5-CONFIGURATION/reverse-proxy.md)
 
-### Add Basic Auth
+### Add Password Protection
 Add to `open_notebook` service environment:
 ```yaml
-- BASIC_AUTH_USERNAME=admin
-- BASIC_AUTH_PASSWORD=your-secure-password
+- OPEN_NOTEBOOK_PASSWORD=your-secure-password
 ```
 
 ---

@@ -30,10 +30,10 @@ const TYPE_ICONS: Record<ModelType, React.ReactNode> = {
 const FALLBACK_TYPE_ICON: React.ReactNode = <Box className="h-3 w-3" />
 
 const TYPE_COLORS: Record<ModelType, string> = {
-  language: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  embedding: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
-  text_to_speech: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-  speech_to_text: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
+  language: 'bg-teal-tint text-teal',
+  embedding: 'bg-plum-tint text-plum',
+  text_to_speech: 'bg-gold-tint text-gold',
+  speech_to_text: 'bg-sage-tint text-sage',
 }
 
 export const TYPE_COLOR_INACTIVE = 'bg-muted text-muted-foreground opacity-50'

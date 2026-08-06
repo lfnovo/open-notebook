@@ -56,7 +56,7 @@ export function EmbeddingModelChangeDialog({
       <AlertDialogContent className="max-w-lg">
         <AlertDialogHeader>
           <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle className="h-5 w-5 text-yellow-500" />
+            <AlertTriangle className="h-5 w-5 text-warn" />
             <AlertDialogTitle>{t('models.embeddingChangeTitle')}</AlertDialogTitle>
           </div>
           <AlertDialogDescription asChild>

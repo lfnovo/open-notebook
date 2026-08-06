@@ -103,7 +103,7 @@ export function MessageActions({ content, notebookId }: MessageActionsProps) {
               disabled={createNote.isPending}
             >
               {copySuccess ? (
-                <Check className="h-3.5 w-3.5 text-green-500" />
+                <Check className="h-3.5 w-3.5 text-fern" />
               ) : (
                 <Copy className="h-3.5 w-3.5" />
               )}

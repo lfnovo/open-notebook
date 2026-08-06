@@ -277,6 +277,7 @@ export const esES = {
     lastViewed: "Visto {{time}}",
   },
   sources: {
+    newSource: "Nueva fuente",
     bulkContext: "Contexto",
     includeAllInContext: "Incluir todas en el contexto",
     includeAllInsights: "Incluir todas (solo insights)",

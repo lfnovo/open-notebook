@@ -277,6 +277,7 @@ export const zhTW = {
     lastViewed: "檢視於{{time}}",
   },
   sources: {
+    newSource: "新增來源",
     bulkContext: "上下文",
     includeAllInContext: "全部加入上下文",
     includeAllInsights: "全部加入（僅見解）",

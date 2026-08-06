@@ -277,6 +277,7 @@ export const plPL = {
     lastViewed: "Wyświetlono {{time}}",
   },
   sources: {
+    newSource: "Nowe źródło",
     bulkContext: "Kontekst",
     includeAllInContext: "Uwzględnij wszystkie w kontekście",
     includeAllInsights: "Uwzględnij wszystkie (tylko wnioski)",

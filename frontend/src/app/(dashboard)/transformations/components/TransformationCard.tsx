@@ -70,7 +70,7 @@ export function TransformationCard({ transformation, onPlayground, onEdit }: Tra
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-red-600 hover:text-red-700"
+                  className="text-destructive hover:text-destructive"
                   onClick={() => setShowDeleteDialog(true)}
                 >
                   <Trash2 className="h-4 w-4" />

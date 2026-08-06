@@ -12,7 +12,7 @@ Start with **[Contributing Guide](contributing.md)** for the workflow, then chec
 - **[Code Standards](code-standards.md)** - How to write code that fits our style
 - **[Testing](testing.md)** - How to write and run tests
 
-**First time?** Check out our [Contributing Guide](contributing.md) for the issue-first workflow.
+**First time?** Check out our [Contributing Guide](contributing.md) for the Discussions → Issues → PRs workflow.
 
 ### 🔒 I Want to Understand Security Practices
 
@@ -66,7 +66,7 @@ repo root, `open_notebook/`, and `frontend/`.
 |---|---|---|
 | [Quick Start](quick-start.md) | New developers | Clone, install, and verify setup (5 min) |
 | [Development Setup](development-setup.md) | Local development | Complete environment setup guide |
-| [Contributing](contributing.md) | Code contributors | Workflow: issue → code → PR |
+| [Contributing](contributing.md) | Community & code contributors | Workflow: Discussion → Issue → PR |
 | [Code Standards](code-standards.md) | Writing code | Style guides for Python, FastAPI, DB |
 | [Testing](testing.md) | Testing code | How to write and run tests |
 | [Architecture](architecture.md) | Understanding system | System design, tech stack, workflows |
@@ -102,8 +102,8 @@ See GitHub Issues labeled `good first issue` or `help wanted`.
 ## 💬 Getting Help
 
 - **Discord**: [Join our server](https://discord.gg/37XJPXfz2w) for real-time discussions
-- **GitHub Discussions**: For architecture questions
-- **GitHub Issues**: For bugs and features
+- **GitHub Discussions**: For questions, ideas, features, product direction, design, and architecture
+- **GitHub Issues**: For reproducible bugs and approved work items
 
 Don't be shy! We're here to help new contributors succeed.
 

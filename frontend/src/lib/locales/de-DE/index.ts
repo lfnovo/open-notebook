@@ -280,6 +280,7 @@ export const deDE = {
     lastViewed: "Angesehen {{time}}",
   },
   sources: {
+    newSource: "Neue Quelle",
     bulkContext: "Kontext",
     includeAllInContext: "Alle in den Kontext aufnehmen",
     includeAllInsights: "Alle aufnehmen (nur Erkenntnisse)",

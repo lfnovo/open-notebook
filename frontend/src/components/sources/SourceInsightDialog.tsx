@@ -75,11 +75,12 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between gap-2">
+          <DialogTitle className="flex items-center justify-between gap-2 pr-8">
             <span>{t('sources.sourceInsight')}</span>
             <div className="flex items-center gap-2">
               {displayInsight?.insight_type && (
-                <Badge variant="outline" className="text-xs uppercase">
+                <Badge variant="outline" className="gap-1.5 text-xs uppercase">
+                  <span className="h-1.5 w-1.5 rounded-full bg-teal" aria-hidden="true" />
                   {displayInsight.insight_type}
                 </Badge>
               )}

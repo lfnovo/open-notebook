@@ -277,6 +277,7 @@ export const ptBR = {
     lastViewed: "Visto {{time}}",
   },
   sources: {
+    newSource: "Nova Fonte",
     bulkContext: "Contexto",
     includeAllInContext: "Incluir todas no contexto",
     includeAllInsights: "Incluir todas (apenas insights)",

@@ -106,8 +106,8 @@ export function ChatPanel({
     <Card className="flex flex-col h-full flex-1 overflow-hidden">
       <CardHeader className="pb-3 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Bot className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.13em] text-muted-foreground">
+            <span aria-hidden className="h-3.5 w-[3px] rounded-full bg-teal" />
             {title || (contextType === 'source' ? t('chat.chatWith', { name: t('navigation.sources') }) : t('chat.chatWith', { name: t('common.notebook') }))}
           </CardTitle>
           {onSelectSession && onCreateSession && onDeleteSession && (
@@ -115,7 +115,7 @@ export function ChatPanel({
               <Button
                 variant="ghost"
                 size="sm"
-                className="gap-2"
+                className="gap-2 text-muted-foreground"
                 onClick={() => setSessionManagerOpen(true)}
                 disabled={loadingSessions}
               >
@@ -165,11 +165,11 @@ export function ChatPanel({
             {isStreaming && (
               <div className="flex gap-3 justify-start">
                 <div className="flex-shrink-0">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Bot className="h-4 w-4" />
+                  <div className="h-8 w-8 rounded-full bg-teal-tint flex items-center justify-center">
+                    <Bot className="h-4 w-4 text-teal" />
                   </div>
                 </div>
-                <div className="rounded-lg px-4 py-2 bg-muted">
+                <div className="rounded-lg px-4 py-2 bg-card border">
                   <Loader2 className="h-4 w-4 animate-spin" />
                 </div>
               </div>
@@ -335,17 +335,17 @@ const ChatMessage = memo(function ChatMessage({
     >
       {message.type === 'ai' && (
         <div className="flex-shrink-0">
-          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-            <Bot className="h-4 w-4" />
+          <div className="h-8 w-8 rounded-full bg-teal-tint flex items-center justify-center">
+            <Bot className="h-4 w-4 text-teal" />
           </div>
         </div>
       )}
       <div className="flex flex-col gap-2 max-w-[80%]">
         <div
-          className={`rounded-lg px-4 py-2 ${
+          className={`rounded-lg px-4 py-2 border ${
             message.type === 'human'
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-muted'
+              ? 'bg-muted'
+              : 'bg-card'
           }`}
         >
           {message.type === 'ai' ? (
@@ -366,8 +366,8 @@ const ChatMessage = memo(function ChatMessage({
       </div>
       {message.type === 'human' && (
         <div className="flex-shrink-0">
-          <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
-            <User className="h-4 w-4 text-primary-foreground" />
+          <div className="h-8 w-8 rounded-full bg-muted border flex items-center justify-center">
+            <User className="h-4 w-4 text-muted-foreground" />
           </div>
         </div>
       )}

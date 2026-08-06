@@ -148,6 +148,20 @@ accepted improvements immediately — update this document, the scripts under
 
 ## Known Gotchas
 
+- **Never leave the version bump uncommitted on a branch.** Editing
+  `pyproject.toml` / `CHANGELOG.md` for the cut and then switching branches
+  carries those unstaged changes along, and the next `git add -A` sweeps the
+  bump into an unrelated fix PR — the version silently ships inside a `fix(...)`
+  commit. The cut is always the **last** step, on its own branch, committed
+  immediately; if you must build an image early (which needs the bumped
+  version), do it on a throwaway branch and `git stash`/discard before moving
+  on (v1.14.0 lesson).
+- **A fix that lands after the cut requires a full re-cut, not a tag nudge.**
+  If the release was tagged but not yet published (no GitHub release, no
+  `v1-latest`) and a blocker is found in bucket C, the tag must move to the new
+  commit AND the version images must be rebuilt — a stale tag or stale registry
+  image will otherwise be what publication promotes to `v1-latest`. The exact
+  sequence is in `runbook.md` → "Re-cut after a post-tag fix" (v1.14.0 lesson).
 - **RC stack on non-default ports needs `API_URL`** or the browser talks to
   `host:5055` — on a dev machine that is the development API (data crossover).
   `rc-stack.sh` sets it; remember this for any custom setup.

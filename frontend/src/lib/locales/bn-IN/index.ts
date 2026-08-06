@@ -277,6 +277,7 @@ export const bnIN = {
     lastViewed: "{{time}} দেখা হয়েছে",
   },
   sources: {
+    newSource: "নতুন উৎস",
     bulkContext: "প্রসঙ্গ",
     includeAllInContext: "সবগুলো প্রসঙ্গে যোগ করুন",
     includeAllInsights: "সব যোগ করুন (শুধু অন্তর্দৃষ্টি)",

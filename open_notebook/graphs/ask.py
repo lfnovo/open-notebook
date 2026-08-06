@@ -1,5 +1,6 @@
 import operator
 import os
+from functools import cache
 from typing import Annotated, List
 
 from ai_prompter import Prompter
@@ -23,6 +24,7 @@ ASK_STRATEGY_MAX_TOKENS = 2000
 ASK_MAX_TOKENS_ENV_VAR = "OPEN_NOTEBOOK_ASK_MAX_TOKENS"
 
 
+@cache
 def get_ask_max_tokens() -> int:
     """Read the configured output budget for Ask's prose responses."""
     raw = os.environ.get(ASK_MAX_TOKENS_ENV_VAR)

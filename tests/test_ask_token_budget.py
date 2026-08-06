@@ -7,6 +7,13 @@ import pytest
 import open_notebook.graphs.ask as ask
 
 
+@pytest.fixture(autouse=True)
+def clear_ask_max_tokens_cache():
+    ask.get_ask_max_tokens.cache_clear()
+    yield
+    ask.get_ask_max_tokens.cache_clear()
+
+
 def test_ask_max_tokens_defaults_when_env_is_unset(monkeypatch):
     monkeypatch.delenv(ask.ASK_MAX_TOKENS_ENV_VAR, raising=False)
 
@@ -17,6 +24,18 @@ def test_ask_max_tokens_reads_positive_override(monkeypatch):
     monkeypatch.setenv(ask.ASK_MAX_TOKENS_ENV_VAR, "12000")
 
     assert ask.get_ask_max_tokens() == 12000
+
+
+def test_ask_max_tokens_caches_process_value(monkeypatch):
+    monkeypatch.setenv(ask.ASK_MAX_TOKENS_ENV_VAR, "12000")
+
+    assert ask.get_ask_max_tokens() == 12000
+
+    monkeypatch.setenv(ask.ASK_MAX_TOKENS_ENV_VAR, "16000")
+    assert ask.get_ask_max_tokens() == 12000
+
+    ask.get_ask_max_tokens.cache_clear()
+    assert ask.get_ask_max_tokens() == 16000
 
 
 @pytest.mark.parametrize("value", ["not-a-number", "0", "-5"])

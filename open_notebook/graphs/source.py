@@ -10,6 +10,7 @@ from langgraph.types import Send
 from loguru import logger
 from typing_extensions import Annotated, TypedDict
 
+from open_notebook import config
 from open_notebook.ai.models import Model, ModelManager
 from open_notebook.domain.content_settings import ContentSettings
 from open_notebook.domain.notebook import Asset, Source
@@ -218,7 +219,8 @@ async def save_source(state: SourceState) -> dict:
     # NOTE: Notebook associations are created by the API immediately for UI responsiveness
     # No need to create them here to avoid duplicate edges
 
-    if state["embed"]:
+    # RDLens 嵌入式作用域：跳过 Source 自动 vectorize（REQ-DIS-01）
+    if state["embed"] and not config.RD_EMBEDDED_MODE:
         if source.full_text and source.full_text.strip():
             logger.debug("Embedding content for vector search")
             await source.vectorize()

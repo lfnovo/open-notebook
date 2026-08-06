@@ -2,6 +2,8 @@ from esperanto import LanguageModel
 from langchain_core.language_models.chat_models import BaseChatModel
 from loguru import logger
 
+from open_notebook import config
+from open_notebook.ai.gateway import gateway_chat_model
 from open_notebook.ai.models import model_manager
 from open_notebook.exceptions import ConfigurationError
 from open_notebook.utils import token_count
@@ -16,6 +18,10 @@ async def provision_langchain_model(
     If model_id is specified in Config, returns that model
     Otherwise, returns the default model for the given type
     """
+    # RDLens 嵌入式作用域：禁用原生 Provider，LLM 固定走 Research Gateway（REQ-DIS-02）
+    if config.RD_EMBEDDED_MODE:
+        return gateway_chat_model()
+
     tokens = token_count(content)
     model = None
     selection_reason = ""

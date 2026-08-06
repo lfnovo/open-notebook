@@ -89,8 +89,9 @@ class TestEmbeddingDisabled:
     @patch("open_notebook.graphs.source.Source.get")
     async def test_save_source_skips_vectorize_in_embedded_mode(self, mock_get, monkeypatch):
         _embedded(monkeypatch)
-        from content_core.common import ExtractionOutput
         from typing import cast
+
+        from content_core.common import ExtractionOutput
 
         from open_notebook.graphs.source import SourceState, save_source
 

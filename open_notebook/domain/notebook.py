@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from surreal_commands import submit_command
 from surrealdb import RecordID
 
+from open_notebook import config
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel
 from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
@@ -549,6 +550,12 @@ class Source(ObjectModel):
         """
         logger.info(f"Submitting embed_source job for source {self.id}")
 
+        # RDLens 嵌入式作用域：禁止 Source Embedding（REQ-DIS-01），fail-closed
+        if config.RD_EMBEDDED_MODE:
+            raise InvalidInputError(
+                "Source embedding is disabled in RDLens embedded scope"
+            )
+
         try:
             if not self.full_text or not self.full_text.strip():
                 raise ValueError(f"Source {self.id} has no text to vectorize")
@@ -707,6 +714,11 @@ class Note(ObjectModel):
         # Call parent save (without embedding)
         await super().save()
 
+        # RDLens 嵌入式作用域：禁止 Note 自动 Embedding（REQ-DIS-01）。
+        # Note 本体已持久化，Gateway 读路径不受影响。
+        if config.RD_EMBEDDED_MODE:
+            return None
+
         # Submit embedding command (fire-and-forget) if note has content.
         # Unlike Source.vectorize()/add_insight() (explicit, dedicated calls
         # whose whole point is the submission), this runs automatically
@@ -784,6 +796,9 @@ async def text_search(
         # ("position overflow"). Fall back to vector search so the user still gets
         # results instead of a 500. See issue #648.
         if "position overflow" in str(e):
+            # RDLens 嵌入式作用域：禁止向量搜索回退（REQ-DIS-02）
+            if config.RD_EMBEDDED_MODE:
+                raise DatabaseOperationError(e)
             logger.warning(
                 f"Highlight position overflow, falling back to vector search: {str(e)}"
             )

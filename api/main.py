@@ -21,6 +21,7 @@ from loguru import logger
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from api.auth import PasswordAuthMiddleware
+from api.embedded_scope import EmbeddedScopeMiddleware
 from api.middleware import MaxBodySizeMiddleware, get_max_upload_size_bytes
 from api.routers import (
     auth,
@@ -275,6 +276,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# RDLens 嵌入式作用域（SPK-03）：屏蔽全局/直接 API（REQ-SCOPE-03 等），
+# 默认透传；最后注册使其处于最外层，先于认证与路由处理。
+app.add_middleware(EmbeddedScopeMiddleware)
 
 
 # Custom exception handler to ensure CORS headers are included in error responses

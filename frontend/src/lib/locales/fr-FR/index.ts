@@ -958,6 +958,7 @@ export const frFR = {
     configNameHint: "Un nom descriptif pour cette configuration (ex : « Production », « Développement »)",
     baseUrl: "URL de base",
     baseUrlOverrideHint: "Ne modifiez ceci que si vous devez remplacer le point d'accès API par défaut du fournisseur.",
+    openAICompatibleBaseUrlHint: "Incluez le chemin de version de l'API requis par votre serveur. Pour LM Studio dans Docker, utilisez http://host.docker.internal:1234/v1.",
     numCtx: "Fenêtre de Contexte (num_ctx)",
     numCtxHint: "Fenêtre de contexte maximale pour les modèles Ollama. Laissez vide pour utiliser la valeur par défaut (8192). N'augmentez que si votre matériel peut gérer une fenêtre plus grande.",
     deleteConfigConfirm: "Êtes-vous sûr de vouloir supprimer « {{name}} » ? Cette action est irréversible.",

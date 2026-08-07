@@ -958,6 +958,7 @@ export const zhTW = {
     configNameHint: "此設定的描述性名稱（例如：'生產環境'、'開發環境'）",
     baseUrl: "基礎 URL",
     baseUrlOverrideHint: "僅在需要覆蓋提供商預設 API 端點時更改此項。",
+    openAICompatibleBaseUrlHint: "請包含伺服器所需的 API 版本路徑。對於 Docker 中的 LM Studio，請使用 http://host.docker.internal:1234/v1。",
     numCtx: "上下文視窗 (num_ctx)",
     numCtxHint: "Ollama 模型的最大上下文視窗。留空則使用預設值（8192）。僅在硬體能夠處理更大視窗時增大。",
     deleteConfigConfirm: "確定要刪除 '{{name}}' 嗎？此操作無法撤銷。",

@@ -958,6 +958,7 @@ export const jaJP = {
     configNameHint: "この設定の説明的な名前（例：本番環境、開発環境）",
     baseUrl: "ベースURL",
     baseUrlOverrideHint: "プロバイダーのデフォルト API エンドポイントを上書きする場合のみ変更してください。",
+    openAICompatibleBaseUrlHint: "サーバーで必要な API バージョンのパスを含めてください。Docker 上の LM Studio では http://host.docker.internal:1234/v1 を使用します。",
     numCtx: "コンテキストウィンドウ (num_ctx)",
     numCtxHint: "Ollama モデルの最大コンテキストウィンドウ。空のままにするとデフォルト（8192）を使用します。ハードウェアがより大きなウィンドウを処理できる場合のみ増やしてください。",
     deleteConfigConfirm: "「{{name}}」を削除してもよろしいですか？この操作は元に戻せません。",

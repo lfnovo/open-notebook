@@ -11,15 +11,17 @@ class QuestionRecord(ObjectModel):
     """A single question stored in the persistent question bank."""
 
     table_name: ClassVar[str] = "question_bank"
-    nullable_fields: ClassVar[set] = {"options", "embedding"}
+    nullable_fields: ClassVar[set] = {"options", "correct_indices", "section_ref", "embedding"}
 
     topic: str
     question: str
-    type: str  # mcq | short | scenario | calculation | definition
+    type: str  # mcq | multi_correct | statement_reasoning | match_the_following | short | scenario | calculation | definition
     difficulty: str  # easy | medium | hard
     answer: str
     explanation: str
     options: Optional[List[str]] = None
+    correct_indices: Optional[List[int]] = None  # multi_correct only
+    section_ref: Optional[str] = None
     embedding: Optional[List[float]] = None
 
     @classmethod

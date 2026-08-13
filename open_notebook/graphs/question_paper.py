@@ -29,12 +29,29 @@ from open_notebook.utils.error_classifier import classify_error
 
 class GeneratedQuestion(BaseModel):
     question: str
-    type: Literal["mcq", "short", "scenario", "calculation", "definition"]
-    options: Optional[List[str]] = Field(default=None, description="4 options for MCQ only")
+    type: Literal[
+        "mcq", "short", "scenario", "calculation", "definition",
+        "multi_correct", "statement_reasoning", "match_the_following",
+    ]
+    options: Optional[List[str]] = Field(
+        default=None,
+        description=(
+            "4 options for MCQ/multi_correct; 5 standard options for statement_reasoning; "
+            "4 matching combos for match_the_following; omit for other types"
+        ),
+    )
+    correct_indices: Optional[List[int]] = Field(
+        default=None,
+        description="0-based indices of ALL correct options (multi_correct only)",
+    )
     answer: str
     explanation: str
     topic: str
     difficulty: Literal["easy", "medium", "hard"]
+    section_ref: Optional[str] = Field(
+        default=None,
+        description="Section/subsection label this question came from, e.g. '1.1' or 'Chapter 3'",
+    )
 
 class GeneratorOutput(BaseModel):
     questions: List[GeneratedQuestion]
@@ -71,6 +88,7 @@ class AnswerKeyEntry(BaseModel):
     answer: str
     explanation: str
     marks: int
+    section_ref: Optional[str] = None
 
 class ValidatorOutput(BaseModel):
     covered_topics: List[str] = Field(default_factory=list)
@@ -187,10 +205,23 @@ MANDATORY VARIETY RULES:
 - For MCQs: all 3 distractors must be plausible to someone with partial knowledge
 - Distribute difficulty: 40% recall, 40% application, 20% analysis
 {book_instruction}
-Return a list of questions in the `questions` field. Each question must have:
-  question, type (mcq|short|scenario|calculation|definition),
-  options (list of 4 strings for MCQ only, omit otherwise),
-  answer, explanation (1-2 sentences), topic, difficulty (easy|medium|hard)"""
+QUESTION PHRASING RULES:
+- NEVER prefix questions with "According to the excerpt", "As per the passage", "Based on the text", or similar phrases.
+- Phrase questions directly and naturally, e.g. "What is the main mission of the NFO?" not "According to the excerpt, what is the main mission..."
+- Questions must stand on their own without referencing "the excerpt" or "the passage".
+
+QUESTION TYPE FORMATS:
+- mcq: Single correct answer. options = list of 4 strings. answer = the correct option text.
+- multi_correct: Multiple correct answers. options = list of 4-5 strings. answer = comma-separated correct option texts. correct_indices = list of 0-based indices of ALL correct options.
+- statement_reasoning: Assertion-Reason format. question = "Statement: <A>\\nReason: <R>". options = exactly these 5 in order: ["Both Statement and Reason are correct, and the Reason correctly explains the Statement", "Both Statement and Reason are correct, but the Reason does NOT correctly explain the Statement", "The Statement is correct but the Reason is incorrect", "The Statement is incorrect but the Reason is correct", "Both Statement and Reason are incorrect"]. answer = the correct option text.
+- match_the_following: question = "Match Column A with Column B:\\nColumn A: 1. X  2. Y  3. Z\\nColumn B: (a) P  (b) Q  (c) R". options = 4 matching-combo strings like "1-a, 2-b, 3-c". answer = the correct combo text.
+- short, scenario, calculation, definition: No options field.
+
+SECTION REFERENCE:
+- Set section_ref to the section number and/or title the question is drawn from, e.g. "1.1", "Chapter 2", "Unit 3 – Banking".
+- If no section info is available, leave section_ref null.
+
+Return a list of questions in the `questions` field."""
 
 BOOK_INSTRUCTION = """
 CRITICAL — BOOK-GROUNDED GENERATION:
@@ -198,6 +229,7 @@ You MUST derive ALL questions exclusively from the provided book excerpt below.
 - Every question, answer, and distractor must be grounded in facts, concepts, or examples from the text.
 - Do NOT invent facts not present in the text.
 - Do NOT ask about topics not covered in the provided excerpt.
+- Set section_ref using the === SECTION === markers in the excerpt to identify which section each question comes from.
 """
 
 
@@ -257,9 +289,11 @@ async def generate_questions(state: PaperState) -> dict:
     MAX_BOOK_CHARS = 12_000
     book_excerpt = ""
     if has_book:
+        # Preserve section markers so section_ref can be populated accurately
+        truncated = book_content[:MAX_BOOK_CHARS]
         book_excerpt = (
             f"\n\n--- BOOK EXCERPT (generate questions ONLY from this content) ---\n"
-            f"{book_content[:MAX_BOOK_CHARS]}"
+            f"{truncated}"
             + ("\n[... excerpt truncated ...]" if len(book_content) > MAX_BOOK_CHARS else "")
             + "\n--- END OF EXCERPT ---\n"
         )
@@ -270,11 +304,13 @@ Topic: {state['topic']}
 Difficulty: {state['difficulty']}
 THIS BATCH must contain EXACTLY: {section_breakdown}
   — Do NOT deviate from these counts or types.
+  — Valid types: mcq, multi_correct, statement_reasoning, match_the_following, short, scenario, calculation, definition
 Total marks target: {state['target_marks']}
 
 Forbidden stems (do NOT start any question with these): [{forbidden_str}]
 {retry_context}{book_excerpt}
-Strictly match the batch breakdown above. Each question's `type` field must match its section."""
+Strictly match the batch breakdown above. Each question's `type` field must match its section.
+Remember: do NOT use "According to the excerpt" or similar phrasing in any question."""
 
     try:
         result: GeneratorOutput = await _invoke_structured(
@@ -297,31 +333,43 @@ Strictly match the batch breakdown above. Each question's `type` field must matc
 
 DEDUP_SYSTEM = """You are a deduplication agent for exam questions.
 
-You are given a numbered list of questions. Identify which ones to remove:
-1. Exact duplicates within the batch
-2. Questions testing the same concept with only surface-level rewording
+You are given a numbered list of NEW questions and a list of ALREADY APPROVED questions.
+Identify which NEW questions to remove:
+1. Exact duplicates within the new batch
+2. Questions testing the same concept with only surface-level rewording (within the batch OR against approved)
 3. Questions where knowing one answer trivially reveals another's answer
+4. Any new question that is semantically equivalent to an already-approved question
 
 Do NOT remove questions that share a topic but test genuinely different aspects.
 
-Return ONLY `removed_indices`: the 0-based indices of questions to remove.
+Return ONLY `removed_indices`: the 0-based indices of NEW questions to remove.
 If nothing should be removed, return an empty list."""
 
 
 async def deduplicate_questions(state: PaperState) -> dict:
-    """Agent 2: Remove semantic near-duplicates."""
+    """Agent 2: Remove semantic near-duplicates within batch AND against already-approved questions."""
     questions = state.get("raw_questions", [])
     if not questions:
         return {"deduplicated": []}
+
+    # Already-approved questions from previous rounds in this paper
+    already_approved: List[dict] = state.get("approved", [])
 
     bank_samples: List[dict] = []
     for q in questions[:3]:
         similar = await QuestionRecord.search_similar(q.get("question", ""), limit=3)
         bank_samples.extend(similar)
 
+    # Include already-approved questions as the primary duplicate reference
+    approved_context = ""
+    if already_approved:
+        approved_context = "\n\nALREADY APPROVED questions for this paper (remove any new question that duplicates these):\n" + json.dumps(
+            [{"question": a.get("question", ""), "type": a.get("type", "")} for a in already_approved[:50]], indent=2
+        )
+
     bank_context = ""
     if bank_samples:
-        bank_context = "\n\nExisting bank questions (flag overlaps):\n" + json.dumps(
+        bank_context = "\n\nExisting bank questions from previous papers (flag overlaps):\n" + json.dumps(
             [{"question": b.get("question", "")} for b in bank_samples[:10]], indent=2
         )
 
@@ -329,9 +377,9 @@ async def deduplicate_questions(state: PaperState) -> dict:
     summary = [{"index": i, "question": q.get("question", ""), "type": q.get("type", "")}
                for i, q in enumerate(questions)]
 
-    user_prompt = f"""Deduplicate these {len(questions)} questions:{bank_context}
+    user_prompt = f"""Deduplicate these {len(questions)} NEW questions.{approved_context}{bank_context}
 
-Questions (index + text):
+NEW questions to check (index + text):
 {json.dumps(summary, indent=2)}"""
 
     try:
@@ -454,9 +502,11 @@ def _python_assemble(approved: list, section_config: dict, target_marks: int, to
                 "question": q.get("question", ""),
                 "type": q.get("type", ""),
                 "options": q.get("options"),
+                "correct_indices": q.get("correct_indices"),
                 "marks": 1,
                 "topic": q.get("topic", topic),
                 "difficulty": q.get("difficulty", difficulty),
+                "section_ref": q.get("section_ref"),
             })
             q_num += 1
         sections.append({"section_name": section_name, "questions": section_qs})
@@ -504,9 +554,11 @@ Question pool:
                         "question": q.get("question", ""),
                         "type": q.get("type", ""),
                         "options": q.get("options"),
+                        "correct_indices": q.get("correct_indices"),
                         "marks": item.marks_per_question,
                         "topic": q.get("topic", state["topic"]),
                         "difficulty": q.get("difficulty", state["difficulty"]),
+                        "section_ref": q.get("section_ref"),
                     })
                     q_num += 1
                     total_marks += item.marks_per_question
@@ -595,6 +647,7 @@ Approved questions with answers:
                     "answer": matched.get("answer", "See question"),
                     "explanation": matched.get("explanation", ""),
                     "marks": q.get("marks", 1),
+                    "section_ref": q.get("section_ref") or matched.get("section_ref"),
                 })
                 q_num += 1
         return {"answer_key": answer_key, "coverage_gaps": [], "covered_topics": []}

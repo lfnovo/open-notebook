@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi.responses import Response
 from loguru import logger
 
 from api.question_paper_service import (
@@ -60,6 +61,24 @@ async def get_paper_result(paper_id: str):
     except Exception as e:
         logger.error(f"Error fetching paper result: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch paper result")
+
+
+@router.get("/papers/{paper_id}/export")
+async def export_paper_csv(paper_id: str):
+    """Download a completed question paper as a CSV file (Excel-compatible)."""
+    try:
+        csv_bytes = await QuestionPaperService.export_paper_csv(paper_id)
+        safe_id = paper_id.replace(":", "_").replace("/", "_")
+        return Response(
+            content=csv_bytes,
+            media_type="text/csv; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="question_paper_{safe_id}.csv"'},
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting paper {paper_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to export paper")
 
 
 @router.delete("/papers/{paper_id}")

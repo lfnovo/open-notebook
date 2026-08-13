@@ -3,6 +3,8 @@ Service layer for question paper generation.
 Handles paper creation, job submission, status tracking, and book upload.
 """
 
+import csv
+import io
 import os
 import re
 from typing import Any, Dict, List, Optional
@@ -37,6 +39,7 @@ class GeneratePaperRequest(BaseModel):
     # Book-grounding (optional)
     book_id: Optional[str] = None
     selected_chapters: Optional[List[int]] = None  # chapter indices; None = all chapters
+    skip_front_matter: bool = True  # auto-skip chapters that look like preface/TOC/foreword
 
 
 class GeneratePaperResponse(BaseModel):
@@ -98,7 +101,8 @@ class QuestionPaperService:
         if request.book_id:
             try:
                 book_content = await QuestionPaperService.get_book_content(
-                    request.book_id, request.selected_chapters
+                    request.book_id, request.selected_chapters,
+                    skip_front_matter=request.skip_front_matter,
                 )
             except Exception as e:
                 logger.warning(f"Could not load book content: {e}")
@@ -289,6 +293,67 @@ class QuestionPaperService:
         ]
 
     @staticmethod
+    async def export_paper_csv(paper_id: str) -> bytes:
+        """Export a completed paper as a UTF-8 CSV (Excel-compatible).
+
+        Columns: Q.No, Section, Section Ref, Type, Difficulty, Question,
+                 Option A, Option B, Option C, Option D, Correct Answer,
+                 Explanation, Marks, Topic
+        """
+        from open_notebook.database.repository import ensure_record_id
+        results = await repo_query(
+            "SELECT * FROM question_paper WHERE id = $id",
+            {"id": ensure_record_id(paper_id)},
+        )
+        if not results:
+            raise HTTPException(status_code=404, detail="Paper not found")
+        paper = results[0]
+        if paper.get("status") != "completed":
+            raise HTTPException(
+                status_code=409,
+                detail=f"Paper is not yet completed (status: {paper.get('status')})",
+            )
+
+        final_paper: dict = paper.get("final_paper", {})
+        answer_key: List[dict] = paper.get("answer_key", [])
+        # Build answer lookup by question number
+        ak_by_num: Dict[int, dict] = {e["question_number"]: e for e in answer_key if "question_number" in e}
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            "Q.No", "Section", "Section Ref", "Type", "Difficulty",
+            "Question", "Option A", "Option B", "Option C", "Option D",
+            "Correct Answer", "Explanation", "Marks", "Topic",
+        ])
+
+        for section in final_paper.get("sections", []):
+            section_name = section.get("section_name", "")
+            for q in section.get("questions", []):
+                q_num = q.get("question_number", "")
+                options: List[str] = q.get("options") or []
+                ak_entry = ak_by_num.get(q_num, {})
+                writer.writerow([
+                    q_num,
+                    section_name,
+                    q.get("section_ref") or ak_entry.get("section_ref") or "",
+                    q.get("type", ""),
+                    q.get("difficulty", ""),
+                    q.get("question", ""),
+                    options[0] if len(options) > 0 else "",
+                    options[1] if len(options) > 1 else "",
+                    options[2] if len(options) > 2 else "",
+                    options[3] if len(options) > 3 else "",
+                    ak_entry.get("answer", q.get("answer", "")),
+                    ak_entry.get("explanation", ""),
+                    q.get("marks", 1),
+                    q.get("topic", ""),
+                ])
+
+        # Return UTF-8 with BOM so Excel auto-detects encoding
+        return ("\ufeff" + output.getvalue()).encode("utf-8")
+
+    @staticmethod
     async def delete_bank_question(question_id: str) -> None:
         """Remove a question from the bank."""
         from open_notebook.database.repository import ensure_record_id
@@ -302,9 +367,23 @@ class QuestionPaperService:
     # Book upload helpers
     # ------------------------------------------------------------------
 
+    _FRONT_MATTER_TITLES = frozenset({
+        "preface", "foreword", "introduction", "contents", "table of contents",
+        "acknowledgements", "acknowledgments", "copyright", "dedication",
+        "about the author", "about the book", "index",
+    })
+
     @staticmethod
-    async def get_book_content(book_id: str, selected_chapters: Optional[List[int]]) -> str:
-        """Fetch book text for selected chapters (or full text if none selected)."""
+    async def get_book_content(
+        book_id: str,
+        selected_chapters: Optional[List[int]],
+        skip_front_matter: bool = True,
+    ) -> str:
+        """Fetch book text for selected chapters (or full text if none selected).
+
+        Returns annotated text with === SECTION === markers so the LLM can
+        populate section_ref on generated questions.
+        """
         from open_notebook.database.repository import ensure_record_id
         results = await repo_query(
             "SELECT * FROM question_book WHERE id = $id",
@@ -313,20 +392,41 @@ class QuestionPaperService:
         if not results:
             raise HTTPException(status_code=404, detail="Book not found")
         book = results[0]
+        full_text: str = book.get("full_text", "")
         chapters: List[dict] = book.get("chapters", [])
 
-        if not chapters or selected_chapters is None:
-            return book.get("full_text", "")
+        if not chapters:
+            return full_text
 
-        # Splice out only selected chapters by character offsets
-        full_text: str = book.get("full_text", "")
+        # Determine which chapters to include
+        chapter_indices: List[int]
+        if selected_chapters is None:
+            chapter_indices = list(range(len(chapters)))
+        else:
+            chapter_indices = selected_chapters
+
+        # Auto-skip front-matter chapters when no explicit selection was made
+        if skip_front_matter and selected_chapters is None:
+            chapter_indices = [
+                idx for idx in chapter_indices
+                if chapters[idx].get("title", "").strip().lower()
+                not in QuestionPaperService._FRONT_MATTER_TITLES
+            ]
+            if not chapter_indices:
+                # Nothing left — fall back to all chapters
+                chapter_indices = list(range(len(chapters)))
+
+        # Build annotated sections with === markers so section_ref can be set
         parts = []
-        for idx in selected_chapters:
+        for idx in chapter_indices:
             if 0 <= idx < len(chapters):
                 ch = chapters[idx]
                 start = ch.get("start_char", 0)
                 end = ch.get("end_char", len(full_text))
-                parts.append(full_text[start:end])
+                label = ch.get("title", f"Section {idx + 1}")
+                section_text = full_text[start:end]
+                parts.append(f"=== SECTION {idx + 1}: {label} ===\n{section_text}")
+
         return "\n\n".join(parts) if parts else full_text
 
 

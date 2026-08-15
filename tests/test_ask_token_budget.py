@@ -46,7 +46,7 @@ def test_ask_max_tokens_invalid_values_fall_back_to_default(monkeypatch, value):
 
 
 @pytest.mark.asyncio
-async def test_strategy_uses_fixed_token_budget(monkeypatch):
+async def test_strategy_uses_configured_token_budget(monkeypatch):
     monkeypatch.setenv(ask.ASK_MAX_TOKENS_ENV_VAR, "12000")
     model = SimpleNamespace(
         ainvoke=AsyncMock(
@@ -76,7 +76,7 @@ async def test_strategy_uses_fixed_token_budget(monkeypatch):
         "strategy prompt",
         "strategy-model",
         "tools",
-        max_tokens=2000,
+        max_tokens=12000,
         structured={"type": "json"},
     )
     model.ainvoke.assert_awaited_once_with("strategy prompt")

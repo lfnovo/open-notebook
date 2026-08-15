@@ -16,7 +16,7 @@ Comprehensive list of all environment variables available in Open Notebook.
 | `FRONTEND_BIND_HOST` | No | `0.0.0.0` (in Docker) | Network interface for Next.js to bind to. Default `0.0.0.0` ensures accessibility from reverse proxies. (Replaces `HOSTNAME`, which container runtimes such as Podman override with the container/pod hostname, causing Next.js to bind to the wrong address) |
 | `API_HOST` | No | `0.0.0.0` (in Docker) | Network interface for the API (uvicorn) to bind to. Set to `::` for IPv6 dual-stack environments (listens on IPv6 and, on Linux defaults, IPv4 too) |
 | `OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB` | No | 100 | Maximum request body size (in MB) the API will accept, enforced before auth/routing. Raise this if you need to upload larger audio/video files. A fronting reverse proxy's own limit (e.g. nginx `client_max_body_size`) still applies and should be raised to match. |
-| `OPEN_NOTEBOOK_ASK_MAX_TOKENS` | No | 8192 | Maximum output tokens for the intermediate-answer and final-answer model calls used by Ask/Q&A. It does not control the structured strategy-generation step, which remains fixed at 2000. Invalid or non-positive values fall back to 8192. |
+| `OPEN_NOTEBOOK_ASK_MAX_TOKENS` | No | 8192 | Maximum output tokens for all Ask/Q&A model-generation calls: structured strategy generation, intermediate answers, and final answers. Invalid or non-positive values fall back to 8192. |
 
 > **Important**: `OPEN_NOTEBOOK_ENCRYPTION_KEY` is required for storing AI provider credentials via the Settings UI. Without it, you cannot save credentials. If you change or lose this key, all stored credentials become unreadable.
 

@@ -20,13 +20,12 @@ from open_notebook.utils.error_classifier import classify_error
 from open_notebook.utils.text_utils import extract_text_content
 
 DEFAULT_ASK_MAX_TOKENS = 8192
-ASK_STRATEGY_MAX_TOKENS = 2000
 ASK_MAX_TOKENS_ENV_VAR = "OPEN_NOTEBOOK_ASK_MAX_TOKENS"
 
 
 @cache
 def get_ask_max_tokens() -> int:
-    """Read the configured output budget for Ask's prose responses."""
+    """Read the configured output budget for all Ask model-generation calls."""
     raw = os.environ.get(ASK_MAX_TOKENS_ENV_VAR)
     if raw is None:
         return DEFAULT_ASK_MAX_TOKENS
@@ -94,7 +93,7 @@ async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -
             system_prompt,
             config.get("configurable", {}).get("strategy_model"),
             "tools",
-            max_tokens=ASK_STRATEGY_MAX_TOKENS,
+            max_tokens=get_ask_max_tokens(),
             structured=dict(type="json"),
         )
         # model = model.bind_tools(tools)

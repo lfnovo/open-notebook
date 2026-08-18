@@ -18,6 +18,7 @@ from loguru import logger
 from pydantic import SecretStr
 
 from api.models import CredentialResponse
+from open_notebook.ai.connection_tester import _has_status_code
 from open_notebook.domain.credential import Credential
 from open_notebook.utils.encryption import get_secret_from_env
 
@@ -455,9 +456,9 @@ async def test_credential(credential_id: str) -> dict:
 
     except Exception as e:
         error_msg = str(e)
-        if "401" in error_msg or "unauthorized" in error_msg.lower():
+        if _has_status_code(error_msg, 401) or "unauthorized" in error_msg.lower():
             return {"provider": provider, "success": False, "message": "Invalid API key"}
-        elif "403" in error_msg or "forbidden" in error_msg.lower():
+        elif _has_status_code(error_msg, 403) or "forbidden" in error_msg.lower():
             return {"provider": provider, "success": False, "message": "API key lacks required permissions"}
         elif "rate" in error_msg.lower() and "limit" in error_msg.lower():
             return {"provider": provider, "success": True, "message": "Rate limited - but connection works"}

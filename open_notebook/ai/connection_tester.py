@@ -7,6 +7,7 @@ configurations end-to-end.
 """
 import io
 import os
+import re
 import struct
 from typing import List, Optional, Tuple
 
@@ -14,13 +15,23 @@ import httpx
 from esperanto.factory import AIFactory
 from loguru import logger
 
+
+def _has_status_code(error_msg: str, code: int) -> bool:
+    """Check whether error_msg contains an HTTP status code as a standalone number.
+
+    Plain substring checks (e.g. "403" in error_msg) false-positive on strings
+    that merely contain those digits elsewhere, such as a model name/date like
+    "claude-3-haiku-20240307" (which contains "403").
+    """
+    return re.search(rf"(?<!\d){code}(?!\d)", error_msg) is not None
+
 from open_notebook.domain.credential import Credential
 
 # Test models for each provider - uses minimal/cheapest models for testing
 # Format: (model_name, model_type)
 TEST_MODELS = {
     "openai": ("gpt-3.5-turbo", "language"),
-    "anthropic": ("claude-3-haiku-20240307", "language"),
+    "anthropic": ("claude-haiku-4-5-20251001", "language"),
     "google": ("gemini-2.0-flash", "language"),
     "groq": ("llama-3.1-8b-instant", "language"),
     "mistral": ("mistral-small-latest", "language"),
@@ -280,9 +291,9 @@ async def test_provider_connection(
         error_msg = str(e)
 
         # Clean up common error messages for user-friendly display
-        if "401" in error_msg or "unauthorized" in error_msg.lower():
+        if _has_status_code(error_msg, 401) or "unauthorized" in error_msg.lower():
             return False, "Invalid API key"
-        elif "403" in error_msg or "forbidden" in error_msg.lower():
+        elif _has_status_code(error_msg, 403) or "forbidden" in error_msg.lower():
             return False, "API key lacks required permissions"
         elif "rate" in error_msg.lower() and "limit" in error_msg.lower():
             # Rate limit means the key is valid but we hit limits
@@ -352,9 +363,9 @@ def _normalize_error_message(error_msg: str) -> Tuple[bool, str]:
     """Normalize common error patterns into user-friendly messages."""
     lower = error_msg.lower()
 
-    if "401" in error_msg or "unauthorized" in lower:
+    if _has_status_code(error_msg, 401) or "unauthorized" in lower:
         return False, "Invalid API key"
-    elif "403" in error_msg or "forbidden" in lower:
+    elif _has_status_code(error_msg, 403) or "forbidden" in lower:
         return False, "API key lacks required permissions"
     elif "rate" in lower and "limit" in lower:
         return True, "Rate limited - but connection works"

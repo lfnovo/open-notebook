@@ -96,7 +96,13 @@ export function SettingsForm() {
 
   const { i18n } = useTranslation()
   useEffect(() => {
-    if (i18n.language === 'ar-SA') {
+    if (i18n.language.startsWith('ar')) {
+      document.documentElement.dir = 'rtl'
+      document.documentElement.lang = i18n.language
+    } else {
+      document.documentElement.dir = 'ltr'
+      document.documentElement.lang = i18n.language.split('-')[0]
+    }
       document.documentElement.dir = 'rtl'
       document.documentElement.lang = 'ar'
     } else {

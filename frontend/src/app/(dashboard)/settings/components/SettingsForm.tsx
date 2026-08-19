@@ -94,6 +94,17 @@ export function SettingsForm() {
     await updateSettings.mutateAsync(data)
   }
 
+  const { i18n } = useTranslation()
+  useEffect(() => {
+    if (i18n.language === 'ar-SA') {
+      document.documentElement.dir = 'rtl'
+      document.documentElement.lang = 'ar'
+    } else {
+      document.documentElement.dir = 'ltr'
+      document.documentElement.lang = 'en'
+    }
+  }, [i18n.language])
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">

@@ -1,0 +1,16 @@
+-- Migration 21: Question-paper blueprint and independent cognitive validation fields.
+-- Tables remain SCHEMALESS; this version records the new expected payload shape.
+--
+-- question_paper may now include:
+--   grade, subject, language, pass_percentage, blueprint, audit, failed_slots
+-- question_bank may now include:
+--   target_difficulty, validated_cognitive_difficulty, difficulty_score,
+--   difficulty_scores, answer_type, grade, chapter, chapter_title, sub_topic,
+--   validation_status, validation_reasons, generation_attempts,
+--   observed_facility, observed_discrimination, calibrated_difficulty, calibration_status
+--
+-- Post-exam statistical fields stay null until student response data exists.
+-- "Very Difficult" is a post-exam flag, not a generation difficulty.
+
+DEFINE TABLE OVERWRITE question_paper SCHEMALESS;
+DEFINE TABLE OVERWRITE question_bank SCHEMALESS;

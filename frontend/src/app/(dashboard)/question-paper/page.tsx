@@ -25,6 +25,8 @@ import {
   useDeletePaper,
 } from '@/lib/hooks/use-question-paper'
 import type { GeneratePaperRequest } from '@/lib/types/question-paper'
+import { formatPaperStatus, formatQuestionCount, paperDisplayStatus } from '@/lib/question-paper-labels'
+import { DifficultyBreakdown } from '@/components/question-paper/DifficultyBreakdown'
 
 export default function QuestionPaperPage() {
   const { t } = useTranslation()
@@ -35,27 +37,34 @@ export default function QuestionPaperPage() {
   const { data: papers = [], isLoading: papersLoading } = usePapers()
   const { mutate: generatePaper, isPending: isGenerating } = useGeneratePaper()
   const { mutate: deletePaper } = useDeletePaper()
-
-  // Poll status for in-progress generation
   const { data: pendingStatus } = usePaperStatus(pendingPaperId)
 
-  // Fetch result when a paper is selected or pending paper completes
-  const activeId = selectedPaperId ?? (pendingStatus?.status === 'completed' ? pendingPaperId : null)
-  const { data: paperResult, isLoading: resultLoading } = usePaperResult(
+  const selectedPaper = papers.find((paper) => paper.paper_id === selectedPaperId)
+  const selectedReady = ['completed', 'needs_manual_review'].includes(selectedPaper?.status ?? '')
+  const pendingReady = ['completed', 'needs_manual_review'].includes(pendingStatus?.status ?? '')
+  const activeId = selectedPaperId && selectedReady
+    ? selectedPaperId
+    : pendingReady
+      ? pendingPaperId
+      : null
+  const { data: paperResult, isLoading: resultLoading, refetch: refetchResult } = usePaperResult(
     activeId,
     !!activeId,
   )
 
   // Sync: when pending paper completes or fails, update states
   useEffect(() => {
-    if (pendingStatus?.status === 'completed' && pendingPaperId && !selectedPaperId) {
+    if (['completed', 'needs_manual_review'].includes(pendingStatus?.status ?? '') && pendingPaperId && !selectedPaperId) {
       setSelectedPaperId(pendingPaperId)
       setPendingPaperId(null)
+      if (pendingStatus?.status === 'needs_manual_review') {
+        toast.error(pendingStatus.error_message || t.questionPaper.auditFailedTitle)
+      }
     } else if (pendingStatus?.status === 'failed' && pendingPaperId) {
       toast.error(pendingStatus.error_message || t.questionPaper.generationFailed)
       setPendingPaperId(null)
     }
-  }, [pendingStatus?.status, pendingPaperId, selectedPaperId, t.questionPaper.generationFailed])
+  }, [pendingStatus?.status, pendingStatus?.error_message, pendingPaperId, selectedPaperId, t.questionPaper.generationFailed, t.questionPaper.auditFailedTitle])
 
   const handleGenerate = (request: GeneratePaperRequest) => {
     generatePaper(request, {
@@ -76,7 +85,7 @@ export default function QuestionPaperPage() {
     deletePaper(paperId, { onSettled: () => setDeletingId(null) })
   }
 
-  const isRunning = !!(pendingPaperId && pendingStatus?.status && !['completed', 'failed'].includes(pendingStatus.status))
+  const isRunning = !!(pendingPaperId && pendingStatus?.status && !['completed', 'failed', 'needs_manual_review'].includes(pendingStatus.status))
 
   return (
     <AppShell>
@@ -89,10 +98,16 @@ export default function QuestionPaperPage() {
         <div className="flex-1 overflow-hidden">
           <Tabs defaultValue="generate" className="h-full flex flex-col">
             <div className="px-6 pt-4">
-              <TabsList>
-                <TabsTrigger value="generate">{t.questionPaper.generateTab}</TabsTrigger>
-                <TabsTrigger value="papers">{t.questionPaper.papersTab}</TabsTrigger>
-                <TabsTrigger value="bank">{t.questionPaper.bankTab}</TabsTrigger>
+              <TabsList className="flex w-full flex-nowrap justify-start h-auto">
+                <TabsTrigger value="generate" className="flex-none whitespace-nowrap">
+                  {t.questionPaper.generateTab}
+                </TabsTrigger>
+                <TabsTrigger value="papers" className="flex-none whitespace-nowrap">
+                  {t.questionPaper.papersTab}
+                </TabsTrigger>
+                <TabsTrigger value="bank" className="flex-none whitespace-nowrap">
+                  {t.questionPaper.bankTab}
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -131,7 +146,7 @@ export default function QuestionPaperPage() {
                       </div>
                     )}
                     {paperResult && !isRunning && (
-                      <PaperResultView result={paperResult} />
+                      <PaperResultView result={paperResult} onRegenerated={() => refetchResult()} />
                     )}
                     {!isRunning && !resultLoading && !paperResult && (
                       <p className="text-sm text-muted-foreground text-center py-12">
@@ -145,7 +160,7 @@ export default function QuestionPaperPage() {
 
             {/* Papers History Tab */}
             <TabsContent value="papers" className="flex-1 overflow-auto px-6 pb-6 mt-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-6xl">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 max-w-7xl">
                 <Card>
                   <CardHeader>
                     <CardTitle>{t.questionPaper.papersTitle}</CardTitle>
@@ -178,7 +193,40 @@ export default function QuestionPaperPage() {
                         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                       </div>
                     ) : paperResult ? (
-                      <PaperResultView result={paperResult} />
+                      <PaperResultView result={paperResult} onRegenerated={() => refetchResult()} />
+                    ) : selectedPaper ? (
+                      <div className="space-y-3">
+                        <p className="text-sm font-medium">{formatPaperStatus(paperDisplayStatus(selectedPaper))}</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
+                          <div>
+                            <p className="text-muted-foreground">{t.questionPaper.requestedQuestions}</p>
+                            <p className="font-medium">{formatQuestionCount(selectedPaper.requested_questions)}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">{t.questionPaper.generatedQuestions}</p>
+                            <p className="font-medium">{formatQuestionCount(selectedPaper.generated_questions)}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">{t.questionPaper.remainingQuestions}</p>
+                            <p className="font-medium">{formatQuestionCount(selectedPaper.remaining_questions)}</p>
+                          </div>
+                        </div>
+                        {selectedPaper.target_marks != null && (
+                          <p className="text-xs text-muted-foreground">
+                            {t.questionPaper.targetMarks}: {selectedPaper.target_marks}
+                          </p>
+                        )}
+                        <DifficultyBreakdown
+                          requested={selectedPaper.requested_difficulty}
+                          generated={selectedPaper.generated_difficulty}
+                          remaining={selectedPaper.remaining_difficulty}
+                        />
+                        {selectedPaper.error_message && (
+                          <pre className="text-xs whitespace-pre-wrap break-words rounded-md border bg-muted/40 p-3">
+                            {selectedPaper.error_message}
+                          </pre>
+                        )}
+                      </div>
                     ) : (
                       <p className="text-sm text-muted-foreground text-center py-8">
                         {t.questionPaper.selectPaperHint}
@@ -191,7 +239,7 @@ export default function QuestionPaperPage() {
 
             {/* Bank Tab */}
             <TabsContent value="bank" className="flex-1 overflow-auto px-6 pb-6 mt-4">
-              <div className="max-w-3xl">
+              <div className="max-w-7xl">
                 <Card>
                   <CardHeader>
                     <CardTitle>{t.questionPaper.bankTitle}</CardTitle>

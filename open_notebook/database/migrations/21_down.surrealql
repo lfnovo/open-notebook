@@ -1,0 +1,1 @@
+-- Rollback migration 21 (no-op; schemaless tables retain stored fields)

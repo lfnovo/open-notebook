@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { questionPaperApi } from '@/lib/api/question-paper'
 import type {
@@ -13,6 +13,7 @@ export const QUESTION_PAPER_KEYS = {
   status: (id: string) => [...QUESTION_PAPER_KEYS.all, 'status', id] as const,
   result: (id: string) => [...QUESTION_PAPER_KEYS.all, 'result', id] as const,
   bank: (q: string) => ['question-bank', q] as const,
+  books: ['question-books'] as const,
 }
 
 export function usePapers() {
@@ -29,7 +30,7 @@ export function usePaperStatus(paperId: string | null, enabled: boolean = true) 
     enabled: !!paperId && enabled,
     refetchInterval: (query) => {
       const status = query.state.data?.status
-      if (status === 'completed' || status === 'failed') return false
+      if (status === 'completed' || status === 'failed' || status === 'needs_manual_review') return false
       return 3000 // poll every 3s while running/pending
     },
   })
@@ -73,11 +74,37 @@ export function useDeletePaper() {
   })
 }
 
+export function useBooks() {
+  return useQuery({
+    queryKey: QUESTION_PAPER_KEYS.books,
+    queryFn: questionPaperApi.listBooks,
+    staleTime: 30 * 1000,
+  })
+}
+
 export function useQuestionBank(query: string = '') {
   return useQuery({
     queryKey: QUESTION_PAPER_KEYS.bank(query),
-    queryFn: () => questionPaperApi.searchBank(query, 50),
+    queryFn: () => questionPaperApi.searchBank(query, 1000),
   })
+}
+
+export function useQuestionBooks(bookIds: string[]) {
+  const uniqueIds = Array.from(new Set(bookIds.filter(Boolean)))
+  const queries = useQueries({
+    queries: uniqueIds.map((bookId) => ({
+      queryKey: ['question-book', bookId],
+      queryFn: () => questionPaperApi.getBook(bookId),
+      retry: false,
+      staleTime: 5 * 60 * 1000,
+    })),
+  })
+  const titles: Record<string, string> = {}
+  uniqueIds.forEach((id, index) => {
+    const title = queries[index]?.data?.display_name || queries[index]?.data?.title
+    if (title) titles[id] = title
+  })
+  return titles
 }
 
 export function useDeleteBankQuestion() {

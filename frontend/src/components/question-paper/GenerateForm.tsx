@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,7 +13,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import {
   Tooltip,
@@ -21,27 +20,29 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { Info, X, Plus } from 'lucide-react'
+import { Info } from 'lucide-react'
 import { BookUploader } from './BookUploader'
-import type { GeneratePaperRequest, QuestionDifficulty } from '@/lib/types/question-paper'
+import {
+  DEFAULT_PAPER_BLUEPRINT,
+  type ChapterDifficultyCounts,
+  type CognitiveDifficulty,
+  type GeneratePaperRequest,
+} from '@/lib/types/question-paper'
 
 interface GenerateFormProps {
   onSubmit: (request: GeneratePaperRequest) => void
   isLoading: boolean
 }
 
-const DEFAULT_SECTION_CONFIG: Record<string, number> = { mcq: 10, short: 5, scenario: 3 }
-const QUESTION_TYPES = ['mcq', 'short', 'scenario', 'calculation', 'definition']
+const DIFFICULTIES: CognitiveDifficulty[] = ['easy', 'medium', 'difficult']
 
-const SECTION_DESCRIPTIONS: Record<string, string> = {
-  mcq: 'Multiple-choice questions with 4 options (A–D). One correct answer. Best for testing recall and recognition quickly.',
-  short: 'Short-answer questions requiring a 1–3 sentence written response. Tests understanding, not just memorisation.',
-  scenario: 'Case-study style questions that present a real-world situation and ask the student to apply knowledge to solve it.',
-  calculation: 'Numerical or formula-based questions where the student must show working and arrive at a specific figure.',
-  definition: 'Ask the student to define a term or concept in their own words. Good for testing vocabulary and foundational knowledge.',
+/** Parse raw input to a non-negative integer; blank/invalid → 0. */
+function parseNonNegInt(raw: string): number {
+  const n = parseInt(raw, 10)
+  if (Number.isNaN(n) || n < 0) return 0
+  return n
 }
 
-// Small inline info button with a tooltip
 function FieldInfo({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider delayDuration={100}>
@@ -72,289 +73,398 @@ function FieldLabel({ htmlFor, label, children }: { htmlFor?: string; label: str
   )
 }
 
+function emptyCounts(): ChapterDifficultyCounts {
+  return { easy: 0, medium: 0, difficult: 0 }
+}
+
+function sumCounts(counts: ChapterDifficultyCounts): number {
+  return counts.easy + counts.medium + counts.difficult
+}
+
 export function GenerateForm({ onSubmit, isLoading }: GenerateFormProps) {
   const { t } = useTranslation()
-  const [topic, setTopic] = useState('')
-  const [difficulty, setDifficulty] = useState<QuestionDifficulty>('medium')
-  const [targetMarks, setTargetMarks] = useState(50)
-  const [sectionConfig, setSectionConfig] = useState<Record<string, number>>(DEFAULT_SECTION_CONFIG)
-  const [newSectionType, setNewSectionType] = useState('')
-  const [newSectionCount, setNewSectionCount] = useState(5)
+  const [grade, setGrade] = useState('')
+  const [subject, setSubject] = useState('')
+  const [language, setLanguage] = useState('en')
+  const [passPercentage, setPassPercentage] = useState(DEFAULT_PAPER_BLUEPRINT.pass_percentage)
+  const [totalQuestions, setTotalQuestions] = useState(DEFAULT_PAPER_BLUEPRINT.total_questions)
+  const [chapterMatrix, setChapterMatrix] = useState<Record<string, ChapterDifficultyCounts>>(
+    () => structuredClone(DEFAULT_PAPER_BLUEPRINT.chapter_difficulty),
+  )
+  const [answerTypes, setAnswerTypes] = useState(
+    () => structuredClone(DEFAULT_PAPER_BLUEPRINT.difficulty_answer_types),
+  )
   const [objectivesText, setObjectivesText] = useState('')
   const [bookId, setBookId] = useState<string | null>(null)
   const [selectedChapters, setSelectedChapters] = useState<number[] | null>(null)
-  const [autoTopic, setAutoTopic] = useState<string>('')  // derived from book when no manual topic
+  const [selectedChapterCount, setSelectedChapterCount] = useState(0)
+  const [autoTopic, setAutoTopic] = useState('')
+  const [detectedGrade, setDetectedGrade] = useState<string | null>(null)
 
-  const handleAddSection = () => {
-    const type = newSectionType.trim().toLowerCase()
-    if (!type) return
-    setSectionConfig((prev) => ({ ...prev, [type]: newSectionCount }))
-    setNewSectionType('')
-    setNewSectionCount(5)
-  }
-
-  const handleRemoveSection = (key: string) => {
-    setSectionConfig((prev) => {
-      const next = { ...prev }
-      delete next[key]
-      return next
-    })
-  }
-
-  const handleUpdateSectionCount = (key: string, value: string) => {
-    const n = parseInt(value, 10)
-    if (!isNaN(n) && n > 0) {
-      setSectionConfig((prev) => ({ ...prev, [key]: n }))
+  const difficultyTotals = useMemo(() => {
+    const totals = emptyCounts()
+    for (const row of Object.values(chapterMatrix)) {
+      totals.easy += row.easy
+      totals.medium += row.medium
+      totals.difficult += row.difficult
     }
+    return totals
+  }, [chapterMatrix])
+
+  const matrixTotal = sumCounts(difficultyTotals)
+  const matrixMismatch = matrixTotal !== totalQuestions
+  const requiredChapters = Object.keys(chapterMatrix).length
+  const chapterCountMismatch = !!bookId && selectedChapterCount !== requiredChapters
+
+  const answerTypeTotals = useMemo(() => {
+    return DIFFICULTIES.reduce(
+      (acc, d) => {
+        acc.single += answerTypes[d]?.single_correct ?? 0
+        acc.multiple += answerTypes[d]?.multiple_correct ?? 0
+        return acc
+      },
+      { single: 0, multiple: 0 },
+    )
+  }, [answerTypes])
+
+  const answerTypeErrors = useMemo(() => {
+    const errs: string[] = []
+    for (const d of DIFFICULTIES) {
+      const s = answerTypes[d]?.single_correct ?? 0
+      const m = answerTypes[d]?.multiple_correct ?? 0
+      const expected = difficultyTotals[d]
+      if (s + m !== expected) {
+        errs.push(`${d}: Single (${s}) + Multiple (${m}) = ${s + m}, expected ${expected}`)
+      }
+    }
+    return errs
+  }, [answerTypes, difficultyTotals])
+
+  const updateChapterCell = (chapter: string, difficulty: CognitiveDifficulty, raw: string) => {
+    const n = parseNonNegInt(raw)
+    setChapterMatrix((prev) => ({
+      ...prev,
+      [chapter]: { ...prev[chapter], [difficulty]: n },
+    }))
   }
+
+  const updateAnswerType = (difficulty: CognitiveDifficulty, field: 'single_correct' | 'multiple_correct', raw: string) => {
+    const n = parseNonNegInt(raw)
+    setAnswerTypes((prev) => ({
+      ...prev,
+      [difficulty]: { ...prev[difficulty], [field]: n },
+    }))
+  }
+
+  const canSubmit =
+    !isLoading &&
+    !!grade.trim() &&
+    !!(subject.trim() || autoTopic) &&
+    totalQuestions >= 1 &&
+    !matrixMismatch &&
+    !chapterCountMismatch &&
+    answerTypeErrors.length === 0
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const effectiveTopic = topic.trim() || autoTopic
-    if (!effectiveTopic) return
-    if (Object.keys(sectionConfig).length === 0) return
+    if (!canSubmit) return
+    const effectiveSubject = subject.trim() || autoTopic
 
-    const objectives = objectivesText
-      .split('\n')
-      .map((s) => s.trim())
-      .filter(Boolean)
+    const objectives = objectivesText.split('\n').map((s) => s.trim()).filter(Boolean)
 
     onSubmit({
-      topic: effectiveTopic,
-      difficulty,
-      target_marks: targetMarks,
-      section_config: sectionConfig,
+      topic: effectiveSubject,
+      subject: effectiveSubject,
+      grade: grade.trim(),
+      language,
+      difficulty: 'medium',
+      target_marks: totalQuestions,
+      pass_percentage: passPercentage,
+      options_per_question: 5,
+      question_format: 'mcq',
       curriculum_objectives: objectives,
       generator_model: null,
       reviewer_model: null,
       book_id: bookId,
       selected_chapters: selectedChapters,
+      max_slot_attempts: 3,
+      slot_concurrency: 3,
+      blueprint: {
+        ...DEFAULT_PAPER_BLUEPRINT,
+        total_questions: totalQuestions,
+        pass_percentage: passPercentage,
+        language,
+        chapter_difficulty: chapterMatrix,
+        difficulty_answer_types: answerTypes,
+      },
     })
   }
 
-  const totalQuestions = Object.values(sectionConfig).reduce((a, b) => a + b, 0)
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-
-      {/* ── Topic — hidden when book is loaded (auto-derived from book/chapters) ── */}
-      {!bookId && (
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <FieldLabel htmlFor="topic" label="Topic">
-            <p>The subject the entire paper will be about. Be specific — the more focused the topic, the better the questions.</p>
-            <p className="mt-1 text-muted-foreground">
-              <span className="font-medium text-foreground">Examples:</span><br />
-              • "Mutual Funds — NFO Basics"<br />
-              • "Chapter 3: The Water Cycle"<br />
-              • "Python List Comprehensions"
-            </p>
+          <FieldLabel htmlFor="grade" label={t.questionPaper.grade}>
+            <p>Grade is an active generation constraint. Questions use grade-appropriate vocabulary, examples, and reasoning.</p>
           </FieldLabel>
           <Input
-            id="topic"
-            placeholder="e.g., Mutual Funds — NFO Basics"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
+            id="grade"
+            placeholder="e.g. 5 or Grade 10"
+            value={grade}
+            onChange={(e) => setGrade(e.target.value)}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <FieldLabel htmlFor="language" label={t.questionPaper.language}>
+            <p>Language used for generated questions and explanations.</p>
+          </FieldLabel>
+          <Select value={language} onValueChange={setLanguage}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="en">English</SelectItem>
+              <SelectItem value="hi">Hindi</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {!bookId && (
+        <div className="space-y-2">
+          <FieldLabel htmlFor="subject" label={t.questionPaper.subject}>
+            <p>Academic subject area for the examination.</p>
+          </FieldLabel>
+          <Input
+            id="subject"
+            placeholder="e.g. Financial Literacy"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
             required={!bookId}
           />
         </div>
       )}
 
-      {/* ── Difficulty + Target Marks ── */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <FieldLabel label="Difficulty">
-            <p>Controls how hard the questions are overall.</p>
-            <ul className="mt-1 space-y-1 text-muted-foreground">
-              <li><span className="font-medium text-foreground">Easy</span> — recall and basic definitions. Suitable for beginners or a warm-up quiz.</li>
-              <li><span className="font-medium text-foreground">Medium</span> — mix of recall and application. Good for mid-term tests.</li>
-              <li><span className="font-medium text-foreground">Hard</span> — analysis, edge cases, and multi-step reasoning. For advanced students or finals.</li>
-            </ul>
-          </FieldLabel>
-          <Select value={difficulty} onValueChange={(v) => setDifficulty(v as QuestionDifficulty)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="easy">Easy</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="hard">Hard</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <FieldLabel htmlFor="marks" label="Total Marks">
-            <p>The maximum score a student can get on this paper.</p>
-            <p className="mt-1 text-muted-foreground">The AI distributes marks across questions based on type and difficulty. A 50-mark paper might give 1 mark per MCQ and 5 marks per scenario question.</p>
-            <p className="mt-1 text-muted-foreground"><span className="font-medium text-foreground">Example:</span> 50 for a class test, 100 for a final exam.</p>
+          <FieldLabel htmlFor="totalQ" label={t.questionPaper.totalQuestions}>
+            <p>Total number of questions for this paper. Must match the sum of the Chapter × Difficulty table below.</p>
           </FieldLabel>
           <Input
-            id="marks"
-            type="number"
-            min={5}
-            max={500}
-            value={targetMarks}
-            onChange={(e) => setTargetMarks(parseInt(e.target.value, 10) || 50)}
-          />
-        </div>
-      </div>
-
-      {/* ── Sections ── */}
-      <div className="space-y-2">
-        <FieldLabel label="Sections">
-          <p>Defines <span className="font-medium text-foreground">what types of questions</span> appear and <span className="font-medium text-foreground">how many</span> of each.</p>
-          <div className="mt-2 space-y-1.5 text-muted-foreground">
-            {Object.entries(SECTION_DESCRIPTIONS).map(([type, desc]) => (
-              <p key={type}><span className="font-medium text-foreground capitalize">{type}</span> — {desc}</p>
-            ))}
-          </div>
-          <p className="mt-2 text-muted-foreground"><span className="font-medium text-foreground">Example:</span> 10 MCQ + 5 Short + 3 Scenario = 18 questions total.</p>
-        </FieldLabel>
-
-        <p className="text-xs text-muted-foreground">
-          {totalQuestions} question{totalQuestions !== 1 ? 's' : ''} total across {Object.keys(sectionConfig).length} section{Object.keys(sectionConfig).length !== 1 ? 's' : ''}
-        </p>
-
-        <div className="space-y-2">
-          {Object.entries(sectionConfig).map(([key, count]) => (
-            <div key={key} className="flex items-center gap-2">
-              <TooltipProvider delayDuration={100}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge variant="secondary" className="min-w-24 justify-center capitalize cursor-help">
-                      {key}
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="max-w-xs text-sm">
-                    {SECTION_DESCRIPTIONS[key] ?? `Custom question type: "${key}"`}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <Input
-                type="number"
-                min={1}
-                max={50}
-                value={count}
-                onChange={(e) => handleUpdateSectionCount(key, e.target.value)}
-                className="w-20"
-              />
-              <span className="text-sm text-muted-foreground">questions</span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => handleRemoveSection(key)}
-                className="h-8 w-8 shrink-0"
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </div>
-          ))}
-        </div>
-
-        {/* Add section row */}
-        <div className="flex gap-2 mt-2">
-          <Select value={newSectionType} onValueChange={setNewSectionType}>
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Add a question type..." />
-            </SelectTrigger>
-            <SelectContent>
-              {QUESTION_TYPES.filter((type) => !(type in sectionConfig)).map((type) => (
-                <SelectItem key={type} value={type}>
-                  <span className="capitalize font-medium">{type}</span>
-                  <span className="text-muted-foreground ml-2 text-xs">
-                    — {SECTION_DESCRIPTIONS[type]?.split('.')[0]}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Input
+            id="totalQ"
             type="number"
             min={1}
-            max={50}
-            value={newSectionCount}
-            onChange={(e) => setNewSectionCount(parseInt(e.target.value, 10) || 5)}
-            className="w-20"
+            max={500}
+            value={totalQuestions || ''}
+            onChange={(e) => setTotalQuestions(parseNonNegInt(e.target.value))}
           />
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={handleAddSection}
-            disabled={!newSectionType}
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
+        </div>
+        <div className="space-y-2">
+          <FieldLabel htmlFor="pass" label={t.questionPaper.passPercentage}>
+            <p>Pass mark as a percentage of total marks.</p>
+          </FieldLabel>
+          <Input
+            id="pass"
+            type="number"
+            min={1}
+            max={100}
+            value={passPercentage || ''}
+            onChange={(e) => setPassPercentage(parseNonNegInt(e.target.value) || 70)}
+          />
         </div>
       </div>
 
-      {/* ── Curriculum Objectives ── */}
       <div className="space-y-2">
-        <FieldLabel htmlFor="objectives" label="Curriculum Objectives (optional)">
-          <p>A list of learning goals this paper should cover — one per line.</p>
-          <p className="mt-1 text-muted-foreground">After generation, the AI checks which objectives are covered by the questions and flags any gaps. This helps a teacher spot what's missing before handing out the paper.</p>
-          <p className="mt-1 text-muted-foreground"><span className="font-medium text-foreground">Leave blank</span> if you don't have a syllabus — the AI will still generate good questions, just without the coverage report.</p>
-          <p className="mt-1 text-muted-foreground">
-            <span className="font-medium text-foreground">Example:</span><br />
-            • Understand what an NFO is<br />
-            • Explain the subscription process<br />
-            • Compare open-ended and close-ended funds
+        <FieldLabel label={t.questionPaper.chapterBlueprint}>
+          <p>Each cell is the number of questions for that chapter and cognitive difficulty. Row and column totals are computed automatically.</p>
+        </FieldLabel>
+        <div className="overflow-x-auto rounded-md border">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="p-2 text-left font-medium">{t.questionPaper.chapter}</th>
+                <th className="p-2 text-center font-medium">{t.questionPaper.easy}</th>
+                <th className="p-2 text-center font-medium">{t.questionPaper.medium}</th>
+                <th className="p-2 text-center font-medium">{t.questionPaper.difficult}</th>
+                <th className="p-2 text-center font-medium">{t.questionPaper.total}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.keys(chapterMatrix).map((chapter) => (
+                <tr key={chapter} className="border-t">
+                  <td className="p-2">{t.questionPaper.chapter} {chapter}</td>
+                  {DIFFICULTIES.map((d) => (
+                    <td key={d} className="p-1">
+                      <Input
+                        type="number"
+                        min={0}
+                        className="h-8 text-center"
+                        value={chapterMatrix[chapter][d] || ''}
+                        onChange={(e) => updateChapterCell(chapter, d, e.target.value)}
+                      />
+                    </td>
+                  ))}
+                  <td className="p-2 text-center font-medium">{sumCounts(chapterMatrix[chapter])}</td>
+                </tr>
+              ))}
+              <tr className={`border-t bg-muted/30 font-medium ${matrixMismatch ? 'text-destructive' : ''}`}>
+                <td className="p-2">{t.questionPaper.total}</td>
+                <td className="p-2 text-center">{difficultyTotals.easy}</td>
+                <td className="p-2 text-center">{difficultyTotals.medium}</td>
+                <td className="p-2 text-center">{difficultyTotals.difficult}</td>
+                <td className="p-2 text-center">{matrixTotal}{matrixMismatch ? ` / ${totalQuestions}` : ''}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        {matrixMismatch && (
+          <p className="text-xs text-destructive">
+            Chapter blueprint totals {matrixTotal} questions, but Total Questions is {totalQuestions}. Please adjust the chapter distribution or Total Questions.
           </p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <FieldLabel label={t.questionPaper.answerTypeBlueprint}>
+          <p>Single Correct vs Multiple Correct per difficulty. Totals must match the chapter matrix difficulty totals.</p>
+        </FieldLabel>
+        <div className="overflow-x-auto rounded-md border">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="p-2 text-left font-medium">{t.questionPaper.difficulty}</th>
+                <th className="p-2 text-center font-medium">{t.questionPaper.singleCorrect}</th>
+                <th className="p-2 text-center font-medium">{t.questionPaper.multipleCorrect}</th>
+                <th className="p-2 text-center font-medium">{t.questionPaper.total}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {DIFFICULTIES.map((d) => {
+                const rowTotal = (answerTypes[d]?.single_correct ?? 0) + (answerTypes[d]?.multiple_correct ?? 0)
+                const rowMismatch = rowTotal !== difficultyTotals[d]
+                return (
+                  <tr key={d} className={`border-t ${rowMismatch ? 'bg-destructive/5' : ''}`}>
+                    <td className="p-2 capitalize">{d}</td>
+                    <td className="p-1">
+                      <Input
+                        type="number"
+                        min={0}
+                        className="h-8 text-center"
+                        value={answerTypes[d]?.single_correct || ''}
+                        onChange={(e) => updateAnswerType(d, 'single_correct', e.target.value)}
+                      />
+                    </td>
+                    <td className="p-1">
+                      <Input
+                        type="number"
+                        min={0}
+                        className="h-8 text-center"
+                        value={answerTypes[d]?.multiple_correct || ''}
+                        onChange={(e) => updateAnswerType(d, 'multiple_correct', e.target.value)}
+                      />
+                    </td>
+                    <td className={`p-2 text-center ${rowMismatch ? 'text-destructive font-medium' : ''}`}>
+                      {rowTotal} / {difficultyTotals[d]}
+                    </td>
+                  </tr>
+                )
+              })}
+              <tr className="border-t bg-muted/30 font-medium">
+                <td className="p-2">{t.questionPaper.total}</td>
+                <td className="p-2 text-center">{answerTypeTotals.single}</td>
+                <td className="p-2 text-center">{answerTypeTotals.multiple}</td>
+                <td className={`p-2 text-center ${answerTypeTotals.single + answerTypeTotals.multiple !== totalQuestions ? 'text-destructive' : ''}`}>
+                  {answerTypeTotals.single + answerTypeTotals.multiple} / {totalQuestions}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        {answerTypeErrors.length > 0 && (
+          <div className="text-xs text-destructive space-y-0.5">
+            {answerTypeErrors.map((err, i) => (
+              <p key={i}>• {err}</p>
+            ))}
+          </div>
+        )}
+        <p className="text-xs text-muted-foreground">
+          {t.questionPaper.optionsFormatLocked}
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <FieldLabel htmlFor="objectives" label={t.questionPaper.objectives}>
+          <p>Optional learning goals — one per line — used for the coverage report after generation.</p>
         </FieldLabel>
         <Textarea
           id="objectives"
-          placeholder={"Understand what an NFO is\nExplain the subscription process\nCompare open-ended and close-ended funds"}
+          placeholder={t.questionPaper.objectivesPlaceholder}
           value={objectivesText}
           onChange={(e) => setObjectivesText(e.target.value)}
-          rows={4}
+          rows={3}
         />
       </div>
 
-      {/* ── Book / PDF upload ── */}
       <div className="space-y-2">
         <Separator />
-        <FieldLabel label="Book / PDF Source (optional)">
-          <p>Upload a book, PDF, or document if you want questions to come <span className="font-medium text-foreground">only from that material</span> — not from the AI's general knowledge.</p>
-          <p className="mt-1 text-muted-foreground">After upload, the AI detects chapters or sections inside the file. You can then pick which chapters to include — useful if you only want questions from Chapter 4 of a textbook, for example.</p>
-          <div className="mt-1 space-y-0.5 text-muted-foreground">
-            <p><span className="font-medium text-foreground">Supported:</span> PDF, EPUB, DOCX, TXT, Markdown</p>
-            <p><span className="font-medium text-foreground">Skip this</span> if you just want the AI to generate questions from its own knowledge about the topic.</p>
-          </div>
+        <FieldLabel label={t.questionPaper.bookSource}>
+          <p>Choose a saved book by Grade, Year, and Book. Upload a new book only when it is not already in the library.</p>
         </FieldLabel>
-
         <BookUploader
-          onBookReady={(id, chapters, bookTitle, chapterTitles) => {
+          grade={grade}
+          onBookReady={(id, chapters, bookTitle, chapterTitles, bookDetectedGrade) => {
             setBookId(id)
             setSelectedChapters(chapters)
-            // Auto-fill topic: use book title if all chapters, or first 2 chapter titles if subset
+            setSelectedChapterCount(chapterTitles.length)
+            setDetectedGrade(bookDetectedGrade ?? null)
             const derived = chapterTitles.length === 0
               ? bookTitle
               : chapterTitles.length <= 2
                 ? chapterTitles.join(' & ')
                 : bookTitle
             setAutoTopic(derived)
+            if (!subject) setSubject(derived)
           }}
           onClear={() => {
             setBookId(null)
             setSelectedChapters(null)
+            setSelectedChapterCount(0)
             setAutoTopic('')
+            setDetectedGrade(null)
           }}
         />
-
-        {bookId && (
-          <p className="text-xs text-primary font-medium">
-            ✓ Questions will be grounded in the uploaded book content
+        {!bookId && (
+          <p className="text-xs text-muted-foreground">{t.questionPaper.topicOnlyHint}</p>
+        )}
+        {bookId && chapterCountMismatch && (
+          <p className="text-xs text-destructive">
+            {t.questionPaper.chapterCountMismatch
+              .replace('{required}', String(requiredChapters))
+              .replace('{selected}', String(selectedChapterCount))}
           </p>
+        )}
+        {bookId && !chapterCountMismatch && (
+          <p className="text-xs text-primary font-medium">{t.questionPaper.bookGrounded}</p>
+        )}
+        {bookId && detectedGrade && grade.trim() && grade.trim() !== detectedGrade && (
+          <div className="flex items-start gap-2 rounded-md border border-yellow-300 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/20 p-2.5">
+            <Info className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mt-0.5 shrink-0" />
+            <p className="text-xs text-yellow-800 dark:text-yellow-300">
+              {t.questionPaper.gradeMismatchWarning
+                .replace('{selected}', grade.trim())
+                .replace('{detected}', detectedGrade)}
+            </p>
+          </div>
         )}
       </div>
 
       <Button
         type="submit"
         className="w-full"
-        disabled={isLoading || (!topic.trim() && !autoTopic) || Object.keys(sectionConfig).length === 0}
+        disabled={!canSubmit}
       >
-        {isLoading ? 'Generating...' : 'Generate Paper'}
+        {isLoading ? t.questionPaper.generating : t.questionPaper.generate}
       </Button>
     </form>
   )

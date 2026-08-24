@@ -142,3 +142,4 @@ specs/
 .harness/
 
 .mcp.json
+.env.g9bench

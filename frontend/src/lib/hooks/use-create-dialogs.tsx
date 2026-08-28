@@ -4,11 +4,13 @@ import { createContext, useContext, useState, useCallback, ReactNode } from 'rea
 import { AddSourceDialog } from '@/components/sources/AddSourceDialog'
 import { CreateNotebookDialog } from '@/components/notebooks/CreateNotebookDialog'
 import { GeneratePodcastDialog } from '@/components/podcasts/GeneratePodcastDialog'
+import { GenerateStudySetDialog } from '@/components/study/GenerateStudySetDialog'
 
 interface CreateDialogsContextType {
   openSourceDialog: () => void
   openNotebookDialog: () => void
   openPodcastDialog: () => void
+  openStudyDialog: () => void
 }
 
 const CreateDialogsContext = createContext<CreateDialogsContextType | null>(null)
@@ -17,10 +19,12 @@ export function CreateDialogsProvider({ children }: { children: ReactNode }) {
   const [sourceDialogOpen, setSourceDialogOpen] = useState(false)
   const [notebookDialogOpen, setNotebookDialogOpen] = useState(false)
   const [podcastDialogOpen, setPodcastDialogOpen] = useState(false)
+  const [studyDialogOpen, setStudyDialogOpen] = useState(false)
 
   const openSourceDialog = useCallback(() => setSourceDialogOpen(true), [])
   const openNotebookDialog = useCallback(() => setNotebookDialogOpen(true), [])
   const openPodcastDialog = useCallback(() => setPodcastDialogOpen(true), [])
+  const openStudyDialog = useCallback(() => setStudyDialogOpen(true), [])
 
   return (
     <CreateDialogsContext.Provider
@@ -28,12 +32,14 @@ export function CreateDialogsProvider({ children }: { children: ReactNode }) {
         openSourceDialog,
         openNotebookDialog,
         openPodcastDialog,
+        openStudyDialog,
       }}
     >
       {children}
       <AddSourceDialog open={sourceDialogOpen} onOpenChange={setSourceDialogOpen} />
       <CreateNotebookDialog open={notebookDialogOpen} onOpenChange={setNotebookDialogOpen} />
       <GeneratePodcastDialog open={podcastDialogOpen} onOpenChange={setPodcastDialogOpen} />
+      <GenerateStudySetDialog open={studyDialogOpen} onOpenChange={setStudyDialogOpen} />
     </CreateDialogsContext.Provider>
   )
 }

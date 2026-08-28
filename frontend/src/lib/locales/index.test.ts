@@ -155,6 +155,9 @@ describe('Unused Key Detection', () => {
         `Found ${unused.length} unused i18n key(s):\n${unused.join('\n')}`,
       ).toEqual([])
     },
-    30_000,
+    // Reads and greps every source file, so it's sensitive to corpus size and
+    // machine load; 30s was cutting it close even before this locale set grew,
+    // and reliably tips over when the full suite runs in parallel.
+    60_000,
   )
 })

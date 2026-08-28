@@ -70,28 +70,29 @@ export async function GET(request: NextRequest) {
     })
   }
 
-  // Priority 2: Auto-detect from request headers
+  // Priority 2: Auto-detect from request headers - but only for a bare IP
+  // literal (e.g. a LAN address). A named host (domain, tunnel hostname,
+  // "localhost") almost never has the API reachable on the same host at
+  // :5055 externally (reverse proxies/tunnels commonly expose only the
+  // frontend's port) - relative paths through this app's own /api rewrite
+  // (Priority 3 below) work in every case, local or remote, and avoid
+  // CORS/port-mapping complexity entirely, so they're preferred whenever
+  // we can't be sure a same-host :5055 is actually reachable.
   try {
-    // Get the protocol (http or https)
-    // Check X-Forwarded-Proto first (for reverse proxies), then fallback to request scheme.
-    // Only ever trust "http"/"https" - reject anything else a spoofed or
-    // misconfigured-proxy header might supply.
     const rawProto = request.headers.get('x-forwarded-proto') ||
                   request.nextUrl.protocol.replace(':', '') ||
                   'http'
     const proto = rawProto === 'https' ? 'https' : 'http'
 
-    // Get the host header (includes port if non-standard)
     const hostHeader = request.headers.get('host')
 
     if (hostHeader) {
-      // Extract just the hostname (remove port if present), bracket-aware
-      // for IPv6 literals.
       const hostname = extractHostname(hostHeader)
+      const isIpLiteral = hostname !== null && (
+        IPV6_LITERAL_PATTERN.test(hostname) || /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)
+      )
 
-      if (hostname && isValidHostname(hostname)) {
-        // hostname already carries brackets for IPv6 literals, so this
-        // yields e.g. http://[::1]:5055, not a mangled http://::1:5055
+      if (hostname && isIpLiteral && isValidHostname(hostname)) {
         const apiUrl = `${proto}://${hostname}:5055`
 
         console.log(`[runtime-config] Auto-detected API URL: ${apiUrl} (proto=${proto}, host=${hostHeader})`)
@@ -100,16 +101,16 @@ export async function GET(request: NextRequest) {
           apiUrl,
         })
       }
-
-      console.warn(`[runtime-config] Rejected malformed Host header, falling back to localhost: ${hostHeader}`)
     }
   } catch (error) {
     console.error('[runtime-config] Auto-detection failed:', error)
   }
 
-  // Priority 3: Fallback to localhost
-  console.log('[runtime-config] Using fallback: http://localhost:5055')
+  // Priority 3: Relative path - browser calls this app's own origin, and
+  // next.config.ts rewrites /api/* to INTERNAL_API_URL server-side. Works
+  // for localhost, LAN hostnames, and tunnels (ngrok, etc.) alike.
+  console.log('[runtime-config] Using relative path (proxied via this app\'s /api rewrite)')
   return NextResponse.json({
-    apiUrl: 'http://localhost:5055',
+    apiUrl: '',
   })
 }

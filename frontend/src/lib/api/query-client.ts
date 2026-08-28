@@ -35,4 +35,8 @@ export const QUERY_KEYS = {
   episodeProfiles: ['podcasts', 'episode-profiles'] as const,
   speakerProfiles: ['podcasts', 'speaker-profiles'] as const,
   languages: ['languages'] as const,
+  usageSummary: (period: 'month' | 'year') => ['usage', 'summary', period] as const,
+  studySetsForNotebook: (notebookId: string) => ['study', 'notebook', notebookId] as const,
+  studySet: (studySetId: string) => ['study', 'set', studySetId] as const,
+  studyJob: (jobId: string) => ['study', 'job', jobId] as const,
 }

@@ -6,6 +6,7 @@ import { useSettings } from '@/lib/hooks/use-settings'
 import { Button } from '@/components/ui/button'
 import { RefreshCw } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { CostMeterWidget } from '@/components/usage/CostMeterWidget'
 
 export default function SettingsPage() {
   const { t } = useTranslation()
@@ -21,6 +22,10 @@ export default function SettingsPage() {
               <Button variant="outline" size="sm" onClick={() => refetch()}>
                 <RefreshCw className="h-4 w-4" />
               </Button>
+            </div>
+
+            <div className="mb-6">
+              <CostMeterWidget />
             </div>
 
             <SettingsForm />

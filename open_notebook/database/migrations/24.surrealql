@@ -1,0 +1,17 @@
+-- Migration 24: LLM usage/cost tracking (#study-tools-usage)
+-- Instrumented centrally in provision_langchain_model() so every LLM call
+-- (chat, transformations, podcasts, study tools) is tracked automatically.
+
+DEFINE TABLE IF NOT EXISTS usage_event SCHEMAFULL;
+
+DEFINE FIELD IF NOT EXISTS provider ON TABLE usage_event TYPE string;
+DEFINE FIELD IF NOT EXISTS model_name ON TABLE usage_event TYPE string;
+DEFINE FIELD IF NOT EXISTS task_type ON TABLE usage_event TYPE string;
+DEFINE FIELD IF NOT EXISTS input_tokens ON TABLE usage_event TYPE int DEFAULT 0;
+DEFINE FIELD IF NOT EXISTS output_tokens ON TABLE usage_event TYPE int DEFAULT 0;
+DEFINE FIELD IF NOT EXISTS estimated_cost_usd ON TABLE usage_event TYPE float DEFAULT 0;
+DEFINE FIELD IF NOT EXISTS created ON TABLE usage_event TYPE datetime DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON TABLE usage_event TYPE datetime DEFAULT time::now() VALUE time::now();
+
+DEFINE INDEX IF NOT EXISTS idx_usage_event_created ON TABLE usage_event COLUMNS created CONCURRENTLY;
+DEFINE INDEX IF NOT EXISTS idx_usage_event_task_type ON TABLE usage_event COLUMNS task_type CONCURRENTLY;

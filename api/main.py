@@ -43,7 +43,9 @@ from api.routers import (
     source_chat,
     sources,
     speaker_profiles,
+    study,
     transformations,
+    usage,
 )
 from api.routers import commands as commands_router
 from open_notebook.database.async_migrate import AsyncMigrationManager
@@ -404,6 +406,8 @@ app.include_router(credentials.router, prefix="/api", tags=["credentials"])
 app.include_router(providers.router, prefix="/api", tags=["providers"])
 app.include_router(capabilities.router, prefix="/api", tags=["capabilities"])
 app.include_router(languages.router, prefix="/api", tags=["languages"])
+app.include_router(study.router, prefix="/api", tags=["study"])
+app.include_router(usage.router, prefix="/api", tags=["usage"])
 
 
 @app.get("/")

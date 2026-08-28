@@ -1,0 +1,3 @@
+-- Migration 25 rollback: remove Study Tools (flashcards + quiz)
+
+REMOVE TABLE IF EXISTS study_set;

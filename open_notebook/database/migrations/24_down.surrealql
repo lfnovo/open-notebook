@@ -1,0 +1,3 @@
+-- Migration 24 rollback: remove LLM usage/cost tracking
+
+REMOVE TABLE IF EXISTS usage_event;

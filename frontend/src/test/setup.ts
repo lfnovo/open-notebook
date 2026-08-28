@@ -61,5 +61,16 @@ vi.mock('@/lib/hooks/use-create-dialogs', () => ({
     openSourceDialog: vi.fn(),
     openNotebookDialog: vi.fn(),
     openPodcastDialog: vi.fn(),
+    openStudyDialog: vi.fn(),
+  })),
+}))
+
+// Mock @/lib/hooks/use-usage (CostMeterWidget, rendered in AppSidebar/Settings)
+// so components using it don't need a QueryClientProvider in unrelated tests.
+vi.mock('@/lib/hooks/use-usage', () => ({
+  useUsageSummary: vi.fn(() => ({
+    data: undefined,
+    isLoading: true,
+    isError: false,
   })),
 }))

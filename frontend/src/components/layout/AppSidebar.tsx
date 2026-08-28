@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
 import { LanguageToggle } from '@/components/common/LanguageToggle'
+import { CostMeterWidget } from '@/components/usage/CostMeterWidget'
 import type { TFunction } from 'i18next'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { Separator } from '@/components/ui/separator'
@@ -40,6 +41,7 @@ import {
   Plus,
   Wrench,
   Command,
+  GraduationCap,
 } from 'lucide-react'
 
 const getNavigation = (t: TFunction) => [
@@ -60,6 +62,7 @@ const getNavigation = (t: TFunction) => [
     title: t('navigation.create'),
     items: [
       { name: t('navigation.podcasts'), href: '/podcasts', icon: Mic, iconClass: 'text-mauve' },
+      { name: t('navigation.study'), href: '/study', icon: GraduationCap, iconClass: 'text-gold' },
     ],
   },
   {
@@ -84,7 +87,7 @@ function LogoPebbles({ className }: { className?: string }) {
   )
 }
 
-type CreateTarget = 'source' | 'notebook' | 'podcast'
+type CreateTarget = 'source' | 'notebook' | 'podcast' | 'study'
 
 export function AppSidebar() {
   const { t } = useTranslation()
@@ -92,7 +95,7 @@ export function AppSidebar() {
   const pathname = usePathname()
   const { logout } = useAuth()
   const { isCollapsed, toggleCollapse } = useSidebarStore()
-  const { openSourceDialog, openNotebookDialog, openPodcastDialog } = useCreateDialogs()
+  const { openSourceDialog, openNotebookDialog, openPodcastDialog, openStudyDialog } = useCreateDialogs()
 
   const [createMenuOpen, setCreateMenuOpen] = useState(false)
   const [isMac, setIsMac] = useState(true) // Default to Mac for SSR
@@ -111,6 +114,8 @@ export function AppSidebar() {
       openNotebookDialog()
     } else if (target === 'podcast') {
       openPodcastDialog()
+    } else if (target === 'study') {
+      openStudyDialog()
     }
   }
 
@@ -240,6 +245,16 @@ export function AppSidebar() {
                    <Mic className="h-4 w-4" />
                   {t('common.podcast')}
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={(event) => {
+                    event.preventDefault()
+                    handleCreateSelection('study')
+                  }}
+                  className="gap-2"
+                >
+                   <GraduationCap className="h-4 w-4" />
+                  {t('common.studySet')}
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -303,6 +318,13 @@ export function AppSidebar() {
             isCollapsed && 'px-2'
           )}
         >
+          {/* Cost meter: compact, links through to the full widget in Settings */}
+          {!isCollapsed && (
+            <Link href="/settings" className="block px-3 py-1.5 rounded-md hover:bg-sidebar-accent transition-colors">
+              <CostMeterWidget compact />
+            </Link>
+          )}
+
           {/* Command Palette hint */}
           {!isCollapsed && (
             <div className="px-3 py-1.5 text-xs text-sidebar-foreground/60">

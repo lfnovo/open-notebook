@@ -1,0 +1,20 @@
+-- Migration 25: Flashcards + Quiz generation ("Study Tools")
+-- Mirrors the episode/episode_profile shape from migration 7: a FLEXIBLE
+-- array field holds the generated items (flashcards: {front, back}; quiz:
+-- {question, options, correct_index, explanation}) since the two kinds don't
+-- share a schema, and `command` links back to the async generation job.
+
+DEFINE TABLE IF NOT EXISTS study_set SCHEMAFULL;
+
+DEFINE FIELD IF NOT EXISTS notebook ON TABLE study_set TYPE record<notebook>;
+DEFINE FIELD IF NOT EXISTS kind ON TABLE study_set TYPE string;
+DEFINE FIELD IF NOT EXISTS name ON TABLE study_set TYPE string;
+DEFINE FIELD IF NOT EXISTS content ON TABLE study_set TYPE string;
+DEFINE FIELD IF NOT EXISTS items ON TABLE study_set FLEXIBLE TYPE array<object>;
+DEFINE FIELD IF NOT EXISTS model_id ON TABLE study_set TYPE option<record<model>>;
+DEFINE FIELD IF NOT EXISTS command ON TABLE study_set TYPE option<record<command>>;
+DEFINE FIELD IF NOT EXISTS created ON TABLE study_set TYPE datetime DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON TABLE study_set TYPE datetime DEFAULT time::now() VALUE time::now();
+
+DEFINE INDEX IF NOT EXISTS idx_study_set_notebook ON TABLE study_set COLUMNS notebook CONCURRENTLY;
+DEFINE INDEX IF NOT EXISTS idx_study_set_command ON TABLE study_set COLUMNS command CONCURRENTLY;

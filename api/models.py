@@ -794,3 +794,82 @@ class NotebookDeleteResponse(BaseModel):
     deleted_chat_sessions: int = Field(
         ..., description="Number of chat sessions deleted"
     )
+
+
+# Usage tracking API models
+class UsageSummaryResponse(BaseModel):
+    """Aggregated LLM usage/cost for a period (GET /api/usage/summary)."""
+
+    total_cost_usd: float = Field(
+        ..., description="Total estimated cost in USD for the period"
+    )
+    budget_usd: float = Field(
+        ..., description="Configured budget in USD (STUDY_BUDGET_USD, default 10.0)"
+    )
+    by_task_type: Dict[str, float] = Field(
+        default_factory=dict,
+        description="Estimated cost in USD grouped by task_type (chat, transformation, ...)",
+    )
+    input_tokens: int = Field(..., description="Total input tokens for the period")
+    output_tokens: int = Field(..., description="Total output tokens for the period")
+
+
+# Study Tools API models (flashcards + quiz generation)
+class GenerateFlashcardsRequest(BaseModel):
+    notebook_id: str = Field(..., description="Notebook to generate flashcards from")
+    name: str = Field(..., description="Display name for the study set")
+    item_count: int = Field(
+        10, description="Target number of flashcards to generate", ge=1, le=50
+    )
+    model_id: Optional[str] = Field(
+        None,
+        description="Model ID to use (uses the default transformation model if not provided)",
+    )
+
+
+class GenerateQuizRequest(BaseModel):
+    notebook_id: str = Field(..., description="Notebook to generate a quiz from")
+    name: str = Field(..., description="Display name for the study set")
+    item_count: int = Field(
+        10, description="Target number of quiz questions to generate", ge=1, le=50
+    )
+    model_id: Optional[str] = Field(
+        None,
+        description="Model ID to use (uses the default transformation model if not provided)",
+    )
+
+
+class StudySetGenerationResponse(BaseModel):
+    """Response for POST /study/flashcards and POST /study/quiz."""
+
+    job_id: str
+    status: str
+    message: str
+    notebook_id: str
+    name: str
+
+
+class StudySetResponse(BaseModel):
+    id: str
+    notebook: str
+    kind: Literal["flashcards", "quiz"]
+    name: str
+    items: List[Dict[str, Any]]
+    model_id: Optional[str] = None
+    created: Optional[str] = None
+    updated: Optional[str] = None
+    job_status: Optional[str] = None
+    error_message: Optional[str] = None
+
+
+class StudySetListResponse(BaseModel):
+    id: str
+    notebook: str
+    kind: Literal["flashcards", "quiz"]
+    name: str
+    item_count: int
+    model_id: Optional[str] = None
+    created: Optional[str] = None
+    updated: Optional[str] = None
+    job_status: Optional[str] = None
+    error_message: Optional[str] = None

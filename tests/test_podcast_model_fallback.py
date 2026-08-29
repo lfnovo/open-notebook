@@ -11,9 +11,10 @@ each configured DefaultModels.large_context_fallback_models entry (resolved
 through the same _resolve_model_config() helper), in order, before giving
 up. A ValueError raised by podcast-creator's own config validation is a
 permanent failure by this repo's convention and must never trigger a
-fallback attempt - but pydantic.ValidationError (a ValueError subclass
-covering a model returning malformed/empty output) is treated as an
-ordinary retryable failure instead, since a different model may succeed.
+fallback attempt - but pydantic.ValidationError and LangChain's
+OutputParserException (both ValueError subclasses covering a model
+returning malformed, empty, or unparseable output) are treated as ordinary
+retryable failures instead, since a different model may well succeed.
 
 No database is available in tests: profile lookups, model resolution, and
 podcast-creator itself are all mocked. Covers:
@@ -23,8 +24,8 @@ podcast-creator itself are all mocked. Covers:
       fallback succeeds, episode completes using it
   (c) primary fails with a plain ValueError -> raises immediately, fallback
       never attempted even though one is configured
-  (d) primary fails with pydantic.ValidationError -> falls back normally,
-      like any other transient exception
+  (d) primary fails with pydantic.ValidationError or OutputParserException ->
+      falls back normally, like any other transient exception
   (e) primary AND all fallbacks fail -> raises a RuntimeError summarizing
       every attempt
 """
@@ -35,6 +36,7 @@ from typing import Dict, Tuple
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from langchain_core.exceptions import OutputParserException
 from pydantic import BaseModel, ValidationError
 
 from commands.podcast_commands import (
@@ -325,6 +327,34 @@ class TestValidationErrorFallsBack:
         message = str(exc_info.value)
         assert "primary overloaded" in message
         assert "fallback-model-a" in message
+
+
+class TestOutputParserExceptionFallsBack:
+    """Regression test for a second real failure hit live in the very same
+    session, same root cause: a model's outline response wasn't clean JSON,
+    and LangChain's JSON output parser raised OutputParserException
+    ("Invalid json output: ..."). langchain_core.exceptions.OutputParserException
+    is *also* a ValueError subclass (`class OutputParserException(ValueError,
+    LangChainException)`), so it needs the exact same carve-out as
+    pydantic.ValidationError above - a model producing unparseable output is
+    not a permanent config problem, and a different model may well succeed."""
+
+    @pytest.mark.asyncio
+    async def test_output_parser_exception_falls_back_and_succeeds(self):
+        create_podcast_mock = AsyncMock(
+            side_effect=[
+                OutputParserException('Invalid json output: {"segments": [}'),
+                fake_result(),
+            ]
+        )
+        with ExitStack() as stack:
+            common_patches(
+                stack, create_podcast_mock, fallback_ids=["model:fallback-a"]
+            )
+            output = await generate_podcast_command(make_input())
+
+        assert output.success is True
+        assert create_podcast_mock.await_count == 2
 
 
 class TestValueErrorNeverFallsBack:

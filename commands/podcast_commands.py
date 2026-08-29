@@ -3,6 +3,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from langchain_core.exceptions import OutputParserException
 from loguru import logger
 from pydantic import ValidationError
 from surreal_commands import CommandInput, CommandOutput, command
@@ -34,6 +35,16 @@ except ImportError as e:
 # without that risk; any extra configured fallbacks beyond this are logged
 # and skipped rather than silently ignored.
 MAX_PODCAST_FALLBACK_ATTEMPTS = 3
+
+# Exception types that are technically ValueError subclasses but represent
+# a model producing malformed/unparseable output rather than a permanent
+# config problem - see the long comment above the attempts loop below for
+# why these must NOT take the "permanent failure, never fall back" path.
+# Both were hit live: pydantic.ValidationError when a fallback model's
+# structured output failed schema validation, and OutputParserException
+# ("Invalid json output: ...") when a model's JSON response couldn't be
+# parsed at all.
+_TRANSIENT_MODEL_OUTPUT_ERRORS = (ValidationError, OutputParserException)
 
 
 def build_episode_output_dir(podcasts_folder: str = PODCASTS_FOLDER) -> tuple[str, Path]:
@@ -405,14 +416,17 @@ async def generate_podcast_command(
         # own config validation (bad speaker/episode profile, missing
         # briefing, etc. - see its config.py/episodes.py/speakers.py) is a
         # permanent failure no fallback model can fix, and propagates
-        # immediately. pydantic.ValidationError is technically also a
-        # ValueError subclass but means something different here: the
-        # outline/transcript model returned malformed or empty output
-        # (observed live - "Failed to parse ValidatedTranscript from
-        # completion null" - when a fallback model choked mid-overload) -
-        # that's exactly what the fallback chain exists to route around, so
-        # it takes the normal attempt/fallback path below instead of
-        # short-circuiting the whole job on one flaky response.
+        # immediately. _TRANSIENT_MODEL_OUTPUT_ERRORS are technically also
+        # ValueError subclasses but mean something different here: the
+        # outline/transcript model returned malformed, empty, or unparseable
+        # output (observed live - a pydantic.ValidationError from "Failed to
+        # parse ValidatedTranscript from completion null" when a fallback
+        # model choked mid-overload, and separately a LangChain
+        # OutputParserException's "Invalid json output: ..." from a model
+        # that didn't return clean JSON for the outline) - that's exactly
+        # what the fallback chain exists to route around, so these take the
+        # normal attempt/fallback path below instead of short-circuiting the
+        # whole job on one flaky response.
         # Any other exception also moves on to the next attempt; when every
         # attempt is exhausted the last error is raised (unchanged, single-
         # attempt propagation when no fallback is configured; a summarizing
@@ -458,7 +472,7 @@ async def generate_podcast_command(
                 )
                 break
             except ValueError as e:
-                if not isinstance(e, ValidationError):
+                if not isinstance(e, _TRANSIENT_MODEL_OUTPUT_ERRORS):
                     # Permanent failure - never retried with a fallback model.
                     raise
                 logger.warning(

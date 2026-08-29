@@ -131,6 +131,10 @@ MISTRAL_MODEL_TYPES = {
 GROQ_MODEL_TYPES = {
     "language": ["llama", "mixtral", "gemma", "whisper"],
     "speech_to_text": ["whisper"],
+    # Groq's TTS catalog (playai-tts, canopylabs/orpheus-*) has no other
+    # distinguishing pattern, so it must be named explicitly here or it falls
+    # through to the "language" default.
+    "text_to_speech": ["playai-tts", "orpheus"],
 }
 
 DEEPSEEK_MODEL_TYPES = {

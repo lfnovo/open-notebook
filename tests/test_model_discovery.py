@@ -359,6 +359,16 @@ class TestNewEsperantoProviders:
         assert classify_model_type("deepgram_aura_2", "ppq") == "text_to_speech"
         assert classify_model_type("auto", "ppq") == "language"
 
+    def test_groq_tts_classification_by_substring(self):
+        # Regression: Groq's TTS models (playai-tts, canopylabs/orpheus-*) had
+        # no matching pattern and fell through to the "language" default.
+        from open_notebook.ai.model_discovery import classify_model_type
+
+        assert classify_model_type("playai-tts", "groq") == "text_to_speech"
+        assert classify_model_type("canopylabs/orpheus-v1-english", "groq") == "text_to_speech"
+        assert classify_model_type("whisper-large-v3", "groq") == "speech_to_text"
+        assert classify_model_type("llama-3.3-70b", "groq") == "language"
+
     @pytest.mark.asyncio
     async def test_deepgram_discovery_includes_stt(self, monkeypatch):
         from open_notebook.ai.model_discovery import discover_deepgram_models

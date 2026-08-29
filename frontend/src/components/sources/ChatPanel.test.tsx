@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ChatPanel } from './ChatPanel'
 
@@ -22,8 +22,8 @@ describe('ChatPanel composer', () => {
 
   const getTextarea = () => screen.getByRole('textbox') as HTMLTextAreaElement
 
-  it('sends the typed message and clears the input on send-button click', () => {
-    const onSendMessage = vi.fn()
+  it('sends the typed message and clears the input on send-button click', async () => {
+    const onSendMessage = vi.fn().mockResolvedValue(true)
     render(
       <ChatPanel
         messages={[]}
@@ -43,14 +43,14 @@ describe('ChatPanel composer', () => {
 
     expect(onSendMessage).toHaveBeenCalledTimes(1)
     expect(onSendMessage).toHaveBeenCalledWith('hello world', undefined)
-    expect(textarea.value).toBe('')
+    await waitFor(() => expect(textarea.value).toBe(''))
   })
 
-  it('sends on Cmd+Enter on macOS', () => {
+  it('sends on Cmd+Enter on macOS', async () => {
     const uaSpy = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
       'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'
     )
-    const onSendMessage = vi.fn()
+    const onSendMessage = vi.fn().mockResolvedValue(true)
     render(
       <ChatPanel
         messages={[]}
@@ -65,15 +65,15 @@ describe('ChatPanel composer', () => {
     fireEvent.keyDown(textarea, { key: 'Enter', metaKey: true, ctrlKey: false })
 
     expect(onSendMessage).toHaveBeenCalledWith('via cmd', undefined)
-    expect(textarea.value).toBe('')
+    await waitFor(() => expect(textarea.value).toBe(''))
     uaSpy.mockRestore()
   })
 
-  it('sends on Ctrl+Enter on non-macOS', () => {
+  it('sends on Ctrl+Enter on non-macOS', async () => {
     const uaSpy = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
     )
-    const onSendMessage = vi.fn()
+    const onSendMessage = vi.fn().mockResolvedValue(true)
     render(
       <ChatPanel
         messages={[]}
@@ -88,8 +88,29 @@ describe('ChatPanel composer', () => {
     fireEvent.keyDown(textarea, { key: 'Enter', ctrlKey: true, metaKey: false })
 
     expect(onSendMessage).toHaveBeenCalledWith('via ctrl', undefined)
-    expect(textarea.value).toBe('')
+    await waitFor(() => expect(textarea.value).toBe(''))
     uaSpy.mockRestore()
+  })
+
+  it('keeps the drafted message in the composer when the send fails', async () => {
+    const onSendMessage = vi.fn().mockResolvedValue(false)
+    render(
+      <ChatPanel
+        messages={[]}
+        isStreaming={false}
+        contextIndicators={null}
+        onSendMessage={onSendMessage}
+      />
+    )
+
+    const textarea = getTextarea()
+    fireEvent.change(textarea, { target: { value: 'this will fail to send' } })
+    fireEvent.click(screen.getByTestId('chat-send-button'))
+
+    await waitFor(() => expect(onSendMessage).toHaveBeenCalledTimes(1))
+    // A failed send (e.g. a timeout on a huge source) must not wipe out the
+    // drafted message - the user shouldn't have to retype it to retry.
+    expect(textarea.value).toBe('this will fail to send')
   })
 
   it('does not send while streaming', () => {

@@ -198,7 +198,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       } catch (err: unknown) {
         const error = err as { response?: { data?: { detail?: string } }, message?: string };
         toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToCreateSession'))
-        return
+        return false
       }
     }
 
@@ -227,12 +227,14 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
 
       // Refetch current session to get updated data
       await refetchCurrentSession()
+      return true
     } catch (err: unknown) {
       const error = err as { response?: { data?: { detail?: string } }, message?: string };
       console.error('Error sending message:', error)
       toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToSendMessage'))
       // Remove optimistic message on error
       setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
+      return false
     } finally {
       setIsSending(false)
     }

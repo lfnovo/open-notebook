@@ -117,7 +117,7 @@ export function useSourceChat(sourceId: string) {
         const error = err as { response?: { data?: { detail?: string } }, message?: string };
         console.error('Failed to create chat session:', error)
         toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToCreateSession'))
-        return
+        return false
       }
     }
 
@@ -191,12 +191,14 @@ export function useSourceChat(sourceId: string) {
           }
         }
       }
+      return true
     } catch (err: unknown) {
       const error = err as { response?: { data?: { detail?: string } }, message?: string };
       console.error('Error sending message:', error)
       toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToSendMessage'))
       // Remove optimistic messages on error
       setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
+      return false
     } finally {
       setIsStreaming(false)
       // Refetch session to get persisted messages

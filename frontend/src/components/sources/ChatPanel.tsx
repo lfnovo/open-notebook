@@ -45,7 +45,10 @@ interface ChatPanelProps {
   messages: SourceChatMessage[]
   isStreaming: boolean
   contextIndicators: SourceChatContextIndicator | null
-  onSendMessage: (message: string, modelOverride?: string) => void
+  // Returning false signals the send failed - the composer restores the
+  // drafted text instead of clearing it, so a failed request never wipes
+  // out what the user typed.
+  onSendMessage: (message: string, modelOverride?: string) => Promise<boolean> | void
   modelOverride?: string
   onModelChange?: (model?: string) => void
   // Session management props
@@ -268,7 +271,7 @@ export function ChatPanel({
 // Composer owns the input state so keystrokes (including IME composition) only
 // re-render this small component instead of the whole message history.
 interface ChatComposerProps {
-  onSendMessage: (message: string, modelOverride?: string) => void
+  onSendMessage: (message: string, modelOverride?: string) => Promise<boolean> | void
   isStreaming: boolean
   modelOverride?: string
   onModelChange?: (model?: string) => void
@@ -356,10 +359,16 @@ function ChatComposer({
     ? selectedTemplate.fields.every((field) => !field.required || (fieldValues[field.key] ?? '').trim())
     : false
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (input.trim() && !isStreaming) {
-      onSendMessage(input.trim(), modelOverride)
-      setInput('')
+      const message = input.trim()
+      const result = await onSendMessage(message, modelOverride)
+      // Only clear the composer once the send actually succeeded - a failed
+      // request (e.g. a timeout on a huge source) must not wipe out what the
+      // user typed, since they'd otherwise have to retype it from scratch.
+      if (result !== false) {
+        setInput('')
+      }
     }
   }
 

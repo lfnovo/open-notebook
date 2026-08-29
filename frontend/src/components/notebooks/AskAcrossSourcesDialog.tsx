@@ -94,6 +94,13 @@ export function AskAcrossSourcesDialog({
     queryFn: () => commandsApi.getStatus<AskAcrossSourcesResult>(jobId as string),
     enabled: !!jobId,
     refetchInterval: (query) => (isStudyJobActive(query.state.data?.status) ? 3000 : false),
+    // TanStack Query pauses interval refetching while the tab isn't visible/
+    // focused by default - but this dialog's whole premise (long-running,
+    // several-source jobs) is that she can switch away and come back later
+    // instead of watching a spinner. Without this, polling silently stops
+    // the moment focus leaves the tab and never resumes, leaving the dialog
+    // stuck on "Trabajando..." even after the job (and note) is done.
+    refetchIntervalInBackground: true,
   })
 
   const jobStatusValue = jobStatus.data?.status

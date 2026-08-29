@@ -1,0 +1,3 @@
+-- Migration 26 rollback: remove the Google Drive connection singleton record.
+
+DELETE open_notebook:drive_connection;

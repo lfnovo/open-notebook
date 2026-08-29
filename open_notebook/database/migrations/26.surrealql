@@ -1,0 +1,16 @@
+-- Migration 26: Google Drive connection (OAuth) singleton record.
+-- One Drive account per app instance (single-user/couple app, not
+-- multi-tenant - see AGENTS.md). access_token/refresh_token are stored
+-- Fernet-encrypted by the DriveConnection domain model
+-- (open_notebook/domain/drive_connection.py), using the same encryption
+-- helper as AI provider credentials (open_notebook/utils/encryption.py).
+-- Lives in the shared `open_notebook` singleton-records table alongside
+-- default_models/content_settings/provider_configs (see migrations 1, 11).
+
+UPSERT open_notebook:drive_connection CONTENT {
+    access_token: NONE,
+    refresh_token: NONE,
+    token_expiry: NONE,
+    account_email: NONE,
+    connected_at: NONE
+};

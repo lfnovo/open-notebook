@@ -28,6 +28,7 @@ from api.routers import (
     chat,
     config,
     credentials,
+    drive,
     embedding,
     embedding_rebuild,
     episode_profiles,
@@ -246,6 +247,11 @@ app.add_middleware(
         "/redoc",
         "/api/auth/status",
         "/api/config",
+        # Google redirects the bare browser here with ?code=... - it cannot
+        # carry this app's Authorization bearer header. Safe to exclude: the
+        # one-time authorization code (scoped to our registered client_id +
+        # redirect_uri) is the real gate, not this app's password.
+        "/api/drive/callback",
     ],
 )
 
@@ -408,6 +414,7 @@ app.include_router(capabilities.router, prefix="/api", tags=["capabilities"])
 app.include_router(languages.router, prefix="/api", tags=["languages"])
 app.include_router(study.router, prefix="/api", tags=["study"])
 app.include_router(usage.router, prefix="/api", tags=["usage"])
+app.include_router(drive.router, prefix="/api", tags=["drive"])
 
 
 @app.get("/")

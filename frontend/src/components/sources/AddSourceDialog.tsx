@@ -14,10 +14,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { WizardContainer, WizardStep } from '@/components/ui/wizard-container'
 import { SourceTypeStep, parseAndValidateUrls } from './steps/SourceTypeStep'
 import { NotebooksStep } from './steps/NotebooksStep'
 import { ProcessingStep } from './steps/ProcessingStep'
+import { DriveImportPanel } from './DriveImportPanel'
 import { useNotebooks } from '@/lib/hooks/use-notebooks'
 import { useTransformations } from '@/lib/hooks/use-transformations'
 import { useCreateSource } from '@/lib/hooks/use-sources'
@@ -99,6 +101,7 @@ export function AddSourceDialog({
   ]
 
   // Simplified state management
+  const [mode, setMode] = useState<'wizard' | 'drive'>('wizard')
   const [currentStep, setCurrentStep] = useState(1)
   const [processing, setProcessing] = useState(false)
   const [processingStatus, setProcessingStatus] = useState<ProcessingState | null>(null)
@@ -430,6 +433,7 @@ export function AddSourceDialog({
     }
 
     reset()
+    setMode('wizard')
     setCurrentStep(1)
     setProcessing(false)
     setProcessingStatus(null)
@@ -538,10 +542,30 @@ export function AddSourceDialog({
         <DialogHeader className="px-6 pt-6 pb-0">
           <DialogTitle>{t('sources.addNew')}</DialogTitle>
           <DialogDescription>
-            {t('sources.processDescription')}
+            {mode === 'wizard' ? t('sources.processDescription') : t('drive.importDialogDesc')}
           </DialogDescription>
         </DialogHeader>
 
+        <div className="px-6 pt-4">
+          <Tabs value={mode} onValueChange={(value) => setMode(value as 'wizard' | 'drive')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="wizard">{t('sources.addNew')}</TabsTrigger>
+              <TabsTrigger value="drive">{t('drive.importFromDrive')}</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        {mode === 'drive' ? (
+          <div className="px-6 pb-6 pt-4">
+            <DriveImportPanel
+              notebooks={notebooks}
+              notebooksLoading={notebooksLoading}
+              defaultNotebookId={defaultNotebookId}
+              onImported={handleClose}
+              onCancel={handleClose}
+            />
+          </div>
+        ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="min-w-0">
           <WizardContainer
             currentStep={currentStep}
@@ -628,6 +652,7 @@ export function AddSourceDialog({
             </div>
           </div>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   )

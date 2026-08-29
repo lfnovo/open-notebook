@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { RefreshCw } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { CostMeterWidget } from '@/components/usage/CostMeterWidget'
+import { DriveConnectionCard } from '@/components/settings'
 
 export default function SettingsPage() {
   const { t } = useTranslation()
@@ -26,6 +27,10 @@ export default function SettingsPage() {
 
             <div className="mb-6">
               <CostMeterWidget />
+            </div>
+
+            <div className="mb-6">
+              <DriveConnectionCard />
             </div>
 
             <SettingsForm />

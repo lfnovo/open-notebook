@@ -39,4 +39,6 @@ export const QUERY_KEYS = {
   studySetsForNotebook: (notebookId: string) => ['study', 'notebook', notebookId] as const,
   studySet: (studySetId: string) => ['study', 'set', studySetId] as const,
   studyJob: (jobId: string) => ['study', 'job', jobId] as const,
+  driveStatus: ['drive', 'status'] as const,
+  driveFiles: (query: string, pageToken?: string) => ['drive', 'files', query, pageToken ?? ''] as const,
 }

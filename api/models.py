@@ -873,3 +873,53 @@ class StudySetListResponse(BaseModel):
     updated: Optional[str] = None
     job_status: Optional[str] = None
     error_message: Optional[str] = None
+
+
+# Google Drive integration API models
+class DriveAuthUrlResponse(BaseModel):
+    """Response for GET /drive/auth-url."""
+
+    auth_url: str = Field(
+        ..., description="Google OAuth consent URL to redirect the browser to"
+    )
+
+
+class DriveStatusResponse(BaseModel):
+    """Response for GET /drive/status."""
+
+    connected: bool = Field(..., description="Whether a Drive account is connected")
+    account_email: Optional[str] = Field(
+        None, description="Connected Google account email, for display"
+    )
+
+
+class DriveDisconnectResponse(BaseModel):
+    """Response for DELETE /drive/disconnect."""
+
+    message: str
+
+
+class DriveFileResponse(BaseModel):
+    """A single Drive file entry (metadata only)."""
+
+    id: str
+    name: str
+    mime_type: str
+    modified_time: Optional[str] = None
+    icon_link: Optional[str] = None
+
+
+class DriveFileListResponse(BaseModel):
+    """Response for GET /drive/files."""
+
+    files: List[DriveFileResponse]
+    next_page_token: Optional[str] = None
+
+
+class DriveImportRequest(BaseModel):
+    """Request body for POST /drive/import."""
+
+    file_id: str = Field(..., description="Google Drive file ID to import")
+    notebook_id: str = Field(
+        ..., description="Notebook ID to add the imported source to"
+    )

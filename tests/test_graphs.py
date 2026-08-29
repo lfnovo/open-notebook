@@ -322,6 +322,8 @@ class TestContentProcessDeleteSource:
         config = mock_extract.await_args.kwargs["config"]
         assert "de" in config.youtube_languages
         assert "ja" in config.youtube_languages
+        assert "zh-TW" in config.youtube_languages  # Added: Traditional Chinese
+        assert "zh-CN" in config.youtube_languages  # Added: Simplified Chinese
 
     @pytest.mark.asyncio
     @patch("open_notebook.graphs.source.extract_content")

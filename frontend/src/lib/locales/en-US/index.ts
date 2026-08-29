@@ -1192,6 +1192,24 @@ export const enUS = {
     goToSettings: "Go to Settings",
     viewDocs: "View docs",
   },
+  askSources: {
+    triggerLabel: "Ask across sources",
+    title: "Ask across several sources",
+    description: "Pick the sources to combine (whole books included) and ask one question - it runs in the background so it never times out, and the answer is saved as a note.",
+    selectSourcesLabel: "Sources to include",
+    noSources: "This notebook has no sources yet.",
+    questionLabel: "Your question",
+    questionPlaceholder: "What do these sources say about...?",
+    running: "Working on it...",
+    runningDesc: "This can take a bit longer with several large sources - the answer will be saved as a note when it's ready.",
+    failed: "Something went wrong generating the answer.",
+    submitBtn: "Ask",
+    completeTitle: "Answer saved",
+    completeDesc: "Check the Notes panel for the answer.",
+    questionRequired: "Write a question first",
+    selectAtLeastOne: "Select at least one source",
+    submitError: "Couldn't start the request",
+  },
 }
 
 // Compile-time shape of the en-US translations. Every other locale must

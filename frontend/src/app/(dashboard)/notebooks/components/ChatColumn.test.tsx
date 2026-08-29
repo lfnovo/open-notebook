@@ -10,6 +10,12 @@ vi.mock('@/lib/hooks/use-notebook-chat')
 vi.mock('@/components/sources/ChatPanel', () => ({
   ChatPanel: () => <div data-testid="chat-panel" />
 }))
+// AskAcrossSourcesDialog talks to react-query directly (useMutation/useQuery)
+// - out of scope for ChatColumn's own tests, which don't wrap a
+// QueryClientProvider. Mocked the same way ChatPanel is above.
+vi.mock('@/components/notebooks/AskAcrossSourcesDialog', () => ({
+  AskAcrossSourcesDialog: () => <div data-testid="ask-across-sources-dialog" />
+}))
 
 // Type-safe mock factory for useNotes hook
 function createNotesMock(overrides: { isLoading?: boolean } = {}) {

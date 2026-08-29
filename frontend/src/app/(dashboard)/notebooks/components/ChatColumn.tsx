@@ -1,12 +1,14 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { AlertCircle, Layers } from 'lucide-react'
 import { useNotebookChat } from '@/lib/hooks/use-notebook-chat'
 import { useNotes } from '@/lib/hooks/use-notes'
 import { ChatPanel } from '@/components/sources/ChatPanel'
+import { AskAcrossSourcesDialog } from '@/components/notebooks/AskAcrossSourcesDialog'
+import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Card, CardContent } from '@/components/ui/card'
-import { AlertCircle } from 'lucide-react'
 import { ContextSelections } from '../[id]/page'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { SourceListResponse } from '@/lib/types/api'
@@ -20,6 +22,7 @@ interface ChatColumnProps {
 
 export function ChatColumn({ notebookId, contextSelections, sources, sourcesLoading }: ChatColumnProps) {
   const { t } = useTranslation()
+  const [askSourcesOpen, setAskSourcesOpen] = useState(false)
 
   // Fetch notes for this notebook
   const { data: notes = [], isLoading: notesLoading } = useNotes(notebookId)
@@ -92,24 +95,42 @@ export function ChatColumn({ notebookId, contextSelections, sources, sourcesLoad
   }
 
   return (
-    <ChatPanel
-      title={t('chat.chatWithNotebook')}
-      contextType="notebook"
-      messages={chat.messages}
-      isStreaming={chat.isSending}
-      contextIndicators={null}
-      onSendMessage={(message, modelOverride) => chat.sendMessage(message, modelOverride)}
-      modelOverride={chat.currentSession?.model_override ?? chat.pendingModelOverride ?? undefined}
-      onModelChange={(model) => chat.setModelOverride(model ?? null)}
-      sessions={chat.sessions}
-      currentSessionId={chat.currentSessionId}
-      onCreateSession={(title) => chat.createSession(title)}
-      onSelectSession={chat.switchSession}
-      onUpdateSession={(sessionId, title) => chat.updateSession(sessionId, { title })}
-      onDeleteSession={chat.deleteSession}
-      loadingSessions={chat.loadingSessions}
-      notebookContextStats={contextStats}
-      notebookId={notebookId}
-    />
+    <>
+      <ChatPanel
+        title={t('chat.chatWithNotebook')}
+        contextType="notebook"
+        messages={chat.messages}
+        isStreaming={chat.isSending}
+        contextIndicators={null}
+        onSendMessage={(message, modelOverride) => chat.sendMessage(message, modelOverride)}
+        modelOverride={chat.currentSession?.model_override ?? chat.pendingModelOverride ?? undefined}
+        onModelChange={(model) => chat.setModelOverride(model ?? null)}
+        sessions={chat.sessions}
+        currentSessionId={chat.currentSessionId}
+        onCreateSession={(title) => chat.createSession(title)}
+        onSelectSession={chat.switchSession}
+        onUpdateSession={(sessionId, title) => chat.updateSession(sessionId, { title })}
+        onDeleteSession={chat.deleteSession}
+        loadingSessions={chat.loadingSessions}
+        notebookContextStats={contextStats}
+        notebookId={notebookId}
+        headerActions={
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-2 text-muted-foreground"
+            onClick={() => setAskSourcesOpen(true)}
+          >
+            <Layers className="h-4 w-4" />
+            <span className="text-xs">{t('askSources.triggerLabel')}</span>
+          </Button>
+        }
+      />
+      <AskAcrossSourcesDialog
+        open={askSourcesOpen}
+        onOpenChange={setAskSourcesOpen}
+        notebookId={notebookId}
+      />
+    </>
   )
 }

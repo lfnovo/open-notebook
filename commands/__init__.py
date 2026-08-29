@@ -8,6 +8,7 @@ from open_notebook.utils.proxy import ensure_internal_no_proxy
 
 ensure_internal_no_proxy()
 
+from .ask_sources_command import ask_across_sources_command
 from .embedding_commands import (
     embed_insight_command,
     embed_note_command,
@@ -30,4 +31,5 @@ __all__ = [
     # Study tools commands
     "generate_flashcards_command",
     "generate_quiz_command",
+    "ask_across_sources_command",
 ]

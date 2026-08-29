@@ -35,7 +35,7 @@ describe('AppSidebar', () => {
       expect(button?.className.split(/\s+/)).toContain('gap-2')
     }
 
-    expect(languageButton?.querySelector(':scope > svg')).not.toBeNull()
+    expect(themeButton?.querySelector(':scope > span.relative.size-4')).not.toBeNull()
     expect(signOutButton.className.split(/\s+/)).not.toContain('gap-3')
   })
 

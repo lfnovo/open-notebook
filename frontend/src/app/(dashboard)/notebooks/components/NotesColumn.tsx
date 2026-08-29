@@ -44,8 +44,8 @@ export function NotesColumn({
   onBulkContextModeChange
 }: NotesColumnProps) {
   const { t, language } = useTranslation()
-  const [showAddDialog, setShowAddDialog] = useState(false)
-  const [editingNote, setEditingNote] = useState<NoteResponse | null>(null)
+  const [editorOpen, setEditorOpen] = useState(false)
+  const [editingNote, setEditingNote] = useState<NoteResponse | undefined>()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null)
 
@@ -62,6 +62,11 @@ export function NotesColumn({
   const handleDeleteClick = (noteId: string) => {
     setNoteToDelete(noteId)
     setDeleteDialogOpen(true)
+  }
+
+  const handleOpenEditor = (note?: NoteResponse) => {
+    setEditingNote(note)
+    setEditorOpen(true)
   }
 
   const handleDeleteConfirm = async () => {
@@ -110,13 +115,7 @@ export function NotesColumn({
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    setEditingNote(null)
-                    setShowAddDialog(true)
-                  }}
-                >
+                <Button size="sm" onClick={() => handleOpenEditor()}>
                   <Plus className="h-4 w-4 mr-2" />
                   {t('common.writeNote')}
                 </Button>
@@ -142,7 +141,7 @@ export function NotesColumn({
                   <div
                     key={note.id}
                     className="p-3 border rounded-md bg-card shadow-none card-hover group relative cursor-pointer"
-                    onClick={() => setEditingNote(note)}
+                    onClick={() => handleOpenEditor(note)}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
@@ -221,17 +220,15 @@ export function NotesColumn({
       </CollapsibleColumn>
 
       <NoteEditorDialog
-        open={showAddDialog || Boolean(editingNote)}
+        open={editorOpen}
         onOpenChange={(open) => {
+          setEditorOpen(open)
           if (!open) {
-            setShowAddDialog(false)
-            setEditingNote(null)
-          } else {
-            setShowAddDialog(true)
+            setEditingNote(undefined)
           }
         }}
         notebookId={notebookId}
-        note={editingNote ?? undefined}
+        note={editingNote}
       />
 
       <ConfirmDialog

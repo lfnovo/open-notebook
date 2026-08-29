@@ -46,6 +46,12 @@ export function useStudyJobStatus(jobId: string | undefined) {
     queryFn: () => studyApi.getJobStatus(jobId as string),
     enabled: !!jobId,
     refetchInterval: (query) => (isStudyJobActive(query.state.data?.status) ? 3000 : false),
+    // TanStack Query pauses interval refetching once the tab isn't visible/
+    // focused by default. Generation can take long enough that a student
+    // switches tabs while waiting - without this, polling silently stops and
+    // GenerateStudySetDialog gets stuck even after the job finishes. Same fix
+    // as AskAcrossSourcesDialog's identical useQuery.
+    refetchIntervalInBackground: true,
   })
 }
 

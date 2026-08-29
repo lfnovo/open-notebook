@@ -67,6 +67,11 @@ export function StudySetCard({ studySet, notebookName, onDelete, deleting }: Stu
                 {t('study.failedLabel')}
               </Badge>
             ) : null}
+            {!isFailed && (studySet.due_count ?? 0) > 0 ? (
+              <Badge variant="outline" className="border-teal/40 text-teal">
+                {t('study.dueCount', { count: studySet.due_count })}
+              </Badge>
+            ) : null}
           </div>
           <p className="text-xs text-muted-foreground">
             {notebookName} • {t('study.itemsCount', { count: studySet.item_count })}

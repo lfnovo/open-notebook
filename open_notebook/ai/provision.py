@@ -1,12 +1,13 @@
-from typing import Any, Tuple
+from typing import Any, List, Tuple
 
 from esperanto import LanguageModel
 from langchain_core.callbacks.base import AsyncCallbackHandler
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.outputs import LLMResult
+from langchain_core.runnables import Runnable
 from loguru import logger
 
-from open_notebook.ai.models import model_manager
+from open_notebook.ai.models import ModelType, model_manager
 from open_notebook.ai.pricing import get_price_per_token
 from open_notebook.exceptions import ConfigurationError
 from open_notebook.utils import token_count
@@ -122,22 +123,33 @@ def _attach_usage_tracking(
 
 async def provision_langchain_model(
     content, model_id, default_type, **kwargs
-) -> BaseChatModel:
+) -> Runnable:
     """
     Returns the best model to use based on the context size and on whether there is a specific model being requested in Config.
     If context > 105_000, returns the large_context_model
     If model_id is specified in Config, returns that model
     Otherwise, returns the default model for the given type
+
+    When the resolved task type (large_context, or default_type otherwise)
+    has a fallback chain configured in Settings -> Models, the returned
+    Runnable is `primary.with_fallbacks(fallbacks)` (LangChain's native
+    failover primitive: on invocation error it retries with the next model
+    in the list, in order) instead of the bare primary model. With no
+    fallbacks configured - true for the large majority of existing
+    single-default-model setups - this returns exactly what it always did:
+    the bare primary BaseChatModel, unchanged behavior.
     """
     tokens = token_count(content)
     model = None
     selection_reason = ""
+    fallback_type = default_type
 
     if tokens > 105_000:
         selection_reason = f"large_context (content has {tokens} tokens)"
         logger.debug(
             f"Using large context model because the content has {tokens} tokens"
         )
+        fallback_type = "large_context"
         model = await model_manager.get_default_model("large_context", **kwargs)
     elif model_id:
         selection_reason = f"explicit model_id={model_id}"
@@ -175,4 +187,57 @@ async def provision_langchain_model(
     model_name = model.get_model_name()
 
     lc_model = model.to_langchain()
-    return _attach_usage_tracking(lc_model, provider, model_name, default_type)
+    lc_model = _attach_usage_tracking(lc_model, provider, model_name, default_type)
+
+    # Resolve the configured fallback chain for the resolved task type
+    # (large_context when the content was big enough to auto-upgrade,
+    # otherwise the default_type the caller asked for). Any failure here is
+    # logged and treated as "no fallbacks configured" - a broken fallback
+    # chain must never prevent the primary model from being returned.
+    fallback_models: List[ModelType] = []
+    try:
+        fallback_models = await model_manager.get_fallback_chain(
+            fallback_type,
+            primary_provider=provider,
+            primary_model_name=model_name,
+            **kwargs,
+        )
+    except Exception as e:
+        logger.warning(
+            f"Failed to resolve fallback chain for '{fallback_type}': {e}. "
+            f"Continuing with the primary model only."
+        )
+
+    if not fallback_models:
+        return lc_model
+
+    # Usage tracking is attached to each model in the chain individually,
+    # BEFORE combining them with with_fallbacks(), rather than to the
+    # combined RunnableWithFallbacks. with_fallbacks() tries the primary,
+    # and on failure invokes the next runnable in order - whichever
+    # runnable actually ends up serving the call fires its own bound
+    # callbacks as part of its own invocation, so this attributes
+    # cost/tokens to whichever model in the chain actually served the
+    # request, not just the primary's identity.
+    fallback_lc_models: List[BaseChatModel] = []
+    for fb_model in fallback_models:
+        if not isinstance(fb_model, LanguageModel):
+            logger.warning(
+                f"Skipping fallback for '{fallback_type}': "
+                f"{type(fb_model).__name__} is not a LanguageModel."
+            )
+            continue
+        fb_lc = fb_model.to_langchain()
+        fb_lc = _attach_usage_tracking(
+            fb_lc, fb_model.provider, fb_model.get_model_name(), default_type
+        )
+        fallback_lc_models.append(fb_lc)
+
+    if not fallback_lc_models:
+        return lc_model
+
+    logger.debug(
+        f"Wiring {len(fallback_lc_models)} fallback model(s) for '{fallback_type}' "
+        f"behind primary {provider}/{model_name}"
+    )
+    return lc_model.with_fallbacks(fallback_lc_models)

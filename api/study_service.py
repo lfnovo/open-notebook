@@ -5,6 +5,7 @@ from loguru import logger
 from surreal_commands import get_command_status, submit_command
 
 from open_notebook.domain.notebook import Notebook
+from open_notebook.exceptions import InvalidInputError
 from open_notebook.study.models import StudySet
 
 
@@ -133,6 +134,27 @@ class StudyService:
         except Exception as e:
             logger.error(f"Failed to get study set {study_set_id}: {e}")
             raise HTTPException(status_code=404, detail="Study set not found")
+
+    @staticmethod
+    async def review_flashcard(
+        study_set_id: str, item_index: int, rating: str
+    ) -> Dict[str, Any]:
+        """Record a self-graded recall outcome for one flashcard (retrieval
+        practice) and persist its next spaced-repetition due date."""
+        study_set = await StudyService.get_study_set(study_set_id)
+        try:
+            updated_item = await study_set.review_flashcard(item_index, rating)
+        except InvalidInputError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        except Exception as e:
+            logger.error(
+                f"Failed to review flashcard {study_set_id}[{item_index}]: {e}"
+            )
+            raise HTTPException(status_code=500, detail="Failed to record review")
+        return {
+            "item": updated_item,
+            "due_count": study_set.review_stats()["due_count"],
+        }
 
     @staticmethod
     async def delete_study_set(study_set_id: str) -> None:

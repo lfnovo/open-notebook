@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
+import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, Clock, MessageCircleQuestion } from 'lucide-react'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import {
   SourceChatMessage,
@@ -80,6 +80,18 @@ export function ChatPanel({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { openModal } = useModalManager()
 
+  // Self-explanation starter (see ChatComposer): clicking the suggestion
+  // below drops a pre-written prompt into the composer instead of sending it
+  // immediately, so the learner still writes the explanation themselves.
+  // `draftVersion` lets the same text be reused twice in a row and still
+  // trigger the composer's sync effect.
+  const [draftPrompt, setDraftPrompt] = useState('')
+  const [draftVersion, setDraftVersion] = useState(0)
+  const useSelfExplanationPrompt = useCallback(() => {
+    setDraftPrompt(t('chat.selfExplainPromptTemplate'))
+    setDraftVersion((v) => v + 1)
+  }, [t])
+
   // Stable reference-click handler so memoized messages don't re-render on
   // composer keystrokes (which no longer re-render this component at all, since
   // the input state lives in the ChatComposer child).
@@ -151,6 +163,18 @@ export function ChatPanel({
                   {t('chat.startConversation', { type: contextType === 'source' ? t('navigation.sources') : t('common.notebook') })}
                 </p>
                 <p className="text-xs mt-2">{t('chat.askQuestions')}</p>
+                <div className="mt-5 mx-auto max-w-sm rounded-lg border border-dashed p-3 text-left">
+                  <div className="flex items-start gap-2">
+                    <MessageCircleQuestion className="h-4 w-4 mt-0.5 shrink-0 text-teal" />
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-foreground">{t('chat.selfExplainTitle')}</p>
+                      <p className="text-xs text-muted-foreground">{t('chat.selfExplainDesc')}</p>
+                      <Button variant="outline" size="sm" className="mt-1" onClick={useSelfExplanationPrompt}>
+                        {t('chat.selfExplainButton')}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </div>
             ) : (
               messages.map((message) => (
@@ -221,6 +245,8 @@ export function ChatPanel({
           isStreaming={isStreaming}
           modelOverride={modelOverride}
           onModelChange={onModelChange}
+          draftPrompt={draftPrompt}
+          draftVersion={draftVersion}
         />
       </CardContent>
     </Card>
@@ -236,17 +262,32 @@ interface ChatComposerProps {
   isStreaming: boolean
   modelOverride?: string
   onModelChange?: (model?: string) => void
+  /** Set by ChatPanel's self-explanation suggestion. `draftVersion` bumps on
+   * every click (even reusing the same text) so the sync effect below fires
+   * each time, instead of keying off the text itself. */
+  draftPrompt?: string
+  draftVersion?: number
 }
 
 function ChatComposer({
   onSendMessage,
   isStreaming,
   modelOverride,
-  onModelChange
+  onModelChange,
+  draftPrompt,
+  draftVersion
 }: ChatComposerProps) {
   const { t } = useTranslation()
   const chatInputId = useId()
   const [input, setInput] = useState('')
+
+  useEffect(() => {
+    if (draftVersion) {
+      setInput(draftPrompt ?? '')
+    }
+    // Only react to a new draftVersion, not every draftPrompt/input change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftVersion])
 
   const handleSend = () => {
     if (input.trim() && !isStreaming) {
@@ -302,6 +343,7 @@ function ChatComposer({
           disabled={!input.trim() || isStreaming}
           size="icon"
           className="h-[40px] w-[40px] flex-shrink-0"
+          data-testid="chat-send-button"
         >
           {isStreaming ? (
             <Loader2 className="h-4 w-4 animate-spin" />

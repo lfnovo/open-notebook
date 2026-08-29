@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Union
 
 from loguru import logger
@@ -6,6 +7,7 @@ from surrealdb import RecordID
 
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel
+from open_notebook.exceptions import InvalidInputError
 
 # --- Structured-output schemas for the flashcards/quiz LLM calls -----------
 # Used with PydanticOutputParser in commands/study_commands.py, following the
@@ -31,6 +33,81 @@ class QuizQuestion(BaseModel):
 
 class QuizList(BaseModel):
     items: List[QuizQuestion] = Field(default_factory=list)
+
+
+# --- Spaced repetition (retrieval practice + distributed practice) ---------
+# Dunlosky et al. (2013) rank practice testing as high-utility on its own,
+# but the bigger win is *distributed* practice testing - repeating the same
+# retrieval over spaced-out sessions beats massing it in one sitting. This is
+# a deliberately lightweight SM-2-style scheme (day-granularity, no fuzz, no
+# per-deck tuning) - two people studying together, not a general SRS engine.
+# State lives inside each flashcard item dict (`items` is a FLEXIBLE
+# array<object> - see migration 25), so no schema/migration change is
+# needed: `ease`, `interval`, `reps`, `due`, `last_reviewed` are simply
+# absent on a freshly generated card, which naturally makes it "due" (new
+# cards are immediately eligible for their first review, same as Anki).
+
+SrsRating = Literal["again", "hard", "good", "easy"]
+
+_SRS_MIN_EASE = 1.3
+_SRS_DEFAULT_EASE = 2.5
+
+
+def score_flashcard_review(
+    item: Dict[str, Any], rating: str, now: Optional[datetime] = None
+) -> Dict[str, Any]:
+    """Compute the next SM-2-style review state for one flashcard item.
+
+    Returns a *new* dict (copy of `item`) with the review fields set/updated.
+    Does not persist - callers write it back into `StudySet.items[i]` and
+    save. `interval` is whole days; `due` is an ISO date (YYYY-MM-DD), so
+    "due" comparisons are plain string comparisons.
+    """
+    if rating not in ("again", "hard", "good", "easy"):
+        raise InvalidInputError(f"Unknown review rating: {rating}")
+
+    now = now or datetime.now(timezone.utc)
+    ease = float(item.get("ease") or _SRS_DEFAULT_EASE)
+    interval = int(item.get("interval") or 0)
+    reps = int(item.get("reps") or 0)
+
+    if rating == "again":
+        # Forgot it: restart the learning steps and resurface it today.
+        reps = 0
+        interval = 0
+        ease = max(_SRS_MIN_EASE, ease - 0.2)
+    elif rating == "hard":
+        ease = max(_SRS_MIN_EASE, ease - 0.15)
+        interval = max(1, round((interval or 1) * 1.2))
+        reps += 1
+    elif rating == "good":
+        if reps == 0:
+            interval = 1
+        elif reps == 1:
+            interval = 6
+        else:
+            interval = max(1, round(interval * ease))
+        reps += 1
+    else:  # easy
+        ease = ease + 0.15
+        if reps == 0:
+            interval = 3
+        elif reps == 1:
+            interval = 7
+        else:
+            interval = max(1, round(interval * ease * 1.3))
+        reps += 1
+
+    due_date = (now + timedelta(days=interval)).date().isoformat()
+    updated = dict(item)
+    updated.update(
+        ease=round(ease, 2),
+        interval=interval,
+        reps=reps,
+        due=due_date,
+        last_reviewed=now.isoformat(),
+    )
+    return updated
 
 
 # --- Domain model -----------------------------------------------------------
@@ -138,6 +215,43 @@ class StudySet(ObjectModel):
                 "error_message": row.get("error_message"),
             }
         return grouped
+
+    def review_stats(self, now: Optional[datetime] = None) -> Dict[str, Any]:
+        """Count items due for review now, and when the next one comes due.
+
+        Only flashcards carry spaced-repetition state (see
+        score_flashcard_review docstring) - quiz sets always report
+        due_count=0 rather than showing a misleading "due" badge for a kind
+        that has no review UI/endpoint.
+        """
+        if self.kind != "flashcards":
+            return {"due_count": 0, "next_due": None}
+
+        today = (now or datetime.now(timezone.utc)).date().isoformat()
+        due_count = 0
+        next_due: Optional[str] = None
+        for item in self.items:
+            due = item.get("due")
+            if not due or due <= today:
+                due_count += 1
+            elif next_due is None or due < next_due:
+                next_due = due
+        return {"due_count": due_count, "next_due": next_due}
+
+    async def review_flashcard(self, item_index: int, rating: str) -> Dict[str, Any]:
+        """Record a self-graded recall outcome for one flashcard and persist
+        its next due date (retrieval practice + spaced repetition)."""
+        if self.kind != "flashcards":
+            raise InvalidInputError(
+                "Only flashcard study sets support spaced-repetition review"
+            )
+        if item_index < 0 or item_index >= len(self.items):
+            raise InvalidInputError(f"Invalid item index: {item_index}")
+
+        updated_item = score_flashcard_review(self.items[item_index], rating)
+        self.items[item_index] = updated_item
+        await self.save()
+        return updated_item
 
     @classmethod
     async def get_for_notebook(cls, notebook_id: str) -> List["StudySet"]:

@@ -318,6 +318,13 @@ async def get_default_models():
             default_speech_to_text_model=defaults.default_speech_to_text_model,  # type: ignore[attr-defined]
             default_embedding_model=defaults.default_embedding_model,  # type: ignore[attr-defined]
             default_tools_model=defaults.default_tools_model,  # type: ignore[attr-defined]
+            chat_fallback_models=defaults.chat_fallback_models,  # type: ignore[attr-defined]
+            transformation_fallback_models=defaults.transformation_fallback_models,  # type: ignore[attr-defined]
+            large_context_fallback_models=defaults.large_context_fallback_models,  # type: ignore[attr-defined]
+            tools_fallback_models=defaults.tools_fallback_models,  # type: ignore[attr-defined]
+            embedding_fallback_models=defaults.embedding_fallback_models,  # type: ignore[attr-defined]
+            text_to_speech_fallback_models=defaults.text_to_speech_fallback_models,  # type: ignore[attr-defined]
+            speech_to_text_fallback_models=defaults.speech_to_text_fallback_models,  # type: ignore[attr-defined]
         )
     except HTTPException:
         raise
@@ -372,6 +379,13 @@ async def update_default_models(defaults_data: DefaultModelsResponse):
             default_speech_to_text_model=defaults.default_speech_to_text_model,  # type: ignore[attr-defined]
             default_embedding_model=defaults.default_embedding_model,  # type: ignore[attr-defined]
             default_tools_model=defaults.default_tools_model,  # type: ignore[attr-defined]
+            chat_fallback_models=defaults.chat_fallback_models,  # type: ignore[attr-defined]
+            transformation_fallback_models=defaults.transformation_fallback_models,  # type: ignore[attr-defined]
+            large_context_fallback_models=defaults.large_context_fallback_models,  # type: ignore[attr-defined]
+            tools_fallback_models=defaults.tools_fallback_models,  # type: ignore[attr-defined]
+            embedding_fallback_models=defaults.embedding_fallback_models,  # type: ignore[attr-defined]
+            text_to_speech_fallback_models=defaults.text_to_speech_fallback_models,  # type: ignore[attr-defined]
+            speech_to_text_fallback_models=defaults.speech_to_text_fallback_models,  # type: ignore[attr-defined]
         )
     except HTTPException:
         raise

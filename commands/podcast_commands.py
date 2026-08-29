@@ -218,21 +218,37 @@ async def generate_podcast_command(
         # Remove profiles that fail resolution to prevent validation errors.
         for sp_name in list(speaker_profiles_dict.keys()):
             sp_dict = speaker_profiles_dict[sp_name]
-            if sp_dict.get("voice_model"):
-                try:
-                    prov, model, conf = await _resolve_model_config(
-                        str(sp_dict["voice_model"])
-                    )
-                    sp_dict["tts_provider"] = prov
-                    sp_dict["tts_model"] = model
-                    sp_dict["tts_config"] = conf
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to resolve TTS for speaker profile '{sp_name}', "
-                        f"removing from config to prevent validation errors: {e}"
-                    )
-                    del speaker_profiles_dict[sp_name]
-                    continue
+            if not sp_dict.get("voice_model"):
+                # podcast-creator's SpeakerProfile requires tts_provider/
+                # tts_model with no default (unlike EpisodeProfile's
+                # outline/transcript fields, which have hardcoded defaults) -
+                # an unconfigured voice_model here is not a resolution
+                # *failure*, it was simply never set (default seed data), so
+                # there's nothing to try/except. Drop it the same way a
+                # failed resolution is dropped below, or podcast-creator's
+                # own SpeakerConfig validation crashes on this profile even
+                # though it's unrelated to the episode being generated.
+                logger.warning(
+                    f"Speaker profile '{sp_name}' has no voice model "
+                    "configured, removing from config to prevent validation "
+                    "errors"
+                )
+                del speaker_profiles_dict[sp_name]
+                continue
+            try:
+                prov, model, conf = await _resolve_model_config(
+                    str(sp_dict["voice_model"])
+                )
+                sp_dict["tts_provider"] = prov
+                sp_dict["tts_model"] = model
+                sp_dict["tts_config"] = conf
+            except Exception as e:
+                logger.warning(
+                    f"Failed to resolve TTS for speaker profile '{sp_name}', "
+                    f"removing from config to prevent validation errors: {e}"
+                )
+                del speaker_profiles_dict[sp_name]
+                continue
 
             # Per-speaker TTS overrides
             for speaker in sp_dict.get("speakers", []):

@@ -1,0 +1,21 @@
+-- Migration 27: Ordered fallback model chains per task type (automatic failover)
+-- Extends the default_models singleton record (schemaless `open_notebook`
+-- table, see migration 1) with an ordered list of fallback model IDs per
+-- task type. The existing default_*_model / large_context_model fields
+-- remain the primary/first entry for backward compatibility - these new
+-- fields are purely additive and default to an empty array, so existing
+-- single-default-model configurations (local and production) are completely
+-- unaffected until a fallback chain is explicitly configured in
+-- Settings -> Models. See open_notebook/ai/models.py (DefaultModels) and
+-- open_notebook/ai/provision.py (provision_langchain_model) for how these
+-- are resolved and wired into LangChain's Runnable.with_fallbacks().
+
+UPDATE open_notebook:default_models MERGE {
+    chat_fallback_models: [],
+    transformation_fallback_models: [],
+    large_context_fallback_models: [],
+    tools_fallback_models: [],
+    embedding_fallback_models: [],
+    text_to_speech_fallback_models: [],
+    speech_to_text_fallback_models: []
+};

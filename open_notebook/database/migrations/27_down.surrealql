@@ -1,0 +1,10 @@
+-- Migration 27 rollback: remove the fallback model chain fields.
+
+UPDATE open_notebook:default_models UNSET
+    chat_fallback_models,
+    transformation_fallback_models,
+    large_context_fallback_models,
+    tools_fallback_models,
+    embedding_fallback_models,
+    text_to_speech_fallback_models,
+    speech_to_text_fallback_models;

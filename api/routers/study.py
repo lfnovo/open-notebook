@@ -6,6 +6,8 @@ from loguru import logger
 from api.models import (
     GenerateFlashcardsRequest,
     GenerateQuizRequest,
+    ReviewFlashcardRequest,
+    ReviewFlashcardResponse,
     StudySetGenerationResponse,
     StudySetListResponse,
     StudySetResponse,
@@ -130,6 +132,7 @@ async def list_notebook_study_sets(notebook_id: str):
                     updated=str(study_set.updated) if study_set.updated else None,
                     job_status=job_status,
                     error_message=error_message,
+                    due_count=study_set.review_stats()["due_count"],
                 )
             )
 
@@ -173,6 +176,7 @@ async def get_study_set(study_set_id: str):
             updated=str(study_set.updated) if study_set.updated else None,
             job_status=job_status,
             error_message=error_message,
+            due_count=study_set.review_stats()["due_count"],
         )
 
     except HTTPException:
@@ -182,6 +186,38 @@ async def get_study_set(study_set_id: str):
     except Exception as e:
         logger.error(f"Error fetching study set: {str(e)}")
         raise HTTPException(status_code=404, detail="Study set not found")
+
+
+@router.post(
+    "/study/{study_set_id}/items/{item_index}/review",
+    response_model=ReviewFlashcardResponse,
+)
+async def review_flashcard_item(
+    study_set_id: str, item_index: int, request: ReviewFlashcardRequest
+):
+    """Record a self-graded recall outcome for one flashcard.
+
+    Drives the spaced-repetition schedule (distributed practice testing) -
+    see open_notebook/study/models.py::score_flashcard_review. Only valid
+    for flashcard study sets; quiz sets return 400.
+    """
+    try:
+        result = await StudyService.review_flashcard(
+            study_set_id, item_index, request.rating
+        )
+        return ReviewFlashcardResponse(
+            study_set_id=study_set_id,
+            item_index=item_index,
+            item=result["item"],
+            due_count=result["due_count"],
+        )
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
+    except Exception as e:
+        logger.error(f"Error reviewing flashcard: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to record review")
 
 
 @router.delete("/study/{study_set_id}")

@@ -20,6 +20,7 @@ Guidelines:
 
 {{ format_instructions }}
 
+- The root of the JSON response MUST be a single object with one key, "items", whose value is the array of flashcards - for example `{"items": [{"front": ..., "back": ...}, ...]}`. Do NOT return a bare JSON array `[{...}, {...}]` as the top-level response.
 - Do not include any text other than the JSON object.
 - Do not include ```json``` fences in the response.
 

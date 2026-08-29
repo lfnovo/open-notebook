@@ -1,6 +1,8 @@
 import apiClient from './client'
 import {
   GenerateStudySetRequest,
+  ReviewFlashcardResponse,
+  SrsRating,
   StudySet,
   StudySetGenerationResponse,
   StudySetListItem,
@@ -35,5 +37,13 @@ export const studyApi = {
 
   delete: async (studySetId: string) => {
     await apiClient.delete(`/study/${studySetId}`)
+  },
+
+  reviewFlashcard: async (studySetId: string, itemIndex: number, rating: SrsRating) => {
+    const response = await apiClient.post<ReviewFlashcardResponse>(
+      `/study/${studySetId}/items/${itemIndex}/review`,
+      { rating }
+    )
+    return response.data
   },
 }

@@ -26,7 +26,7 @@ interface FlatStudySet {
 export default function StudyPage() {
   const { t } = useTranslation()
   const [showGenerateDialog, setShowGenerateDialog] = useState(false)
-  const [filter, setFilter] = useState<'all' | StudyKind>('all')
+  const [filter, setFilter] = useState<'all' | StudyKind | 'due'>('all')
 
   const notebooksQuery = useNotebooks()
   const notebooks = useMemo(() => notebooksQuery.data ?? [], [notebooksQuery.data])
@@ -60,10 +60,16 @@ export default function StudyPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notebooks, studySetQueries.map((q) => q.dataUpdatedAt).join(',')])
 
-  const filteredStudySets = useMemo(
-    () => (filter === 'all' ? allStudySets : allStudySets.filter((s) => s.studySet.kind === filter)),
-    [allStudySets, filter]
+  const totalDue = useMemo(
+    () => allStudySets.reduce((sum, s) => sum + (s.studySet.due_count ?? 0), 0),
+    [allStudySets]
   )
+
+  const filteredStudySets = useMemo(() => {
+    if (filter === 'all') return allStudySets
+    if (filter === 'due') return allStudySets.filter((s) => (s.studySet.due_count ?? 0) > 0)
+    return allStudySets.filter((s) => s.studySet.kind === filter)
+  }, [allStudySets, filter])
 
   const handleRefresh = () => {
     notebooksQuery.refetch()
@@ -95,9 +101,20 @@ export default function StudyPage() {
           </header>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <Tabs value={filter} onValueChange={(value) => setFilter(value as 'all' | StudyKind)}>
+            <Tabs
+              value={filter}
+              onValueChange={(value) => setFilter(value as 'all' | StudyKind | 'due')}
+            >
               <TabsList>
                 <TabsTrigger value="all">{t('study.filterAll')}</TabsTrigger>
+                <TabsTrigger value="due">
+                  {t('study.filterDue')}
+                  {totalDue > 0 ? (
+                    <Badge variant="outline" className="ml-1.5 border-teal/40 text-teal">
+                      {totalDue}
+                    </Badge>
+                  ) : null}
+                </TabsTrigger>
                 <TabsTrigger value="flashcards">{t('study.kindFlashcards')}</TabsTrigger>
                 <TabsTrigger value="quiz">{t('study.kindQuiz')}</TabsTrigger>
               </TabsList>
@@ -126,6 +143,12 @@ export default function StudyPage() {
           {emptyState ? (
             <div className="rounded-md border border-dashed p-10 text-center">
               <p className="text-sm text-muted-foreground">{t('study.noSetsYetDesc')}</p>
+            </div>
+          ) : null}
+
+          {!emptyState && filter === 'due' && filteredStudySets.length === 0 ? (
+            <div className="rounded-md border border-dashed p-10 text-center">
+              <p className="text-sm text-muted-foreground">{t('study.allCaughtUp')}</p>
             </div>
           ) : null}
 

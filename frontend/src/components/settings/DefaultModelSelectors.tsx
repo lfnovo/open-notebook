@@ -10,9 +10,10 @@ import { Label } from '@/components/ui/label'
 import { Loader2, X, AlertCircle, Wand2 } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useUpdateModelDefaults, useAutoAssignDefaults } from '@/lib/hooks/use-models'
-import { Model, ModelDefaults } from '@/lib/types/models'
+import { FALLBACK_KEY_MAP, Model, ModelDefaults } from '@/lib/types/models'
 import { ModelType } from '@/lib/providers'
 import { EmbeddingModelChangeDialog } from './EmbeddingModelChangeDialog'
+import { FallbackChainEditor } from './FallbackChainEditor'
 
 interface DefaultConfig {
   key: keyof ModelDefaults
@@ -220,33 +221,66 @@ export function DefaultModelSelectors({
 
         {/* Primary models: Chat, Embedding, TTS, STT */}
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {primaryConfigs.map(config => (
-            <DefaultModelSelect
-              key={config.key}
-              config={config}
-              available={getModelsForType(config.modelType)}
-              currentValue={watch(config.key) || undefined}
-              onChange={handleChange}
-              chatModelName={chatModelName}
-            />
-          ))}
+          {primaryConfigs.map(config => {
+            const fallbackKey = FALLBACK_KEY_MAP[config.key]
+            const primaryValue = (watch(config.key) as string | undefined) || undefined
+            return (
+              <div key={config.key} className="space-y-1.5">
+                <DefaultModelSelect
+                  config={config}
+                  available={getModelsForType(config.modelType)}
+                  currentValue={primaryValue}
+                  onChange={handleChange}
+                  chatModelName={chatModelName}
+                />
+                {fallbackKey && (
+                  <FallbackChainEditor
+                    id={`${config.id}-fallback`}
+                    available={getModelsForType(config.modelType)}
+                    primaryModelId={primaryValue}
+                    fallbackIds={(watch(fallbackKey) as string[] | undefined) || []}
+                    onChange={ids => updateDefaults.mutate({ [fallbackKey]: ids })}
+                  />
+                )}
+              </div>
+            )
+          })}
         </div>
 
         {/* Advanced models: Transformation, Tools, Large Context */}
         <div className="border-t pt-3">
           <p className="text-xs text-muted-foreground mb-3">{t('navigation.advanced')}</p>
             <div className="grid gap-3 sm:grid-cols-3">
-              {advancedConfigs.map(config => (
-                <DefaultModelSelect
-                  key={config.key}
-                  config={config}
-                  available={getModelsForType(config.modelType)}
-                  currentValue={watch(config.key) || undefined}
-                  onChange={handleChange}
-                  showDescription
-                  chatModelName={chatModelName}
-                />
-              ))}
+              {advancedConfigs.map(config => {
+                const fallbackKey = FALLBACK_KEY_MAP[config.key]
+                const advancedValue = (watch(config.key) as string | undefined) || undefined
+                // Advanced slots fall back to the chat model when unset, so
+                // the fallback chain (which augments the *effective* primary)
+                // should key off that resolved value, not the raw field.
+                const effectivePrimary =
+                  advancedValue || (watch('default_chat_model') as string | undefined) || undefined
+                return (
+                  <div key={config.key} className="space-y-1.5">
+                    <DefaultModelSelect
+                      config={config}
+                      available={getModelsForType(config.modelType)}
+                      currentValue={advancedValue}
+                      onChange={handleChange}
+                      showDescription
+                      chatModelName={chatModelName}
+                    />
+                    {fallbackKey && (
+                      <FallbackChainEditor
+                        id={`${config.id}-fallback`}
+                        available={getModelsForType(config.modelType)}
+                        primaryModelId={effectivePrimary}
+                        fallbackIds={(watch(fallbackKey) as string[] | undefined) || []}
+                        onChange={ids => updateDefaults.mutate({ [fallbackKey]: ids })}
+                      />
+                    )}
+                  </div>
+                )
+              })}
             </div>
         </div>
       </CardContent>

@@ -36,7 +36,9 @@ describe('ChatPanel composer', () => {
     const textarea = getTextarea()
     fireEvent.change(textarea, { target: { value: '  hello world  ' } })
 
-    const sendButton = screen.getByRole('button')
+    // The empty-message-list state now also renders a "self-explanation"
+    // suggestion button, so the send button needs an unambiguous query.
+    const sendButton = screen.getByTestId('chat-send-button')
     fireEvent.click(sendButton)
 
     expect(onSendMessage).toHaveBeenCalledTimes(1)

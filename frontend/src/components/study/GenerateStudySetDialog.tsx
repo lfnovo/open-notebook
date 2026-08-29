@@ -205,6 +205,8 @@ export function GenerateStudySetDialog({
             )}
           </div>
 
+          <p className="text-xs text-muted-foreground">{t('study.interleavingHint')}</p>
+
           <div className="space-y-2">
             <Label htmlFor="study_name">{t('study.nameLabel')}</Label>
             <Input

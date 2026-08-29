@@ -1,5 +1,5 @@
 import os
-from typing import Any, ClassVar, Dict, Optional, Sequence, Union
+from typing import Any, ClassVar, Dict, List, Optional, Sequence, Union
 
 from esperanto import (
     AIFactory,
@@ -12,6 +12,7 @@ from loguru import logger
 from surrealdb import RecordID
 
 from open_notebook.ai.connection_tester import normalize_anthropic_compatible_base_url
+from open_notebook.ai.pricing import get_price_per_token
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel, RecordModel
 from open_notebook.exceptions import ConfigurationError
@@ -145,6 +146,22 @@ class DefaultModels(RecordModel):
     default_embedding_model: Optional[str] = None
     default_tools_model: Optional[str] = None
 
+    # Ordered fallback chains, one per task type. The default_*_model /
+    # large_context_model fields above stay the primary/first entry for full
+    # backward compatibility - these are purely additive and default to an
+    # empty list, so a config with no fallbacks configured (the vast
+    # majority, both local and production) behaves exactly as before. See
+    # ModelManager.get_fallback_chain() and
+    # open_notebook.ai.provision.provision_langchain_model() for how these
+    # are resolved and wired into LangChain's Runnable.with_fallbacks().
+    chat_fallback_models: List[str] = []
+    transformation_fallback_models: List[str] = []
+    large_context_fallback_models: List[str] = []
+    tools_fallback_models: List[str] = []
+    embedding_fallback_models: List[str] = []
+    text_to_speech_fallback_models: List[str] = []
+    speech_to_text_fallback_models: List[str] = []
+
     @classmethod
     async def get_instance(cls) -> "DefaultModels":
         """Always fetch fresh defaults from database (override parent caching behavior)"""
@@ -168,6 +185,42 @@ class DefaultModels(RecordModel):
         object.__setattr__(instance, "__dict__", {})
         super(RecordModel, instance).__init__(**data)
         return instance
+
+
+# Maps a provision_langchain_model()/get_default_model() `model_type` (also
+# used as the usage-tracking `task_type`) to the DefaultModels field holding
+# its ordered fallback chain. Only types that actually go through
+# provision_langchain_model() (language models) currently get real fallback
+# *behavior* wired up (see provision.py); embedding/tts/stt entries are
+# still resolved here for API/Settings-UI completeness even though nothing
+# consumes them yet.
+_FALLBACK_FIELD_BY_TYPE = {
+    "chat": "chat_fallback_models",
+    "transformation": "transformation_fallback_models",
+    "tools": "tools_fallback_models",
+    "large_context": "large_context_fallback_models",
+    "embedding": "embedding_fallback_models",
+    "text_to_speech": "text_to_speech_fallback_models",
+    "speech_to_text": "speech_to_text_fallback_models",
+}
+
+
+def _provider_and_name(model: "ModelType") -> tuple[Optional[str], Optional[str]]:
+    """(provider, model_name) for any Esperanto model type.
+
+    Esperanto's TextToSpeechModel is the one type without `.provider` /
+    `.get_model_name()` (it only exposes `.model_name`, no provider
+    attribute at all) - everything else (LanguageModel, EmbeddingModel,
+    SpeechToTextModel) has both. Centralized here so fallback-chain
+    resolution works uniformly across task types without hitting an
+    AttributeError on TTS.
+    """
+    provider = getattr(model, "provider", None)
+    if hasattr(model, "get_model_name"):
+        model_name = model.get_model_name()
+    else:
+        model_name = getattr(model, "model_name", None)
+    return provider, model_name
 
 
 class ModelManager:
@@ -371,6 +424,91 @@ class ModelManager:
                 f"Please go to Settings → Models and reconfigure the default model."
             )
             return None
+
+    async def get_fallback_chain(
+        self,
+        model_type: str,
+        primary_provider: Optional[str] = None,
+        primary_model_name: Optional[str] = None,
+        **kwargs,
+    ) -> List[ModelType]:
+        """Resolve the ordered fallback chain configured for a task type.
+
+        Returns already-instantiated Esperanto model objects (same shape as
+        get_model()/get_default_model()), ready for the caller to convert to
+        LangChain form and combine with the primary via with_fallbacks().
+
+        Skips, without breaking the rest of the chain:
+        - a fallback entry that resolves to the same (provider, model_name)
+          as the primary (never fall back to the model that just failed;
+          compared by provider+name rather than DB id since the caller only
+          has the already-instantiated Esperanto primary model in hand, not
+          its record id)
+        - any id that fails to resolve (deleted model, missing/broken
+          credential) - logged at WARNING and skipped
+        - paid models (non-zero OpenRouter pricing) once trailing spend is at
+          or over the configured budget (STUDY_BUDGET_USD). Free ($0) models
+          are never excluded by budget. The budget check runs at most once
+          per call (lazily, only once a paid candidate is actually seen).
+        """
+        field_name = _FALLBACK_FIELD_BY_TYPE.get(model_type)
+        if not field_name:
+            return []
+
+        defaults = await self.get_defaults()
+        fallback_ids = getattr(defaults, field_name, None) or []
+        if not fallback_ids:
+            return []
+
+        resolved: List[ModelType] = []
+        budget_ok: Optional[bool] = None
+
+        for fallback_id in fallback_ids:
+            if not fallback_id:
+                continue
+
+            try:
+                fb_model = await self.get_model(fallback_id, **kwargs)
+            except Exception as e:
+                logger.warning(
+                    f"Skipping fallback model {fallback_id} for '{model_type}': "
+                    f"could not resolve it ({e})"
+                )
+                continue
+
+            if fb_model is None:
+                continue
+
+            fb_provider, fb_model_name = _provider_and_name(fb_model)
+
+            if (
+                primary_provider is not None
+                and primary_model_name is not None
+                and fb_provider == primary_provider
+                and fb_model_name == primary_model_name
+            ):
+                continue
+
+            input_price, output_price = await get_price_per_token(
+                fb_provider or "", fb_model_name or ""
+            )
+            is_paid = input_price > 0 or output_price > 0
+
+            if is_paid:
+                if budget_ok is None:
+                    from open_notebook.domain.usage import UsageEvent
+
+                    budget_ok = await UsageEvent.is_within_budget()
+                if not budget_ok:
+                    logger.info(
+                        f"Skipping paid fallback model {fallback_id} for "
+                        f"'{model_type}': STUDY_BUDGET_USD exhausted"
+                    )
+                    continue
+
+            resolved.append(fb_model)
+
+        return resolved
 
 
 model_manager = ModelManager()

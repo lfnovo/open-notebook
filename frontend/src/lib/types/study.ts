@@ -19,9 +19,22 @@ export const ACTIVE_STUDY_JOB_STATUSES: StudyJobStatus[] = [
 
 export const FAILED_STUDY_JOB_STATUSES: StudyJobStatus[] = ['failed', 'error']
 
+/** Self-graded recall difficulty, same 4-way scale as well-known
+ * spaced-repetition tools (e.g. Anki). Drives the next due date - see
+ * api/models.py::ReviewFlashcardRequest / open_notebook/study/models.py::score_flashcard_review. */
+export type SrsRating = 'again' | 'hard' | 'good' | 'easy'
+
 export interface FlashcardItem {
   front: string
   back: string
+  /** Spaced-repetition state - absent until the card is reviewed for the
+   * first time (a card with no `due` is treated as immediately due, same as
+   * a "new" card in Anki). */
+  due?: string | null
+  interval?: number
+  reps?: number
+  ease?: number
+  last_reviewed?: string | null
 }
 
 export interface QuizItem {
@@ -43,6 +56,8 @@ export interface StudySet {
   updated?: string | null
   job_status?: StudyJobStatus | null
   error_message?: string | null
+  /** Flashcards due for spaced-repetition review right now (0 for quiz sets). */
+  due_count?: number
 }
 
 /** Matches api/models.py StudySetListResponse (GET /api/notebooks/{id}/study). */
@@ -57,6 +72,8 @@ export interface StudySetListItem {
   updated?: string | null
   job_status?: StudyJobStatus | null
   error_message?: string | null
+  /** Flashcards due for spaced-repetition review right now (0 for quiz sets). */
+  due_count?: number
 }
 
 export interface GenerateStudySetRequest {
@@ -84,6 +101,14 @@ export interface StudyJobStatusResponse {
   created?: string | null
   updated?: string | null
   progress?: unknown
+}
+
+/** Matches api/models.py ReviewFlashcardResponse (POST /study/{id}/items/{index}/review). */
+export interface ReviewFlashcardResponse {
+  study_set_id: string
+  item_index: number
+  item: FlashcardItem
+  due_count: number
 }
 
 export function isStudyJobActive(status?: string | null): boolean {

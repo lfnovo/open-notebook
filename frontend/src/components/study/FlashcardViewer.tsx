@@ -1,37 +1,121 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react'
 
-import { FlashcardItem } from '@/lib/types/study'
+import { FlashcardItem, SrsRating } from '@/lib/types/study'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { useReviewFlashcard } from '@/lib/hooks/use-study'
+import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
 interface FlashcardViewerProps {
   items: FlashcardItem[]
+  studySetId: string
+  notebookId?: string
 }
 
-export function FlashcardViewer({ items }: FlashcardViewerProps) {
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function isDue(item: FlashcardItem, today: string): boolean {
+  return !item.due || item.due <= today
+}
+
+/** Due cards first (in their original order), then upcoming cards soonest-due
+ * first. Retrieval practice works best distributed over time (Dunlosky et al.
+ * 2013) - surfacing what's actually due, instead of always starting at card
+ * 1, is what makes that spacing effect show up in practice. */
+function buildQueue(items: FlashcardItem[]): number[] {
+  const today = todayIso()
+  const due: number[] = []
+  const upcoming: number[] = []
+  items.forEach((item, index) => {
+    if (isDue(item, today)) {
+      due.push(index)
+    } else {
+      upcoming.push(index)
+    }
+  })
+  upcoming.sort((a, b) => (items[a].due ?? '') < (items[b].due ?? '') ? -1 : 1)
+  return [...due, ...upcoming]
+}
+
+const RATING_STYLES: Record<SrsRating, string> = {
+  again: 'border-destructive/40 text-destructive hover:bg-destructive-tint',
+  hard: 'border-gold/40 text-gold hover:bg-gold-tint',
+  good: 'border-fern/40 text-fern hover:bg-fern-tint',
+  easy: 'border-teal/40 text-teal hover:bg-teal-tint',
+}
+
+// Written as literal keys (not a template string) so the i18n unused-key
+// checker (src/lib/locales/index.test.ts, plain substring search) can find
+// them.
+const RATING_LABEL_KEY: Record<SrsRating, string> = {
+  again: 'study.rating.again',
+  hard: 'study.rating.hard',
+  good: 'study.rating.good',
+  easy: 'study.rating.easy',
+}
+
+export function FlashcardViewer({ items, studySetId, notebookId }: FlashcardViewerProps) {
   const { t } = useTranslation()
-  const [index, setIndex] = useState(0)
+  const [position, setPosition] = useState(0)
   const [flipped, setFlipped] = useState(false)
+  const reviewFlashcard = useReviewFlashcard(studySetId, notebookId)
+
+  // Built once per study set (not on every `items` update, which would
+  // reshuffle the deck under the user mid-session as reviews change due
+  // dates - see useReviewFlashcard's optimistic cache patch).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const queue = useMemo(() => buildQueue(items), [studySetId])
+
+  const dueCount = useMemo(() => {
+    const today = todayIso()
+    return items.filter((item) => isDue(item, today)).length
+  }, [items])
 
   if (items.length === 0) {
     return null
   }
 
-  const card = items[index]
+  const clampedPosition = Math.min(position, queue.length - 1)
+  const originalIndex = queue[clampedPosition]
+  const card = items[originalIndex]
+  const cardDue = isDue(card, todayIso())
 
-  const goTo = (nextIndex: number) => {
-    setIndex(Math.max(0, Math.min(items.length - 1, nextIndex)))
+  const goTo = (nextPosition: number) => {
+    setPosition(Math.max(0, Math.min(queue.length - 1, nextPosition)))
     setFlipped(false)
+  }
+
+  const handleRate = (rating: SrsRating) => {
+    reviewFlashcard.mutate({ itemIndex: originalIndex, rating })
+    if (clampedPosition < queue.length - 1) {
+      goTo(clampedPosition + 1)
+    } else {
+      setFlipped(false)
+    }
   }
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <p className="text-sm text-muted-foreground">
-        {t('study.cardProgress', { current: index + 1, total: items.length })}
-      </p>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <p className="text-sm text-muted-foreground">
+          {t('study.cardProgress', { current: clampedPosition + 1, total: queue.length })}
+        </p>
+        {dueCount > 0 ? (
+          <Badge variant="outline" className="border-teal/40 text-teal">
+            {t('study.dueCount', { count: dueCount })}
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="border-fern/40 text-fern">
+            {t('study.allCaughtUp')}
+          </Badge>
+        )}
+      </div>
 
       <div
         className="w-full max-w-xl [perspective:1200px]"
@@ -63,7 +147,12 @@ export function FlashcardViewer({ items }: FlashcardViewerProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={() => goTo(index - 1)} disabled={index === 0}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => goTo(clampedPosition - 1)}
+          disabled={clampedPosition === 0}
+        >
           <ChevronLeft className="h-4 w-4" />
           {t('study.previous')}
         </Button>
@@ -74,13 +163,36 @@ export function FlashcardViewer({ items }: FlashcardViewerProps) {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => goTo(index + 1)}
-          disabled={index === items.length - 1}
+          onClick={() => goTo(clampedPosition + 1)}
+          disabled={clampedPosition === queue.length - 1}
         >
           {t('common.next')}
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
+
+      {flipped ? (
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-xs text-muted-foreground">{t('study.reviewPrompt')}</p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {(['again', 'hard', 'good', 'easy'] as SrsRating[]).map((rating) => (
+              <Button
+                key={rating}
+                variant="outline"
+                size="sm"
+                disabled={reviewFlashcard.isPending}
+                onClick={() => handleRate(rating)}
+                className={cn(RATING_STYLES[rating])}
+              >
+                {t(RATING_LABEL_KEY[rating])}
+              </Button>
+            ))}
+          </div>
+          {!cardDue ? (
+            <p className="text-xs text-muted-foreground">{t('study.reviewAheadHint')}</p>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   )
 }

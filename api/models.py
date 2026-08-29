@@ -99,6 +99,18 @@ class DefaultModelsResponse(BaseModel):
     default_embedding_model: Optional[str] = None
     default_tools_model: Optional[str] = None
 
+    # Ordered fallback chains (automatic failover) - the primary field above
+    # stays the first entry; these are additional models tried in order when
+    # the primary fails (e.g. free-tier rate limit). See
+    # open_notebook.ai.provision.provision_langchain_model().
+    chat_fallback_models: List[str] = []
+    transformation_fallback_models: List[str] = []
+    large_context_fallback_models: List[str] = []
+    tools_fallback_models: List[str] = []
+    embedding_fallback_models: List[str] = []
+    text_to_speech_fallback_models: List[str] = []
+    speech_to_text_fallback_models: List[str] = []
+
 
 class ProviderAvailabilityResponse(BaseModel):
     available: List[str] = Field(..., description="List of available providers")
@@ -860,6 +872,9 @@ class StudySetResponse(BaseModel):
     updated: Optional[str] = None
     job_status: Optional[str] = None
     error_message: Optional[str] = None
+    due_count: int = Field(
+        0, description="Flashcards due for spaced-repetition review right now (0 for quiz sets)"
+    )
 
 
 class StudySetListResponse(BaseModel):
@@ -873,6 +888,29 @@ class StudySetListResponse(BaseModel):
     updated: Optional[str] = None
     job_status: Optional[str] = None
     error_message: Optional[str] = None
+    due_count: int = Field(
+        0, description="Flashcards due for spaced-repetition review right now (0 for quiz sets)"
+    )
+
+
+class ReviewFlashcardRequest(BaseModel):
+    """Body for POST /study/{study_set_id}/items/{item_index}/review.
+
+    Self-graded recall difficulty, same 4-way scale as well-known
+    spaced-repetition tools - drives the next due date (see
+    open_notebook/study/models.py::score_flashcard_review).
+    """
+
+    rating: Literal["again", "hard", "good", "easy"] = Field(
+        ..., description="How well the card was recalled just now"
+    )
+
+
+class ReviewFlashcardResponse(BaseModel):
+    study_set_id: str
+    item_index: int
+    item: Dict[str, Any] = Field(..., description="The flashcard item with updated SRS state")
+    due_count: int = Field(..., description="Remaining flashcards due in this set after this review")
 
 
 # Google Drive integration API models

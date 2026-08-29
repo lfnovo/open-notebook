@@ -1,3 +1,4 @@
+import json
 import time
 from typing import Optional, Type, Union
 
@@ -87,7 +88,31 @@ async def _generate_study_set(
         response = await chain.ainvoke(system_prompt)
         response_content = extract_text_content(response.content)
         cleaned_content = clean_thinking_content(response_content)
-        parsed = parser.parse(cleaned_content)
+
+        try:
+            parsed = parser.parse(cleaned_content)
+        except Exception as parse_error:
+            # Observed with nvidia/nemotron-3-super-120b-a12b:free on quiz
+            # generation: the model returns perfectly well-formed items but
+            # as a bare JSON array `[{...}, ...]` instead of the wrapped
+            # `{"items": [...]}` object PydanticOutputParser expects
+            # (intermittent format-following slip, not a systemic "can't do
+            # structured output" failure - flashcards succeeded with the
+            # same model in the same run). Detect exactly that shape and
+            # wrap it before validating; anything else (truncated JSON,
+            # prose, a dict missing "items", etc.) is a genuine malformed
+            # response and must still raise via the original parse_error.
+            try:
+                raw = json.loads(cleaned_content)
+            except (json.JSONDecodeError, TypeError):
+                raw = None
+            if not isinstance(raw, list):
+                raise parse_error
+            logger.warning(
+                f"{kind.capitalize()} model returned a bare JSON array "
+                'instead of {"items": [...]}; wrapping it before validation'
+            )
+            parsed = parser_model.model_validate({"items": raw})
 
         if not parsed.items:
             raise ValueError(

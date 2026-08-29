@@ -5,7 +5,14 @@ import { QUERY_KEYS } from '@/lib/api/query-client'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { getApiErrorKey } from '@/lib/utils/error-handler'
-import { GenerateStudySetRequest, isStudyJobActive, StudyKind } from '@/lib/types/study'
+import {
+  FlashcardItem,
+  GenerateStudySetRequest,
+  isStudyJobActive,
+  SrsRating,
+  StudyKind,
+  StudySet,
+} from '@/lib/types/study'
 
 export function useStudySetsForNotebook(notebookId: string | undefined) {
   const query = useQuery({
@@ -73,6 +80,42 @@ export function useGenerateFlashcards() {
 
 export function useGenerateQuiz() {
   return useGenerateStudySet('quiz')
+}
+
+/**
+ * Records a self-graded recall outcome for one flashcard (retrieval
+ * practice) and updates its spaced-repetition due date. Optimistically
+ * patches the cached study set so the viewer's due-count updates instantly;
+ * also invalidates the notebook's list query (scoped like
+ * useDeleteStudySet) so the /study list page's due badges stay in sync.
+ */
+export function useReviewFlashcard(studySetId: string, notebookId?: string) {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const { t } = useTranslation()
+
+  return useMutation({
+    mutationFn: ({ itemIndex, rating }: { itemIndex: number; rating: SrsRating }) =>
+      studyApi.reviewFlashcard(studySetId, itemIndex, rating),
+    onSuccess: (response) => {
+      queryClient.setQueryData<StudySet>(QUERY_KEYS.studySet(studySetId), (prev) => {
+        if (!prev) return prev
+        const items = [...(prev.items as FlashcardItem[])]
+        items[response.item_index] = response.item
+        return { ...prev, items, due_count: response.due_count }
+      })
+      if (notebookId) {
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.studySetsForNotebook(notebookId) })
+      }
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: t('study.reviewFailed'),
+        description: getApiErrorKey(error, t('common.error')),
+        variant: 'destructive',
+      })
+    },
+  })
 }
 
 /**

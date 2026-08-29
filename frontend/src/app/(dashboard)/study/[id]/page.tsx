@@ -124,7 +124,11 @@ export default function StudySetDetailPage() {
               </header>
 
               {studySet.kind === 'flashcards' ? (
-                <FlashcardViewer items={flashcards} />
+                <FlashcardViewer
+                  items={flashcards}
+                  studySetId={studySet.id}
+                  notebookId={studySet.notebook}
+                />
               ) : (
                 <QuizTaker items={quizItems} studySetName={studySet.name} />
               )}

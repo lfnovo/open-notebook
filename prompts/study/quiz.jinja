@@ -21,6 +21,7 @@ Guidelines:
 
 {{ format_instructions }}
 
+- The root of the JSON response MUST be a single object with one key, "items", whose value is the array of quiz questions - for example `{"items": [{"question": ..., "options": [...], "correct_index": ..., "explanation": ...}, ...]}`. Do NOT return a bare JSON array `[{...}, {...}]` as the top-level response.
 - Do not include any text other than the JSON object.
 - Do not include ```json``` fences in the response.
 

@@ -467,6 +467,63 @@ export const zhTW = {
     selfExplainDesc: "用自己的話解釋所學內容是最有效的學習方法之一——AI 會檢驗你的理解，並提出追問，而不是直接替你作答。",
     selfExplainButton: "開始自我解釋",
     selfExplainPromptTemplate: "我將用自己的話解釋這個主題。請指出我遺漏或說錯的地方，並向我提出諸如「為什麼」或「如何」之類的追問，而不是直接告訴我答案。以下是我的解釋：",
+    quickPrompts: {
+      triggerLabel: "快捷提示",
+      dialogTitle: "快捷提示",
+      dialogDescription: "選擇一個對話起點，填寫幾項內容，傳送前先檢查一下。",
+      backButton: "返回",
+      useButton: "使用此提示",
+      templates: {
+        interactiveQuiz: {
+          title: "互動測驗",
+          description: "逐題向你提問，並當場為每個回答評分，不會立即透露正確答案。",
+        },
+        examSimulation: {
+          title: "模擬考試",
+          description: "產生一整套包含多道題目的考試，並在你作答完成後進行批改。",
+        },
+        tutorPersona: {
+          title: "個人化導師",
+          description: "讓AI在整個對話中扮演你這門學科的導師。",
+        },
+        summaryContradictions: {
+          title: "摘要與矛盾點",
+          description: "總結此筆記本的來源內容，並指出其中是否存在矛盾之處。",
+        },
+      },
+      fields: {
+        topic: {
+          label: "主題",
+          placeholder: "例如：法國大革命——留空表示涵蓋全部內容",
+        },
+        questionCount: {
+          label: "題目數量",
+        },
+        questionType: {
+          label: "題目類型",
+        },
+        subject: {
+          label: "學科",
+          placeholder: "例如：細胞生物學、20世紀歷史……",
+        },
+        style: {
+          label: "風格",
+        },
+      },
+      options: {
+        count3: "3",
+        count5: "5",
+        count8: "8",
+        count10: "10",
+        count15: "15",
+        typeMultipleChoice: "選擇題",
+        typeOpenEnded: "簡答題",
+        typeMixed: "混合（選擇題與簡答題）",
+        styleFriendly: "耐心且富有激勵性",
+        styleStrict: "嚴格且要求高",
+        styleDirect: "直接且簡潔",
+      },
+    },
   },
   searchPage: {
     askAndSearch: "提問與搜尋",

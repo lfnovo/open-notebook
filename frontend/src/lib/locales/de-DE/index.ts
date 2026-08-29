@@ -470,6 +470,63 @@ export const deDE = {
     selfExplainDesc: "Den Stoff in eigenen Worten zu erklären ist eine der wirksamsten Lernmethoden — die KI prüft dein Verständnis und stellt Rückfragen, statt dir einfach die Antwort zu geben.",
     selfExplainButton: "Selbsterklärung starten",
     selfExplainPromptTemplate: "Ich werde dieses Thema mit eigenen Worten erklären. Weise mich auf Fehler oder Lücken hin und stelle mir Rückfragen wie \"warum\" oder \"wie\", statt mir einfach die Antwort zu geben. Hier ist meine Erklärung: ",
+    quickPrompts: {
+      triggerLabel: "Schnellprompts",
+      dialogTitle: "Schnellprompts",
+      dialogDescription: "Wähle einen Gesprächseinstieg, fülle ein paar Angaben aus und prüfe ihn, bevor du ihn sendest.",
+      backButton: "Zurück",
+      useButton: "Diesen Prompt verwenden",
+      templates: {
+        interactiveQuiz: {
+          title: "Interaktives Quiz",
+          description: "Stellt dir nacheinander Fragen und bewertet jede Antwort sofort, ohne dir die richtige Antwort direkt zu verraten.",
+        },
+        examSimulation: {
+          title: "Prüfungssimulation",
+          description: "Erstellt eine vollständige Prüfung mit mehreren Fragen und korrigiert sie, sobald du fertig bist.",
+        },
+        tutorPersona: {
+          title: "Persönlicher Tutor",
+          description: "Richtet die KI so ein, dass sie während des gesamten Gesprächs als dein Tutor für dieses Fach agiert.",
+        },
+        summaryContradictions: {
+          title: "Zusammenfassung & Widersprüche",
+          description: "Fasst die Quellen dieses Notebooks zusammen und weist auf Widersprüche zwischen ihnen hin.",
+        },
+      },
+      fields: {
+        topic: {
+          label: "Thema",
+          placeholder: "z. B. die Französische Revolution — leer lassen für den gesamten Inhalt",
+        },
+        questionCount: {
+          label: "Anzahl der Fragen",
+        },
+        questionType: {
+          label: "Fragetyp",
+        },
+        subject: {
+          label: "Fach",
+          placeholder: "z. B. Zellbiologie, Geschichte des 20. Jahrhunderts...",
+        },
+        style: {
+          label: "Stil",
+        },
+      },
+      options: {
+        count3: "3",
+        count5: "5",
+        count8: "8",
+        count10: "10",
+        count15: "15",
+        typeMultipleChoice: "Multiple Choice",
+        typeOpenEnded: "Freitextfragen",
+        typeMixed: "Gemischt (Multiple Choice und Freitext)",
+        styleFriendly: "Geduldig und motivierend",
+        styleStrict: "Streng und fordernd",
+        styleDirect: "Direkt und knapp",
+      },
+    },
   },
   searchPage: {
     askAndSearch: "Fragen und Suchen",

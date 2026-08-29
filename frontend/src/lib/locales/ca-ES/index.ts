@@ -467,6 +467,63 @@ export const caES = {
     selfExplainDesc: "Explicar el material amb les teves pròpies paraules és una de les maneres més efectives d'aprendre'l — la IA comprovarà la teva comprensió i et farà preguntes de seguiment en lloc de respondre per tu.",
     selfExplainButton: "Inicia l'autoexplicació",
     selfExplainPromptTemplate: "Explicaré aquest tema amb les meves pròpies paraules. Assenyala qualsevol error o omissió, i fes-me preguntes de seguiment tipus \"per què\" o \"com\" en lloc de donar-me la resposta directament. Aquí va la meva explicació: ",
+    quickPrompts: {
+      triggerLabel: "Prompts ràpids",
+      dialogTitle: "Prompts ràpids",
+      dialogDescription: "Tria un punt de partida per a la conversa, omple un parell de dades i revisa'l abans d'enviar-lo.",
+      backButton: "Enrere",
+      useButton: "Utilitza aquest prompt",
+      templates: {
+        interactiveQuiz: {
+          title: "Qüestionari interactiu",
+          description: "Et fa preguntes una per una i qualifica cada resposta a l'instant, sense revelar-te la resposta correcta de seguida.",
+        },
+        examSimulation: {
+          title: "Simulació d'examen",
+          description: "Genera un examen complet amb diverses preguntes i el corregeix quan acabis de respondre.",
+        },
+        tutorPersona: {
+          title: "Tutor personalitzat",
+          description: "Configura la IA perquè actuï com el teu tutor d'aquesta matèria durant tota la conversa.",
+        },
+        summaryContradictions: {
+          title: "Resum i contradiccions",
+          description: "Resumeix les fonts d'aquest notebook i assenyala si hi ha contradiccions entre elles.",
+        },
+      },
+      fields: {
+        topic: {
+          label: "Tema",
+          placeholder: "p. ex. la Revolució Francesa — deixa-ho buit per a tot el contingut",
+        },
+        questionCount: {
+          label: "Nombre de preguntes",
+        },
+        questionType: {
+          label: "Tipus de pregunta",
+        },
+        subject: {
+          label: "Matèria",
+          placeholder: "p. ex. Biologia cel·lular, Història del segle XX...",
+        },
+        style: {
+          label: "Estil",
+        },
+      },
+      options: {
+        count3: "3",
+        count5: "5",
+        count8: "8",
+        count10: "10",
+        count15: "15",
+        typeMultipleChoice: "Opció múltiple",
+        typeOpenEnded: "Preguntes de desenvolupament",
+        typeMixed: "Mixt (opció múltiple i desenvolupament)",
+        styleFriendly: "Pacient i motivador",
+        styleStrict: "Estricte i exigent",
+        styleDirect: "Directe i breu",
+      },
+    },
   },
   searchPage: {
     askAndSearch: "Pregunta i cerca",

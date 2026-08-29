@@ -467,6 +467,63 @@ export const trTR = {
     selfExplainDesc: "Konuyu kendi cümlelerinizle anlatmak, öğrenmenin en etkili yollarından biridir — yapay zeka anlayışınızı kontrol edecek ve doğrudan cevap vermek yerine size ek sorular soracaktır.",
     selfExplainButton: "Kendin anlatmaya başla",
     selfExplainPromptTemplate: "Bu konuyu kendi cümlelerimle anlatacağım. Yanlış ya da eksik bıraktığım bir şey varsa belirt, ve doğrudan cevabı vermek yerine bana \"neden\" ya da \"nasıl\" gibi ek sorular sor. İşte açıklamam: ",
+    quickPrompts: {
+      triggerLabel: "Hızlı komutlar",
+      dialogTitle: "Hızlı Komutlar",
+      dialogDescription: "Bir sohbet başlangıcı seç, birkaç ayrıntıyı doldur ve göndermeden önce gözden geçir.",
+      backButton: "Geri",
+      useButton: "Bu komutu kullan",
+      templates: {
+        interactiveQuiz: {
+          title: "Etkileşimli quiz",
+          description: "Sana sırayla sorular sorar ve doğru cevabı hemen açıklamadan her cevabı anında değerlendirir.",
+        },
+        examSimulation: {
+          title: "Sınav simülasyonu",
+          description: "Birden fazla soru içeren tam bir sınav oluşturur ve cevaplamayı bitirdiğinde onu değerlendirir.",
+        },
+        tutorPersona: {
+          title: "Kişiselleştirilmiş özel ders",
+          description: "Yapay zekayı, sohbet boyunca bu ders için senin özel öğretmenin gibi davranacak şekilde ayarlar.",
+        },
+        summaryContradictions: {
+          title: "Özet ve çelişkiler",
+          description: "Bu not defterindeki kaynakları özetler ve aralarındaki çelişkileri belirtir.",
+        },
+      },
+      fields: {
+        topic: {
+          label: "Konu",
+          placeholder: "örn. Fransız Devrimi — tüm içerik için boş bırak",
+        },
+        questionCount: {
+          label: "Soru sayısı",
+        },
+        questionType: {
+          label: "Soru türü",
+        },
+        subject: {
+          label: "Ders",
+          placeholder: "örn. Hücre biyolojisi, 20. yüzyıl tarihi...",
+        },
+        style: {
+          label: "Üslup",
+        },
+      },
+      options: {
+        count3: "3",
+        count5: "5",
+        count8: "8",
+        count10: "10",
+        count15: "15",
+        typeMultipleChoice: "Çoktan seçmeli",
+        typeOpenEnded: "Açık uçlu sorular",
+        typeMixed: "Karma (çoktan seçmeli ve açık uçlu)",
+        styleFriendly: "Sabırlı ve motive edici",
+        styleStrict: "Katı ve titiz",
+        styleDirect: "Doğrudan ve kısa",
+      },
+    },
   },
   searchPage: {
     askAndSearch: "Sor ve Ara",

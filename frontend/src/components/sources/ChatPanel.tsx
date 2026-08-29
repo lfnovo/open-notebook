@@ -1,13 +1,22 @@
 'use client'
 
-import { memo, useCallback, useState, useRef, useEffect, useId } from 'react'
+import { memo, useCallback, useState, useRef, useEffect, useId, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, Clock, MessageCircleQuestion } from 'lucide-react'
+import { Dialog, DialogContent, DialogTitle, DialogHeader, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, Clock, MessageCircleQuestion, ListChecks, ChevronLeft } from 'lucide-react'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import {
   SourceChatMessage,
@@ -22,6 +31,7 @@ import { convertReferencesToCompactMarkdown, createCompactReferenceLinkComponent
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { QUICK_PROMPTS, QuickPromptTemplate, buildQuickPrompt } from '@/lib/quick-prompts'
 
 interface NotebookContextStats {
   sourcesInsights: number
@@ -289,6 +299,63 @@ function ChatComposer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftVersion])
 
+  // Quick Prompts: a self-contained picker for the 4 conversational study
+  // templates (quiz, exam simulation, tutor persona, summary+contradictions).
+  // Lives entirely in this component — unlike the self-explanation suggestion
+  // above (which is in the parent ChatPanel and reaches in via draftPrompt),
+  // this one only ever needs to call this component's own `setInput`.
+  const [quickPromptsOpen, setQuickPromptsOpen] = useState(false)
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>({})
+
+  const selectedTemplate = useMemo(
+    () => QUICK_PROMPTS.find((template) => template.id === selectedTemplateId) ?? null,
+    [selectedTemplateId]
+  )
+
+  const resetQuickPrompts = () => {
+    setSelectedTemplateId(null)
+    setFieldValues({})
+  }
+
+  const handleQuickPromptsOpenChange = (open: boolean) => {
+    setQuickPromptsOpen(open)
+    if (!open) {
+      resetQuickPrompts()
+    }
+  }
+
+  const handleSelectTemplate = (template: QuickPromptTemplate) => {
+    if (template.fields.length === 0) {
+      setInput(buildQuickPrompt(template, {}))
+      setQuickPromptsOpen(false)
+      resetQuickPrompts()
+      return
+    }
+    setSelectedTemplateId(template.id)
+    const initialValues: Record<string, string> = {}
+    for (const field of template.fields) {
+      // Text fields start empty so their placeholder (e.g. "leave blank for
+      // all content") stays visible and the default-fallback in
+      // buildQuickPrompt actually gets exercised. Select fields need a
+      // concrete value pre-selected since there's no blank/placeholder state
+      // for a dropdown.
+      initialValues[field.key] = field.type === 'select' ? field.defaultValue ?? '' : ''
+    }
+    setFieldValues(initialValues)
+  }
+
+  const handleConfirmTemplate = () => {
+    if (!selectedTemplate) return
+    setInput(buildQuickPrompt(selectedTemplate, fieldValues))
+    setQuickPromptsOpen(false)
+    resetQuickPrompts()
+  }
+
+  const canConfirmTemplate = selectedTemplate
+    ? selectedTemplate.fields.every((field) => !field.required || (fieldValues[field.key] ?? '').trim())
+    : false
+
   const handleSend = () => {
     if (input.trim() && !isStreaming) {
       onSendMessage(input.trim(), modelOverride)
@@ -313,17 +380,121 @@ function ChatComposer({
 
   return (
     <div className="flex-shrink-0 p-4 space-y-3 border-t">
-      {/* Model selector */}
-      {onModelChange && (
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">{t('chat.model')}</span>
-          <ModelSelector
-            currentModel={modelOverride}
-            onModelChange={onModelChange}
+      {/* Toolbar: Quick Prompts trigger (left) + model selector (right) */}
+      <div className="flex items-center justify-between gap-2">
+        <Dialog open={quickPromptsOpen} onOpenChange={handleQuickPromptsOpenChange}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-2 text-muted-foreground"
+            onClick={() => setQuickPromptsOpen(true)}
             disabled={isStreaming}
-          />
-        </div>
-      )}
+          >
+            <ListChecks className="h-4 w-4" />
+            <span className="text-xs">{t('chat.quickPrompts.triggerLabel')}</span>
+          </Button>
+          <DialogContent className="sm:max-w-[480px] max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <ListChecks className="h-5 w-5" />
+                {t('chat.quickPrompts.dialogTitle')}
+              </DialogTitle>
+              <DialogDescription>{t('chat.quickPrompts.dialogDescription')}</DialogDescription>
+            </DialogHeader>
+
+            {!selectedTemplate ? (
+              <div className="grid gap-2 py-2">
+                {QUICK_PROMPTS.map((template) => (
+                  <button
+                    key={template.id}
+                    type="button"
+                    onClick={() => handleSelectTemplate(template)}
+                    className="text-left rounded-lg border p-3 hover:bg-accent hover:text-accent-foreground transition-colors"
+                  >
+                    <p className="text-sm font-medium">{t(template.titleKey)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t(template.descriptionKey)}</p>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-4 py-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1 -ml-2 text-muted-foreground"
+                  onClick={resetQuickPrompts}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  {t('chat.quickPrompts.backButton')}
+                </Button>
+                <div>
+                  <p className="text-sm font-medium">{t(selectedTemplate.titleKey)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t(selectedTemplate.descriptionKey)}</p>
+                </div>
+                <div className="grid gap-3">
+                  {selectedTemplate.fields.map((field) => {
+                    const fieldId = `${chatInputId}-qp-${field.key}`
+                    return (
+                      <div key={field.key} className="grid gap-1.5">
+                        <Label htmlFor={fieldId}>
+                          {t(field.labelKey)}
+                          {field.required && <span className="text-destructive"> *</span>}
+                        </Label>
+                        {field.type === 'text' ? (
+                          <Input
+                            id={fieldId}
+                            value={fieldValues[field.key] ?? ''}
+                            onChange={(e) =>
+                              setFieldValues((prev) => ({ ...prev, [field.key]: e.target.value }))
+                            }
+                            placeholder={field.placeholderKey ? t(field.placeholderKey) : undefined}
+                          />
+                        ) : (
+                          <Select
+                            value={fieldValues[field.key] ?? field.defaultValue ?? ''}
+                            onValueChange={(value) =>
+                              setFieldValues((prev) => ({ ...prev, [field.key]: value }))
+                            }
+                          >
+                            <SelectTrigger id={fieldId} className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {field.options?.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {t(option.labelKey)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+                <DialogFooter>
+                  <Button type="button" onClick={handleConfirmTemplate} disabled={!canConfirmTemplate}>
+                    {t('chat.quickPrompts.useButton')}
+                  </Button>
+                </DialogFooter>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {onModelChange && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{t('chat.model')}</span>
+            <ModelSelector
+              currentModel={modelOverride}
+              onModelChange={onModelChange}
+              disabled={isStreaming}
+            />
+          </div>
+        )}
+      </div>
 
       <div className="flex gap-2 items-end min-w-0">
         <Textarea

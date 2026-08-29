@@ -467,6 +467,63 @@ export const ptBR = {
     selfExplainDesc: "Explicar o conteúdo com suas próprias palavras é uma das formas mais eficazes de aprendê-lo — a IA vai verificar seu entendimento e fazer perguntas de acompanhamento em vez de apenas responder por você.",
     selfExplainButton: "Iniciar autoexplicação",
     selfExplainPromptTemplate: "Vou explicar este assunto com minhas próprias palavras. Aponte qualquer erro ou lacuna, e me faça perguntas de acompanhamento do tipo \"por quê\" ou \"como\" em vez de simplesmente me dar a resposta. Aqui está minha explicação: ",
+    quickPrompts: {
+      triggerLabel: "Prompts rápidos",
+      dialogTitle: "Prompts rápidos",
+      dialogDescription: "Escolha um ponto de partida para a conversa, preencha alguns detalhes e revise antes de enviar.",
+      backButton: "Voltar",
+      useButton: "Usar este prompt",
+      templates: {
+        interactiveQuiz: {
+          title: "Quiz interativo",
+          description: "Faz perguntas uma de cada vez e avalia cada resposta na hora, sem revelar a resposta correta imediatamente.",
+        },
+        examSimulation: {
+          title: "Simulação de prova",
+          description: "Gera uma prova completa com várias questões e a corrige quando você terminar de responder.",
+        },
+        tutorPersona: {
+          title: "Tutor personalizado",
+          description: "Configura a IA para agir como seu tutor dessa matéria durante toda a conversa.",
+        },
+        summaryContradictions: {
+          title: "Resumo e contradições",
+          description: "Resume as fontes deste notebook e aponta se há contradições entre elas.",
+        },
+      },
+      fields: {
+        topic: {
+          label: "Tema",
+          placeholder: "ex. a Revolução Francesa — deixe em branco para todo o conteúdo",
+        },
+        questionCount: {
+          label: "Número de perguntas",
+        },
+        questionType: {
+          label: "Tipo de pergunta",
+        },
+        subject: {
+          label: "Matéria",
+          placeholder: "ex. Biologia celular, História do século XX...",
+        },
+        style: {
+          label: "Estilo",
+        },
+      },
+      options: {
+        count3: "3",
+        count5: "5",
+        count8: "8",
+        count10: "10",
+        count15: "15",
+        typeMultipleChoice: "Múltipla escolha",
+        typeOpenEnded: "Questões dissertativas",
+        typeMixed: "Misto (múltipla escolha e dissertativa)",
+        styleFriendly: "Paciente e motivador",
+        styleStrict: "Rígido e exigente",
+        styleDirect: "Direto e breve",
+      },
+    },
   },
   searchPage: {
     askAndSearch: "Perguntar e Buscar",

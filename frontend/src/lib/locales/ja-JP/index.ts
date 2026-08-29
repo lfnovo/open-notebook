@@ -467,6 +467,63 @@ export const jaJP = {
     selfExplainDesc: "内容を自分の言葉で説明することは、最も効果的な学習方法の一つです。AIはあなたの理解度を確認し、答えを教える代わりに追加の質問をします。",
     selfExplainButton: "自己説明を始める",
     selfExplainPromptTemplate: "このトピックを自分の言葉で説明します。間違いや抜けがあれば指摘し、答えをすぐに教えるのではなく「なぜ」「どのように」といった質問をしてください。以下が私の説明です: ",
+    quickPrompts: {
+      triggerLabel: "クイックプロンプト",
+      dialogTitle: "クイックプロンプト",
+      dialogDescription: "会話のきっかけを選び、いくつかの項目を入力して、送信前に確認してください。",
+      backButton: "戻る",
+      useButton: "このプロンプトを使う",
+      templates: {
+        interactiveQuiz: {
+          title: "対話型クイズ",
+          description: "一問ずつ質問し、正解をすぐに教えずにその場で回答を採点します。",
+        },
+        examSimulation: {
+          title: "模擬試験",
+          description: "複数の問題からなる本格的な試験を作成し、回答が終わったら採点します。",
+        },
+        tutorPersona: {
+          title: "パーソナルチューター",
+          description: "会話全体を通してAIをこの科目の家庭教師として設定します。",
+        },
+        summaryContradictions: {
+          title: "要約と矛盾点",
+          description: "このノートブックのソースを要約し、矛盾点があれば指摘します。",
+        },
+      },
+      fields: {
+        topic: {
+          label: "トピック",
+          placeholder: "例：フランス革命 — 空欄にするとすべての内容が対象になります",
+        },
+        questionCount: {
+          label: "問題数",
+        },
+        questionType: {
+          label: "問題形式",
+        },
+        subject: {
+          label: "科目",
+          placeholder: "例：細胞生物学、20世紀の歴史...",
+        },
+        style: {
+          label: "スタイル",
+        },
+      },
+      options: {
+        count3: "3",
+        count5: "5",
+        count8: "8",
+        count10: "10",
+        count15: "15",
+        typeMultipleChoice: "選択式",
+        typeOpenEnded: "記述式",
+        typeMixed: "混合（選択式と記述式）",
+        styleFriendly: "忍耐強く励ますスタイル",
+        styleStrict: "厳格で要求が高いスタイル",
+        styleDirect: "率直で簡潔なスタイル",
+      },
+    },
   },
   searchPage: {
     askAndSearch: "質問と検索",

@@ -467,6 +467,63 @@ export const esES = {
     selfExplainDesc: "Explicar el material con tus propias palabras es una de las formas más efectivas de aprenderlo — la IA comprobará tu comprensión y te hará preguntas de seguimiento en lugar de responder por ti.",
     selfExplainButton: "Iniciar autoexplicación",
     selfExplainPromptTemplate: "Voy a explicar este tema con mis propias palabras. Señala cualquier error u omisión, y hazme preguntas de seguimiento tipo \"por qué\" o \"cómo\" en lugar de darme la respuesta directamente. Aquí va mi explicación: ",
+    quickPrompts: {
+      triggerLabel: "Prompts rápidos",
+      dialogTitle: "Prompts rápidos",
+      dialogDescription: "Elige un punto de partida para la conversación, completa un par de datos y revísalo antes de enviarlo.",
+      backButton: "Atrás",
+      useButton: "Usar este prompt",
+      templates: {
+        interactiveQuiz: {
+          title: "Quiz interactivo",
+          description: "Te hace preguntas una por una y califica cada respuesta al momento, sin revelarte la respuesta correcta de inmediato.",
+        },
+        examSimulation: {
+          title: "Simulación de examen",
+          description: "Genera un examen completo con varias preguntas y lo corrige cuando termines de responder.",
+        },
+        tutorPersona: {
+          title: "Tutor personalizado",
+          description: "Configura a la IA para que actúe como tu tutor de esta materia durante toda la conversación.",
+        },
+        summaryContradictions: {
+          title: "Resumen y contradicciones",
+          description: "Resume las fuentes de este notebook y señala si hay contradicciones entre ellas.",
+        },
+      },
+      fields: {
+        topic: {
+          label: "Tema",
+          placeholder: "ej. la Revolución Francesa — déjalo vacío para todo el contenido",
+        },
+        questionCount: {
+          label: "Cantidad de preguntas",
+        },
+        questionType: {
+          label: "Tipo de pregunta",
+        },
+        subject: {
+          label: "Materia",
+          placeholder: "ej. Biología celular, Historia del siglo XX...",
+        },
+        style: {
+          label: "Estilo",
+        },
+      },
+      options: {
+        count3: "3",
+        count5: "5",
+        count8: "8",
+        count10: "10",
+        count15: "15",
+        typeMultipleChoice: "Opción múltiple",
+        typeOpenEnded: "Preguntas de desarrollo",
+        typeMixed: "Mixto (opción múltiple y desarrollo)",
+        styleFriendly: "Paciente y motivador",
+        styleStrict: "Estricto y exigente",
+        styleDirect: "Directo y breve",
+      },
+    },
   },
   searchPage: {
     askAndSearch: "Preguntar y buscar",

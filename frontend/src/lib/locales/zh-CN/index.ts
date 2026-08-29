@@ -467,6 +467,63 @@ export const zhCN = {
     selfExplainDesc: "用自己的话解释所学内容是最有效的学习方法之一——AI 会检验你的理解，并提出追问，而不是直接替你作答。",
     selfExplainButton: "开始自我解释",
     selfExplainPromptTemplate: "我将用自己的话解释这个主题。请指出我遗漏或说错的地方，并向我提出诸如“为什么”或“如何”之类的追问，而不是直接告诉我答案。以下是我的解释：",
+    quickPrompts: {
+      triggerLabel: "快捷提示",
+      dialogTitle: "快捷提示",
+      dialogDescription: "选择一个对话起点，填写几项内容，发送前先检查一下。",
+      backButton: "返回",
+      useButton: "使用此提示",
+      templates: {
+        interactiveQuiz: {
+          title: "互动测验",
+          description: "逐题向你提问，并当场给每个回答打分，不会立即透露正确答案。",
+        },
+        examSimulation: {
+          title: "模拟考试",
+          description: "生成一整套包含多道题目的考试，并在你答完后进行批改。",
+        },
+        tutorPersona: {
+          title: "个性化导师",
+          description: "让AI在整个对话中充当你这门学科的导师。",
+        },
+        summaryContradictions: {
+          title: "摘要与矛盾点",
+          description: "总结此笔记本的来源内容，并指出其中是否存在矛盾之处。",
+        },
+      },
+      fields: {
+        topic: {
+          label: "主题",
+          placeholder: "例如：法国大革命——留空表示涵盖全部内容",
+        },
+        questionCount: {
+          label: "题目数量",
+        },
+        questionType: {
+          label: "题目类型",
+        },
+        subject: {
+          label: "学科",
+          placeholder: "例如：细胞生物学、20世纪历史……",
+        },
+        style: {
+          label: "风格",
+        },
+      },
+      options: {
+        count3: "3",
+        count5: "5",
+        count8: "8",
+        count10: "10",
+        count15: "15",
+        typeMultipleChoice: "选择题",
+        typeOpenEnded: "简答题",
+        typeMixed: "混合（选择题与简答题）",
+        styleFriendly: "耐心且富有激励性",
+        styleStrict: "严格且要求高",
+        styleDirect: "直接且简洁",
+      },
+    },
   },
   searchPage: {
     askAndSearch: "提问与搜索",

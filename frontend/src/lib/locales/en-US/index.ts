@@ -465,6 +465,63 @@ export const enUS = {
     selfExplainDesc: "Explaining material in your own words is one of the most effective ways to learn it — the AI will check your understanding and ask follow-up questions instead of just answering for you.",
     selfExplainButton: "Start self-explanation",
     selfExplainPromptTemplate: "I'm going to explain this topic in my own words. Please point out anything I get wrong or leave out, and ask me follow-up \"why\" or \"how\" questions instead of just giving me the answer. Here's my explanation: ",
+    quickPrompts: {
+      triggerLabel: "Quick prompts",
+      dialogTitle: "Quick Prompts",
+      dialogDescription: "Pick a conversation starter, fill in a couple of details, and review it before sending.",
+      backButton: "Back",
+      useButton: "Use this prompt",
+      templates: {
+        interactiveQuiz: {
+          title: "Interactive quiz",
+          description: "Asks you questions one at a time and grades each answer on the spot, without giving away the correct answer immediately.",
+        },
+        examSimulation: {
+          title: "Exam simulation",
+          description: "Generates a full exam with several questions and corrects it once you're done answering.",
+        },
+        tutorPersona: {
+          title: "Personalized tutor",
+          description: "Sets up the AI to act as your tutor for this subject throughout the conversation.",
+        },
+        summaryContradictions: {
+          title: "Summary & contradictions",
+          description: "Summarizes this notebook's sources and flags any contradictions between them.",
+        },
+      },
+      fields: {
+        topic: {
+          label: "Topic",
+          placeholder: "e.g. the French Revolution — leave blank for all content",
+        },
+        questionCount: {
+          label: "Number of questions",
+        },
+        questionType: {
+          label: "Question type",
+        },
+        subject: {
+          label: "Subject",
+          placeholder: "e.g. Cell biology, 20th century history...",
+        },
+        style: {
+          label: "Style",
+        },
+      },
+      options: {
+        count3: "3",
+        count5: "5",
+        count8: "8",
+        count10: "10",
+        count15: "15",
+        typeMultipleChoice: "Multiple choice",
+        typeOpenEnded: "Short-answer questions",
+        typeMixed: "Mixed (multiple choice and short-answer)",
+        styleFriendly: "Patient and encouraging",
+        styleStrict: "Strict and demanding",
+        styleDirect: "Direct and brief",
+      },
+    },
   },
   searchPage: {
     askAndSearch: "Ask and Search",

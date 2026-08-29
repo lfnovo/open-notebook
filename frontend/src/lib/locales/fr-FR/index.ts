@@ -467,6 +467,63 @@ export const frFR = {
     selfExplainDesc: "Expliquer le contenu avec vos propres mots est l'une des façons les plus efficaces de l'apprendre — l'IA vérifiera votre compréhension et posera des questions de suivi au lieu de simplement répondre à votre place.",
     selfExplainButton: "Démarrer l'auto-explication",
     selfExplainPromptTemplate: "Je vais expliquer ce sujet avec mes propres mots. Signalez toute erreur ou omission, et posez-moi des questions de suivi du type \"pourquoi\" ou \"comment\" au lieu de me donner directement la réponse. Voici mon explication : ",
+    quickPrompts: {
+      triggerLabel: "Prompts rapides",
+      dialogTitle: "Prompts rapides",
+      dialogDescription: "Choisissez un point de départ pour la conversation, remplissez quelques détails et relisez-le avant de l'envoyer.",
+      backButton: "Retour",
+      useButton: "Utiliser ce prompt",
+      templates: {
+        interactiveQuiz: {
+          title: "Quiz interactif",
+          description: "Vous pose des questions une par une et note chaque réponse sur le moment, sans révéler tout de suite la bonne réponse.",
+        },
+        examSimulation: {
+          title: "Simulation d'examen",
+          description: "Génère un examen complet avec plusieurs questions et le corrige une fois que vous avez terminé de répondre.",
+        },
+        tutorPersona: {
+          title: "Tuteur personnalisé",
+          description: "Configure l'IA pour qu'elle agisse comme votre tuteur pour cette matière tout au long de la conversation.",
+        },
+        summaryContradictions: {
+          title: "Résumé et contradictions",
+          description: "Résume les sources de ce notebook et signale les contradictions éventuelles entre elles.",
+        },
+      },
+      fields: {
+        topic: {
+          label: "Sujet",
+          placeholder: "ex. la Révolution française — laissez vide pour tout le contenu",
+        },
+        questionCount: {
+          label: "Nombre de questions",
+        },
+        questionType: {
+          label: "Type de question",
+        },
+        subject: {
+          label: "Matière",
+          placeholder: "ex. Biologie cellulaire, Histoire du XXe siècle...",
+        },
+        style: {
+          label: "Style",
+        },
+      },
+      options: {
+        count3: "3",
+        count5: "5",
+        count8: "8",
+        count10: "10",
+        count15: "15",
+        typeMultipleChoice: "Choix multiple",
+        typeOpenEnded: "Questions ouvertes",
+        typeMixed: "Mixte (choix multiple et questions ouvertes)",
+        styleFriendly: "Patient et motivant",
+        styleStrict: "Strict et exigeant",
+        styleDirect: "Direct et bref",
+      },
+    },
   },
   searchPage: {
     askAndSearch: "Poser une question et Rechercher",

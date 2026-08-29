@@ -467,6 +467,63 @@ export const plPL = {
     selfExplainDesc: "Wyjaśnianie materiału własnymi słowami to jeden z najskuteczniejszych sposobów nauki — AI sprawdzi Twoje zrozumienie i zada dodatkowe pytania, zamiast po prostu odpowiadać za Ciebie.",
     selfExplainButton: "Rozpocznij samowyjaśnianie",
     selfExplainPromptTemplate: "Wyjaśnię ten temat własnymi słowami. Wskaż wszelkie błędy lub braki i zadawaj mi dodatkowe pytania typu \"dlaczego\" lub \"jak\", zamiast od razu podawać odpowiedź. Oto moje wyjaśnienie: ",
+    quickPrompts: {
+      triggerLabel: "Szybkie podpowiedzi",
+      dialogTitle: "Szybkie podpowiedzi",
+      dialogDescription: "Wybierz punkt startowy rozmowy, uzupełnij kilka danych i sprawdź przed wysłaniem.",
+      backButton: "Wstecz",
+      useButton: "Użyj tej podpowiedzi",
+      templates: {
+        interactiveQuiz: {
+          title: "Interaktywny quiz",
+          description: "Zadaje ci pytania jedno po drugim i od razu ocenia każdą odpowiedź, nie zdradzając od razu poprawnej odpowiedzi.",
+        },
+        examSimulation: {
+          title: "Symulacja egzaminu",
+          description: "Generuje pełny egzamin z kilkoma pytaniami i sprawdza go po zakończeniu odpowiedzi.",
+        },
+        tutorPersona: {
+          title: "Spersonalizowany korepetytor",
+          description: "Ustawia AI tak, aby działała jako twój korepetytor z tego przedmiotu przez całą rozmowę.",
+        },
+        summaryContradictions: {
+          title: "Podsumowanie i sprzeczności",
+          description: "Podsumowuje źródła tego notatnika i wskazuje ewentualne sprzeczności między nimi.",
+        },
+      },
+      fields: {
+        topic: {
+          label: "Temat",
+          placeholder: "np. Rewolucja Francuska — zostaw puste, aby objąć całą treść",
+        },
+        questionCount: {
+          label: "Liczba pytań",
+        },
+        questionType: {
+          label: "Typ pytania",
+        },
+        subject: {
+          label: "Przedmiot",
+          placeholder: "np. Biologia komórki, Historia XX wieku...",
+        },
+        style: {
+          label: "Styl",
+        },
+      },
+      options: {
+        count3: "3",
+        count5: "5",
+        count8: "8",
+        count10: "10",
+        count15: "15",
+        typeMultipleChoice: "Wielokrotny wybór",
+        typeOpenEnded: "Pytania otwarte",
+        typeMixed: "Mieszany (wielokrotny wybór i otwarte)",
+        styleFriendly: "Cierpliwy i motywujący",
+        styleStrict: "Surowy i wymagający",
+        styleDirect: "Bezpośredni i zwięzły",
+      },
+    },
   },
   searchPage: {
     askAndSearch: "Pytaj i szukaj",

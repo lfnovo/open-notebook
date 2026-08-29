@@ -9,8 +9,11 @@ for the LangChain with_fallbacks() cascade chat/transformations already use
 non-ValueError failure of the primary outline/transcript model, retry with
 each configured DefaultModels.large_context_fallback_models entry (resolved
 through the same _resolve_model_config() helper), in order, before giving
-up. A ValueError is a permanent failure by this repo's convention
-(stop_on: [ValueError]) and must never trigger a fallback attempt.
+up. A ValueError raised by podcast-creator's own config validation is a
+permanent failure by this repo's convention and must never trigger a
+fallback attempt - but pydantic.ValidationError (a ValueError subclass
+covering a model returning malformed/empty output) is treated as an
+ordinary retryable failure instead, since a different model may succeed.
 
 No database is available in tests: profile lookups, model resolution, and
 podcast-creator itself are all mocked. Covers:
@@ -18,9 +21,11 @@ podcast-creator itself are all mocked. Covers:
       behavior/error propagation
   (b) primary fails with a non-ValueError, one fallback configured ->
       fallback succeeds, episode completes using it
-  (c) primary fails with ValueError -> raises immediately, fallback never
-      attempted even though one is configured
-  (d) primary AND all fallbacks fail -> raises a RuntimeError summarizing
+  (c) primary fails with a plain ValueError -> raises immediately, fallback
+      never attempted even though one is configured
+  (d) primary fails with pydantic.ValidationError -> falls back normally,
+      like any other transient exception
+  (e) primary AND all fallbacks fail -> raises a RuntimeError summarizing
       every attempt
 """
 
@@ -30,6 +35,7 @@ from typing import Dict, Tuple
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pydantic import BaseModel, ValidationError
 
 from commands.podcast_commands import (
     MAX_PODCAST_FALLBACK_ATTEMPTS,
@@ -262,6 +268,63 @@ class TestFallbackOnNonValueError:
 
         assert output.success is True
         assert create_podcast_mock.await_count == 2
+
+
+class _StrictModel(BaseModel):
+    """Used only to manufacture a real pydantic.ValidationError below."""
+
+    x: int
+
+
+def make_validation_error() -> ValidationError:
+    try:
+        _StrictModel(x="not an int")
+    except ValidationError as e:
+        return e
+    raise AssertionError("expected pydantic to reject this input")
+
+
+class TestValidationErrorFallsBack:
+    """Regression test for a real failure hit live: a fallback model (under
+    concurrent-load overload) returned malformed/empty output, and
+    podcast-creator's own structured-output parsing raised a
+    pydantic.ValidationError. Since ValidationError IS a ValueError
+    subclass, it used to be caught by the "permanent failure, never
+    fall back" branch and killed the whole job on one flaky response -
+    exactly the case the fallback chain exists to route around. It must
+    instead take the normal attempt/fallback path, same as any other
+    transient exception."""
+
+    @pytest.mark.asyncio
+    async def test_validation_error_falls_back_and_succeeds(self):
+        create_podcast_mock = AsyncMock(
+            side_effect=[make_validation_error(), fake_result()]
+        )
+        with ExitStack() as stack:
+            common_patches(
+                stack, create_podcast_mock, fallback_ids=["model:fallback-a"]
+            )
+            output = await generate_podcast_command(make_input())
+
+        assert output.success is True
+        assert create_podcast_mock.await_count == 2
+
+    @pytest.mark.asyncio
+    async def test_validation_error_on_last_attempt_summarizes_all(self):
+        create_podcast_mock = AsyncMock(
+            side_effect=[RuntimeError("primary overloaded"), make_validation_error()]
+        )
+        with ExitStack() as stack:
+            common_patches(
+                stack, create_podcast_mock, fallback_ids=["model:fallback-a"]
+            )
+            with pytest.raises(RuntimeError) as exc_info:
+                await generate_podcast_command(make_input())
+
+        assert create_podcast_mock.await_count == 2
+        message = str(exc_info.value)
+        assert "primary overloaded" in message
+        assert "fallback-model-a" in message
 
 
 class TestValueErrorNeverFallsBack:

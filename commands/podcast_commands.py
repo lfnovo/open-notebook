@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from loguru import logger
+from pydantic import ValidationError
 from surreal_commands import CommandInput, CommandOutput, command
 
 from open_notebook.ai.models import DefaultModels
@@ -400,11 +401,19 @@ async def generate_podcast_command(
             )
 
         # 9. Generate podcast using podcast-creator, walking the attempts
-        # list in order. A ValueError is a permanent failure by this repo's
-        # convention (stop_on: [ValueError] on the command decorator) and
-        # must propagate immediately without trying a fallback model - the
-        # bare `except ValueError: raise` below preserves that exactly.
-        # Any other exception moves on to the next attempt; when every
+        # list in order. A ValueError raised directly by podcast-creator's
+        # own config validation (bad speaker/episode profile, missing
+        # briefing, etc. - see its config.py/episodes.py/speakers.py) is a
+        # permanent failure no fallback model can fix, and propagates
+        # immediately. pydantic.ValidationError is technically also a
+        # ValueError subclass but means something different here: the
+        # outline/transcript model returned malformed or empty output
+        # (observed live - "Failed to parse ValidatedTranscript from
+        # completion null" - when a fallback model choked mid-overload) -
+        # that's exactly what the fallback chain exists to route around, so
+        # it takes the normal attempt/fallback path below instead of
+        # short-circuiting the whole job on one flaky response.
+        # Any other exception also moves on to the next attempt; when every
         # attempt is exhausted the last error is raised (unchanged, single-
         # attempt propagation when no fallback is configured; a summarizing
         # RuntimeError when there were fallbacks to report on).
@@ -448,9 +457,22 @@ async def generate_podcast_command(
                     f"using {attempt['label']}"
                 )
                 break
-            except ValueError:
-                # Permanent failure - never retried with a fallback model.
-                raise
+            except ValueError as e:
+                if not isinstance(e, ValidationError):
+                    # Permanent failure - never retried with a fallback model.
+                    raise
+                logger.warning(
+                    f"Podcast generation attempt {i + 1}/{len(attempts)} failed "
+                    f"using {attempt['label']} (model returned invalid output): {e}"
+                )
+                attempt_errors.append(f"{attempt['label']}: {e}")
+                if i == len(attempts) - 1:
+                    if len(attempts) == 1:
+                        raise
+                    raise RuntimeError(
+                        f"Podcast generation failed after {len(attempts)} "
+                        "attempts: " + " | ".join(attempt_errors)
+                    ) from e
             except Exception as e:
                 logger.warning(
                     f"Podcast generation attempt {i + 1}/{len(attempts)} failed "

@@ -81,7 +81,19 @@ export function EpisodesTab() {
   const emptyState = !isLoading && episodes.length === 0
 
   return (
-    <div className="space-y-6">
+    // translate="no" (+ notranslate class, for translators that key off the class
+    // instead of the attribute): this tab polls every 15s while an episode is
+    // running/pending and re-renders on every tick (e.g. the refresh button's
+    // spinner icon swap below), even when the episode data itself is unchanged.
+    // Chrome's built-in page translator rewrites text nodes in-place (wrapping
+    // them in injected <font> elements), which detaches the DOM nodes React
+    // still holds references to. The next poll-driven re-render then tries to
+    // insertBefore relative to a detached reference node and throws
+    // "NotFoundError: Failed to execute 'insertBefore' on 'Node'", which bubbles
+    // up to the root ErrorBoundary. Opting this whole auto-refreshing subtree
+    // out of translation prevents Chrome from mutating it out from under React.
+    // See https://github.com/facebook/react/issues/11538.
+    <div className="space-y-6 notranslate" translate="no">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
           <h2 className="font-display text-xl font-semibold tracking-tight">{t('podcasts.overviewTitle')}</h2>

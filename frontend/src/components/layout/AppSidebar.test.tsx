@@ -26,10 +26,16 @@ describe('AppSidebar', () => {
     render(<AppSidebar />)
 
     const themeButton = screen.getByText('common.theme').closest('button')
+    const languageButton = screen.getByText('common.language').closest('button')
     const signOutButton = screen.getByRole('button', { name: 'common.signOut' })
 
     expect(themeButton?.className.split(/\s+/)).toContain('px-3')
-    expect(signOutButton.className.split(/\s+/)).toContain('gap-2')
+
+    for (const button of [themeButton, languageButton, signOutButton]) {
+      expect(button?.className.split(/\s+/)).toContain('gap-2')
+    }
+
+    expect(languageButton?.querySelector(':scope > svg')).not.toBeNull()
     expect(signOutButton.className.split(/\s+/)).not.toContain('gap-3')
   })
 

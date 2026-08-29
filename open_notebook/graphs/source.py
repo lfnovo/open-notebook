@@ -21,6 +21,8 @@ from open_notebook.utils.runtime_capabilities import engine_runtime_missing
 # default is only ["en", "es", "pt"]; we keep the broader list Open Notebook has
 # always intended so non-English videos still resolve a transcript.
 YOUTUBE_PREFERRED_LANGUAGES = [
+    "zh-TW",  # Added: Traditional Chinese
+    "zh-CN",  # Added: Simplified Chinese
     "en",
     "pt",
     "es",

@@ -913,6 +913,34 @@ class ReviewFlashcardResponse(BaseModel):
     due_count: int = Field(..., description="Remaining flashcards due in this set after this review")
 
 
+class GradeFlashcardRequest(BaseModel):
+    """Body for POST /study/{study_set_id}/items/{item_index}/grade.
+
+    Guided study mode ("Modo guiado con IA"): the student types a free-text
+    answer instead of self-grading a flipped card, and the AI checks it.
+    """
+
+    answer: str = Field(..., description="The student's free-text answer to the flashcard's front")
+    attempt: int = Field(
+        1, description="Attempt number for this card in this sitting (starts at 1)", ge=1
+    )
+
+
+class GradeFlashcardResponse(BaseModel):
+    correct: bool = Field(..., description="Whether the AI judged the answer as demonstrating understanding")
+    feedback: str = Field(..., description="AI feedback on the student's answer, in the student's own language")
+    rating: Literal["again", "hard", "good", "easy"] = Field(
+        ..., description="Spaced-repetition rating recorded for this attempt"
+    )
+    attempt: int = Field(..., description="Attempt number this response corresponds to")
+    revealed_answer: Optional[str] = Field(
+        None,
+        description="The reference answer, present only when force-revealed after the max attempts",
+    )
+    item: Dict[str, Any] = Field(..., description="The flashcard item with updated SRS state")
+    due_count: int = Field(..., description="Remaining flashcards due in this set after this review")
+
+
 # Google Drive integration API models
 class DriveAuthUrlResponse(BaseModel):
     """Response for GET /drive/auth-url."""

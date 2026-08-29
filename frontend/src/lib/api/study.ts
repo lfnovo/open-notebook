@@ -1,6 +1,7 @@
 import apiClient from './client'
 import {
   GenerateStudySetRequest,
+  GradeFlashcardResponse,
   ReviewFlashcardResponse,
   SrsRating,
   StudySet,
@@ -43,6 +44,19 @@ export const studyApi = {
     const response = await apiClient.post<ReviewFlashcardResponse>(
       `/study/${studySetId}/items/${itemIndex}/review`,
       { rating }
+    )
+    return response.data
+  },
+
+  gradeFlashcardAnswer: async (
+    studySetId: string,
+    itemIndex: number,
+    answer: string,
+    attempt: number
+  ) => {
+    const response = await apiClient.post<GradeFlashcardResponse>(
+      `/study/${studySetId}/items/${itemIndex}/grade`,
+      { answer, attempt }
     )
     return response.data
   },

@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react'
 import { FlashcardItem, SrsRating } from '@/lib/types/study'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useReviewFlashcard } from '@/lib/hooks/use-study'
+import { buildQueue, isDue, todayIso } from '@/lib/utils/flashcard-queue'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -14,33 +15,6 @@ interface FlashcardViewerProps {
   items: FlashcardItem[]
   studySetId: string
   notebookId?: string
-}
-
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10)
-}
-
-function isDue(item: FlashcardItem, today: string): boolean {
-  return !item.due || item.due <= today
-}
-
-/** Due cards first (in their original order), then upcoming cards soonest-due
- * first. Retrieval practice works best distributed over time (Dunlosky et al.
- * 2013) - surfacing what's actually due, instead of always starting at card
- * 1, is what makes that spacing effect show up in practice. */
-function buildQueue(items: FlashcardItem[]): number[] {
-  const today = todayIso()
-  const due: number[] = []
-  const upcoming: number[] = []
-  items.forEach((item, index) => {
-    if (isDue(item, today)) {
-      due.push(index)
-    } else {
-      upcoming.push(index)
-    }
-  })
-  upcoming.sort((a, b) => (items[a].due ?? '') < (items[b].due ?? '') ? -1 : 1)
-  return [...due, ...upcoming]
 }
 
 const RATING_STYLES: Record<SrsRating, string> = {

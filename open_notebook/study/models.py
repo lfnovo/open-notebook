@@ -53,6 +53,22 @@ _SRS_MIN_EASE = 1.3
 _SRS_DEFAULT_EASE = 2.5
 
 
+class FlashcardGradeResult(BaseModel):
+    """Structured output for AI-graded guided study mode ("Modo guiado con
+    IA") - see api/study_service.py::StudyService.grade_flashcard_answer.
+    Used with PydanticOutputParser + prompts/study/grade_flashcard.jinja."""
+
+    correct: bool = Field(
+        ..., description="Whether the student's answer demonstrates real understanding"
+    )
+    feedback: str = Field(
+        ..., description="Brief, specific feedback in the student's own language, 2-3 sentences max"
+    )
+    rating: SrsRating = Field(
+        ..., description="Spaced-repetition rating implied by this attempt: again/hard/good/easy"
+    )
+
+
 def score_flashcard_review(
     item: Dict[str, Any], rating: str, now: Optional[datetime] = None
 ) -> Dict[str, Any]:

@@ -119,6 +119,42 @@ export function useReviewFlashcard(studySetId: string, notebookId?: string) {
 }
 
 /**
+ * AI-grades a student's free-text answer to one flashcard (guided study mode
+ * - "Modo guiado con IA") and records the resulting spaced-repetition
+ * rating. Same cache-patching shape as useReviewFlashcard (this endpoint
+ * also returns the updated item + due_count) - no success toast, since the
+ * component shows the AI's feedback inline instead.
+ */
+export function useGradeFlashcardAnswer(studySetId: string, notebookId?: string) {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const { t } = useTranslation()
+
+  return useMutation({
+    mutationFn: ({ itemIndex, answer, attempt }: { itemIndex: number; answer: string; attempt: number }) =>
+      studyApi.gradeFlashcardAnswer(studySetId, itemIndex, answer, attempt),
+    onSuccess: (response, variables) => {
+      queryClient.setQueryData<StudySet>(QUERY_KEYS.studySet(studySetId), (prev) => {
+        if (!prev) return prev
+        const items = [...(prev.items as FlashcardItem[])]
+        items[variables.itemIndex] = response.item
+        return { ...prev, items, due_count: response.due_count }
+      })
+      if (notebookId) {
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.studySetsForNotebook(notebookId) })
+      }
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: t('study.guidedSession.gradeFailed'),
+        description: getApiErrorKey(error, t('common.error')),
+        variant: 'destructive',
+      })
+    },
+  })
+}
+
+/**
  * `notebookId` scopes cache invalidation to a single notebook's study set
  * list (e.g. the detail page, which knows its own notebook). Omit it (e.g.
  * the cross-notebook list page) to invalidate every notebook's study set

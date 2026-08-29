@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { FlashcardViewer } from '@/components/study/FlashcardViewer'
+import { FlashcardStudyModes } from '@/components/study/FlashcardStudyModes'
 import { QuizTaker } from '@/components/study/QuizTaker'
 
 export default function StudySetDetailPage() {
@@ -124,7 +124,7 @@ export default function StudySetDetailPage() {
               </header>
 
               {studySet.kind === 'flashcards' ? (
-                <FlashcardViewer
+                <FlashcardStudyModes
                   items={flashcards}
                   studySetId={studySet.id}
                   notebookId={studySet.notebook}

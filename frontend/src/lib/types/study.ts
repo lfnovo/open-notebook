@@ -111,6 +111,26 @@ export interface ReviewFlashcardResponse {
   due_count: number
 }
 
+/** Body for POST /study/{id}/items/{index}/grade - guided study mode
+ * ("Modo guiado con IA"). `attempt` starts at 1, the frontend increments it
+ * on retry for the same card. */
+export interface GradeFlashcardRequest {
+  answer: string
+  attempt: number
+}
+
+/** Matches api/models.py GradeFlashcardResponse (POST /study/{id}/items/{index}/grade). */
+export interface GradeFlashcardResponse {
+  correct: boolean
+  feedback: string
+  rating: SrsRating
+  attempt: number
+  /** The reference answer, present only when force-revealed after the max attempts. */
+  revealed_answer?: string | null
+  item: FlashcardItem
+  due_count: number
+}
+
 export function isStudyJobActive(status?: string | null): boolean {
   return !!status && (ACTIVE_STUDY_JOB_STATUSES as string[]).includes(status)
 }

@@ -6,6 +6,8 @@ from loguru import logger
 from api.models import (
     GenerateFlashcardsRequest,
     GenerateQuizRequest,
+    GradeFlashcardRequest,
+    GradeFlashcardResponse,
     ReviewFlashcardRequest,
     ReviewFlashcardResponse,
     StudySetGenerationResponse,
@@ -218,6 +220,44 @@ async def review_flashcard_item(
     except Exception as e:
         logger.error(f"Error reviewing flashcard: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to record review")
+
+
+@router.post(
+    "/study/{study_set_id}/items/{item_index}/grade",
+    response_model=GradeFlashcardResponse,
+)
+async def grade_flashcard_item(
+    study_set_id: str, item_index: int, request: GradeFlashcardRequest
+):
+    """AI-grade a student's free-text answer to one flashcard (guided study
+    mode - "Modo guiado con IA").
+
+    Synchronous LLM call (the student is waiting live in the UI), unlike
+    flashcards/quiz generation which run as background jobs. Records the
+    resulting spaced-repetition rating via the same SM-2 flow as the
+    self-graded /review endpoint. Only valid for flashcard study sets; quiz
+    sets return 400.
+    """
+    try:
+        result = await StudyService.grade_flashcard_answer(
+            study_set_id, item_index, request.answer, request.attempt
+        )
+        return GradeFlashcardResponse(
+            correct=result["correct"],
+            feedback=result["feedback"],
+            rating=result["rating"],
+            attempt=result["attempt"],
+            revealed_answer=result["revealed_answer"],
+            item=result["item"],
+            due_count=result["due_count"],
+        )
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
+    except Exception as e:
+        logger.error(f"Error grading flashcard: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to grade flashcard answer")
 
 
 @router.delete("/study/{study_set_id}")

@@ -371,7 +371,7 @@ export function AppSidebar() {
           ) : (
             <Button
               variant="outline"
-              className="w-full justify-start gap-3 sidebar-menu-item"
+              className="w-full justify-start gap-2 sidebar-menu-item"
               onClick={logout}
               aria-label={t('common.signOut')}
              >

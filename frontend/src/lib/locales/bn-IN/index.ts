@@ -40,6 +40,8 @@ export const bnIN = {
     quickActions: "দ্রুত ক্রিয়া",
     quickActionsDesc: "নেভিগেশন, অনুসন্ধান, প্রশ্ন, থিম",
     appName: "ওপেন নোটবুক",
+    collapseSidebar: "সাইডবার সঙ্কুচিত করুন",
+    expandSidebar: "সাইডবার প্রসারিত করুন",
     add: "যোগ করুন",
     remove: "সরান",
     confirm: "নিশ্চিত করুন",

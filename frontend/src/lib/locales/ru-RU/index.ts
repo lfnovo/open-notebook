@@ -40,6 +40,8 @@ export const ruRU = {
     quickActions: "Быстрые действия",
     quickActionsDesc: "Навигация, поиск, запрос, тема",
     appName: "Open Notebook",
+    collapseSidebar: "Свернуть боковую панель",
+    expandSidebar: "Развернуть боковую панель",
     add: "Добавить",
     remove: "Удалить",
     confirm: "Подтвердить",

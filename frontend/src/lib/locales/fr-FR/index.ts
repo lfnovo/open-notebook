@@ -40,6 +40,8 @@ export const frFR = {
     quickActions: "Actions rapides",
     quickActionsDesc: "Navigation, recherche, poser une question, thème",
     appName: "Open Notebook",
+    collapseSidebar: "Réduire la barre latérale",
+    expandSidebar: "Développer la barre latérale",
     add: "Ajouter",
     remove: "Retirer",
     confirm: "Confirmer",

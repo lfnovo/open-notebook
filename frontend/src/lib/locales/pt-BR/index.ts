@@ -40,6 +40,8 @@ export const ptBR = {
     quickActions: "Ações rápidas",
     quickActionsDesc: "Navegação, busca, perguntar, tema",
     appName: "Open Notebook",
+    collapseSidebar: "Recolher barra lateral",
+    expandSidebar: "Expandir barra lateral",
     add: "Adicionar",
     remove: "Remover",
     confirm: "Confirmar",

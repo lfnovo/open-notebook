@@ -40,6 +40,8 @@ export const plPL = {
     quickActions: "Szybkie akcje",
     quickActionsDesc: "Nawigacja, wyszukiwanie, pytania, motyw",
     appName: "Open Notebook",
+    collapseSidebar: "Zwiń pasek boczny",
+    expandSidebar: "Rozwiń pasek boczny",
     add: "Dodaj",
     remove: "Usuń",
     confirm: "Potwierdź",

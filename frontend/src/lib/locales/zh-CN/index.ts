@@ -40,6 +40,8 @@ export const zhCN = {
     quickActions: "快捷操作",
     quickActionsDesc: "导航、搜索、提问、主题",
     appName: "Open Notebook",
+    collapseSidebar: "收起侧边栏",
+    expandSidebar: "展开侧边栏",
     add: "添加",
     remove: "移除",
     confirm: "确认",

@@ -43,6 +43,8 @@ export const deDE = {
     quickActions: "Schnellaktionen",
     quickActionsDesc: "Navigation, Suche, Fragen, Design",
     appName: "Open Notebook",
+    collapseSidebar: "Seitenleiste einklappen",
+    expandSidebar: "Seitenleiste ausklappen",
     add: "Hinzufügen",
     remove: "Entfernen",
     confirm: "Bestätigen",

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { getDateLocale } from '@/lib/utils/date-locale'
-import { InfoIcon, RefreshCcw, Trash2 } from 'lucide-react'
+import { Download, InfoIcon, RefreshCcw, Trash2 } from 'lucide-react'
 
 import apiClient from '@/lib/api/client'
 import { resolvePodcastAssetUrl } from '@/lib/api/podcasts'
@@ -219,6 +219,19 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
     ? t('podcasts.created', { time: distance })
     : null
 
+  const handleDownloadAudio = () => {
+    if (!audioSrc) return
+    // audioSrc is already a local blob: URL (fetched once in the effect
+    // above) - reuse it directly instead of fetching the audio again.
+    const safeName = episode.name.replace(/[^a-zA-Z0-9_-]+/g, '_').slice(0, 80) || 'podcast'
+    const link = document.createElement('a')
+    link.href = audioSrc
+    link.download = `${safeName}.mp3`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   const handleDelete = () => {
     void onDelete(episode.id)
   }
@@ -264,8 +277,11 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                 </DialogHeader>
                 <div className="space-y-4 overflow-hidden">
                   {audioSrc ? (
-                    <div className="rounded-md border bg-card p-2">
-                      <audio controls preload="none" src={audioSrc} className="w-full" />
+                    <div className="flex items-center gap-2 rounded-md border bg-card p-2">
+                      <audio controls preload="none" src={audioSrc} className="w-full flex-1 min-w-0" />
+                      <Button variant="outline" size="icon" onClick={handleDownloadAudio} title={t('common.download')}>
+                        <Download className="h-4 w-4" />
+                      </Button>
                     </div>
                   ) : audioError ? (
                     <p className="text-sm text-destructive">{audioError}</p>
@@ -438,8 +454,11 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
         </div>
 
         {audioSrc ? (
-          <div className="rounded-md border bg-card p-2">
-            <audio controls preload="none" src={audioSrc} className="w-full" />
+          <div className="flex items-center gap-2 rounded-md border bg-card p-2">
+            <audio controls preload="none" src={audioSrc} className="w-full flex-1 min-w-0" />
+            <Button variant="outline" size="icon" onClick={handleDownloadAudio} title={t('common.download')}>
+              <Download className="h-4 w-4" />
+            </Button>
           </div>
         ) : audioError ? (
           <p className="text-sm text-destructive">{audioError}</p>

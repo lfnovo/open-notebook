@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useSidebarStore } from '@/lib/stores/sidebar-store'
+import { useIsDesktop } from '@/lib/hooks/use-media-query'
 import { useCreateDialogs } from '@/lib/hooks/use-create-dialogs'
 import {
   Tooltip,
@@ -94,7 +95,13 @@ export function AppSidebar() {
   const navigation = getNavigation(t)
   const pathname = usePathname()
   const { logout } = useAuth()
-  const { isCollapsed, toggleCollapse } = useSidebarStore()
+  const { isCollapsed: storedCollapsed, toggleCollapse } = useSidebarStore()
+  const isDesktop = useIsDesktop()
+  // Below the desktop breakpoint the sidebar is always icon-only - a phone
+  // is too narrow for the 256px expanded width, and the persisted desktop
+  // preference (which defaults to expanded) would otherwise squeeze the
+  // page content into a sliver on a first mobile visit.
+  const isCollapsed = isDesktop ? storedCollapsed : true
   const { openSourceDialog, openNotebookDialog, openPodcastDialog, openStudyDialog } = useCreateDialogs()
 
   const [createMenuOpen, setCreateMenuOpen] = useState(false)
@@ -135,15 +142,27 @@ export function AppSidebar() {
         >
           {isCollapsed ? (
             <div className="relative flex items-center justify-center w-full">
-              <LogoPebbles className="flex-col gap-[3px] transition-opacity group-hover:opacity-0" />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleCollapse}
-                className="absolute text-sidebar-foreground hover:bg-sidebar-accent opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <Menu className="h-4 w-4" />
-              </Button>
+              <LogoPebbles
+                className={cn(
+                  'flex-col gap-[3px] transition-opacity',
+                  isDesktop && 'group-hover:opacity-0'
+                )}
+              />
+              {isDesktop && (
+                // Hover-reveal only makes sense with a mouse - below the
+                // desktop breakpoint the sidebar is forced collapsed with no
+                // expand affordance at all, since :hover never fires on
+                // touch and there's no room to expand into anyway.
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleCollapse}
+                  aria-label={t('common.expandSidebar')}
+                  className="absolute text-sidebar-foreground hover:bg-sidebar-accent opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Menu className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           ) : (
             <>
@@ -157,6 +176,7 @@ export function AppSidebar() {
                 variant="ghost"
                 size="sm"
                 onClick={toggleCollapse}
+                aria-label={t('common.collapseSidebar')}
                 className="text-sidebar-foreground hover:bg-sidebar-accent"
                 data-testid="sidebar-toggle"
               >

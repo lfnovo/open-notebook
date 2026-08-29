@@ -40,6 +40,8 @@ export const caES = {
     quickActions: "Accions ràpides",
     quickActionsDesc: "Navegació, cerca, preguntes, tema",
     appName: "Open Notebook",
+    collapseSidebar: "Col·lapsar barra lateral",
+    expandSidebar: "Expandir barra lateral",
     add: "Afegeix",
     remove: "Elimina",
     confirm: "Confirma",

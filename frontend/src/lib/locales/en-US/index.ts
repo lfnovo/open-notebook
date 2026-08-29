@@ -38,6 +38,8 @@ export const enUS = {
     quickActions: "Quick actions",
     quickActionsDesc: "Navigation, search, ask, theme",
     appName: "Open Notebook",
+    collapseSidebar: "Collapse sidebar",
+    expandSidebar: "Expand sidebar",
     add: "Add",
     remove: "Remove",
     confirm: "Confirm",

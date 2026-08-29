@@ -165,4 +165,33 @@ describe('EpisodeCard audio loading', () => {
       )
     })
   })
+
+  it('lets the user download the already-loaded audio without a second network request', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: new Blob(['audio']) })
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    render(
+      <EpisodeCard
+        episode={makeEpisode({
+          name: 'Beating the Street: Chapter 1',
+          audio_url: '/api/podcasts/episodes/episode:1/audio',
+        })}
+        onDelete={vi.fn()}
+      />
+    )
+
+    const downloadButtons = await screen.findAllByTitle('common.download')
+    const getCalls = vi.mocked(apiClient.get).mock.calls.length
+
+    fireEvent.click(downloadButtons[0])
+
+    // Reuses the blob URL already fetched for playback - no extra apiClient call.
+    expect(apiClient.get).toHaveBeenCalledTimes(getCalls)
+    expect(clickSpy).toHaveBeenCalledTimes(1)
+    const anchor = clickSpy.mock.instances[0] as unknown as HTMLAnchorElement
+    expect(anchor.download).toBe('Beating_the_Street_Chapter_1.mp3')
+    expect(anchor.href).toMatch(/^blob:/)
+
+    clickSpy.mockRestore()
+  })
 })

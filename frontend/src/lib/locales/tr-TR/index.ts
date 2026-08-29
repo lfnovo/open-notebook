@@ -40,6 +40,8 @@ export const trTR = {
     quickActions: "Hızlı eylemler",
     quickActionsDesc: "Gezinme, arama, sor, tema",
     appName: "Open Notebook",
+    collapseSidebar: "Kenar çubuğunu daralt",
+    expandSidebar: "Kenar çubuğunu genişlet",
     add: "Ekle",
     remove: "Kaldır",
     confirm: "Onayla",

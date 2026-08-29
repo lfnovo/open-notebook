@@ -40,6 +40,8 @@ export const zhTW = {
     quickActions: "快捷操作",
     quickActionsDesc: "導覽、搜尋、提問、主題",
     appName: "Open Notebook",
+    collapseSidebar: "收合側邊欄",
+    expandSidebar: "展開側邊欄",
     add: "新增",
     remove: "移除",
     confirm: "確認",

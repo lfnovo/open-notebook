@@ -40,6 +40,8 @@ export const jaJP = {
     quickActions: "クイックアクション",
     quickActionsDesc: "ナビゲーション、検索、質問、テーマ",
     appName: "Open Notebook",
+    collapseSidebar: "サイドバーを折りたたむ",
+    expandSidebar: "サイドバーを展開",
     add: "追加",
     remove: "削除",
     confirm: "確認",

@@ -40,7 +40,10 @@ class TestToRelativeAudioPath:
         monkeypatch.setattr(
             "open_notebook.podcasts.audio_paths.PODCASTS_FOLDER", str(tmp_path)
         )
-        uri = f"file://{tmp_path}/episodes/uuid-3/a.mp3"
+        # .as_uri() builds a correctly-formed file:// URI for the host OS
+        # (e.g. file:///C:/... on Windows) - a naive f"file://{tmp_path}/..."
+        # concatenation only produces a valid URI on POSIX.
+        uri = (tmp_path / "episodes" / "uuid-3" / "a.mp3").as_uri()
 
         assert to_relative_audio_path(uri) == "episodes/uuid-3/a.mp3"
 

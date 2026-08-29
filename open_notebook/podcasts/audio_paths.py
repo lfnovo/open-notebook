@@ -22,7 +22,8 @@ Migration 21 converts pre-existing rows written under the known roots.
 import os
 from pathlib import Path
 from typing import Optional, Union
-from urllib.parse import unquote, urlparse
+from urllib.parse import urlparse
+from urllib.request import url2pathname
 
 from open_notebook.config import PODCASTS_FOLDER
 
@@ -50,7 +51,11 @@ def to_relative_audio_path(audio_path: Union[str, Path]) -> str:
     """
     raw = str(audio_path)
     if raw.startswith("file://"):
-        raw = unquote(urlparse(raw).path)
+        # url2pathname (not a bare unquote) also strips the leading slash
+        # Windows file URIs put before the drive letter (file:///C:/...) -
+        # unquote alone leaves "/C:/..." which Path treats as a bogus path
+        # rooted with a literal "C:" directory.
+        raw = url2pathname(urlparse(raw).path)
     resolved = Path(os.path.realpath(raw))
     root = podcasts_root()
     if resolved == root or not resolved.is_relative_to(root):

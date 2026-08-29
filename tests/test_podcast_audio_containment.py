@@ -116,7 +116,12 @@ class TestResolveContainedAudioPath:
         )
         outside = tmp_path / "outside.mp3"
         outside.write_bytes(b"secret")
-        (root / "link.mp3").symlink_to(outside)
+        try:
+            (root / "link.mp3").symlink_to(outside)
+        except OSError as e:
+            # Creating symlinks on Windows needs an elevated privilege or
+            # Developer Mode - not a code issue, skip rather than fail.
+            pytest.skip(f"Cannot create symlinks in this environment: {e}")
 
         assert resolve_contained_audio_path("link.mp3") is None
 

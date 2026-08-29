@@ -162,7 +162,16 @@ export function AskAcrossSourcesDialog({
         if (!value) resetState()
       }}
     >
-      <DialogContent className="sm:max-w-[520px]">
+      {/* translate="no" (+ notranslate class): this dialog polls every 3s while
+          the job is running and re-renders on every tick (the Loader2 spinner
+          swap below), even when nothing else changes. Chrome's built-in page
+          translator rewrites text nodes in place, detaching them from React's
+          tree - the next poll-driven re-render then throws
+          "NotFoundError: Failed to execute 'insertBefore' on 'Node'" trying to
+          patch around the now-detached node. Same root cause already fixed on
+          the Podcasts page (EpisodesTab.tsx) - see
+          https://github.com/facebook/react/issues/11538. */}
+      <DialogContent className="sm:max-w-[520px] notranslate" translate="no">
         <DialogHeader>
           <DialogTitle>{t('askSources.title')}</DialogTitle>
           <DialogDescription>{t('askSources.description')}</DialogDescription>

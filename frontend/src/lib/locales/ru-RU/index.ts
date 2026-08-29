@@ -919,6 +919,17 @@ export const ruRU = {
       continueBtn: "Продолжить",
       gradeFailed: "Не удалось оценить ваш ответ",
     },
+    guidedQuizSession: {
+      examModeTab: "Режим экзамена",
+      guidedModeTab: "Режим с подсказками",
+      nextQuestion: "Следующий вопрос",
+      sessionSummary: "Вы освоили {{mastered}} из {{total}} вопросов.",
+      masteredLabel: "Освоено",
+      correctedLabel: "Исправлено",
+      struggledLabel: "Нужен повтор",
+      needsWorkTitle: "Вопросы, требующие повторения",
+      correctAnswerLabel: "Правильный ответ",
+    },
   },
   drive: {
     title: "Google Диск",

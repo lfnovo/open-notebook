@@ -918,6 +918,17 @@ export const enUS = {
       continueBtn: "Continue",
       gradeFailed: "Failed to grade your answer",
     },
+    guidedQuizSession: {
+      examModeTab: "Exam mode",
+      guidedModeTab: "Guided mode",
+      nextQuestion: "Next question",
+      sessionSummary: "You mastered {{mastered}} of {{total}} questions.",
+      masteredLabel: "Mastered",
+      correctedLabel: "Corrected",
+      struggledLabel: "Needs review",
+      needsWorkTitle: "Questions that need more review",
+      correctAnswerLabel: "Correct answer",
+    },
   },
   drive: {
     title: "Google Drive",

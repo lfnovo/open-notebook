@@ -922,6 +922,17 @@ export const deDE = {
       continueBtn: "Weiter",
       gradeFailed: "Antwort konnte nicht bewertet werden",
     },
+    guidedQuizSession: {
+      examModeTab: "Prüfungsmodus",
+      guidedModeTab: "Geführter Modus",
+      nextQuestion: "Nächste Frage",
+      sessionSummary: "Du hast {{mastered}} von {{total}} Fragen gemeistert.",
+      masteredLabel: "Gemeistert",
+      correctedLabel: "Korrigiert",
+      struggledLabel: "Braucht Wiederholung",
+      needsWorkTitle: "Fragen, die mehr Wiederholung brauchen",
+      correctAnswerLabel: "Richtige Antwort",
+    },
   },
   drive: {
     title: "Google Drive",

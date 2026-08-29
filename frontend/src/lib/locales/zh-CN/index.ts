@@ -919,6 +919,17 @@ export const zhCN = {
       continueBtn: "继续",
       gradeFailed: "无法评估你的答案",
     },
+    guidedQuizSession: {
+      examModeTab: "考试模式",
+      guidedModeTab: "引导模式",
+      nextQuestion: "下一题",
+      sessionSummary: "你已掌握 {{total}} 题中的 {{mastered}} 题。",
+      masteredLabel: "已掌握",
+      correctedLabel: "已纠正",
+      struggledLabel: "需要复习",
+      needsWorkTitle: "需要更多复习的题目",
+      correctAnswerLabel: "正确答案",
+    },
   },
   drive: {
     title: "Google 云端硬盘",

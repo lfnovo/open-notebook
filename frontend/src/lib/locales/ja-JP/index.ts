@@ -919,6 +919,17 @@ export const jaJP = {
       continueBtn: "続ける",
       gradeFailed: "回答を評価できませんでした",
     },
+    guidedQuizSession: {
+      examModeTab: "試験モード",
+      guidedModeTab: "ガイドモード",
+      nextQuestion: "次の問題",
+      sessionSummary: "{{total}}問中{{mastered}}問をマスターしました。",
+      masteredLabel: "習得済み",
+      correctedLabel: "修正済み",
+      struggledLabel: "要復習",
+      needsWorkTitle: "もっと復習が必要な問題",
+      correctAnswerLabel: "正解",
+    },
   },
   drive: {
     title: "Google ドライブ",

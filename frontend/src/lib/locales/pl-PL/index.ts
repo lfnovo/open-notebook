@@ -919,6 +919,17 @@ export const plPL = {
       continueBtn: "Kontynuuj",
       gradeFailed: "Nie udało się ocenić odpowiedzi",
     },
+    guidedQuizSession: {
+      examModeTab: "Tryb egzaminu",
+      guidedModeTab: "Tryb prowadzony",
+      nextQuestion: "Następne pytanie",
+      sessionSummary: "Opanowałeś/aś {{mastered}} z {{total}} pytań.",
+      masteredLabel: "Opanowane",
+      correctedLabel: "Poprawione",
+      struggledLabel: "Wymaga powtórki",
+      needsWorkTitle: "Pytania wymagające dodatkowej powtórki",
+      correctAnswerLabel: "Poprawna odpowiedź",
+    },
   },
   drive: {
     title: "Dysk Google",

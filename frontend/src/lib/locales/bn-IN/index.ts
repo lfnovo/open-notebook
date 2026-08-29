@@ -920,6 +920,17 @@ export const bnIN = {
       continueBtn: "চালিয়ে যান",
       gradeFailed: "আপনার উত্তর মূল্যায়ন করা যায়নি",
     },
+    guidedQuizSession: {
+      examModeTab: "পরীক্ষা মোড",
+      guidedModeTab: "গাইডেড মোড",
+      nextQuestion: "পরবর্তী প্রশ্ন",
+      sessionSummary: "আপনি {{total}}টির মধ্যে {{mastered}}টি প্রশ্নে দক্ষতা অর্জন করেছেন।",
+      masteredLabel: "দক্ষ",
+      correctedLabel: "সংশোধিত",
+      struggledLabel: "পুনরায় পর্যালোচনা প্রয়োজন",
+      needsWorkTitle: "যেসব প্রশ্নে আরও পর্যালোচনা প্রয়োজন",
+      correctAnswerLabel: "সঠিক উত্তর",
+    },
   },
   drive: {
     title: "Google Drive",

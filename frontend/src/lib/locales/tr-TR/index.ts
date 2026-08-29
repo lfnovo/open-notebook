@@ -919,6 +919,17 @@ export const trTR = {
       continueBtn: "Devam et",
       gradeFailed: "Cevabınız değerlendirilemedi",
     },
+    guidedQuizSession: {
+      examModeTab: "Sınav modu",
+      guidedModeTab: "Rehberli mod",
+      nextQuestion: "Sonraki soru",
+      sessionSummary: "{{total}} sorudan {{mastered}} tanesinde ustalaştınız.",
+      masteredLabel: "Ustalaşıldı",
+      correctedLabel: "Düzeltildi",
+      struggledLabel: "Tekrar gerekiyor",
+      needsWorkTitle: "Daha fazla tekrar gerektiren sorular",
+      correctAnswerLabel: "Doğru cevap",
+    },
   },
   drive: {
     title: "Google Drive",

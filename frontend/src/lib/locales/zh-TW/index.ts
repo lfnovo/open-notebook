@@ -919,6 +919,17 @@ export const zhTW = {
       continueBtn: "繼續",
       gradeFailed: "無法評估你的答案",
     },
+    guidedQuizSession: {
+      examModeTab: "測驗模式",
+      guidedModeTab: "引導模式",
+      nextQuestion: "下一題",
+      sessionSummary: "你已掌握 {{total}} 題中的 {{mastered}} 題。",
+      masteredLabel: "已掌握",
+      correctedLabel: "已修正",
+      struggledLabel: "需要複習",
+      needsWorkTitle: "需要更多複習的題目",
+      correctAnswerLabel: "正確答案",
+    },
   },
   drive: {
     title: "Google 雲端硬碟",

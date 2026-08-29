@@ -920,6 +920,17 @@ export const esES = {
       continueBtn: "Continuar",
       gradeFailed: "No se pudo evaluar tu respuesta",
     },
+    guidedQuizSession: {
+      examModeTab: "Modo examen",
+      guidedModeTab: "Modo guiado",
+      nextQuestion: "Siguiente pregunta",
+      sessionSummary: "Dominaste {{mastered}} de {{total}} preguntas.",
+      masteredLabel: "Dominadas",
+      correctedLabel: "Corregidas",
+      struggledLabel: "Necesitan repaso",
+      needsWorkTitle: "Preguntas que necesitan más repaso",
+      correctAnswerLabel: "Respuesta correcta",
+    },
   },
   drive: {
     title: "Google Drive",

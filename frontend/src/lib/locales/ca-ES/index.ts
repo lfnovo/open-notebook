@@ -919,6 +919,17 @@ export const caES = {
       continueBtn: "Continuar",
       gradeFailed: "No s'ha pogut avaluar la teva resposta",
     },
+    guidedQuizSession: {
+      examModeTab: "Mode examen",
+      guidedModeTab: "Mode guiat",
+      nextQuestion: "Pregunta següent",
+      sessionSummary: "Has dominat {{mastered}} de {{total}} preguntes.",
+      masteredLabel: "Dominades",
+      correctedLabel: "Corregides",
+      struggledLabel: "Necessiten repàs",
+      needsWorkTitle: "Preguntes que necessiten més repàs",
+      correctAnswerLabel: "Resposta correcta",
+    },
   },
   drive: {
     title: "Google Drive",

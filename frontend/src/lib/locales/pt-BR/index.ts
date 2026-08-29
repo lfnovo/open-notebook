@@ -919,6 +919,17 @@ export const ptBR = {
       continueBtn: "Continuar",
       gradeFailed: "Não foi possível avaliar sua resposta",
     },
+    guidedQuizSession: {
+      examModeTab: "Modo prova",
+      guidedModeTab: "Modo guiado",
+      nextQuestion: "Próxima pergunta",
+      sessionSummary: "Você dominou {{mastered}} de {{total}} perguntas.",
+      masteredLabel: "Dominadas",
+      correctedLabel: "Corrigidas",
+      struggledLabel: "Precisam de revisão",
+      needsWorkTitle: "Perguntas que precisam de mais revisão",
+      correctAnswerLabel: "Resposta correta",
+    },
   },
   drive: {
     title: "Google Drive",

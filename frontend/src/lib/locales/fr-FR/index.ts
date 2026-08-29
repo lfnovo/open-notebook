@@ -919,6 +919,17 @@ export const frFR = {
       continueBtn: "Continuer",
       gradeFailed: "Impossible d'évaluer votre réponse",
     },
+    guidedQuizSession: {
+      examModeTab: "Mode examen",
+      guidedModeTab: "Mode guidé",
+      nextQuestion: "Question suivante",
+      sessionSummary: "Vous avez maîtrisé {{mastered}} question(s) sur {{total}}.",
+      masteredLabel: "Maîtrisées",
+      correctedLabel: "Corrigées",
+      struggledLabel: "À revoir",
+      needsWorkTitle: "Questions à revoir davantage",
+      correctAnswerLabel: "Bonne réponse",
+    },
   },
   drive: {
     title: "Google Drive",

@@ -919,6 +919,17 @@ export const itIT = {
       continueBtn: "Continua",
       gradeFailed: "Impossibile valutare la tua risposta",
     },
+    guidedQuizSession: {
+      examModeTab: "Modalità esame",
+      guidedModeTab: "Modalità guidata",
+      nextQuestion: "Domanda successiva",
+      sessionSummary: "Hai padroneggiato {{mastered}} domande su {{total}}.",
+      masteredLabel: "Padroneggiate",
+      correctedLabel: "Corrette",
+      struggledLabel: "Da rivedere",
+      needsWorkTitle: "Domande che richiedono più revisione",
+      correctAnswerLabel: "Risposta corretta",
+    },
   },
   drive: {
     title: "Google Drive",

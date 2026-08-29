@@ -26,7 +26,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { FlashcardStudyModes } from '@/components/study/FlashcardStudyModes'
-import { QuizTaker } from '@/components/study/QuizTaker'
+import { QuizStudyModes } from '@/components/study/QuizStudyModes'
 
 export default function StudySetDetailPage() {
   const { t, language } = useTranslation()
@@ -130,7 +130,7 @@ export default function StudySetDetailPage() {
                   notebookId={studySet.notebook}
                 />
               ) : (
-                <QuizTaker items={quizItems} studySetName={studySet.name} />
+                <QuizStudyModes items={quizItems} studySetName={studySet.name} />
               )}
             </>
           )}

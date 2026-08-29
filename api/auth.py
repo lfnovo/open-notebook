@@ -80,3 +80,34 @@ class PasswordAuthMiddleware(BaseHTTPMiddleware):
         # Password is correct, proceed with the request
         response = await call_next(request)
         return response
+
+
+def is_request_authenticated(request: Request) -> bool:
+    """Best-effort auth check for endpoints excluded from PasswordAuthMiddleware.
+
+    /api/config and /api/auth/status must stay reachable before login (the
+    frontend's ConnectionGuard needs dbStatus, and the login page needs to
+    know whether a password is required, before any token exists) - but that
+    doesn't mean everything they return should be handed to an unauthenticated
+    caller. This lets such an endpoint gate part of its response on auth
+    without blocking the whole request. Mirrors PasswordAuthMiddleware's own
+    check; returns True (nothing to gate) when auth is disabled entirely.
+    """
+    password = get_secret_from_env("OPEN_NOTEBOOK_PASSWORD")
+    if not password:
+        return True
+
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        return False
+
+    try:
+        scheme, credentials = auth_header.split(" ", 1)
+        if scheme.lower() != "bearer":
+            return False
+    except ValueError:
+        return False
+
+    return secrets.compare_digest(
+        credentials.encode("utf-8"), password.encode("utf-8")
+    )

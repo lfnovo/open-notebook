@@ -7,6 +7,7 @@ from typing import Optional
 from fastapi import APIRouter, Request
 from loguru import logger
 
+from api.auth import is_request_authenticated
 from open_notebook.database.repository import repo_query
 from open_notebook.utils.version_utils import (
     compare_versions,
@@ -129,20 +130,26 @@ async def get_config(request: Request):
     so this endpoint no longer returns apiUrl.
 
     Also checks for version updates from GitHub (with caching and error handling).
-    """
-    # Get current version
-    current_version = get_version()
 
-    # Check for updates (with caching and error handling)
-    # This MUST NOT break the endpoint - wrapped in try-except as extra safety
+    This endpoint is intentionally excluded from PasswordAuthMiddleware -
+    ConnectionGuard needs dbStatus before the user has entered a password.
+    Version info has no such pre-login need and is exact-version recon value
+    to an unauthenticated caller, so it's only included once authenticated.
+    """
+    current_version = ""
     latest_version = None
     has_update = False
 
-    try:
-        latest_version, has_update = await get_latest_version_cached(current_version)
-    except Exception as e:
-        # Extra safety: ensure version check never breaks the config endpoint
-        logger.error(f"Unexpected error during version check: {e}")
+    if is_request_authenticated(request):
+        current_version = get_version()
+
+        # Check for updates (with caching and error handling)
+        # This MUST NOT break the endpoint - wrapped in try-except as extra safety
+        try:
+            latest_version, has_update = await get_latest_version_cached(current_version)
+        except Exception as e:
+            # Extra safety: ensure version check never breaks the config endpoint
+            logger.error(f"Unexpected error during version check: {e}")
 
     # Check database health
     db_health = await check_database_health()

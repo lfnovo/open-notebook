@@ -74,3 +74,58 @@ class TestConfigEndpointDoesNotLeakDbErrors:
         depends on."""
         response = client.get("/api/config")
         assert response.status_code != 401
+
+
+class TestConfigEndpointGatesVersionInfoOnAuth:
+    """Regression test for a real Strix pentest finding (2026-08-29):
+    /api/config is reachable without auth by design (ConnectionGuard needs
+    dbStatus pre-login), but was handing the exact app version to anyone -
+    useful only for CVE-targeting recon, with no pre-login need for it.
+    dbStatus must stay available either way; version info is now gated on
+    is_request_authenticated().
+    """
+
+    def test_unauthenticated_request_gets_no_version_info(self, client, monkeypatch):
+        monkeypatch.setenv("OPEN_NOTEBOOK_PASSWORD", "correct-horse-battery-staple")
+        with patch(
+            "api.routers.config.repo_query",
+            new=AsyncMock(return_value=[{"result": 1}]),
+        ):
+            response = client.get("/api/config")
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["version"] == ""
+        assert body["latestVersion"] is None
+        assert body["hasUpdate"] is False
+        # dbStatus must still work pre-login - that's the whole reason this
+        # endpoint is excluded from PasswordAuthMiddleware in the first place.
+        assert body["dbStatus"] == "online"
+
+    def test_authenticated_request_gets_real_version_info(self, client, monkeypatch):
+        monkeypatch.setenv("OPEN_NOTEBOOK_PASSWORD", "correct-horse-battery-staple")
+        with patch(
+            "api.routers.config.repo_query",
+            new=AsyncMock(return_value=[{"result": 1}]),
+        ):
+            response = client.get(
+                "/api/config",
+                headers={"Authorization": "Bearer correct-horse-battery-staple"},
+            )
+
+        assert response.status_code == 200
+        assert response.json()["version"] != ""
+
+    def test_wrong_password_is_treated_as_unauthenticated(self, client, monkeypatch):
+        monkeypatch.setenv("OPEN_NOTEBOOK_PASSWORD", "correct-horse-battery-staple")
+        with patch(
+            "api.routers.config.repo_query",
+            new=AsyncMock(return_value=[{"result": 1}]),
+        ):
+            response = client.get(
+                "/api/config",
+                headers={"Authorization": "Bearer wrong-password"},
+            )
+
+        assert response.status_code == 200
+        assert response.json()["version"] == ""

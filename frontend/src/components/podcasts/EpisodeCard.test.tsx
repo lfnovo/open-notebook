@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
 import { EpisodeCard } from './EpisodeCard'
+import apiClient from '@/lib/api/client'
 import type { PodcastEpisode } from '@/lib/types/podcasts'
 
 // useTranslation is mocked globally in setup.ts (t returns the key string)
@@ -133,5 +134,35 @@ describe('EpisodeCard model details', () => {
     )
 
     expect(screen.getAllByText('— / —')).toHaveLength(3)
+  })
+})
+
+describe('EpisodeCard audio loading', () => {
+  // Regression test for a live production bug: apiClient's request
+  // interceptor prepends its own "/api" baseURL to any request path that
+  // isn't a network-absolute URL (scheme+host). episode.audio_url already
+  // starts with "/api/..." (PodcastEpisodeResponse), so passing it to
+  // apiClient.get() unmodified double-prefixed the request to
+  // "/api/api/podcasts/.../audio" - a 404 in relative-path/tunnel deploys
+  // where getApiUrl() resolves to "" (confirmed live: the network request
+  // Chrome actually sent was exactly that double-prefixed 404 URL). Fixed
+  // by stripping the redundant leading "/api" before calling apiClient,
+  // matching every other apiClient call in this codebase.
+  it('strips the redundant leading /api before calling apiClient for the audio blob', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: new Blob(['audio']) })
+
+    render(
+      <EpisodeCard
+        episode={makeEpisode({ audio_url: '/api/podcasts/episodes/episode:1/audio' })}
+        onDelete={vi.fn()}
+      />
+    )
+
+    await waitFor(() => {
+      expect(apiClient.get).toHaveBeenCalledWith(
+        '/podcasts/episodes/episode:1/audio',
+        { responseType: 'blob' }
+      )
+    })
   })
 })

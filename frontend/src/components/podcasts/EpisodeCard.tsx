@@ -168,20 +168,27 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
 
     // If backend exposed a protected endpoint, fetch it with auth headers
     const loadProtectedAudio = async () => {
-      // First resolve the audio URL
-      const directAudioUrl = await resolvePodcastAssetUrl(episode.audio_url ?? episode.audio_file)
-
-      if (!directAudioUrl || !episode.audio_url) {
-        setAudioSrc(directAudioUrl)
+      if (!episode.audio_url) {
+        // Legacy audio_file-only episodes have no protected endpoint to
+        // authenticate against - resolve straight to a playable <audio src>.
+        setAudioSrc(await resolvePodcastAssetUrl(episode.audio_file))
         return
       }
 
       try {
-        // apiClient attaches the auth header; directAudioUrl is absolute so
-        // the dynamic baseURL is ignored.
-        const response = await apiClient.get<Blob>(directAudioUrl, {
-          responseType: 'blob',
-        })
+        // episode.audio_url already starts with "/api/..." (see
+        // PodcastEpisodeResponse). apiClient's request interceptor prepends
+        // its own "/api" baseURL to any request path that isn't a
+        // network-absolute URL (scheme+host) - in relative-path/tunnel mode
+        // getApiUrl() resolves to "", so a pre-resolved "/api/..." url here
+        // is still only root-relative, not network-absolute, and gets
+        // double-prefixed to "/api/api/..." (404). Strip the redundant
+        // leading "/api" so apiClient's own baseURL supplies it exactly
+        // once, matching every other apiClient call in this codebase.
+        const response = await apiClient.get<Blob>(
+          episode.audio_url.replace(/^\/api(?=\/)/, ''),
+          { responseType: 'blob' }
+        )
 
         revokeUrl = URL.createObjectURL(response.data)
         setAudioSrc(revokeUrl)

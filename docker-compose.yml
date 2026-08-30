@@ -31,7 +31,7 @@ services:
     environment:
       # REQUIRED: Change this to your own secret string
       # This encrypts your API keys in the database
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=${OPEN_NOTEBOOK_ENCRYPTION_KEY:-change-me-to-a-secret-string}
 
       # Database connection. SURREAL_USER / SURREAL_PASSWORD default to root:root
       # for local use; override them in a .env file before exposing the instance
@@ -55,6 +55,9 @@ services:
       # - OPEN_NOTEBOOK_WORKER_MAX_TASKS=1
     volumes:
       - ./notebook_data:/app/data
+      - ./open_notebook:/app/open_notebook
+      - ./commands:/app/commands
+      - ./api:/app/api
     depends_on:
       - surrealdb
     restart: always

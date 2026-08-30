@@ -1,3 +1,4 @@
+import hmac
 from typing import Optional
 
 from fastapi import Depends, HTTPException, Request
@@ -10,10 +11,26 @@ from starlette.types import ASGIApp
 from open_notebook.utils.encryption import get_secret_from_env
 
 
+def _credential_bytes(credential: str) -> bytes:
+    """
+    Recover the raw bytes a client sent for an Authorization credential.
+
+    ASGI servers decode header values as latin-1, so re-encoding with latin-1
+    restores the exact bytes on the wire and lets a UTF-8 password (including
+    characters outside latin-1) match. A credential that is not latin-1
+    encodable did not arrive over HTTP -- it came from a direct call -- so
+    fall back to UTF-8 for those callers.
+    """
+    try:
+        return credential.encode("latin-1")
+    except UnicodeEncodeError:
+        return credential.encode("utf-8")
+
+
 class PasswordAuthMiddleware(BaseHTTPMiddleware):
     """
     Middleware to check password authentication for all API requests.
-    Always active with default password if OPEN_NOTEBOOK_PASSWORD is not set.
+    Disabled entirely if OPEN_NOTEBOOK_PASSWORD is not set.
     Supports Docker secrets via OPEN_NOTEBOOK_PASSWORD_FILE.
     """
 
@@ -68,7 +85,9 @@ class PasswordAuthMiddleware(BaseHTTPMiddleware):
             )
 
         # Check password
-        if credentials != self.password:
+        if not hmac.compare_digest(
+            _credential_bytes(credentials), self.password.encode("utf-8")
+        ):
             return JSONResponse(
                 status_code=401,
                 content={"detail": "Invalid password"},
@@ -109,7 +128,9 @@ def check_api_password(
         )
 
     # Check password
-    if credentials.credentials != password:
+    if not hmac.compare_digest(
+        _credential_bytes(credentials.credentials), password.encode("utf-8")
+    ):
         raise HTTPException(
             status_code=401,
             detail="Invalid password",

@@ -3,6 +3,11 @@ import type {
   BookUploadResponse,
   GeneratePaperRequest,
   GeneratePaperResponse,
+  GenerateBankBatchRequest,
+  GenerateBankBatchResponse,
+  BankBatchStatusResponse,
+  BankBatchResultResponse,
+  BankBatchSummary,
   PaperResult,
   PaperStatusResponse,
   PaperSummary,
@@ -43,10 +48,48 @@ export const questionPaperApi = {
     return response.data
   },
 
+  generateBankBatch: async (
+    request: GenerateBankBatchRequest,
+  ): Promise<GenerateBankBatchResponse> => {
+    const response = await apiClient.post<GenerateBankBatchResponse>(
+      '/papers/bank/batch/generate',
+      request,
+    )
+    return response.data
+  },
+
+  getBankBatchStatus: async (batchId: string): Promise<BankBatchStatusResponse> => {
+    const response = await apiClient.get<BankBatchStatusResponse>(
+      `/papers/bank/batch/${encodeURIComponent(batchId)}/status`,
+    )
+    return response.data
+  },
+
+  getBankBatchResult: async (batchId: string): Promise<BankBatchResultResponse> => {
+    const response = await apiClient.get<BankBatchResultResponse>(
+      `/papers/bank/batch/${encodeURIComponent(batchId)}/result`,
+    )
+    return response.data
+  },
+
+  listBankBatches: async (): Promise<BankBatchSummary[]> => {
+    const response = await apiClient.get<BankBatchSummary[]>('/papers/bank/batches')
+    return response.data
+  },
+
   searchBank: async (query: string = '', limit: number = 1000): Promise<BankQuestion[]> => {
     const response = await apiClient.get<BankQuestion[]>('/papers/bank/search', {
       params: { q: query, limit },
     })
+    return response.data
+  },
+
+  exportBankXlsx: async (questionIds: string[]): Promise<Blob> => {
+    const response = await apiClient.post(
+      '/papers/bank/export/xlsx',
+      { question_ids: questionIds },
+      { responseType: 'blob' },
+    )
     return response.data
   },
 

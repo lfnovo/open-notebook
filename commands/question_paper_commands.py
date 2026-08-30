@@ -192,6 +192,9 @@ class GenerateBankBatchInput(CommandInput):
     max_slot_attempts: int = 3
     max_refill_attempts: int = 5
     slot_concurrency: int = 3
+    minimum_accepted_questions: Optional[int] = None
+    max_batch_generation_attempts: Optional[int] = None
+    max_batch_runtime_seconds: Optional[int] = None
 
 
 class GenerateBankBatchOutput(CommandOutput):
@@ -263,6 +266,10 @@ async def generate_question_bank_batch_command(
             "max_slot_attempts": input_data.max_slot_attempts,
             "max_refill_attempts": input_data.max_refill_attempts,
             "slot_concurrency": input_data.slot_concurrency,
+            "minimum_accepted_questions": input_data.minimum_accepted_questions,
+            "max_batch_generation_attempts": input_data.max_batch_generation_attempts,
+            "max_batch_runtime_seconds": input_data.max_batch_runtime_seconds,
+            "batch_started_at": start_time,
             "bank_batch_blueprint": blueprint_dict,
             "bank_batch_mode": True,
             "batch_id": batch_id,
@@ -291,12 +298,30 @@ async def generate_question_bank_batch_command(
         accepted = int(audit.get("accepted") or len(approved))
         failed_count = int(audit.get("failed") or len(failed_slots))
         failure_summary = audit.get("failure_summary") or {}
+        stop_reason = audit.get("stop_reason")
+        minimum_accepted = audit.get("minimum_accepted_questions")
+        if minimum_accepted is None:
+            minimum_accepted = input_data.minimum_accepted_questions
         error_message = None
         if status == "completed_partial" and accepted < requested:
-            error_message = (
-                f"Generated {accepted}/{requested} high-quality questions; "
-                f"{failed_count} slot(s) could not be finalized after bounded retries."
-            )
+            if (
+                stop_reason
+                in (
+                    "minimum_target_reached_attempt_budget",
+                    "minimum_target_reached_time_budget",
+                )
+                and minimum_accepted is not None
+            ):
+                error_message = (
+                    f"Generated {accepted}/{requested} high-quality questions; "
+                    f"minimum target {minimum_accepted} reached; "
+                    f"global generation budget exhausted ({stop_reason})."
+                )
+            else:
+                error_message = (
+                    f"Generated {accepted}/{requested} high-quality questions; "
+                    f"{failed_count} slot(s) could not be finalized after bounded retries."
+                )
 
         _audit_json = _json.dumps(audit)
         _fs_json = _json.dumps(failed_slots)
@@ -304,6 +329,8 @@ async def generate_question_bank_batch_command(
         _summary_json = _json.dumps(failure_summary)
         _rejected_json = _json.dumps(rejected_attempts)
         _err_sql = "NONE" if error_message is None else _json.dumps(error_message)
+        _min_sql = "NONE" if minimum_accepted is None else str(int(minimum_accepted))
+        _stop_sql = "NONE" if not stop_reason else _json.dumps(str(stop_reason))
 
         await repo_query(
             f"UPDATE {batch_id} MERGE "
@@ -311,12 +338,14 @@ async def generate_question_bank_batch_command(
             f"saved_question_ids: {_saved_json}, failure_summary: {_summary_json}, "
             f"rejected_attempts: {_rejected_json}, "
             f"requested: {requested}, accepted: {accepted}, failed: {failed_count}, "
+            f"minimum_accepted_questions: {_min_sql}, stop_reason: {_stop_sql}, "
             f"error_message: {_err_sql}, status: '{status}'}}",
             {},
         )
 
         logger.info(
-            f"Saved bank batch {batch_id}: {accepted}/{requested} accepted status={status}"
+            f"Saved bank batch {batch_id}: {accepted}/{requested} accepted "
+            f"status={status} stop_reason={stop_reason}"
         )
 
         processing_time = time.time() - start_time

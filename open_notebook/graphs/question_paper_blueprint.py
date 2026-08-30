@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import copy
 import json
+import os
 import re
 from dataclasses import asdict, dataclass
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
@@ -34,24 +35,26 @@ MAX_SLOT_ATTEMPTS = 3
 MAX_REFILL_ATTEMPTS = 5
 MAX_SLOT_CONCURRENCY = 3
 
+# Cognitive LLM did not return scores/flags. Fail-closed; do not invent Easy-8 / Grade / grounding.
+VALIDATOR_UNAVAILABLE_KEY = "validator_unavailable"
+
 # Centralized cognitive definitions used by the generator (not the validator mapping).
 DIFFICULTY_DEFINITIONS = """
-EASY — Tests direct recall, recognition, basic comprehension, or straightforward application of one concept.
-Normally: one primary concept; familiar/direct context; 0–1 simple reasoning step; information explicitly
-covered in the material; no meaningful multi-concept integration; no significant analysis/evaluation.
+EASY — Tests direct recall, recognition, identification, basic comprehension, straightforward classification, or direct one-step application of one concept.
+Expected forms: recall / recognize / identify / basic comprehension / one-step application.
+Concepts: one primary. Context: familiar/direct. Steps: 0–1. Integration: none.
+Unsuitable: multi-concept integration; causal analysis across several ideas; multi-dimension comparison; evaluation of alternatives; multi-step reasoning; transfer to an unfamiliar situation; multiple conditionals.
+A short stem is not automatically Easy. Do not make the keyed answer obvious.
 
-MEDIUM — Tests genuine application or interpretation.
-Normally: recall alone is insufficient; 1–2 meaningful reasoning steps; familiar or moderately modified
-context; one main concept, possibly one related concept; requires interpretation/comparison/application;
-plausible distractors.
+MEDIUM — Tests genuine application or interpretation. Recall alone is normally insufficient.
+Expected forms: apply / interpret / compare / cause–effect / reasoned classification / short scenario reasoning.
+Concepts: one main, possibly one related. Steps: about 1–2.
+Unsuitable: pure recall padded with longer wording; Difficult-level multi-step integration or evaluation.
 
-DIFFICULT — Tests higher-order reasoning. Require at least two strong higher-order characteristics such as:
-multiple connected reasoning steps; unfamiliar/non-routine context; integration of two or more important
-concepts; analysis of relationships; evaluation of alternatives; complex inference; troubleshooting;
-transfer of knowledge; selecting the best solution under constraints.
+DIFFICULT — Tests analysis, evaluation, inference, transfer, multi-step reasoning, or integration of 2+ connected concepts when the chapter supports it.
+Difficulty must come from reasoning, not obscure vocabulary, extra calculations, excessive text, confusing grammar, or trick wording.
 
-Do NOT create artificial difficulty through confusing wording, unnecessary text, difficult vocabulary,
-tricks, excessive arithmetic, or out-of-syllabus information.
+Grade and Difficulty are separate: Grade sets age-appropriate content; Difficulty sets cognitive demand.
 """
 
 VALIDATOR_CRITERION_RUBRIC = """
@@ -180,6 +183,63 @@ def cognitive_total(scores: Dict[str, int]) -> int:
     return sum(scores[k] for k in COGNITIVE_CRITERIA)
 
 
+_DIFFICULTY_RANK = {"easy": 0, "medium": 1, "difficult": 2}
+
+
+def format_slot_difficulty_guidance(difficulty: str) -> str:
+    """Compact operational generator brief. Does not change validator score mapping."""
+    diff = normalize_difficulty(difficulty)
+    if diff == "easy":
+        return (
+            "DIFFICULTY SLOT (Easy): forms=recall/recognize/identify/basic comprehension/"
+            "one-step application; concepts=1; steps=0–1; no multi-concept evaluation, "
+            "multi-step causal analysis, or transfer. Short wording ≠ Easy."
+        )
+    if diff == "medium":
+        return (
+            "DIFFICULTY SLOT (Medium): forms=application/interpretation/comparison/"
+            "cause-effect/reasoned classification; recall alone is insufficient; "
+            "steps≈1–2; one main concept (optionally one related). Avoid Difficult "
+            "multi-step integration/evaluation and avoid pure-recall padding."
+        )
+    return (
+        "DIFFICULTY SLOT (Difficult): forms=analysis/evaluation/inference/transfer/"
+        "multi-step reasoning/integration of 2+ connected concepts when supported. "
+        "Demand must come from reasoning, not vocabulary, extra arithmetic, length, "
+        "or trick wording."
+    )
+
+
+def format_cognitive_mismatch_reason(
+    *,
+    target: str,
+    validated: str,
+    total: int,
+    scores: Optional[Dict[str, Any]] = None,
+    assigned_intent: Optional[Dict[str, Any]] = None,
+) -> str:
+    """Diagnostic mismatch line. Prefix stays stable for existing refill classifiers."""
+    t_rank = _DIFFICULTY_RANK.get(target, 1)
+    v_rank = _DIFFICULTY_RANK.get(validated, 1)
+    demand = "over-demand" if v_rank > t_rank else "under-demand"
+    parts = [
+        f"cognitive difficulty mismatch: target={target}, validated={validated} "
+        f"(score={total}); demand={demand}"
+    ]
+    if scores:
+        crit = ",".join(f"{k}={scores.get(k)}" for k in COGNITIVE_CRITERIA if k in scores)
+        if crit:
+            parts.append(f"criteria={crit}")
+    if isinstance(assigned_intent, dict):
+        form = str(assigned_intent.get("cognitive_form") or "").strip()
+        if form:
+            parts.append(f"cognitive_form={form}")
+        oid = str(assigned_intent.get("intent_id") or "").strip()
+        if oid:
+            parts.append(f"intent_id={oid}")
+    return "; ".join(parts)
+
+
 def preset_from_dict(data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Return a deep copy of the default preset, optionally overlaid with caller data."""
     preset = copy.deepcopy(DEFAULT_PRESET)
@@ -292,20 +352,207 @@ def decide_slot_outcome(passed: bool, attempt: int, max_attempts: int = MAX_SLOT
 
 
 def evaluate_answer_type(answer_type: str, correct_indices: Sequence[int], option_count: int) -> List[str]:
-    """Python-side answer-type rules (not LLM)."""
+    """Python-side answer-type rules (not LLM). Does not repair an invalid key."""
     errors: List[str] = []
     indices = list(correct_indices or [])
     if option_count != 5:
         errors.append(f"expected 5 options, got {option_count}")
-    if any(i < 0 or i >= option_count for i in indices):
+    index_types_ok = True
+    for idx in indices:
+        if isinstance(idx, bool) or not isinstance(idx, int):
+            errors.append("correct_indices out of range")
+            index_types_ok = False
+            break
+    if index_types_ok and any(i < 0 or i >= option_count for i in indices):
         errors.append("correct_indices out of range")
-    if answer_type == "single_correct" and len(indices) != 1:
+    unique: List[int] = []
+    seen: set[int] = set()
+    for idx in indices:
+        if idx in seen:
+            continue
+        seen.add(idx)
+        unique.append(idx)
+    if len(unique) != len(indices):
+        errors.append("correct_indices must not contain duplicates")
+    if answer_type == "single_correct" and len(unique) != 1:
         errors.append("single_correct requires exactly one correct answer")
-    if answer_type == "multiple_correct" and len(indices) < 2:
-        errors.append("multiple_correct requires more than one correct answer")
-    if not indices:
+    if answer_type == "multiple_correct":
+        if len(unique) < 2:
+            errors.append("multiple_correct requires more than one correct answer")
+        elif len(unique) > 4:
+            errors.append("multiple_correct allows at most four correct answers")
+    if not unique:
         errors.append("no correct answers provided")
     return errors
+
+
+def normalize_option_text(text: str) -> str:
+    """Cheap option identity: trim, case-fold, drop obvious punctuation."""
+    value = re.sub(r"\s+", " ", (text or "").strip().lower())
+    value = re.sub(r"[^\w\s]+", "", value, flags=re.UNICODE)
+    return re.sub(r"\s+", " ", value).strip()
+
+
+_FORBIDDEN_META_OPTION_RE = re.compile(
+    r"(?is)^\s*("
+    r"(all|none|both|either|any)\s+of\s+(the\s+)?(above|these|them|the\s+following)|"
+    r"(all|none)\s+the\s+above|"
+    r"both\s+[a-e](\s*(,|/|&|and|or)\s*[a-e])+(\s+only)?|"
+    r"[a-e](\s*(,|/|&|and|or)\s*[a-e])+(\s+only)?"
+    r")\s*\.?\s*$"
+)
+
+def normalize_source_framing_text(text: str) -> str:
+    """Fold curly/Unicode apostrophes to ASCII before source-framing regex checks."""
+    return (
+        (text or "")
+        .replace("\u2019", "'")  # ’
+        .replace("\u2018", "'")  # ‘
+        .replace("\u02bc", "'")  # ʼ
+    )
+
+
+_UNSUPPORTED_CONTEXT_PHRASE_RE = re.compile(
+    r"(?i)\b("
+    r"according\s+to\s+(this|the)\s+chapter(?:'s)?|"
+    r"according\s+to\s+the\s+book|"
+    r"according\s+to\s+the\s+textbook|"
+    r"according\s+to\s+the\s+context|"
+    r"as\s+mentioned\s+in\s+the\s+book|"
+    r"as\s+stated\s+in\s+the\s+textbook|"
+    r"as\s+mentioned\s+in\s+the\s+textbook|"
+    r"as\s+per\s+the\s+chapter|"
+    r"based\s+on\s+the\s+passage|"
+    r"based\s+on\s+(this|the)\s+chapter(?:'s)?|"
+    r"from\s+(this|the)\s+chapter(?:'s)?|"
+    r"from\s+the\s+textbook|"
+    r"using\s+(this|the)\s+chapter(?:'s)?|"
+    r"using\s+(this|the)\s+book(?:'s)?|"
+    r"using\s+(this|the)\s+textbook(?:'s)?|"
+    r"the\s+chapter's\s+\w+|"
+    r"the\s+book's\s+\w+|"
+    r"the\s+textbook's\s+\w+|"
+    r"as\s+explained\s+in\s+(this\s+|the\s+)?chapter|"
+    r"according\s+to\s+the\s+information\s+provided|"
+    r"as\s+stated\s+earlier|"
+    r"as\s+discussed\s+in\s+the\s+book|"
+    r"according\s+to\s+the\s+content|"
+    r"according\s+to\s+the\s+material|"
+    r"(?:examples?|items?|facts?)\s+(?:that\s+)?(?:were\s+)?"
+    r"(?:listed|cited|mentioned|stated)\s+in\s+(?:this\s+|the\s+)?chapter"
+    r")\b"
+)
+
+
+def evaluate_option_set(options: Sequence[Any]) -> List[str]:
+    """Exactly five independently meaningful options; no empty, duplicate, or meta-options."""
+    errors: List[str] = []
+    opts = list(options or [])
+    if len(opts) != 5:
+        errors.append(f"expected 5 options, got {len(opts)}")
+    normalized: List[str] = []
+    for i, raw in enumerate(opts):
+        text = "" if raw is None else str(raw)
+        label = chr(65 + i) if 0 <= i < 26 else str(i)
+        if not text.strip() or not normalize_option_text(text):
+            errors.append(f"option {label} is empty")
+            continue
+        if _FORBIDDEN_META_OPTION_RE.match(text.strip()):
+            errors.append(f"option {label} is a forbidden meta-option")
+        normalized.append(normalize_option_text(text))
+    if len(normalized) != len(set(normalized)):
+        errors.append("duplicate option text")
+    return errors
+
+
+def evaluate_unsupported_context_phrasing(
+    question_text: str,
+    *,
+    standalone: bool = True,
+) -> List[str]:
+    """Reject book/passage framing on standalone MCQs. Passage/dataset items can opt out."""
+    if not standalone:
+        return []
+    normalized = normalize_source_framing_text(question_text or "")
+    if _UNSUPPORTED_CONTEXT_PHRASE_RE.search(normalized):
+        return ["unsupported contextual phrasing in a standalone question"]
+    return []
+
+
+def evaluate_mcq_structural_rules(
+    *,
+    answer_type: str,
+    options: Sequence[Any],
+    correct_indices: Sequence[int],
+    question_text: str = "",
+    standalone: bool = True,
+) -> List[str]:
+    """Cheap deterministic MCQ structure. Does not call LLMs or rewrite the item."""
+    reasons: List[str] = []
+    opts = list(options or [])
+    reasons.extend(evaluate_option_set(opts))
+    reasons.extend(evaluate_answer_type(answer_type, correct_indices, len(opts)))
+    reasons.extend(
+        evaluate_unsupported_context_phrasing(question_text, standalone=standalone)
+    )
+    seen: set[str] = set()
+    unique: List[str] = []
+    for reason in reasons:
+        if reason in seen:
+            continue
+        seen.add(reason)
+        unique.append(reason)
+    return unique
+
+
+_UNNECESSARY_SOURCE_REFERENCE_RE = re.compile(
+    r"(?i)\b("
+    r"this\s+chapter|"
+    r"in\s+(the\s+)?chapter|"
+    r"according\s+to\s+(this|the)\s+chapter(?:'s)?|"
+    r"based\s+on\s+(this|the)\s+chapter(?:'s)?|"
+    r"from\s+(this|the)\s+chapter(?:'s)?|"
+    r"using\s+(this|the)\s+chapter(?:'s)?|"
+    r"using\s+(this|the)\s+book(?:'s)?|"
+    r"using\s+(this|the)\s+textbook(?:'s)?|"
+    r"the\s+chapter's\s+\w+|"
+    r"the\s+book's\s+\w+|"
+    r"the\s+textbook's\s+\w+|"
+    r"from\s+the\s+textbook|"
+    r"according\s+to\s+the\s+textbook|"
+    r"as\s+stated\s+in\s+the\s+textbook|"
+    r"as\s+mentioned\s+in\s+the\s+textbook|"
+    r"as\s+explained\s+in\s+(this\s+|the\s+)?chapter|"
+    r"(?:listed|cited|mentioned|stated)\s+in\s+(?:this\s+|the\s+)?chapter|"
+    r"on\s+page\s+\d+|"
+    r"page\s+\d+|"
+    r"section\s+\d+|"
+    r"the\s+author|"
+    r"in\s+the\s+book|"
+    r"the\s+material|"
+    r"the\s+content|"
+    r"the\s+text|"
+    r"the\s+textbook"
+    r")\b"
+)
+
+
+def evaluate_unnecessary_source_references(
+    question_text: str,
+    *,
+    standalone: bool = True,
+) -> List[str]:
+    """Cheap Step 2 check for unnecessary chapter/page/book/material pointers.
+
+    Does not replace Step 1 unsupported-context phrases.
+    When standalone=False (passage/dataset items), source framing is allowed.
+    """
+    if not standalone:
+        return []
+    normalized = normalize_source_framing_text(question_text or "")
+    if _UNNECESSARY_SOURCE_REFERENCE_RE.search(normalized):
+        return ["stem refers to the source instead of standing on its own"]
+    return []
 
 
 _GENERIC_TOPIC_RE = re.compile(
@@ -593,6 +840,51 @@ def _validate_distractor_plausibility(question: Dict[str, Any]) -> List[str]:
     return errors
 
 
+_OPTION_REVEALS_OTHER_RE = re.compile(
+    r"(?i)\b("
+    r"as\s+(stated|shown|in)\s+(option\s+)?[a-e]|"
+    r"same\s+as\s+(option\s+)?[a-e]|"
+    r"because\s+[a-e]\s+is\s+(correct|true)|"
+    r"if\s+[a-e]\s+(is\s+)?(correct|true)|"
+    r"follows?\s+from\s+[a-e]"
+    r")\b"
+)
+
+
+def evaluate_obvious_option_quality(question: Dict[str, Any]) -> List[str]:
+    """Cheap, conservative option-quality gates. Semantic quality stays with the LLM."""
+    errors: List[str] = []
+    options = list(question.get("options") or [])
+    indices = list(question.get("correct_indices") or [])
+    if len(options) != 5:
+        return errors
+
+    for i, opt in enumerate(options):
+        text = opt or ""
+        label = chr(65 + i)
+        if _JOKE_FILLER_RE.search(text):
+            errors.append(f"absurd/obvious distractor: option {label}")
+        if _OPTION_REVEALS_OTHER_RE.search(text):
+            errors.append(f"option not independently assessable: option {label}")
+
+    lengths = [len(str(o or "").strip()) for o in options]
+    for ci in indices:
+        if not isinstance(ci, int) or ci < 0 or ci >= 5:
+            continue
+        others = [lengths[i] for i in range(5) if i != ci]
+        if not others:
+            continue
+        median = sorted(others)[len(others) // 2]
+        correct_len = lengths[ci]
+        if median >= 12 and correct_len >= max(3 * median, median + 40):
+            errors.append("answer-style clue: correct option is much longer than the others")
+            break
+        if correct_len >= 12 and median >= max(3 * correct_len, correct_len + 40):
+            errors.append("answer-style clue: correct option is much shorter than the others")
+            break
+    return errors
+
+
 def _validate_redundant_correct_options(question: Dict[str, Any]) -> List[str]:
     """Reject multiple_correct questions where correct options are near duplicates in meaning."""
     answer_type = question.get("answer_type")
@@ -643,6 +935,8 @@ def apply_independent_validation(
     book_grounded: bool,
     blind_solver: Optional[Dict[str, Any]] = None,
     content_aware_lexical: bool = False,
+    assigned_intent: Optional[Dict[str, Any]] = None,
+    require_explanation_valid: bool = True,
 ) -> Dict[str, Any]:
     """
     Combine independent criterion scores (summed in Python) with quality flags,
@@ -650,27 +944,76 @@ def apply_independent_validation(
 
     Validator must not be told target_difficulty; comparison happens here.
     content_aware_lexical: Bank Batch only — ignore MCQ scaffold words in lexical gate.
+    require_explanation_valid: Final Paper / full validation requires explanation_valid.
+        Bank Batch core phase sets False and validates explanation in a later pass.
     """
     reasons: List[str] = []
-    scores, score_errors = clamp_criterion_scores(criterion_scores)
-    reasons.extend(score_errors)
-    total = cognitive_total(scores)
-    validated = map_cognitive_score(total)
+    validator_unavailable = bool(quality_flags.get(VALIDATOR_UNAVAILABLE_KEY))
     target = normalize_difficulty(slot.target_difficulty)
 
+    if validator_unavailable:
+        scores = {}
+        total = None
+        validated = None
+        for raw in quality_flags.get("reasons") or []:
+            text = str(raw).strip()
+            if text:
+                reasons.append(text)
+        if not any("validator_unavailable" in r.lower() for r in reasons):
+            reasons.append("validator_unavailable: cognitive validator did not complete")
+    else:
+        scores, score_errors = clamp_criterion_scores(criterion_scores)
+        reasons.extend(score_errors)
+        total = cognitive_total(scores)
+        validated = map_cognitive_score(total)
+
     # --- Cognitive difficulty check (separate from quality) ---
-    if validated != target:
+    if not validator_unavailable and validated != target:
         reasons.append(
-            f"cognitive difficulty mismatch: target={target}, validated={validated} (score={total})"
+            format_cognitive_mismatch_reason(
+                target=target,
+                validated=validated,
+                total=total,
+                scores=scores,
+                assigned_intent=assigned_intent,
+            )
+        )
+    elif (
+        not validator_unavailable
+        and target == "medium"
+        and validated == "medium"
+    ):
+        # Same-band Medium demand gate: score 13–18 is necessary but not sufficient.
+        from open_notebook.graphs.question_bank_intent import (
+            classify_medium_generated_demand,
         )
 
-    # --- Answer-type structural checks ---
-    option_count = len(question.get("options") or [])
+        if (
+            classify_medium_generated_demand(
+                scores=scores,
+                question=question,
+                assigned_intent=assigned_intent,
+            )
+            == "under-demand"
+        ):
+            reasons.append(
+                format_cognitive_mismatch_reason(
+                    target=target,
+                    validated=validated,
+                    total=total,
+                    scores=scores,
+                    assigned_intent=assigned_intent,
+                )
+            )
+
+    # --- Answer-type / option-set structural checks (deterministic) ---
     reasons.extend(
-        evaluate_answer_type(
-            slot.answer_type,
-            question.get("correct_indices") or [],
-            option_count,
+        evaluate_mcq_structural_rules(
+            answer_type=slot.answer_type,
+            options=question.get("options") or [],
+            correct_indices=question.get("correct_indices") or [],
+            question_text=question.get("question") or "",
+            standalone=True,
         )
     )
 
@@ -693,22 +1036,37 @@ def apply_independent_validation(
         )
     )
 
-    # --- LLM quality flags ---
-    required_flags = {
-        "content_valid": "content validity failed",
-        "answer_valid": "answer validity failed",
-        "grade_appropriate": "not appropriate for the selected grade",
-        "unambiguous": "question is ambiguous",
-        "language_clear": "language is unclear",
-        "explanation_valid": "explanation is invalid",
-        "distractors_ok": "distractor quality failed",
-    }
-    for key, message in required_flags.items():
-        if not quality_flags.get(key, False):
-            reasons.append(message)
+    # --- LLM quality flags (skip when Cognitive never returned a judgment) ---
+    if not validator_unavailable:
+        required_flags = {
+            "content_valid": "content validity failed",
+            "answer_valid": "answer validity failed",
+            "grade_appropriate": "not appropriate for the selected grade",
+            "unambiguous": "question is ambiguous",
+            "language_clear": "language is unclear",
+            "distractors_ok": "distractor quality failed",
+        }
+        if require_explanation_valid:
+            required_flags["explanation_valid"] = "explanation is invalid"
+        for key, message in required_flags.items():
+            if not quality_flags.get(key, False):
+                reasons.append(message)
 
-    if book_grounded and not quality_flags.get("grounded_in_material", False):
-        reasons.append("not grounded in the supplied chapter content (possible hallucination)")
+        if book_grounded and not quality_flags.get("grounded_in_material", False):
+            reasons.append("not grounded in the supplied chapter content (possible hallucination)")
+
+        step2_flags = {
+            "concept_relevant": "concept is not relevant to the selected chapter",
+            "no_unrelated_external_knowledge": "requires unrelated external knowledge",
+            "stem_self_contained": "stem is not self-contained",
+            "natural_assessment_wording": "wording copies the source instead of assessing the concept",
+            "scenario_focused": "scenario is unfocused, padded, or missing needed information",
+        }
+        for key, message in step2_flags.items():
+            if key in quality_flags and quality_flags.get(key) is False:
+                reasons.append(message)
+
+    reasons.extend(evaluate_unnecessary_source_references(question.get("question") or ""))
 
     # --- Lexical duplicate ---
     if is_near_duplicate(
@@ -742,6 +1100,17 @@ def apply_independent_validation(
 
     # --- Distractor quality (deterministic heuristic) ---
     reasons.extend(_validate_distractor_plausibility(question))
+    reasons.extend(evaluate_obvious_option_quality(question))
+
+    if not validator_unavailable:
+        step3_flags = {
+            "options_independently_assessable": "option not independently assessable",
+            "option_style_balanced": "answer-style clue",
+            "misconception_based_distractors": "weak misconception basis",
+        }
+        for key, message in step3_flags.items():
+            if key in quality_flags and quality_flags.get(key) is False:
+                reasons.append(message)
 
     # --- Redundant Multiple Correct options (semantic overlap heuristic) ---
     if slot.answer_type == "multiple_correct":
@@ -754,7 +1123,9 @@ def apply_independent_validation(
         extra = []
 
     passed = len(reasons) == 0
-    if not passed:
+    if validator_unavailable:
+        passed = False
+    elif not passed:
         reasons.extend(extra)
     status = "passed" if passed else "rejected"
     return {
@@ -1315,6 +1686,151 @@ BANK_BATCH_VALIDATOR_GROUNDING_MIN = 800
 BANK_BATCH_VALIDATOR_GROUNDING_MAX = 1500
 BANK_BATCH_BLIND_SNIPPET_MAX = 700
 BANK_BATCH_FORBIDDEN_STEM_LIMIT = 10
+CHAPTER_SHORT_TERM_MIN_LEN = 2
+CHAPTER_SHORT_TERM_MAX_LEN = 6
+SHORT_TERM_RETRIEVAL_EVENT_LIMIT = 30
+VALIDATION_CHUNK_RESELECTION_EVENT_LIMIT = 30
+
+# Chapter-derived abbreviations only (no domain whitelist). Examples in a finance
+# chapter may include QE / M1 / CBDC because those strings appear in the text.
+_CHAPTER_PAREN_ABBREV_RE = re.compile(r"\(([A-Z][A-Z0-9]{1,5})\)")
+_CHAPTER_STANDALONE_ABBREV_RE = re.compile(
+    r"\b([A-Z][A-Z0-9]{1,5})s?\b"
+)
+
+
+def empty_short_term_retrieval_diagnostics() -> Dict[str, Any]:
+    return {
+        "extracted_short_terms": [],
+        "probe_short_terms": [],
+        "retrieval_matches": [],
+        "short_term_retrieval_helped_count": 0,
+        "calls": 0,
+        "events": [],
+    }
+
+
+def _is_chapter_short_term_token(token: str) -> bool:
+    tok = (token or "").strip()
+    if len(tok) < CHAPTER_SHORT_TERM_MIN_LEN or len(tok) > CHAPTER_SHORT_TERM_MAX_LEN:
+        return False
+    if tok.isdigit() or not re.search(r"[A-Za-z]", tok):
+        return False
+    if tok.lower() in _STOP_WORDS:
+        return False
+    return True
+
+
+def extract_chapter_short_terms(text: str) -> List[str]:
+    """Return short abbreviations that actually appear in chapter/book text.
+
+    Retrieval-only. A token is eligible only if the supplied chapter content
+    contains it. Not a fixed domain list.
+    """
+    raw = text or ""
+    found = set()
+    for cre in (_CHAPTER_PAREN_ABBREV_RE, _CHAPTER_STANDALONE_ABBREV_RE):
+        for match in cre.finditer(raw):
+            tok = match.group(1)
+            if _is_chapter_short_term_token(tok):
+                found.add(tok.lower())
+    return sorted(found)
+
+
+def _short_term_in_text(term: str, text_lower: str) -> bool:
+    tok = (term or "").strip().lower()
+    if not tok or not text_lower:
+        return False
+    return re.search(
+        r"(?<![a-z0-9])" + re.escape(tok) + r"(?![a-z0-9])",
+        text_lower,
+    ) is not None
+
+
+def chapter_short_terms_in_probe(
+    probe: str,
+    chapter_short_terms: Sequence[str],
+) -> List[str]:
+    probe_l = (probe or "").lower()
+    out: List[str] = []
+    seen = set()
+    for term in chapter_short_terms or []:
+        tok = str(term).strip().lower()
+        if not tok or tok in seen:
+            continue
+        if _short_term_in_text(tok, probe_l):
+            seen.add(tok)
+            out.append(tok)
+    return out
+
+
+def record_short_term_retrieval_event(
+    diagnostics: Optional[Dict[str, Any]],
+    *,
+    stage: str,
+    extracted_short_terms: Sequence[str],
+    probe_short_terms: Sequence[str],
+    retrieval_matches: Sequence[str],
+    helped: bool,
+) -> None:
+    if diagnostics is None:
+        return
+    bucket = diagnostics.setdefault(
+        "short_term_retrieval", empty_short_term_retrieval_diagnostics()
+    )
+    bucket["calls"] = int(bucket.get("calls") or 0) + 1
+    if helped:
+        bucket["short_term_retrieval_helped_count"] = (
+            int(bucket.get("short_term_retrieval_helped_count") or 0) + 1
+        )
+
+    def _merge(key: str, values: Sequence[str]) -> None:
+        existing = list(bucket.get(key) or [])
+        seen = set(existing)
+        for item in values:
+            tok = str(item).strip().lower()
+            if tok and tok not in seen:
+                seen.add(tok)
+                existing.append(tok)
+        bucket[key] = existing
+
+    _merge("extracted_short_terms", extracted_short_terms)
+    _merge("probe_short_terms", probe_short_terms)
+    _merge("retrieval_matches", retrieval_matches)
+    events = list(bucket.get("events") or [])
+    events.append(
+        {
+            "stage": stage,
+            "extracted_short_terms": list(extracted_short_terms),
+            "probe_short_terms": list(probe_short_terms),
+            "retrieval_matches": list(retrieval_matches),
+            "short_term_retrieval_helped": bool(helped),
+        }
+    )
+    bucket["events"] = events[-SHORT_TERM_RETRIEVAL_EVENT_LIMIT:]
+    diagnostics["short_term_retrieval"] = bucket
+
+
+def _term_present_in_text(term: str, text_lower: str) -> bool:
+    tok = (term or "").strip().lower()
+    if not tok:
+        return False
+    if len(tok) <= 4:
+        return _short_term_in_text(tok, text_lower)
+    return tok in text_lower
+
+
+def _term_position(term: str, text_lower: str) -> int:
+    tok = (term or "").strip().lower()
+    if not tok:
+        return -1
+    if len(tok) <= 4:
+        match = re.search(
+            r"(?<![a-z0-9])" + re.escape(tok) + r"(?![a-z0-9])",
+            text_lower,
+        )
+        return match.start() if match else -1
+    return text_lower.find(tok)
 
 
 def select_source_grounding_window(
@@ -1323,6 +1839,8 @@ def select_source_grounding_window(
     *,
     min_chars: int = BANK_BATCH_VALIDATOR_GROUNDING_MIN,
     max_chars: int = BANK_BATCH_VALIDATOR_GROUNDING_MAX,
+    extra_probe_terms: Sequence[str] = (),
+    min_intent_word_len: int = 4,
 ) -> str:
     """Pick an 800–1500 character window of ``text`` nearest to ``probe`` terms."""
     raw = (text or "").strip()
@@ -1332,21 +1850,26 @@ def select_source_grounding_window(
     min_chars = max(1, min(int(min_chars), max_chars))
     if len(raw) <= max_chars:
         return raw
-    words = [w for w in _extract_intent_words(probe) if len(w) >= 4]
+    min_intent_word_len = max(1, int(min_intent_word_len))
+    words = [w for w in _extract_intent_words(probe) if len(w) >= min_intent_word_len]
+    for extra in extra_probe_terms or []:
+        tok = str(extra).strip().lower()
+        if tok and tok not in words:
+            words.append(tok)
     best_i = 0
     best_hits = -1
     step = max(80, max_chars // 8)
     last = max(0, len(raw) - max_chars)
     for i in range(0, last + 1, step):
         window = raw[i : i + max_chars].lower()
-        hits = sum(1 for w in words if w in window)
+        hits = sum(1 for w in words if _term_present_in_text(w, window))
         if hits > best_hits:
             best_hits = hits
             best_i = i
     if best_hits <= 0:
         low = raw.lower()
         for w in words:
-            pos = low.find(w)
+            pos = _term_position(w, low)
             if pos >= 0:
                 start = max(0, pos - max_chars // 4)
                 return raw[start : start + max_chars]
@@ -1364,6 +1887,9 @@ def select_blind_solver_source_snippet(
     options: Optional[Sequence[str]] = None,
     *,
     max_chars: int = BANK_BATCH_BLIND_SNIPPET_MAX,
+    term_source_text: Optional[str] = None,
+    diagnostics: Optional[Dict[str, Any]] = None,
+    stage: str = "blind_solver",
 ) -> str:
     """Small terminology snippet, or empty when the stem is self-contained."""
     raw = (text or "").strip()
@@ -1371,18 +1897,305 @@ def select_blind_solver_source_snippet(
         return ""
     opt_text = " ".join(str(o) for o in (options or []) if str(o).strip())
     probe = f"{stem or ''} {opt_text}".strip()
-    words = [w for w in _extract_intent_words(probe) if len(w) >= 5]
+    extracted = extract_chapter_short_terms(term_source_text if term_source_text is not None else raw)
+    probe_short = chapter_short_terms_in_probe(probe, extracted)
+    long_words = [w for w in _extract_intent_words(probe) if len(w) >= 5]
     low = raw.lower()
-    hits = [w for w in words if w in low]
+    baseline_hits = [w for w in long_words if _term_present_in_text(w, low)]
+    short_hits = [t for t in probe_short if _term_present_in_text(t, low)]
+    hits = list(baseline_hits)
+    for term in short_hits:
+        if term not in hits:
+            hits.append(term)
+    helped = bool(short_hits) and not baseline_hits
     if not hits:
+        record_short_term_retrieval_event(
+            diagnostics,
+            stage=stage,
+            extracted_short_terms=extracted,
+            probe_short_terms=probe_short,
+            retrieval_matches=[],
+            helped=False,
+        )
         return ""
     cap = max(200, min(int(max_chars), BANK_BATCH_BLIND_SNIPPET_MAX))
-    return select_source_grounding_window(
+    snippet = select_source_grounding_window(
         raw,
         " ".join(hits),
         min_chars=min(400, cap),
         max_chars=cap,
+        extra_probe_terms=short_hits,
     )
+    snippet_low = snippet.lower()
+    matches = [t for t in short_hits if _term_present_in_text(t, snippet_low)]
+    record_short_term_retrieval_event(
+        diagnostics,
+        stage=stage,
+        extracted_short_terms=extracted,
+        probe_short_terms=probe_short,
+        retrieval_matches=matches,
+        helped=helped,
+    )
+    return snippet
+
+
+def select_cognitive_source_window(
+    text: str,
+    probe: str,
+    *,
+    term_source_text: Optional[str] = None,
+    diagnostics: Optional[Dict[str, Any]] = None,
+    stage: str = "cognitive_quality",
+    min_chars: int = BANK_BATCH_VALIDATOR_GROUNDING_MIN,
+    max_chars: int = BANK_BATCH_VALIDATOR_GROUNDING_MAX,
+) -> str:
+    """Bank Batch Cognitive evidence window, including chapter-derived short terms."""
+    raw = (text or "").strip()
+    if not raw:
+        return ""
+    extracted = extract_chapter_short_terms(
+        term_source_text if term_source_text is not None else raw
+    )
+    probe_short = chapter_short_terms_in_probe(probe, extracted)
+    low = raw.lower()
+    baseline_words = [w for w in _extract_intent_words(probe) if len(w) >= 4]
+    baseline_hits = [w for w in baseline_words if _term_present_in_text(w, low)]
+    short_hits = [t for t in probe_short if _term_present_in_text(t, low)]
+    helped = bool(short_hits) and not baseline_hits
+    window = select_source_grounding_window(
+        raw,
+        probe,
+        min_chars=min_chars,
+        max_chars=max_chars,
+        extra_probe_terms=short_hits,
+    )
+    window_low = window.lower()
+    matches = [t for t in short_hits if _term_present_in_text(t, window_low)]
+    record_short_term_retrieval_event(
+        diagnostics,
+        stage=stage,
+        extracted_short_terms=extracted,
+        probe_short_terms=probe_short,
+        retrieval_matches=matches,
+        helped=helped,
+    )
+    return window
+
+
+def empty_validation_chunk_reselection_diagnostics() -> Dict[str, Any]:
+    return {
+        "calls": 0,
+        "chunk_changed_count": 0,
+        "events": [],
+    }
+
+
+def generated_question_evidence_probe(generated: Optional[Dict[str, Any]]) -> str:
+    """Stem + options + topic + subtopic used to locate validation evidence."""
+    data = generated or {}
+    parts = [
+        str(data.get("question") or ""),
+        str(data.get("topic") or ""),
+        str(data.get("sub_topic") or ""),
+    ]
+    for opt in data.get("options") or []:
+        text = str(opt or "").strip()
+        if text:
+            parts.append(text)
+    return " ".join(parts).strip()
+
+
+def _score_chunk_for_evidence_probe(
+    chunk: str,
+    probe: str,
+    chapter_short_terms: Sequence[str],
+) -> int:
+    chunk_l = (chunk or "").lower()
+    if not chunk_l or not (probe or "").strip():
+        return 0
+    words = [w for w in _extract_intent_words(probe) if len(w) >= 4]
+    for term in chapter_short_terms_in_probe(probe, chapter_short_terms):
+        if term not in words:
+            words.append(term)
+    return sum(1 for w in words if _term_present_in_text(w, chunk_l))
+
+
+def select_validation_chunk_for_generated(
+    chunks: Sequence[str],
+    generated: Optional[Dict[str, Any]],
+    *,
+    original_index: Optional[int] = None,
+    chapter_term_source: str = "",
+) -> Dict[str, Any]:
+    """Pick the best same-chapter chunk for Blind/Cognitive evidence.
+
+    Does not search other chapters. Does not change generation. Tie or no
+    improvement keeps the original generation chunk.
+    """
+    texts = [str(c or "") for c in (chunks or [])]
+    orig: Optional[int] = None
+    try:
+        if original_index is not None:
+            orig_i = int(original_index)
+            if 0 <= orig_i < len(texts):
+                orig = orig_i
+    except (TypeError, ValueError):
+        orig = None
+
+    if not texts:
+        return {
+            "excerpt": "",
+            "original_chunk_index": original_index,
+            "selected_validation_chunk_index": None,
+            "chunk_changed": False,
+            "match_score": 0,
+            "original_score": 0,
+            "reason": "no_chapter_chunks",
+        }
+
+    probe = generated_question_evidence_probe(generated)
+    term_src = (chapter_term_source or "").strip() or "\n".join(texts)
+    short_terms = extract_chapter_short_terms(term_src)
+    scores = [
+        _score_chunk_for_evidence_probe(chunk, probe, short_terms) for chunk in texts
+    ]
+    original_score = scores[orig] if orig is not None else 0
+
+    if orig is not None and len(texts) == 1:
+        return {
+            "excerpt": texts[0],
+            "original_chunk_index": orig,
+            "selected_validation_chunk_index": 0,
+            "chunk_changed": False,
+            "match_score": original_score,
+            "original_score": original_score,
+            "reason": "kept_original_only_chunk",
+        }
+
+    if orig is not None:
+        best_i = max(
+            range(len(scores)),
+            key=lambda i: (scores[i], 1 if i == orig else 0),
+        )
+    else:
+        best_i = max(range(len(scores)), key=lambda i: (scores[i], -i))
+    best_score = scores[best_i]
+    changed = orig is not None and best_i != orig
+    if orig is None:
+        reason = "selected_best_no_original_index"
+    elif not changed:
+        reason = (
+            "kept_original_no_probe_hits"
+            if best_score <= 0
+            else "kept_original_tied_or_better"
+        )
+    else:
+        reason = "reselected_higher_hits"
+
+    return {
+        "excerpt": texts[best_i],
+        "original_chunk_index": orig if orig is not None else original_index,
+        "selected_validation_chunk_index": best_i,
+        "chunk_changed": bool(changed),
+        "match_score": int(best_score),
+        "original_score": int(original_score),
+        "reason": reason,
+    }
+
+
+def record_validation_chunk_reselection(
+    diagnostics: Optional[Dict[str, Any]],
+    selection: Dict[str, Any],
+) -> None:
+    if diagnostics is None:
+        return
+    bucket = diagnostics.setdefault(
+        "validation_chunk_reselection",
+        empty_validation_chunk_reselection_diagnostics(),
+    )
+    bucket["calls"] = int(bucket.get("calls") or 0) + 1
+    if selection.get("chunk_changed"):
+        bucket["chunk_changed_count"] = int(bucket.get("chunk_changed_count") or 0) + 1
+    events = list(bucket.get("events") or [])
+    events.append(
+        {
+            "original_chunk_index": selection.get("original_chunk_index"),
+            "selected_validation_chunk_index": selection.get(
+                "selected_validation_chunk_index"
+            ),
+            "chunk_changed": bool(selection.get("chunk_changed")),
+            "match_score": selection.get("match_score"),
+            "original_score": selection.get("original_score"),
+            "reason": selection.get("reason"),
+        }
+    )
+    bucket["events"] = events[-VALIDATION_CHUNK_RESELECTION_EVENT_LIMIT:]
+    diagnostics["validation_chunk_reselection"] = bucket
+
+
+_COMPLETION_TOKENS_RE = re.compile(r"completion_tokens=(\d+)")
+_REASONING_TOKENS_RE = re.compile(r"reasoning_tokens=(\d+)")
+
+
+def parse_completion_usage_from_text(
+    text: str,
+) -> Tuple[Optional[int], Optional[int]]:
+    blob = text or ""
+    comp = _COMPLETION_TOKENS_RE.search(blob)
+    reason = _REASONING_TOKENS_RE.search(blob)
+    return (
+        int(comp.group(1)) if comp else None,
+        int(reason.group(1)) if reason else None,
+    )
+
+
+def parse_completion_usage_from_exc(
+    exc: Optional[BaseException],
+) -> Tuple[Optional[int], Optional[int]]:
+    if exc is None:
+        return None, None
+    parts = [type(exc).__name__, str(exc)]
+    cause = getattr(exc, "__cause__", None)
+    if cause is not None:
+        parts.extend([type(cause).__name__, str(cause)])
+        for attr in ("completion_usage", "usage", "token_usage"):
+            val = getattr(cause, attr, None)
+            if val is not None:
+                parts.append(str(val))
+    for attr in ("completion_usage", "usage", "token_usage"):
+        val = getattr(exc, attr, None)
+        if val is not None:
+            parts.append(str(val))
+    return parse_completion_usage_from_text(" ".join(parts))
+
+
+def record_blind_solver_outcome(
+    diagnostics: Optional[Dict[str, Any]],
+    *,
+    success: bool,
+    length_failure: bool = False,
+    completion_tokens: Optional[int] = None,
+    reasoning_tokens: Optional[int] = None,
+) -> None:
+    """Bank Batch Blind counters. Does not change validation decisions."""
+    if diagnostics is None:
+        return
+    if success:
+        diagnostics["blind_success_count"] = (
+            int(diagnostics.get("blind_success_count") or 0) + 1
+        )
+    if length_failure:
+        diagnostics["blind_length_failures"] = (
+            int(diagnostics.get("blind_length_failures") or 0) + 1
+        )
+    if completion_tokens:
+        diagnostics["blind_completion_tokens"] = int(
+            diagnostics.get("blind_completion_tokens") or 0
+        ) + int(completion_tokens)
+    if reasoning_tokens:
+        diagnostics["blind_reasoning_tokens"] = int(
+            diagnostics.get("blind_reasoning_tokens") or 0
+        ) + int(reasoning_tokens)
 
 
 def select_bank_batch_forbidden_stems(
@@ -1820,38 +2633,326 @@ def empty_bank_refill_diagnostics() -> Dict[str, Any]:
     }
 
 
+# ---------------------------------------------------------------------------
+# Bank Batch optional minimum-target mode + batch-level generation budget
+# ---------------------------------------------------------------------------
+
+BANK_BATCH_STOP_FULL_TARGET = "full_target_reached"
+BANK_BATCH_STOP_MIN_ATTEMPT_BUDGET = "minimum_target_reached_attempt_budget"
+BANK_BATCH_STOP_MIN_TIME_BUDGET = "minimum_target_reached_time_budget"
+BANK_BATCH_STOP_CATALOG_EXHAUSTED = "catalog_exhausted"
+BANK_BATCH_STOP_NORMAL_PARTIAL = "normal_partial_completion"
+
+
+def normalize_optional_int(value: Any) -> Optional[int]:
+    """Return int or None; blank/None → None. Raises ValueError if non-integer."""
+    if value is None:
+        return None
+    if isinstance(value, str) and not value.strip():
+        return None
+    return int(value)
+
+
+def validate_minimum_accepted_questions(
+    minimum: Any, *, requested: int
+) -> Optional[int]:
+    """
+    Optional soft success floor for Bank Batch.
+
+    None/omitted → current behavior (no minimum target).
+    Must satisfy 1 <= minimum <= requested.
+    """
+    normalized = normalize_optional_int(minimum)
+    if normalized is None:
+        return None
+    if normalized < 1:
+        raise ValueError("minimum_accepted_questions must be >= 1")
+    if normalized > int(requested):
+        raise ValueError(
+            "minimum_accepted_questions must be <= total_questions "
+            f"(got {normalized} > {requested})"
+        )
+    return normalized
+
+
+def validate_optional_batch_budget(value: Any, *, field_name: str) -> Optional[int]:
+    """Optional positive batch-level ceiling; None means no extra ceiling."""
+    normalized = normalize_optional_int(value)
+    if normalized is None:
+        return None
+    if normalized < 1:
+        raise ValueError(f"{field_name} must be >= 1 when set")
+    return normalized
+
+
+def bank_batch_generation_budget_block_reason(
+    state: Optional[Dict[str, Any]],
+    *,
+    cost_diagnostics: Optional[Dict[str, Any]] = None,
+    now: Optional[float] = None,
+) -> Optional[str]:
+    """
+    Return 'attempt_budget' or 'time_budget' when a configured batch ceiling is hit.
+
+    Does not replace MAX_SLOT_ATTEMPTS / MAX_REFILL_ATTEMPTS / target-refill cycles.
+    When ceilings are omitted, returns None (existing per-slot limits apply).
+    """
+    if not state or not state.get("bank_batch_mode"):
+        return None
+    # Sticky: once exhausted, keep blocking new generation attempts.
+    prior = state.get("batch_budget_exhausted_reason")
+    if prior in ("attempt_budget", "time_budget"):
+        return str(prior)
+
+    max_attempts = state.get("max_batch_generation_attempts")
+    if max_attempts is not None:
+        cost = cost_diagnostics if cost_diagnostics is not None else (
+            state.get("cost_diagnostics") or {}
+        )
+        generated = int((cost or {}).get("generated_attempts") or 0)
+        if generated >= int(max_attempts):
+            return "attempt_budget"
+
+    max_runtime = state.get("max_batch_runtime_seconds")
+    if max_runtime is not None:
+        started = state.get("batch_started_at")
+        if started is not None:
+            import time as _time
+
+            elapsed = float(now if now is not None else _time.time()) - float(started)
+            if elapsed >= float(max_runtime):
+                return "time_budget"
+    return None
+
+
+def bank_batch_budget_exhausted(
+    state: Optional[Dict[str, Any]],
+    *,
+    cost_diagnostics: Optional[Dict[str, Any]] = None,
+    now: Optional[float] = None,
+) -> bool:
+    return (
+        bank_batch_generation_budget_block_reason(
+            state, cost_diagnostics=cost_diagnostics, now=now
+        )
+        is not None
+    )
+
+
+def resolve_bank_batch_stop_reason(
+    *,
+    requested: int,
+    accepted: int,
+    failed_count: int = 0,
+    minimum_accepted: Optional[int] = None,
+    budget_exhausted_reason: Optional[str] = None,
+    catalog_exhausted: bool = False,
+) -> str:
+    """Classify why the batch stopped. Does not change acceptance quality rules."""
+    if accepted >= int(requested) and failed_count == 0:
+        return BANK_BATCH_STOP_FULL_TARGET
+    min_ok = (
+        minimum_accepted is not None and accepted >= int(minimum_accepted)
+    )
+    if min_ok and accepted < int(requested):
+        if budget_exhausted_reason == "time_budget":
+            return BANK_BATCH_STOP_MIN_TIME_BUDGET
+        # Explicit attempt ceiling OR natural slot/refill/target attempt exhaustion.
+        return BANK_BATCH_STOP_MIN_ATTEMPT_BUDGET
+    if catalog_exhausted and accepted < int(requested):
+        return BANK_BATCH_STOP_CATALOG_EXHAUSTED
+    return BANK_BATCH_STOP_NORMAL_PARTIAL
+
+
+def build_bank_batch_target_diagnostics(
+    *,
+    requested: int,
+    accepted: int,
+    failed_count: int,
+    approved: Sequence[Dict[str, Any]],
+    minimum_accepted: Optional[int],
+    stop_reason: str,
+    generated_attempts: int = 0,
+    runtime_seconds: float = 0.0,
+) -> Dict[str, Any]:
+    """Compact minimum-target / stop diagnostics for audit + API."""
+    actual_single = sum(
+        1 for q in approved if q.get("answer_type") == "single_correct"
+    )
+    actual_multi = sum(
+        1 for q in approved if q.get("answer_type") == "multiple_correct"
+    )
+    full_reached = accepted >= int(requested) and failed_count == 0
+    min_reached = (
+        minimum_accepted is not None and accepted >= int(minimum_accepted)
+    )
+    return {
+        "requested": int(requested),
+        "minimum_accepted_questions": minimum_accepted,
+        "accepted": int(accepted),
+        "failed": int(failed_count),
+        "remaining_slots": max(0, int(requested) - int(accepted)),
+        "full_target_reached": bool(full_reached),
+        "minimum_target_reached": bool(min_reached),
+        "stop_reason": stop_reason,
+        "total_generation_attempts": int(generated_attempts),
+        "runtime_seconds_at_stop": round(float(runtime_seconds or 0.0), 2),
+        "accepted_single_correct": actual_single,
+        "accepted_multiple_correct": actual_multi,
+    }
+
+
 def empty_bank_cost_diagnostics() -> Dict[str, Any]:
     """Step 5 — per-stage cost/runtime counters (Bank Batch QA only)."""
     return {
         "generated_attempts": 0,
+        "core_generation_calls": 0,
+        "core_generation_llm_calls": 0,
+        "cores_produced": 0,
+        "core_generation_failures": 0,
+        "length_recovery_extra_calls": 0,
+        "cores_rejected_before_explanation": 0,
+        "core_validated_count": 0,
         "rejected_before_validator_llm": 0,
         "duplicate_early_exits": 0,
         "metadata_early_exits": 0,
         "structural_early_exits": 0,
         "deterministic_early_exits": 0,
         "intent_drift_early_exits": 0,
+        "length_limit_retry_attempted": 0,
+        "length_limit_retry_succeeded": 0,
+        "length_limit_retry_failed": 0,
+        "length_limit_retry_initial_tokens": 4096,
+        "length_limit_retry_retry_tokens": 4096,
         "blind_solver_calls": 0,
+        "blind_length_failures": 0,
+        "blind_success_count": 0,
+        "blind_completion_tokens": 0,
+        "blind_reasoning_tokens": 0,
+        "blind_length_retry_attempted": 0,
+        "blind_length_retry_success": 0,
+        "blind_length_retry_failed": 0,
+        "llm_timeout_count": 0,
+        "timeout_stage": None,
+        "llm_timeout_duration_ms": None,
+        "llm_timeout_events": [],
         "cognitive_quality_calls": 0,
+        "explanations_avoided_core_failed": 0,
+        "explanation_generation_calls": 0,
+        "explanation_validation_calls": 0,
+        "explanation_retry_calls": 0,
+        "explanation_validation_failures": 0,
+        "explanation_retries_succeeded": 0,
+        "explanation_retries_failed": 0,
+        "explanation_tokens_approx": 0,
         "total_llm_calls": 0,
         "stage_ms_total": {
             "generate": 0.0,
             "early_gates": 0.0,
             "blind_solver": 0.0,
             "cognitive_quality": 0.0,
+            "concurrent_validation": 0.0,
+            "explanation_generate": 0.0,
+            "explanation_validate": 0.0,
+            "explanation_finalize": 0.0,
         },
         "stage_ms_count": {
             "generate": 0,
             "early_gates": 0,
             "blind_solver": 0,
             "cognitive_quality": 0,
+            "concurrent_validation": 0,
+            "explanation_generate": 0,
+            "explanation_validate": 0,
+            "explanation_finalize": 0,
         },
         "stage_tokens_approx": {
             "generate": 0,
             "blind_solver": 0,
             "cognitive_quality": 0,
+            "explanation_generate": 0,
         },
         "avg_latency_ms_per_stage": {},
+        "llm_usage_by_stage": {},
+        "llm_call_log": [],
+        "stage_usage_table": [],
+        "llm_usage_totals": {},
+        "batch_efficiency": {},
+        "wasted_tokens": {},
+        "core_generation_tokens_per_usable_core": None,
+        "short_term_retrieval": empty_short_term_retrieval_diagnostics(),
+        "validation_chunk_reselection": empty_validation_chunk_reselection_diagnostics(),
     }
+
+
+BANK_BATCH_LLM_TIMEOUT_ENV = "BANK_BATCH_LLM_TIMEOUT_SECONDS"
+BANK_BATCH_LLM_TIMEOUT_DEFAULT_SECONDS = 180.0
+
+
+def bank_batch_llm_timeout_seconds() -> Optional[float]:
+    """Bank Batch LLM request timeout. ``<= 0`` disables. Final Paper does not use this."""
+    raw = os.environ.get(BANK_BATCH_LLM_TIMEOUT_ENV)
+    if raw is None or not str(raw).strip():
+        return BANK_BATCH_LLM_TIMEOUT_DEFAULT_SECONDS
+    try:
+        value = float(str(raw).strip())
+    except ValueError:
+        return BANK_BATCH_LLM_TIMEOUT_DEFAULT_SECONDS
+    if value <= 0:
+        return None
+    return value
+
+
+def map_bank_batch_timeout_stage(llm_stage: Optional[str]) -> str:
+    """Map internal LLM stage names to the four Bank Batch timeout buckets."""
+    s = str(llm_stage or "").strip().lower()
+    if s in ("blind_solver", "blind"):
+        return "blind"
+    if s in ("cognitive_quality", "cognitive"):
+        return "cognitive"
+    if "explanation" in s:
+        return "explanation"
+    return "generation"
+
+
+def is_llm_timeout_error(exc: Optional[BaseException]) -> bool:
+    """True when the exception is a Bank Batch LLM request timeout (infra, not quality)."""
+    if exc is None:
+        return False
+    parts = [type(exc).__name__, str(exc)]
+    cause = getattr(exc, "__cause__", None)
+    if cause is not None:
+        parts.append(type(cause).__name__)
+        parts.append(str(cause))
+    return "llm_timeout" in " ".join(parts).lower()
+
+
+def record_llm_timeout(
+    diagnostics: Optional[Dict[str, Any]],
+    *,
+    stage: str,
+    duration_ms: float,
+    limit_seconds: Optional[float] = None,
+) -> None:
+    """Count an LLM request timeout. Does not change validators or acceptance."""
+    if diagnostics is None:
+        return
+    mapped = map_bank_batch_timeout_stage(stage) if stage not in (
+        "generation",
+        "blind",
+        "cognitive",
+        "explanation",
+    ) else stage
+    elapsed = round(float(duration_ms), 2)
+    diagnostics["llm_timeout_count"] = int(diagnostics.get("llm_timeout_count") or 0) + 1
+    diagnostics["timeout_stage"] = mapped
+    diagnostics["llm_timeout_duration_ms"] = elapsed
+    events = list(diagnostics.get("llm_timeout_events") or [])
+    event: Dict[str, Any] = {"stage": mapped, "duration_ms": elapsed}
+    if limit_seconds is not None:
+        event["limit_seconds"] = float(limit_seconds)
+    events.append(event)
+    diagnostics["llm_timeout_events"] = events[-50:]
 
 
 def record_bank_cost_stage(
@@ -1876,8 +2977,15 @@ def record_bank_cost_stage(
     diagnostics["avg_latency_ms_per_stage"] = avg
 
 
-def finalize_bank_cost_diagnostics(diagnostics: Dict[str, Any]) -> Dict[str, Any]:
+def finalize_bank_cost_diagnostics(
+    diagnostics: Dict[str, Any],
+    *,
+    accepted_count: int = 0,
+    processing_time_seconds: Optional[float] = None,
+) -> Dict[str, Any]:
     """Ensure derived averages / LLM totals are consistent before audit persist."""
+    from open_notebook.ai.llm_usage import finalize_llm_usage_diagnostics
+
     diag = dict(diagnostics or empty_bank_cost_diagnostics())
     ms_total = dict(diag.get("stage_ms_total") or {})
     ms_count = dict(diag.get("stage_ms_count") or {})
@@ -1887,10 +2995,47 @@ def finalize_bank_cost_diagnostics(diagnostics: Dict[str, Any]) -> Dict[str, Any
         avg[key] = round(float(total) / n, 2) if n else 0.0
     diag["avg_latency_ms_per_stage"] = avg
     gen = int(diag.get("generated_attempts") or 0)
+    # Mirror generated_attempts for Bank Batch core-phase naming.
+    if not diag.get("core_generation_calls"):
+        diag["core_generation_calls"] = gen
+    core_llm = int(diag.get("core_generation_llm_calls") or diag.get("core_generation_calls") or 0)
+    diag["core_generation_llm_calls"] = core_llm
+    diag["core_generation_calls"] = core_llm
+    cores_rejected = int(
+        diag.get("cores_rejected_before_explanation")
+        or diag.get("explanations_avoided_core_failed")
+        or 0
+    )
+    diag["cores_rejected_before_explanation"] = cores_rejected
+    diag["explanations_avoided_core_failed"] = cores_rejected
+    core_validated = int(diag.get("core_validated_count") or 0)
+    if not core_validated:
+        core_validated = int(diag.get("explanation_generation_calls") or 0)
+    diag["core_validated_count"] = core_validated
+    diag["cores_produced"] = int(diag.get("cores_produced") or 0) or (
+        cores_rejected + core_validated
+    )
+    diag["length_recovery_extra_calls"] = int(
+        diag.get("length_recovery_extra_calls")
+        or diag.get("length_limit_retry_attempted")
+        or 0
+    )
+    diag["core_generation_failures"] = int(diag.get("core_generation_failures") or 0)
     blind = int(diag.get("blind_solver_calls") or 0)
     cog = int(diag.get("cognitive_quality_calls") or 0)
-    # Generation + blind + cognitive/quality are the LLM stages we instrument.
-    diag["total_llm_calls"] = gen + blind + cog
+    expl_gen = int(diag.get("explanation_generation_calls") or 0)
+    expl_val = int(diag.get("explanation_validation_calls") or 0)
+    llm_log = diag.get("llm_call_log") or []
+    if llm_log:
+        diag["total_llm_calls"] = len(llm_log)
+    else:
+        # Generation + blind + cognitive + deferred explanation stages.
+        diag["total_llm_calls"] = gen + blind + cog + expl_gen + expl_val
+    finalize_llm_usage_diagnostics(
+        diag,
+        accepted_count=accepted_count,
+        processing_time_seconds=processing_time_seconds,
+    )
     return diag
 
 
@@ -1904,7 +3049,7 @@ def run_bank_batch_early_gates(
     """
     Cheap Bank Batch rejection gates before blind solver / cognitive LLM.
 
-    Order: structural answer-type → numerical → topic metadata → lexical +
+    Order: structural MCQ rules → numerical → topic metadata → lexical +
     semantic duplicate → other deterministic heuristics.
 
     Returns (reasons, exit_category). exit_category is one of:
@@ -1915,7 +3060,13 @@ def run_bank_batch_early_gates(
     options = list(question.get("options") or [])
     indices = list(question.get("correct_indices") or [])
 
-    structural = evaluate_answer_type(slot.answer_type, indices, len(options))
+    structural = evaluate_mcq_structural_rules(
+        answer_type=slot.answer_type,
+        options=options,
+        correct_indices=indices,
+        question_text=question.get("question") or "",
+        standalone=True,
+    )
     if structural:
         return structural, "structural"
 
@@ -1956,9 +3107,15 @@ def run_bank_batch_early_gates(
         )
 
     deterministic: List[str] = []
+    deterministic.extend(evaluate_unnecessary_source_references(question.get("question") or ""))
+    if deterministic:
+        return deterministic, "deterministic"
     deterministic.extend(
         _validate_subjective_best_objective_criterion(question.get("question", ""))
     )
+    if deterministic:
+        return deterministic, "deterministic"
+    deterministic.extend(evaluate_obvious_option_quality(question))
     if deterministic:
         return deterministic, "deterministic"
     deterministic.extend(_validate_distractor_plausibility(question))
@@ -2250,26 +3407,18 @@ def generator_structural_self_check(
     """
     errors: List[str] = []
     options = list(generated.get("options") or [])
-    if len(options) != options_per_question:
+    if options_per_question != 5:
         errors.append(
             f"self-check: expected {options_per_question} options, got {len(options)}"
         )
-
-    normalized = [normalize_question_text(o) for o in options if (o or "").strip()]
-    if len(normalized) != len(options):
-        errors.append("self-check: one or more options are empty")
-    if len(set(normalized)) != len(normalized):
-        errors.append("self-check: options are not distinct")
-
-    indices = list(generated.get("correct_indices") or [])
-    if answer_type == "single_correct" and len(indices) != 1:
-        errors.append("self-check: single_correct requires exactly one correct answer")
-    if answer_type == "multiple_correct" and len(indices) < 2:
-        errors.append("self-check: multiple_correct requires at least two correct answers")
-    for idx in indices:
-        if not isinstance(idx, int) or idx < 0 or idx >= len(options):
-            errors.append("self-check: correct_indices out of range")
-            break
+    for reason in evaluate_mcq_structural_rules(
+        answer_type=answer_type,
+        options=options,
+        correct_indices=list(generated.get("correct_indices") or []),
+        question_text=generated.get("question") or "",
+        standalone=True,
+    ):
+        errors.append(reason if reason.startswith("self-check:") else f"self-check: {reason}")
 
     for i, opt in enumerate(options):
         if _JOKE_FILLER_RE.search(opt or ""):
@@ -2399,6 +3548,11 @@ def audit_bank_batch(
     failed_slots: Sequence[Dict[str, Any]],
     *,
     options_per_question: int = 5,
+    minimum_accepted_questions: Optional[int] = None,
+    budget_exhausted_reason: Optional[str] = None,
+    generated_attempts: int = 0,
+    runtime_seconds: float = 0.0,
+    catalog_exhausted: bool = False,
 ) -> Dict[str, Any]:
     """
     Deterministic audit for Question Bank Batch jobs.
@@ -2406,11 +3560,21 @@ def audit_bank_batch(
     Unlike audit_paper(), this checks only the submitted bank-batch request:
     grade, chapter, target difficulty, answer-type mix, validation pass, and uniqueness.
     Partial success (e.g. 43/50) yields completed_partial — not a crashed job.
+
+    Optional minimum_accepted_questions never lowers acceptance quality; it only
+    classifies stop_reason when the batch ends below the full requested count.
     """
     errors: List[str] = []
     requested = int(blueprint.total_questions)
     accepted = len(approved)
     target_diff = normalize_difficulty(blueprint.difficulty)
+    try:
+        minimum_accepted = validate_minimum_accepted_questions(
+            minimum_accepted_questions, requested=requested
+        )
+    except ValueError:
+        # Audit path should not crash on bad state; treat as unset.
+        minimum_accepted = None
 
     if accepted > requested:
         errors.append(f"Accepted count {accepted} exceeds requested {requested}")
@@ -2476,6 +3640,24 @@ def audit_bank_batch(
         status = "completed_partial" if accepted > 0 else "failed"
 
     failure_summary = _summarize_bank_batch_failures(failed_slots) if failed_slots else {}
+    stop_reason = resolve_bank_batch_stop_reason(
+        requested=requested,
+        accepted=accepted,
+        failed_count=failed_count,
+        minimum_accepted=minimum_accepted,
+        budget_exhausted_reason=budget_exhausted_reason,
+        catalog_exhausted=catalog_exhausted,
+    )
+    target_diag = build_bank_batch_target_diagnostics(
+        requested=requested,
+        accepted=accepted,
+        failed_count=failed_count,
+        approved=approved,
+        minimum_accepted=minimum_accepted,
+        stop_reason=stop_reason,
+        generated_attempts=generated_attempts,
+        runtime_seconds=runtime_seconds,
+    )
 
     return {
         "ok": len(errors) == 0 and accepted == requested and not failed_slots,
@@ -2485,6 +3667,11 @@ def audit_bank_batch(
         "accepted": accepted,
         "failed": failed_count,
         "failure_summary": failure_summary,
+        "minimum_accepted_questions": minimum_accepted,
+        "full_target_reached": target_diag["full_target_reached"],
+        "minimum_target_reached": target_diag["minimum_target_reached"],
+        "stop_reason": stop_reason,
+        "target_diagnostics": target_diag,
         "expected": {
             "grade": blueprint.grade,
             "book_id": blueprint.book_id,

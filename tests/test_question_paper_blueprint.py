@@ -20,6 +20,8 @@ from open_notebook.graphs.question_paper_blueprint import (
     decide_slot_outcome,
     evaluate_answer_type,
     evaluate_blind_solver,
+    evaluate_mcq_structural_rules,
+    evaluate_unsupported_context_phrasing,
     is_near_duplicate,
     is_semantic_duplicate,
     map_cognitive_score,
@@ -225,6 +227,170 @@ class TestIndependentValidation:
             book_grounded=False,
         )
         assert result["passed"] is True
+
+    def test_multiple_correct_rejects_all_five_correct(self):
+        errors = evaluate_answer_type("multiple_correct", [0, 1, 2, 3, 4], 5)
+        assert any("at most four" in e for e in errors)
+
+
+class TestNfoStep1StructuralRules:
+    """Deterministic MCQ structure (NFO Step 1). Does not call LLMs."""
+
+    def _opts(self, *values):
+        return list(values)
+
+    def test_valid_single_five_options_one_correct_passes(self):
+        reasons = evaluate_mcq_structural_rules(
+            answer_type="single_correct",
+            options=self._opts("Cash", "Credit", "Barter", "Loan", "Tax"),
+            correct_indices=[0],
+            question_text="What is money used in daily purchases?",
+        )
+        assert reasons == []
+
+    def test_single_four_options_fails(self):
+        reasons = evaluate_mcq_structural_rules(
+            answer_type="single_correct",
+            options=self._opts("A", "B", "C", "D"),
+            correct_indices=[0],
+            question_text="What is a budget?",
+        )
+        assert any("expected 5 options" in r for r in reasons)
+
+    def test_single_six_options_fails(self):
+        reasons = evaluate_mcq_structural_rules(
+            answer_type="single_correct",
+            options=self._opts("A", "B", "C", "D", "E", "F"),
+            correct_indices=[0],
+            question_text="What is a budget?",
+        )
+        assert any("expected 5 options" in r for r in reasons)
+
+    def test_single_two_correct_fails(self):
+        reasons = evaluate_mcq_structural_rules(
+            answer_type="single_correct",
+            options=self._opts("Cash", "Credit", "Barter", "Loan", "Tax"),
+            correct_indices=[0, 1],
+            question_text="What is a budget?",
+        )
+        assert any("exactly one" in r for r in reasons)
+
+    def test_valid_multiple_two_correct_passes(self):
+        reasons = evaluate_mcq_structural_rules(
+            answer_type="multiple_correct",
+            options=self._opts("Need", "Want", "Income", "Tax only", "Luck"),
+            correct_indices=[0, 1],
+            question_text="Which of the following are spending categories?",
+        )
+        assert reasons == []
+
+    def test_valid_multiple_four_correct_passes(self):
+        reasons = evaluate_mcq_structural_rules(
+            answer_type="multiple_correct",
+            options=self._opts("Need", "Want", "Income", "Saving", "Unrelated"),
+            correct_indices=[0, 1, 2, 3],
+            question_text="Which of the following are personal-finance terms?",
+        )
+        assert reasons == []
+
+    def test_multiple_one_correct_fails(self):
+        reasons = evaluate_mcq_structural_rules(
+            answer_type="multiple_correct",
+            options=self._opts("Need", "Want", "Income", "Tax only", "Luck"),
+            correct_indices=[0],
+            question_text="Which of the following are spending categories?",
+        )
+        assert any("more than one" in r for r in reasons)
+
+    def test_multiple_all_five_correct_fails(self):
+        reasons = evaluate_mcq_structural_rules(
+            answer_type="multiple_correct",
+            options=self._opts("Need", "Want", "Income", "Saving", "Budget"),
+            correct_indices=[0, 1, 2, 3, 4],
+            question_text="Which of the following are personal-finance terms?",
+        )
+        assert any("at most four" in r for r in reasons)
+
+    def test_duplicate_option_text_fails(self):
+        reasons = evaluate_mcq_structural_rules(
+            answer_type="single_correct",
+            options=self._opts("Cash.", "cash", "Barter", "Loan", "Tax"),
+            correct_indices=[2],
+            question_text="What is barter?",
+        )
+        assert any("duplicate option" in r for r in reasons)
+
+    def test_empty_option_fails(self):
+        reasons = evaluate_mcq_structural_rules(
+            answer_type="single_correct",
+            options=self._opts("Cash", "  ", "Barter", "Loan", "Tax"),
+            correct_indices=[0],
+            question_text="What is money?",
+        )
+        assert any("empty" in r for r in reasons)
+
+    def test_all_of_the_above_fails(self):
+        reasons = evaluate_mcq_structural_rules(
+            answer_type="single_correct",
+            options=self._opts("Cash", "Credit", "Barter", "Loan", "All of the above"),
+            correct_indices=[4],
+            question_text="What can be used to buy goods?",
+        )
+        assert any("meta-option" in r for r in reasons)
+
+    def test_none_of_the_above_fails(self):
+        reasons = evaluate_mcq_structural_rules(
+            answer_type="single_correct",
+            options=self._opts("Cash", "Credit", "Barter", "Loan", "None of the above"),
+            correct_indices=[0],
+            question_text="What is a medium of exchange?",
+        )
+        assert any("meta-option" in r for r in reasons)
+
+    def test_a_and_b_only_meta_option_fails(self):
+        reasons = evaluate_mcq_structural_rules(
+            answer_type="single_correct",
+            options=self._opts("Cash", "Credit", "Barter", "Loan", "A and B only"),
+            correct_indices=[0],
+            question_text="Which is a form of money?",
+        )
+        assert any("meta-option" in r for r in reasons)
+
+    def test_according_to_the_book_standalone_stem_fails(self):
+        reasons = evaluate_mcq_structural_rules(
+            answer_type="single_correct",
+            options=self._opts("Cash", "Credit", "Barter", "Loan", "Tax"),
+            correct_indices=[0],
+            question_text="According to the book, what is a budget?",
+        )
+        assert any("unsupported contextual phrasing" in r for r in reasons)
+
+    def test_clean_self_contained_stem_passes(self):
+        reasons = evaluate_mcq_structural_rules(
+            answer_type="single_correct",
+            options=self._opts("A plan for spending", "A type of tax", "A bank fee", "Interest only", "A loan"),
+            correct_indices=[0],
+            question_text="What is a household budget?",
+        )
+        assert reasons == []
+
+    def test_does_not_rewrite_or_repair_invalid_key(self):
+        options = self._opts("Cash", "Credit", "Barter", "Loan", "Tax")
+        reasons = evaluate_mcq_structural_rules(
+            answer_type="single_correct",
+            options=options,
+            correct_indices=[0, 2],
+            question_text="What is cash?",
+        )
+        assert reasons
+        assert options == ["Cash", "Credit", "Barter", "Loan", "Tax"]
+
+    def test_passage_opt_out_does_not_reject_context_phrase(self):
+        reasons = evaluate_unsupported_context_phrasing(
+            "Based on the passage, what is barter?",
+            standalone=False,
+        )
+        assert reasons == []
 
 
 class TestSlotRetry:

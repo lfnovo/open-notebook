@@ -3,6 +3,7 @@ Bank Batch Intent Planner (Bank Batch only).
 
 Step 7B/7C: derive bank intents, filter on concept+objective, calibrated adherence.
 Step 8: novelty brief + delayed intent retirement after repeated duplicates.
+Step 5: meaningful variety diagnostics on the same novelty/intent path (not a second planner).
 Step 9: expandable catalog cache + chunk-based replenishment (Bank Batch only).
 
 Does NOT replace validators. Does NOT affect Final Paper.
@@ -23,8 +24,14 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 from loguru import logger
 from pydantic import BaseModel, Field
 
+from open_notebook.ai.llm_usage import (
+    LLM_STAGE_INTENT_PLANNER_CATALOG,
+    LLM_STAGE_INTENT_PLANNER_REPLENISH,
+    build_prompt_composition,
+)
 from open_notebook.config import DATA_FOLDER
 from open_notebook.graphs.question_paper_blueprint import (
+    _DIFFICULTY_RANK,
     _extract_intent_words,
     _semantic_intent_overlap,
     extract_chapter_concept_catalog,
@@ -70,6 +77,9 @@ INTENT_INITIAL_CATALOG_TARGET_CAP = _env_int(
 
 # Objective-similarity threshold (aligned with semantic duplicate spirit).
 INTENT_OBJECTIVE_OVERLAP_THRESHOLD = 0.75
+
+# Variety/paraphrase diagnostic overlap — NOT a duplicate-validation gate.
+VARIETY_PARAPHRASE_WORD_OVERLAP = 0.55
 
 # Minimum content-word overlap for grounding concept/objective in a chunk.
 INTENT_GROUNDING_OVERLAP_THRESHOLD = 0.35
@@ -137,15 +147,23 @@ single taught rule.
 """
 
 _EASY_UNSAFE_FORM_RE = re.compile(
-    r"\b(distinguish|compar(?:e|ison)|evaluat|infer|analy[sz]|multi-?step|"
-    r"integrat|scenario|interpret information|explain a taught relationship)\b",
+    r"\b("
+    r"distinguish|evaluat\w*|infer|analy[sz]\w*|multi-?step|multi-?stage|"
+    r"integrat|scenario|interpret information|explain a taught relationship|"
+    r"optimal\s+choice|best\s+decision"
+    r")\b",
     re.I,
 )
 _EASY_UNSAFE_OBJECTIVE_RE = re.compile(
     r"\b("
-    r"distinguish|compar(?:e|ison)|versus|\bvs\b|evaluat|infer|analy[sz]|"
-    r"multi-?step|integrat|judg(?:e|ment)|decision|best\s+(?:option|choice|decision)|"
-    r"several|across|trade-?off|weigh|in terms of|"
+    r"distinguish|versus|\bvs\b|evaluat\w*|infer|analy[sz]\w*|"
+    r"multi-?step|multi-?stage|integrat\w*|judg(?:e|ment)|"
+    r"best\s+(?:option|choice|decision)|optimal\s+choice|"
+    r"several\s+(?:ideas|concepts|facts|dimensions)|"
+    r"multiple\s+(?:concepts|dimensions|strategies)|"
+    r"two\s+financial\s+strateg|"
+    r"causal|trade-?off|weigh|"
+    r"compar(?:e|ison).{0,80}(dimension|several|multiple|optimal|best|versus|scenario|strateg)|"
     r"identify how|how\s+.+\s+affect|when\s+one|underperform|"
     r"apply knowledge|using historical|relationship between|depends? on|"
     r"both\s+\w+\s+and\s+\w+"
@@ -174,6 +192,168 @@ def intent_is_easy_safe(intent: Optional[Dict[str, Any]]) -> bool:
     ):
         return False
     return bool(objective or concept)
+
+
+def classify_intent_vs_difficulty(
+    intent: Optional[Dict[str, Any]],
+    difficulty: str,
+) -> str:
+    """ok | over-demand | under-demand. Easy over-demand reuses intent_is_easy_safe."""
+    if not isinstance(intent, dict):
+        return "ok"
+    diff = normalize_difficulty(difficulty)
+    form = str(intent.get("cognitive_form") or "").strip().lower()
+    easy_forms = {f.lower() for f in COGNITIVE_FORMS_BY_DIFFICULTY["easy"]}
+    if diff == "easy":
+        return "ok" if intent_is_easy_safe(intent) else "over-demand"
+    if form in easy_forms and form.startswith("recall"):
+        return "under-demand"
+    objective = str(intent.get("objective") or "").lower()
+    if form in easy_forms and re.search(r"\b(recall|recognize|identify)\b", form):
+        if re.search(r"\b(recall|recognize|name|define)\b", objective) and not re.search(
+            r"\b(apply|interpret|analy|evaluat|integrat|multi)\b", objective
+        ):
+            if diff in {"medium", "difficult"}:
+                return "under-demand"
+    return "ok"
+
+
+_MEDIUM_DEMAND_CRITERIA = (
+    "reasoning",
+    "application",
+    "interpretation",
+    "decision_making",
+)
+
+
+def _medium_meaningful_demand_dimensions(scores: Dict[str, int]) -> int:
+    return sum(1 for k in _MEDIUM_DEMAND_CRITERIA if int(scores.get(k) or 1) >= 2)
+
+
+def _stem_has_interpretive_medium_demand(stem: str) -> bool:
+    """True when the stem requires interpretation/comparison beyond bare calculation."""
+    low = (stem or "").lower()
+    patterns = (
+        r"\bwhich (?:envelopes|statements|incidents|split|allocation|combination)",
+        r"\b(most (?:likely|suitable|appropriate|closely))",
+        r"\b(prioriti[sz]|depleted|eligible for a claim)",
+        r"\b(compare|contrast|difference between|differ from|relationship between)",
+        r"\b(rent-free|pay-yourself-first|50/30/20|envelope|assessment year|financial year)",
+        r"\b(has|have).{0,50}(prioriti|funded before|needs over wants)",
+    )
+    return any(re.search(p, low) for p in patterns)
+
+
+def _stem_is_arithmetic_only_medium(stem: str) -> bool:
+    """Direct formula or repeated-calculation patterns without interpretive demand."""
+    low = (stem or "").lower()
+    if _stem_has_interpretive_medium_demand(stem):
+        return False
+    patterns = (
+        r"what (?:is|was) (?:the )?(?:capital gain|total capital gain)",
+        r"how much (?:capital gain|interest|did .{0,40}(?:earn|receive|make))",
+        r"(?:capital gain|annual interest|interest earned).*(?:from this|from the sale|after one year)",
+        r"fixed deposit.{0,120}fixed deposit",
+        r"dividend of .* per share.*(?:at least|which of the following share holdings)",
+        r"which statement is correct about the annual interest",
+    )
+    return any(re.search(p, low) for p in patterns)
+
+
+def classify_medium_generated_demand(
+    *,
+    scores: Dict[str, int],
+    question: Dict[str, Any],
+    assigned_intent: Optional[Dict[str, Any]] = None,
+) -> str:
+    """
+    ok | under-demand for target Medium when the summed score band is already Medium.
+
+    Does not change the 13–18 score mapping; rejects thin recall/arithmetic items
+    that reached Medium via context/distractor inflation.
+    """
+    if isinstance(assigned_intent, dict):
+        if classify_intent_vs_difficulty(assigned_intent, "medium") == "under-demand":
+            return "under-demand"
+
+    stem = str((question or {}).get("question") or "")
+    meaningful = _medium_meaningful_demand_dimensions(scores)
+
+    if len(stem) > 320 and meaningful < 2:
+        return "under-demand"
+    if len(re.findall(r"\d", stem)) >= 10 and meaningful < 2:
+        return "under-demand"
+
+    if meaningful < 2:
+        return "under-demand"
+
+    if _stem_is_arithmetic_only_medium(stem):
+        return "under-demand"
+
+    form = str((assigned_intent or {}).get("cognitive_form") or "").strip().lower()
+    easy_forms = {f.lower() for f in COGNITIVE_FORMS_BY_DIFFICULTY["easy"]}
+    if form in easy_forms and form.startswith("recall"):
+        return "under-demand"
+
+    return "ok"
+
+
+def _record_objective_form_key(record: Dict[str, Any]) -> Tuple[str, str]:
+    """Normalized (objective fingerprint, cognitive form) for variety scoring."""
+    objective = str(record.get("assigned_objective") or record.get("objective") or "")
+    obj_fp = planned_intent_fingerprint({"objective": objective}) if objective else ""
+    form = str(
+        record.get("assigned_cognitive_form")
+        or record.get("cognitive_form")
+        or question_task_form(record.get("question") or "")
+    ).strip().lower()
+    return obj_fp, form
+
+
+def intent_objective_form_usage_count(
+    intent: Optional[Dict[str, Any]],
+    usage_questions: Optional[Sequence[Dict[str, Any]]],
+) -> int:
+    """How often this intent's objective+cognitive_form pair appears in usage."""
+    if not isinstance(intent, dict):
+        return 0
+    left_obj, left_form = _record_objective_form_key(
+        {
+            "objective": intent.get("objective"),
+            "assigned_objective": intent.get("objective"),
+            "cognitive_form": intent.get("cognitive_form"),
+            "assigned_cognitive_form": intent.get("cognitive_form"),
+        }
+    )
+    if not left_obj and not left_form:
+        return 0
+    n = 0
+    for q in usage_questions or []:
+        if not isinstance(q, dict):
+            continue
+        if not intents_share_objective(intent, q):
+            continue
+        right_obj, right_form = _record_objective_form_key(q)
+        if left_form and right_form and left_form == right_form:
+            n += 1
+        elif left_obj and right_obj and left_obj == right_obj:
+            n += 1
+    return n
+
+
+def intent_selection_usage_key(
+    intent: Dict[str, Any],
+    usage_questions: Optional[Sequence[Dict[str, Any]]],
+) -> Tuple[int, int, int]:
+    """Sort key: prefer lower concept usage, then objective+form, then objective-only."""
+    concept = intent_concept_usage_count(intent, usage_questions)
+    obj_form = intent_objective_form_usage_count(intent, usage_questions)
+    objective_only = sum(
+        1
+        for q in (usage_questions or [])
+        if isinstance(q, dict) and intents_share_objective(intent, q)
+    )
+    return concept, obj_form, objective_only
 
 
 def _record_easy_intent_skip(diagnostics: Optional[Dict[str, Any]]) -> None:
@@ -296,10 +476,16 @@ def empty_intent_diagnostics() -> Dict[str, Any]:
         "duplicate_retry_same_intent": 0,
         "duplicate_retry_changed_question_form": 0,
         "intents_retired_after_repeated_duplicates": 0,
+        "variety_low_novelty_retries": 0,
         "easy_intents_skipped_unsafe": 0,
         "target_catalog_size": 0,
         "content_hash": "",
         "cache_key": "",
+        # Yield optimization diagnostics (validators unchanged)
+        "intents_retired_after_academic_failure": 0,
+        "academic_failure_family_retries": 0,
+        "saturation_influenced_selections": 0,
+        "academic_failure_events": [],
     }
 
 
@@ -828,17 +1014,25 @@ def intents_share_objective(
     if not isinstance(left, dict):
         return False
 
-    left_obj = _extract_intent_words(left.get("objective") or "")
-    left_concept = _extract_intent_words(left.get("concept") or "")
-    left_all = planned_intent_words(left)
+    left_obj = _extract_intent_words(
+        left.get("objective") or left.get("assigned_objective") or ""
+    )
+    left_concept = _extract_intent_words(
+        left.get("concept") or left.get("assigned_concept") or ""
+    )
+    left_all = planned_intent_words(left) or question_used_intent_words(left)
 
     if isinstance(right_words_or_intent, dict):
         right = right_words_or_intent
-        right_obj = _extract_intent_words(right.get("objective") or "")
+        right_obj = _extract_intent_words(
+            right.get("objective") or right.get("assigned_objective") or ""
+        )
         if not right_obj:
             # Question-shaped records without derived objective: stem as proxy
             right_obj = _extract_intent_words(right.get("question") or "")
-        right_concept = _extract_intent_words(right.get("concept") or "")
+        right_concept = _extract_intent_words(
+            right.get("concept") or right.get("assigned_concept") or ""
+        )
         if not right_concept:
             right_concept = _extract_intent_words(
                 f"{right.get('sub_topic') or ''} {right.get('topic') or ''}"
@@ -1078,12 +1272,20 @@ def filter_intents_against_used(
 def assign_intents_to_slots(
     slots: Sequence[Any],
     available: Sequence[Dict[str, Any]],
+    *,
+    usage_questions: Optional[Sequence[Dict[str, Any]]] = None,
+    diagnostics: Optional[Dict[str, Any]] = None,
 ) -> Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]], int]:
     """
     Assign one unused intent per slot (by question_number key as str).
+    When usage_questions is provided, pool is ordered to prefer underrepresented
+    concepts first (never drops a valid intent).
     Returns (assignments, remaining, assigned_count).
     """
+    del diagnostics  # reserved for future assignment diagnostics
     pool = [dict(x) for x in available]
+    if usage_questions is not None:
+        pool = sort_intents_prefer_underrepresented(pool, usage_questions)
     assignments: Dict[str, Dict[str, Any]] = {}
     assigned = 0
     for slot in slots or []:
@@ -1102,6 +1304,48 @@ def assign_intents_to_slots(
     return assignments, pool, assigned
 
 
+def intent_concept_usage_count(
+    intent: Optional[Dict[str, Any]],
+    usage_questions: Optional[Sequence[Dict[str, Any]]],
+) -> int:
+    """How often this intent's concept/topic already appears in bank + batch usage."""
+    if not isinstance(intent, dict):
+        return 0
+    concept = str(intent.get("concept") or intent.get("topic") or "").strip().lower()
+    if not concept:
+        return 0
+    n = 0
+    for q in usage_questions or []:
+        if not isinstance(q, dict):
+            continue
+        labels = (
+            str(q.get("assigned_concept") or ""),
+            str(q.get("topic") or ""),
+            str(q.get("concept") or ""),
+        )
+        if any(concept and concept == lab.strip().lower() for lab in labels if lab):
+            n += 1
+            continue
+        if any(concept and concept in lab.strip().lower() for lab in labels if lab):
+            n += 1
+    return n
+
+
+def sort_intents_prefer_underrepresented(
+    intents: Sequence[Dict[str, Any]],
+    usage_questions: Optional[Sequence[Dict[str, Any]]],
+) -> List[Dict[str, Any]]:
+    """Stable sort: lower concept/objective-form usage first. Does not drop any intent."""
+    indexed = list(enumerate(dict(x) for x in intents))
+    indexed.sort(
+        key=lambda pair: (
+            *intent_selection_usage_key(pair[1], usage_questions),
+            pair[0],
+        )
+    )
+    return [item for _, item in indexed]
+
+
 def take_next_unused_intent(
     remaining: List[Dict[str, Any]],
     *,
@@ -1109,24 +1353,96 @@ def take_next_unused_intent(
     assigned_values: Optional[Sequence[Dict[str, Any]]] = None,
     target_difficulty: Optional[str] = None,
     diagnostics: Optional[Dict[str, Any]] = None,
+    usage_questions: Optional[Sequence[Dict[str, Any]]] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Pop next eligible intent from the remaining pool (mutates remaining)."""
+    """Pop next eligible intent from the remaining pool (mutates remaining).
+
+    When usage_questions is provided, prefers underrepresented concepts among
+    currently eligible candidates. Never permanently excludes a valid concept
+    solely for being represented — only skip if retired, objective-colliding,
+    or Easy-unsafe.
+    """
     retired_ids = retired_ids or set()
     assigned_values = list(assigned_values or [])
     easy_guard = normalize_difficulty(target_difficulty or "") == "easy"
-    while remaining:
-        candidate = remaining.pop(0)
+
+    def _eligible(candidate: Dict[str, Any]) -> Optional[str]:
+        """Return None if eligible, else skip reason: retired|objective|easy_unsafe."""
         cid = str(candidate.get("intent_id") or "")
         if cid and cid in retired_ids:
-            continue
+            return "retired"
         if any(intents_share_objective(candidate, a) for a in assigned_values):
-            continue
+            return "objective"
         if easy_guard and not intent_is_easy_safe(candidate):
-            _record_easy_intent_skip(diagnostics)
-            continue
-        return candidate
-    return None
+            return "easy_unsafe"
+        return None
 
+    # Legacy path: sequential pop (preserves prior behavior).
+    if usage_questions is None:
+        while remaining:
+            candidate = remaining.pop(0)
+            skip = _eligible(candidate)
+            if skip == "easy_unsafe":
+                _record_easy_intent_skip(diagnostics)
+                continue
+            if skip:
+                continue
+            return candidate
+        return None
+
+    # Saturation-aware: choose least-used among currently eligible; leave
+    # ineligible (objective collision) in the pool for later slots.
+    eligible_indices: List[int] = []
+    remove_indices: List[int] = []
+    for i, candidate in enumerate(remaining):
+        skip = _eligible(candidate)
+        if skip in {"retired", "easy_unsafe"}:
+            if skip == "easy_unsafe":
+                _record_easy_intent_skip(diagnostics)
+            remove_indices.append(i)
+            continue
+        if skip == "objective":
+            continue
+        eligible_indices.append(i)
+
+    for i in reversed(remove_indices):
+        remaining.pop(i)
+        # Adjust eligible indices after removals
+        eligible_indices = [
+            (idx - 1 if idx > i else idx) for idx in eligible_indices if idx != i
+        ]
+
+    if not eligible_indices:
+        return None
+
+    usage_scores = [
+        (*intent_selection_usage_key(remaining[idx], usage_questions), idx)
+        for idx in eligible_indices
+    ]
+    min_key = min(row[:-1] for row in usage_scores)
+    chosen_pos = eligible_indices[0]
+    saturation_influenced = False
+    for key, idx in ((row[:-1], row[-1]) for row in usage_scores):
+        if key == min_key:
+            chosen_pos = idx
+            if idx != eligible_indices[0]:
+                saturation_influenced = True
+            break
+
+    if saturation_influenced and diagnostics is not None:
+        diagnostics["saturation_influenced_selections"] = (
+            int(diagnostics.get("saturation_influenced_selections") or 0) + 1
+        )
+        diagnostics["last_saturation_selection"] = {
+            "intent_id": remaining[chosen_pos].get("intent_id"),
+            "concept": remaining[chosen_pos].get("concept"),
+            "prior_concept_usage_count": intent_concept_usage_count(
+                remaining[chosen_pos], usage_questions
+            ),
+            "saturation_influenced": True,
+        }
+
+    return remaining.pop(chosen_pos)
 
 def format_assigned_intent_guidance(intent: Dict[str, Any]) -> str:
     """Prompt block: generator must primarily test this assigned intent."""
@@ -1145,6 +1461,8 @@ def format_assigned_intent_guidance(intent: Dict[str, Any]) -> str:
         "2) tests the assigned OBJECTIVE (not a different learning task),\n"
         "3) uses the assigned COGNITIVE FORM,\n"
         "4) stays grounded in the provided chapter chunk.\n"
+        "Before writing, be able to answer: What concept is this testing? "
+        "What should the student know or understand to answer it?\n"
         "Do NOT replace the assigned objective with a simpler familiar definition "
         "question, a different function-of-money stem, or another saturated Easy "
         "pattern unless that IS the assigned objective.\n"
@@ -1157,6 +1475,24 @@ def format_assigned_intent_guidance(intent: Dict[str, Any]) -> str:
 # ---------------------------------------------------------------------------
 
 INTENT_DUPLICATE_HITS_BEFORE_RETIRE = 2
+INTENT_FAMILY_HITS_BEFORE_RETIRE = 2
+
+# Academic failure families that can retire an intent after repeated hits.
+# Provider/length/structural/duplicate are intentionally excluded.
+FAILURE_FAMILY_DISTRACTOR = "distractor"
+FAILURE_FAMILY_SUBJECTIVE_BEST = "subjective_best"
+FAILURE_FAMILY_COGNITIVE = "cognitive"
+FAILURE_FAMILY_GROUNDING = "grounding"
+FAILURE_FAMILY_GRADE = "grade"
+FAILURE_FAMILY_BLIND_ANSWER = "blind_answer"
+ACADEMIC_FAILURE_FAMILIES = (
+    FAILURE_FAMILY_DISTRACTOR,
+    FAILURE_FAMILY_SUBJECTIVE_BEST,
+    FAILURE_FAMILY_COGNITIVE,
+    FAILURE_FAMILY_GROUNDING,
+    FAILURE_FAMILY_GRADE,
+    FAILURE_FAMILY_BLIND_ANSWER,
+)
 
 
 def question_task_form(text: str) -> str:
@@ -1313,29 +1649,371 @@ def format_bank_batch_novelty_brief(
         else "(no close bank stems for this concept yet)"
     )
 
+    if diff == "easy":
+        prefer = (
+            "Prefer legitimate differences such as: definition→recognition, "
+            "recognition→example/non-example, different facts or features, "
+            "recognition vs identification, basic classification, direct "
+            "one-step application, or different legitimate examples — while "
+            "staying within easy difficulty.\n"
+            "Do NOT use evaluation, multi-step reasoning, complex comparison, "
+            "or multi-concept integration merely to add variety.\n"
+        )
+        forms_hint = (
+            "Compatible Easy forms may include (use only if Grade, Easy "
+            "difficulty, chapter content, and the learning objective support "
+            "them; do not force all forms): direct knowledge, concept "
+            "identification, recognition, classification, example selection, "
+            "one-step application, cause and effect when the chapter teaches "
+            "it directly.\n"
+        )
+    else:
+        prefer = (
+            "Prefer legitimate differences such as: definition→recognition, "
+            "recognition→example/non-example, concept identification→comparison, "
+            "direct fact→simple application, or one context→another context that "
+            "still requires the same taught concept — while staying within "
+            f"{diff} difficulty.\n"
+        )
+        forms_hint = (
+            "Compatible forms may include (use only if Grade, requested "
+            "difficulty, chapter content, and the learning objective support "
+            "them; do not force all forms): direct knowledge, concept "
+            "identification, recognition, classification, concept comparison, "
+            "application, scenario application, cause and effect, consequence, "
+            "interpretation, calculation, multi-step application, "
+            "decision-making, error identification, example selection, "
+            "relationship, prediction, analysis, evaluation.\n"
+        )
+
     return (
         "\nNOVELTY BRIEF (Bank Batch — generation guidance; validators still apply):\n"
         f"- concept: {assigned.get('concept')}\n"
         f"- objective: {assigned.get('objective')}\n"
         f"- cognitive_form: {assigned.get('cognitive_form')}\n"
+        f"- topic/subtopic: {assigned.get('topic') or ''} / "
+        f"{assigned.get('subtopic') or assigned.get('sub_topic') or ''}\n"
         f"- target_difficulty: {diff} (do not raise cognitive level just to be different)\n"
         f"- source_chunk_focus: {chunk_focus or '(chunk provided separately)'}\n"
         f"- previously used question forms: {forms_line}\n"
+        "Track variety by concept + learning objective + cognitive form + "
+        "application/scenario type. Wording changes alone are not variety.\n"
         "Already covered — do NOT paraphrase these objectives/forms:\n"
         f"{avoid_block}\n"
         "Required: test the assigned objective using a meaningfully different "
         "question task or context.\n"
         "Cosmetic-only changes are NOT enough: renaming characters, changing "
         "numbers, reordering options, or lightly rewording the same stem.\n"
-        "Prefer legitimate differences such as: definition→recognition, "
-        "recognition→example/non-example, concept identification→comparison, "
-        "direct fact→simple application, or one context→another context that "
-        "still requires the same taught concept — while staying within "
-        f"{diff} difficulty.\n"
+        "Do not reuse the same scenario structure with different names "
+        "(Riya buys / Aman buys / Neha buys is the same question).\n"
+        "Avoid repeatedly starting stems with 'Which of the following...'. "
+        "Also avoid repeating 'Which statement...', 'What is...', "
+        "'Which option...', or scenario-after-scenario. Vary naturally when "
+        "the concept supports it (What does..., Which example..., "
+        "A student notices..., Identify..., What would happen..., "
+        "Which feature...). Do not force unnatural stem diversity.\n"
+        f"{prefer}"
+        f"{forms_hint}"
+        "Never accept a weaker question for variety. Priority remains: "
+        "grounding, correctness, Grade appropriateness, requested difficulty, "
+        "option/distractor quality, then uniqueness/variety. If the chapter "
+        "only supports a limited Easy form set, prefer a smaller valid pool.\n"
         "Build distractors around THIS novel question task (realistic "
         "misconceptions of the concept as tested here); do not recycle generic "
         "distractors from similar questions.\n"
     )
+
+
+_STEM_OPENER_KEEP = frozenset(
+    {
+        "which",
+        "what",
+        "who",
+        "whom",
+        "whose",
+        "how",
+        "why",
+        "where",
+        "when",
+        "identify",
+        "select",
+        "choose",
+        "according",
+        "based",
+        "consider",
+        "read",
+        "if",
+        "a",
+        "an",
+        "the",
+    }
+)
+
+_EASY_UNSAFE_VARIETY_MARKERS = re.compile(
+    r"\b(evaluat\w*|integrat\w*|multi[\s-]?step|complex\s+comparison|"
+    r"multi[\s-]?concept|synthesi\w*)\b",
+    re.I,
+)
+
+
+def scenario_pattern_key(stem: str) -> str:
+    """Normalize a stem so name/number swaps share one scenario pattern."""
+    tokens: List[str] = []
+    for raw in (stem or "").split():
+        digits = re.sub(r"[^0-9.]", "", raw)
+        if re.fullmatch(r"\d+(?:\.\d+)?", digits or ""):
+            tokens.append("NUM")
+            continue
+        bare = re.sub(r"[^A-Za-z]", "", raw)
+        if (
+            bare
+            and bare[0].isupper()
+            and len(bare) >= 3
+            and bare.lower() not in _STEM_OPENER_KEEP
+        ):
+            tokens.append("NAME")
+            continue
+        lowered = raw.lower()
+        if re.sub(r"[^a-z]", "", lowered) in {
+            "he",
+            "she",
+            "his",
+            "her",
+            "him",
+            "hers",
+            "their",
+            "they",
+            "them",
+        }:
+            tokens.append("PRON")
+            continue
+        tokens.append(lowered)
+    return " ".join(tokens)
+
+
+def stem_opener_family(stem: str) -> str:
+    s = " ".join((stem or "").lower().split())
+    if s.startswith("which of the following"):
+        return "which_of_the_following"
+    if s.startswith("which statement"):
+        return "which_statement"
+    if s.startswith("what is"):
+        return "what_is"
+    if s.startswith("which option"):
+        return "which_option"
+    return ""
+
+
+def easy_variety_form_allowed(
+    cognitive_form: str = "",
+    stem: str = "",
+    target_difficulty: str = "easy",
+) -> bool:
+    """True when Easy variety would not introduce Medium/Difficult demand."""
+    if normalize_difficulty(target_difficulty) != "easy":
+        return True
+    blob = f"{cognitive_form or ''} {stem or ''}"
+    return not bool(_EASY_UNSAFE_VARIETY_MARKERS.search(blob))
+
+
+def variety_counts_toward_intent_retirement(
+    diag: Optional[Dict[str, Any]],
+) -> bool:
+    """Paraphrase / same-scenario repeats reuse existing duplicate-hit retirement."""
+    if not isinstance(diag, dict):
+        return False
+    if diag.get("novelty") != "low":
+        return False
+    labels = set(diag.get("labels") or [])
+    return bool(labels & {"paraphrase", "repeated_scenario_pattern"})
+
+
+def attach_variety_diagnostics(
+    record: Dict[str, Any],
+    diag: Optional[Dict[str, Any]],
+    assigned: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Diagnostic fields only — not a quality reject reason."""
+    if not isinstance(record, dict) or not isinstance(diag, dict):
+        return record
+    assigned = assigned if isinstance(assigned, dict) else {}
+    record["variety_novelty"] = diag.get("novelty")
+    record["variety_labels"] = list(diag.get("labels") or [])
+    record["closest_prior_stem"] = diag.get("closest_prior_stem") or ""
+    record["assigned_concept"] = assigned.get("concept") or diag.get("concept")
+    record["assigned_objective"] = assigned.get("objective") or diag.get("objective")
+    record["assigned_cognitive_form"] = (
+        assigned.get("cognitive_form") or diag.get("cognitive_form")
+    )
+    record["assigned_topic"] = assigned.get("topic") or diag.get("topic")
+    record["assigned_subtopic"] = (
+        assigned.get("subtopic")
+        or assigned.get("sub_topic")
+        or diag.get("subtopic")
+    )
+    record["intent_reuse_count"] = diag.get("intent_reuse_count")
+    record["variety_reason"] = diag.get("variety_reason") or ""
+    return record
+
+
+def classify_variety_relation(
+    assigned: Dict[str, Any],
+    candidate_stem: str,
+    prior_questions: Sequence[Any] = (),
+    *,
+    target_difficulty: str = "easy",
+) -> Dict[str, Any]:
+    """
+    Diagnostic variety relation vs prior stems.
+
+    Duplicate validators remain the hard uniqueness gate. This does not
+    accept or reject a question by itself.
+    """
+    assigned = assigned if isinstance(assigned, dict) else {}
+    stem = str(candidate_stem or "").strip()
+    labels: List[str] = []
+    closest_stem = ""
+    closest_overlap = 0.0
+    closest_pattern = ""
+    closest_rec: Dict[str, Any] = {}
+    cand_pattern = scenario_pattern_key(stem)
+    cand_words = _extract_intent_words(
+        cand_pattern.replace("NAME", " ").replace("NUM", " ").replace("PRON", " ")
+    )
+    cand_form = (
+        str(assigned.get("cognitive_form") or "").strip().lower()
+        or question_task_form(stem)
+        or ""
+    )
+    opener = stem_opener_family(stem)
+
+    priors: List[Dict[str, Any]] = []
+    for item in prior_questions or []:
+        if isinstance(item, str):
+            rec = {"question": item}
+        elif isinstance(item, dict):
+            rec = item
+        else:
+            continue
+        q = str(rec.get("question") or "").strip()
+        if q:
+            priors.append(rec)
+
+    reuse = 0
+    opener_hits = 0
+    for rec in priors:
+        prior_stem = str(rec.get("question") or "")
+        if intents_share_objective(assigned, rec) or (
+            _extract_intent_words(assigned.get("concept") or "")
+            & _extract_intent_words(
+                f"{rec.get('concept') or ''} {rec.get('topic') or ''} {prior_stem}"
+            )
+        ):
+            reuse += 1
+        prior_pattern = scenario_pattern_key(prior_stem)
+        prior_words = _extract_intent_words(
+            prior_pattern.replace("NAME", " ").replace("NUM", " ").replace("PRON", " ")
+        )
+        overlap = (
+            _semantic_intent_overlap(cand_words, prior_words)
+            if cand_words and prior_words
+            else 0.0
+        )
+        if overlap > closest_overlap:
+            closest_overlap = overlap
+            closest_stem = prior_stem
+            closest_pattern = prior_pattern
+            closest_rec = rec
+        if opener and stem_opener_family(prior_stem) == opener:
+            opener_hits += 1
+
+    same_objective = False
+    if closest_stem:
+        same_objective = intents_share_objective(assigned, closest_rec or {"question": closest_stem})
+
+    assigned_concept = _extract_intent_words(assigned.get("concept") or "")
+    closest_concept = _extract_intent_words(
+        f"{closest_rec.get('concept') or ''} {closest_rec.get('topic') or ''}"
+    )
+    if not closest_concept and closest_stem:
+        closest_concept = _extract_intent_words(closest_stem)
+    same_concept = bool(
+        assigned_concept and closest_concept and (assigned_concept & closest_concept)
+    )
+
+    closest_form = ""
+    if closest_rec:
+        closest_form = (
+            str(
+                closest_rec.get("assigned_cognitive_form")
+                or closest_rec.get("cognitive_form")
+                or ""
+            )
+            .strip()
+            .lower()
+            or (question_task_form(closest_stem) if closest_stem else "")
+        )
+    elif closest_stem:
+        closest_form = question_task_form(closest_stem)
+    if cand_pattern and closest_pattern and cand_pattern == closest_pattern:
+        labels.append("repeated_scenario_pattern")
+    if (
+        closest_stem
+        and closest_overlap >= VARIETY_PARAPHRASE_WORD_OVERLAP
+        and same_objective
+    ):
+        labels.append("paraphrase")
+    if same_concept:
+        labels.append("repeated_concept")
+    if same_objective:
+        labels.append("repeated_objective")
+    if cand_form and closest_form and cand_form == closest_form:
+        labels.append("repeated_cognitive_form")
+    if same_objective and cand_form and closest_form and cand_form == closest_form:
+        labels.append("repeated_objective_and_form")
+    if opener == "which_of_the_following" and opener_hits:
+        labels.append("repeated_stem_opener")
+    if not easy_variety_form_allowed(
+        str(assigned.get("cognitive_form") or ""),
+        stem,
+        target_difficulty,
+    ):
+        labels.append("easy_unsafe_variety_form")
+
+    novelty = (
+        "low"
+        if (
+            "paraphrase" in labels
+            or "repeated_scenario_pattern" in labels
+            or "repeated_objective_and_form" in labels
+        )
+        else "ok"
+    )
+
+    if novelty == "low" and "paraphrase" in labels:
+        reason = "paraphrase"
+    elif novelty == "low" and "repeated_objective_and_form" in labels:
+        reason = "repeated_objective_and_form"
+    elif novelty == "low":
+        reason = "repeated_scenario_pattern"
+    elif same_objective:
+        reason = "same_objective_different_wording_check"
+    else:
+        reason = "distinct_objective_or_application"
+
+    return {
+        "novelty": novelty,
+        "labels": list(dict.fromkeys(labels)),
+        "closest_prior_stem": closest_stem,
+        "closest_overlap": round(closest_overlap, 3),
+        "concept": assigned.get("concept") or "",
+        "objective": assigned.get("objective") or "",
+        "cognitive_form": assigned.get("cognitive_form") or cand_form,
+        "topic": assigned.get("topic") or "",
+        "subtopic": assigned.get("subtopic") or assigned.get("sub_topic") or "",
+        "intent_reuse_count": reuse,
+        "variety_reason": reason,
+    }
 
 
 def duplicate_intent_keep_feedback(
@@ -1373,6 +2051,7 @@ def apply_duplicate_intent_policy(
     intent_diagnostics: Dict[str, Any],
     dup_match: Optional[Dict[str, Any]] = None,
     target_difficulty: Optional[str] = None,
+    usage_questions: Optional[Sequence[Dict[str, Any]]] = None,
 ) -> Tuple[Optional[Dict[str, Any]], str, bool]:
     """
     Step 8 duplicate policy: keep valid intent after first wording duplicate;
@@ -1401,6 +2080,7 @@ def apply_duplicate_intent_policy(
             assigned_values=list(intent_assignments.values()),
             target_difficulty=target_difficulty,
             diagnostics=intent_diagnostics,
+            usage_questions=usage_questions,
         )
         if nxt:
             intent_assignments[slot_key] = nxt
@@ -1615,6 +2295,372 @@ def rejection_is_cognitive(reasons: Sequence[str]) -> bool:
     return "cognitive difficulty mismatch" in text or "difficulty mismatch" in text
 
 
+def classify_academic_failure_family(
+    reasons: Sequence[str],
+) -> Optional[str]:
+    """
+    Map rejection reasons to one academic failure family for intent retirement.
+
+    Returns None for provider/length/structural/duplicate/intent-drift (those must
+    not penalize the academic intent via this counter). At most one family per
+    rejection — distractor and cognitive never share a counter.
+    """
+    if not reasons:
+        return None
+    jl = " | ".join(str(r).lower() for r in reasons)
+    if (
+        "validator_unavailable" in jl
+        or "generation failed" in jl
+        or "llm_timeout" in jl
+        or "length limit" in jl
+        or "lengthfinish" in jl
+    ):
+        return None
+    if rejection_is_duplicate(reasons):
+        return None
+    if "intent adherence drift" in jl:
+        return None
+    if "subjective" in jl and "best" in jl:
+        return FAILURE_FAMILY_SUBJECTIVE_BEST
+    if rejection_is_cognitive(reasons):
+        return FAILURE_FAMILY_COGNITIVE
+    if (
+        "not appropriate for the selected grade" in jl
+        or "grade-inappropriate" in jl
+    ):
+        return FAILURE_FAMILY_GRADE
+    if any(
+        k in jl
+        for k in (
+            "not grounded",
+            "grounded in the supplied",
+            "possible hallucination",
+            "unrelated external",
+            "concept is not relevant",
+            "requires unrelated external",
+        )
+    ):
+        return FAILURE_FAMILY_GROUNDING
+    if any(
+        k in jl
+        for k in (
+            "independent solver",
+            "defensible option set",
+            "multiple defensible",
+            "answer validity failed",
+            "information insufficient",
+            "arithmetic/numerical",
+            "unsupported absolute",
+            "grade-inappropriate/untaught terminology",
+        )
+    ) and "distractor" not in jl:
+        return FAILURE_FAMILY_BLIND_ANSWER
+    if any(
+        k in jl
+        for k in (
+            "distractor",
+            "misconception",
+            "answer-style clue",
+            "option not independently",
+            "unclear/irrelevant distractor",
+        )
+    ):
+        return FAILURE_FAMILY_DISTRACTOR
+    if "answer validity" in jl or "answer_valid" in jl:
+        return FAILURE_FAMILY_BLIND_ANSWER
+    return None
+
+
+def _parse_cognitive_mismatch_diagnostics(
+    rejection_reasons: Optional[Sequence[str]],
+) -> Tuple[Optional[str], Optional[int], List[str]]:
+    """Extract validated band, score, and low demand criteria from mismatch reasons."""
+    validated: Optional[str] = None
+    score: Optional[int] = None
+    low_dims: List[str] = []
+    focus = (
+        "reasoning",
+        "decision_making",
+        "concept_integration",
+        "interpretation",
+        "application",
+    )
+    for raw in rejection_reasons or []:
+        text = str(raw or "")
+        low = text.lower()
+        if "cognitive difficulty mismatch" not in low and "difficulty mismatch" not in low:
+            continue
+        m_val = re.search(r"validated=([a-z]+)", low)
+        if m_val:
+            validated = normalize_difficulty(m_val.group(1))
+        m_score = re.search(r"score=(\d+)", low)
+        if m_score:
+            score = int(m_score.group(1))
+        m_crit = re.search(r"criteria=([^;]+)", text)
+        if m_crit:
+            for part in m_crit.group(1).split(","):
+                if "=" not in part:
+                    continue
+                name, raw_v = part.split("=", 1)
+                name = name.strip()
+                try:
+                    val = int(raw_v.strip())
+                except ValueError:
+                    continue
+                if name in focus and val <= 2 and name not in low_dims:
+                    low_dims.append(name)
+        break
+    return validated, score, low_dims
+
+
+def _cognitive_demand_direction(
+    target_difficulty: str,
+    validated: Optional[str],
+    rejection_reasons: Optional[Sequence[str]] = None,
+) -> str:
+    """Return under | over | unknown from explicit demand tag or band ranks."""
+    for raw in rejection_reasons or []:
+        low = str(raw or "").lower()
+        if "demand=over-demand" in low:
+            return "over"
+        if "demand=under-demand" in low:
+            return "under"
+    target = normalize_difficulty(target_difficulty)
+    if not validated:
+        return "unknown"
+    t_rank = _DIFFICULTY_RANK.get(target, 1)
+    v_rank = _DIFFICULTY_RANK.get(normalize_difficulty(validated), 1)
+    if v_rank < t_rank:
+        return "under"
+    if v_rank > t_rank:
+        return "over"
+    return "unknown"
+
+
+def academic_failure_family_correction(
+    family: str,
+    intent: Optional[Dict[str, Any]] = None,
+    *,
+    target_difficulty: str = "easy",
+    rejection_reasons: Optional[Sequence[str]] = None,
+) -> str:
+    """Concise first-failure correction for the same assigned intent."""
+    concept = (intent or {}).get("concept") or "the assigned concept"
+    objective = (intent or {}).get("objective") or "the assigned objective"
+    if family == FAILURE_FAMILY_DISTRACTOR:
+        return (
+            "INTENT RETRY (distractor): Previous candidate failed because distractors "
+            "were too obvious, unrelated, or not misconception-based. Keep the same "
+            f"concept/objective ({concept}: {objective}) but create a substantially "
+            "different question with plausible misconception-based distractors."
+        )
+    if family == FAILURE_FAMILY_COGNITIVE:
+        diff = normalize_difficulty(target_difficulty)
+        validated, _score, low_dims = _parse_cognitive_mismatch_diagnostics(
+            rejection_reasons
+        )
+        demand = _cognitive_demand_direction(diff, validated, rejection_reasons)
+        # Easy cognitive retries stay over-demand / simplify (unchanged behavior).
+        if diff == "easy":
+            base = (
+                f"INTENT RETRY (cognitive): Previous candidate exceeded {diff} demand. "
+                "Keep one primary concept and no more than one meaningful reasoning step."
+            )
+        elif demand == "under" or (demand == "unknown" and diff == "difficult"):
+            if diff == "difficult":
+                base = (
+                    "INTENT RETRY (cognitive): Previous candidate was not difficult enough. "
+                    f"Preserve the grounded objective ({concept}: {objective}), but require "
+                    "stronger analysis/inference/evaluation and multiple connected reasoning "
+                    "steps. Do not merely lengthen the scenario or wording. Use connected "
+                    "chapter concepts only when naturally supported."
+                )
+                if low_dims:
+                    focus = "/".join(low_dims[:3])
+                    base += (
+                        f" Increase genuine {focus} depth; do not add superficial context."
+                    )
+            elif diff == "medium":
+                base = (
+                    "Previous candidate was too direct for Medium. Preserve the grounded "
+                    "concept, but require genuine application or interpretation and 1–2 "
+                    "meaningful reasoning steps. Do not make it harder only by adding "
+                    "numbers, text, or calculation repetition."
+                )
+            else:
+                base = (
+                    f"INTENT RETRY (cognitive): Previous candidate was below {diff} demand. "
+                    f"Keep concept/objective ({concept}: {objective}) and raise genuine "
+                    "application/interpretation to about 1–2 reasoning steps — without "
+                    "jumping to Difficult multi-step integration or longer wording alone."
+                )
+        elif demand == "over":
+            if diff == "difficult":
+                base = (
+                    "INTENT RETRY (cognitive): Previous candidate overshot Difficult demand. "
+                    f"Keep concept/objective ({concept}: {objective}); preserve analysis/"
+                    "evaluation but avoid obscure vocabulary, tricks, or unrelated concept stacking."
+                )
+            else:
+                base = (
+                    f"INTENT RETRY (cognitive): Previous candidate exceeded {diff} demand. "
+                    f"Keep concept/objective ({concept}: {objective}); prefer genuine "
+                    "1–2 step application/interpretation without Difficult multi-step integration."
+                )
+        else:
+            # Unknown demand on non-easy: neutral, not Easy simplification.
+            base = (
+                f"INTENT RETRY (cognitive): Adjust the cognitive task to match target "
+                f"difficulty={diff} while keeping concept/objective "
+                f"({concept}: {objective})."
+            )
+        if intent:
+            return f"{base}\n{cognitive_form_correction_hint(intent, diff)}"
+        return base
+    if family == FAILURE_FAMILY_GROUNDING:
+        return (
+            "INTENT RETRY (grounding): Previous candidate introduced unsupported "
+            "content. Stay within the assigned chapter concept and use only "
+            f"defensible applications of the taught concept ({concept})."
+        )
+    if family == FAILURE_FAMILY_GRADE:
+        return (
+            "INTENT RETRY (grade): Previous candidate was not Grade-appropriate. "
+            "Rewrite with Grade-appropriate vocabulary, scenarios, and numerical demand "
+            f"while keeping concept/objective ({concept}: {objective})."
+        )
+    if family == FAILURE_FAMILY_BLIND_ANSWER:
+        return (
+            "INTENT RETRY (answer defensibility): Previous candidate failed independent "
+            "answer checks. Keep the same concept/objective but ensure exactly the "
+            "keyed answer set is uniquely defensible from the stem and taught concept."
+        )
+    if family == FAILURE_FAMILY_SUBJECTIVE_BEST:
+        return (
+            "INTENT RETRY (subjective best): Avoid 'best/most appropriate/most reasonable' "
+            "wording unless an explicit objective decision criterion makes exactly one "
+            f"answer defensible. Keep concept/objective ({concept}: {objective})."
+        )
+    return (
+        f"INTENT RETRY: Keep the same assigned concept/objective "
+        f"({concept}: {objective}); fix the previous rejection."
+    )
+
+
+def apply_academic_failure_intent_policy(
+    *,
+    active_intent: Dict[str, Any],
+    failure_family: str,
+    intent_family_hits: Dict[str, Dict[str, int]],
+    intent_retired_ids: set,
+    intent_remaining: List[Dict[str, Any]],
+    intent_assignments: Dict[str, Dict[str, Any]],
+    slot_key: str,
+    intent_diagnostics: Dict[str, Any],
+    target_difficulty: Optional[str] = None,
+    usage_questions: Optional[Sequence[Dict[str, Any]]] = None,
+    rejection_reasons: Optional[Sequence[str]] = None,
+) -> Tuple[Optional[Dict[str, Any]], str, bool]:
+    """
+    First hit in a failure family → keep intent + correction.
+    Second hit in the SAME family for the SAME intent → retire and replace.
+
+    Different families do not share a counter. Returns
+    (new_active_intent, extra_feedback, retired).
+    """
+    if failure_family not in ACADEMIC_FAILURE_FAMILIES:
+        return active_intent, "", False
+
+    rid = str(active_intent.get("intent_id") or "") or f"anon:{slot_key}"
+    per_intent = intent_family_hits.setdefault(rid, {})
+    hits = int(per_intent.get(failure_family, 0) or 0) + 1
+    per_intent[failure_family] = hits
+    prior_usage = intent_concept_usage_count(active_intent, usage_questions)
+
+    event: Dict[str, Any] = {
+        "intent_id": active_intent.get("intent_id"),
+        "concept": active_intent.get("concept"),
+        "objective": active_intent.get("objective"),
+        "failure_family": failure_family,
+        "family_count": hits,
+        "retired": False,
+        "retirement_reason": None,
+        "replacement_intent_id": None,
+        "replacement_concept": None,
+        "prior_concept_usage_count": prior_usage,
+        "saturation_influenced": False,
+    }
+
+    if hits < INTENT_FAMILY_HITS_BEFORE_RETIRE:
+        intent_diagnostics["academic_failure_family_retries"] = (
+            int(intent_diagnostics.get("academic_failure_family_retries") or 0) + 1
+        )
+        extra = academic_failure_family_correction(
+            failure_family,
+            active_intent,
+            target_difficulty=target_difficulty or "easy",
+            rejection_reasons=rejection_reasons,
+        )
+        events = list(intent_diagnostics.get("academic_failure_events") or [])
+        events.append(event)
+        intent_diagnostics["academic_failure_events"] = events
+        return active_intent, extra, False
+
+    if rid and not str(rid).startswith("anon:"):
+        intent_retired_ids.add(rid)
+    intent_diagnostics["intents_retired_after_academic_failure"] = (
+        int(intent_diagnostics.get("intents_retired_after_academic_failure") or 0) + 1
+    )
+    event["retired"] = True
+    event["retirement_reason"] = f"repeated_{failure_family}_failures={hits}"
+
+    sat_before = int(intent_diagnostics.get("saturation_influenced_selections") or 0)
+    nxt = take_next_unused_intent(
+        intent_remaining,
+        retired_ids=intent_retired_ids,
+        assigned_values=[
+            v for k, v in intent_assignments.items() if k != slot_key
+        ],
+        target_difficulty=target_difficulty,
+        diagnostics=intent_diagnostics,
+        usage_questions=usage_questions,
+    )
+    sat_after = int(intent_diagnostics.get("saturation_influenced_selections") or 0)
+    event["saturation_influenced"] = sat_after > sat_before
+
+    if nxt:
+        intent_assignments[slot_key] = nxt
+        event["replacement_intent_id"] = nxt.get("intent_id")
+        event["replacement_concept"] = nxt.get("concept")
+        event["prior_concept_usage_count"] = intent_concept_usage_count(
+            nxt, usage_questions
+        )
+        events = list(intent_diagnostics.get("academic_failure_events") or [])
+        events.append(event)
+        intent_diagnostics["academic_failure_events"] = events
+        extra = (
+            f"INTENT RETIRED after repeated {failure_family} failures "
+            f"(count={hits}). New assigned intent: concept={nxt.get('concept')}; "
+            f"objective={nxt.get('objective')}; cognitive_form={nxt.get('cognitive_form')}. "
+            "Write a fresh question for the NEW intent; do not reuse the failed stem."
+        )
+        return nxt, extra, True
+
+    intent_assignments.pop(slot_key, None)
+    intent_diagnostics["catalog_exhaustion_count"] = (
+        int(intent_diagnostics.get("catalog_exhaustion_count") or 0) + 1
+    )
+    events = list(intent_diagnostics.get("academic_failure_events") or [])
+    events.append(event)
+    intent_diagnostics["academic_failure_events"] = events
+    return (
+        None,
+        f"INTENT RETIRED after repeated {failure_family} failures; "
+        "no replacement intent available.",
+        True,
+    )
+
+
 def cognitive_form_correction_hint(intent: Dict[str, Any], difficulty: str) -> str:
     diff = normalize_difficulty(difficulty)
     forms = COGNITIVE_FORMS_BY_DIFFICULTY.get(diff) or COGNITIVE_FORMS_BY_DIFFICULTY["easy"]
@@ -1714,6 +2760,7 @@ async def generate_intent_catalog_via_llm(
     chunks: Sequence[str],
     concept_catalog: Optional[Dict[str, Any]] = None,
     model_id: Optional[str] = None,
+    cost_diagnostics: Optional[Dict[str, Any]] = None,
 ) -> List[Dict[str, Any]]:
     """One structured LLM call → raw intent drafts (ungrounded)."""
     # Local import avoids circular import at module load (question_paper ↔ intent).
@@ -1736,6 +2783,16 @@ async def generate_intent_catalog_via_llm(
         IntentCatalogLLMOutput,
         max_tokens=6144,
         temperature=0.35,
+        llm_stage=LLM_STAGE_INTENT_PLANNER_CATALOG,
+        cost_diagnostics=cost_diagnostics,
+        bank_batch_mode=True,
+        prompt_composition=build_prompt_composition(
+            system_prompt=system,
+            user_prompt=user,
+            grounding_text=_chunk_previews(chunks),
+            static_system_instructions=system,
+            intent_objective_form=user,
+        ),
     )
     drafts = []
     for i, item in enumerate(result.intents or []):
@@ -1958,6 +3015,7 @@ async def generate_replenish_intents_via_llm(
     avoid_objectives: Sequence[str],
     heavy_topics: Sequence[str],
     model_id: Optional[str] = None,
+    cost_diagnostics: Optional[Dict[str, Any]] = None,
 ) -> List[Dict[str, Any]]:
     from open_notebook.graphs.question_paper import _invoke_structured
 
@@ -1980,6 +3038,16 @@ async def generate_replenish_intents_via_llm(
         IntentCatalogLLMOutput,
         max_tokens=3072,
         temperature=0.4,
+        llm_stage=LLM_STAGE_INTENT_PLANNER_REPLENISH,
+        cost_diagnostics=cost_diagnostics,
+        bank_batch_mode=True,
+        prompt_composition=build_prompt_composition(
+            system_prompt=system,
+            user_prompt=user,
+            grounding_text=chunk_text or "",
+            static_system_instructions=system,
+            intent_objective_form=user,
+        ),
     )
     drafts = []
     for i, item in enumerate(result.intents or []):
@@ -2017,6 +3085,7 @@ async def replenish_intent_catalog_once(
     diagnostics: Optional[Dict[str, Any]] = None,
     model_id: Optional[str] = None,
     batch_size: Optional[int] = None,
+    cost_diagnostics: Optional[Dict[str, Any]] = None,
 ) -> Tuple[List[Dict[str, Any]], int]:
     """
     One chunk-based replenishment round. Returns (new_catalog, grounded_added).
@@ -2059,6 +3128,7 @@ async def replenish_intent_catalog_once(
             avoid_objectives=avoid,
             heavy_topics=_heavy_topics(catalog),
             model_id=model_id,
+            cost_diagnostics=cost_diagnostics,
         )
     except Exception as e:
         logger.error(f"Intent replenish LLM failed: {e}")
@@ -2116,6 +3186,7 @@ async def expand_intent_catalog_for_request(
     book_id: str = "",
     content_hash: str = "",
     require_capacity_for_missing: bool = True,
+    cost_diagnostics: Optional[Dict[str, Any]] = None,
 ) -> List[Dict[str, Any]]:
     """Expand catalog while unused pool cannot cover missing slots / threshold."""
     diag = diagnostics if diagnostics is not None else empty_intent_diagnostics()
@@ -2149,6 +3220,7 @@ async def expand_intent_catalog_for_request(
             accepted_questions=accepted_questions,
             diagnostics=diag,
             model_id=model_id,
+            cost_diagnostics=cost_diagnostics,
         )
         if added <= 0:
             break
@@ -2194,6 +3266,7 @@ async def replenish_running_pool(
     cache_key: str = "",
     book_id: str = "",
     content_hash: str = "",
+    cost_diagnostics: Optional[Dict[str, Any]] = None,
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     """Top up remaining unused intents during fill/refill. Preserves existing remaining order."""
     diag = diagnostics if diagnostics is not None else empty_intent_diagnostics()
@@ -2229,6 +3302,7 @@ async def replenish_running_pool(
         book_id=book_id,
         content_hash=content_hash,
         require_capacity_for_missing=False,
+        cost_diagnostics=cost_diagnostics,
     )
     extra = [
         x
@@ -2253,6 +3327,7 @@ async def build_or_load_base_intent_catalog(
     concept_catalog: Optional[Dict[str, Any]] = None,
     model_id: Optional[str] = None,
     diagnostics: Optional[Dict[str, Any]] = None,
+    cost_diagnostics: Optional[Dict[str, Any]] = None,
 ) -> List[Dict[str, Any]]:
     """
     Return grounded base catalog for book/chapter/difficulty (cached).
@@ -2311,6 +3386,7 @@ async def build_or_load_base_intent_catalog(
             chunks=chunks,
             concept_catalog=concept_catalog,
             model_id=model_id,
+            cost_diagnostics=cost_diagnostics,
         )
         diag["planner_calls"] = int(diag.get("planner_calls") or 0) + 1
         diag["raw_intents_returned"] = int(diag.get("raw_intents_returned") or 0) + len(
@@ -2382,7 +3458,12 @@ def prepare_batch_intent_assignments(
     available = filter_easy_safe_intents(
         available, difficulty=slot_diff, diagnostics=diag
     )
-    assignments, remaining, assigned_n = assign_intents_to_slots(slots, available)
+    assignments, remaining, assigned_n = assign_intents_to_slots(
+        slots,
+        available,
+        usage_questions=enriched_bank,
+        diagnostics=diag,
+    )
     diag["intents_assigned"] = assigned_n
     diag["grounded_intents"] = len(list(base_catalog or []))
     diag["catalog_size"] = max(int(diag.get("catalog_size") or 0), len(list(base_catalog or [])))

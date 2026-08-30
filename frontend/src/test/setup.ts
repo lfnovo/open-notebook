@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
+import React from 'react'
 import { enUS } from '../lib/locales/en-US'
 
 // Mock next/navigation
@@ -11,6 +12,18 @@ vi.mock('next/navigation', () => ({
   }),
   usePathname: () => '',
   useSearchParams: () => new URLSearchParams(),
+  useParams: () => ({}),
+}))
+
+vi.mock('next/link', () => ({
+  default: ({
+    children,
+    href,
+    ...rest
+  }: {
+    children?: React.ReactNode
+    href: string
+  } & Record<string, unknown>) => React.createElement('a', { href, ...rest }, children),
 }))
 
 // Mock window.matchMedia

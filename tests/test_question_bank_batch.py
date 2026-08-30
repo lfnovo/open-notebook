@@ -842,7 +842,7 @@ class TestBankBatchMisconceptionDistractors:
             answer_type="single_correct",
         )
         assert any("joke" in e.lower() or "filler" in e.lower() for e in errs)
-        assert any("distinct" in e.lower() for e in errs)
+        assert any("duplicate" in e.lower() for e in errs)
         assert any("exactly one" in e.lower() for e in errs)
 
     def test_generator_structural_self_check_multiple_requires_two(self):
@@ -853,7 +853,7 @@ class TestBankBatchMisconceptionDistractors:
             },
             answer_type="multiple_correct",
         )
-        assert any("at least two" in e.lower() for e in errs)
+        assert any("more than one" in e.lower() or "at least two" in e.lower() for e in errs)
 
     def test_fill_slots_runs_self_check_in_bank_batch(self):
         fill_src = inspect.getsource(qp.fill_slots)
@@ -1567,7 +1567,8 @@ class TestBankBatchStep5CostAwareOrdering:
         assert cat is None
 
     @pytest.mark.asyncio
-    async def test_duplicate_attempt_skips_blind_and_cognitive(self):
+    async def test_duplicate_attempt_skips_blind_and_cognitive(self, monkeypatch):
+        monkeypatch.setenv("QUESTION_BANK_INTENT_PLANNER", "0")
         slot = self._slot()
         seed = "What is the barter system?"
         generated = self._mcq(question="What is the barter system?")
@@ -1608,7 +1609,8 @@ class TestBankBatchStep5CostAwareOrdering:
         assert cost.get("rejected_before_validator_llm", 0) >= 1
 
     @pytest.mark.asyncio
-    async def test_metadata_failure_skips_expensive_validators(self):
+    async def test_metadata_failure_skips_expensive_validators(self, monkeypatch):
+        monkeypatch.setenv("QUESTION_BANK_INTENT_PLANNER", "0")
         slot = self._slot()
         generated = self._mcq(topic="Financial Literacy", sub="Chapter 1")
 
@@ -1643,6 +1645,69 @@ class TestBankBatchStep5CostAwareOrdering:
         assert cost.get("metadata_early_exits", 0) >= 1
         assert cost.get("blind_solver_calls", 0) == 0
         assert cost.get("cognitive_quality_calls", 0) == 0
+
+    def test_early_gates_reject_meta_option_as_structural(self):
+        from open_notebook.graphs.question_paper_blueprint import (
+            run_bank_batch_early_gates,
+        )
+
+        slot = self._slot()
+        gen = self._mcq()
+        gen["options"] = [
+            "Exchange of goods without money",
+            "A type of bank account",
+            "A government tax",
+            "Digital payment only",
+            "All of the above",
+        ]
+        reasons, cat = run_bank_batch_early_gates(
+            slot=slot,
+            generated=gen,
+            existing_question_texts=[],
+            existing_questions=[],
+        )
+        assert cat == "structural"
+        assert any("meta-option" in r for r in reasons)
+
+    @pytest.mark.asyncio
+    async def test_structural_failure_skips_blind_and_cognitive(self, monkeypatch):
+        monkeypatch.setenv("QUESTION_BANK_INTENT_PLANNER", "0")
+        slot = self._slot()
+        generated = self._mcq()
+        generated["options"] = generated["options"][:4]
+
+        async def fake_gen(*_a, **_k):
+            return generated
+
+        async def boom_blind(*_a, **_k):
+            raise AssertionError("blind solver must not run on structural failure")
+
+        async def boom_cog(*_a, **_k):
+            raise AssertionError("cognitive must not run on structural failure")
+
+        state = {
+            "slots": [slot.to_dict()],
+            "chapter_chunks": {"1": ["Barter is exchange without money."]},
+            "bank_batch_mode": True,
+            "bank_duplicate_seed_texts": [],
+            "bank_duplicate_seed_questions": [],
+            "max_slot_attempts": 1,
+            "slot_concurrency": 1,
+            "book_grounded": True,
+            "language": "en",
+        }
+        with patch.object(qp, "_generate_for_slot", side_effect=fake_gen), patch.object(
+            qp, "_blind_solve", side_effect=boom_blind
+        ), patch.object(
+            qp, "_validate_cognitive_quality", side_effect=boom_cog
+        ):
+            result = await qp.fill_slots(state)
+
+        cost = result.get("cost_diagnostics") or {}
+        assert cost.get("structural_early_exits", 0) >= 1
+        assert cost.get("blind_solver_calls", 0) == 0
+        assert cost.get("cognitive_quality_calls", 0) == 0
+        assert cost.get("rejected_before_validator_llm", 0) >= 1
 
     @pytest.mark.asyncio
     async def test_non_duplicate_still_runs_all_validators(self):
@@ -1716,6 +1781,16 @@ class TestBankBatchStep5CostAwareOrdering:
             qp, "_blind_solve", side_effect=fake_blind
         ), patch.object(
             qp, "_validate_cognitive_quality", side_effect=fake_cog
+        ), patch.object(
+            qp,
+            "_finalize_bank_batch_explanation",
+            new=AsyncMock(
+                side_effect=lambda slot, generated, state, excerpt, **kw: (
+                    True,
+                    {**generated, "explanation": "Because cowrie shells were valued."},
+                    [],
+                )
+            ),
         ):
             result = await qp.fill_slots(state)
 
@@ -3497,7 +3572,7 @@ class TestBankBatchTokenContextOptimization:
         gen_src = inspect.getsource(qp_mod._generate_for_slot)
         assert "select_blind_solver_source_snippet" in blind_src
         assert "bank_batch_mode" in blind_src
-        assert "select_source_grounding_window" in cog_src
+        assert "select_cognitive_source_window" in cog_src
         assert "forbidden_stems" in gen_src
         paper_src = inspect.getsource(qp_mod.build_question_paper_graph)
         assert "bank_target_refill" not in paper_src

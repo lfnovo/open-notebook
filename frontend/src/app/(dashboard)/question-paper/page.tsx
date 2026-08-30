@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { AppShell } from '@/components/layout/AppShell'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -17,6 +18,8 @@ import { GenerateForm } from '@/components/question-paper/GenerateForm'
 import { PapersList } from '@/components/question-paper/PapersList'
 import { PaperResultView } from '@/components/question-paper/PaperResult'
 import { BankView } from '@/components/question-paper/BankView'
+import { BankGenerateForm } from '@/components/question-paper/BankGenerateForm'
+import { BankBatchHistory } from '@/components/question-paper/BankBatchHistory'
 import {
   useGeneratePaper,
   usePapers,
@@ -28,8 +31,14 @@ import type { GeneratePaperRequest } from '@/lib/types/question-paper'
 import { formatPaperStatus, formatQuestionCount, paperDisplayStatus } from '@/lib/question-paper-labels'
 import { DifficultyBreakdown } from '@/components/question-paper/DifficultyBreakdown'
 
-export default function QuestionPaperPage() {
+function QuestionPaperPageContent() {
   const { t } = useTranslation()
+  const searchParams = useSearchParams()
+  const tabFromUrl = searchParams.get('tab')
+  const initialTab = tabFromUrl === 'bank' || tabFromUrl === 'papers' || tabFromUrl === 'generate'
+    ? tabFromUrl
+    : 'generate'
+  const [activeTab, setActiveTab] = useState(initialTab)
   const [selectedPaperId, setSelectedPaperId] = useState<string | null>(null)
   const [pendingPaperId, setPendingPaperId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -96,7 +105,7 @@ export default function QuestionPaperPage() {
         </div>
 
         <div className="flex-1 overflow-hidden">
-          <Tabs defaultValue="generate" className="h-full flex flex-col">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
             <div className="px-6 pt-4">
               <TabsList className="flex w-full flex-nowrap justify-start h-auto">
                 <TabsTrigger value="generate" className="flex-none whitespace-nowrap">
@@ -239,7 +248,9 @@ export default function QuestionPaperPage() {
 
             {/* Bank Tab */}
             <TabsContent value="bank" className="flex-1 overflow-auto px-6 pb-6 mt-4">
-              <div className="max-w-7xl">
+              <div className="max-w-7xl space-y-6">
+                <BankGenerateForm />
+                <BankBatchHistory />
                 <Card>
                   <CardHeader>
                     <CardTitle>{t.questionPaper.bankTitle}</CardTitle>
@@ -257,3 +268,20 @@ export default function QuestionPaperPage() {
     </AppShell>
   )
 }
+
+export default function QuestionPaperPage() {
+  return (
+    <Suspense
+      fallback={
+        <AppShell>
+          <div className="flex justify-center py-16">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        </AppShell>
+      }
+    >
+      <QuestionPaperPageContent />
+    </Suspense>
+  )
+}
+

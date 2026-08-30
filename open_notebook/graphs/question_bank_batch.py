@@ -32,9 +32,11 @@ from open_notebook.graphs.question_bank_intent import (
     prepare_batch_intent_assignments,
     should_replenish_catalog,
 )
+from open_notebook.graphs.question_answer_pattern import apply_answer_position_audit
 from open_notebook.graphs.question_paper_blueprint import (
     CHAPTER_CHUNK_SIZE,
     audit_bank_batch,
+    bank_batch_budget_exhausted,
     bank_batch_from_dict,
     bank_target_refill_cycles,
     build_bank_batch_slots,
@@ -50,6 +52,8 @@ from open_notebook.graphs.question_paper_blueprint import (
 
 async def prepare_bank_batch(state: PaperState) -> dict:
     """Build single-chapter bank-batch slots and load existing bank duplicates."""
+    import time
+
     raw = state.get("bank_batch_blueprint") or {}
     blueprint = bank_batch_from_dict(raw)
 
@@ -117,6 +121,7 @@ async def prepare_bank_batch(state: PaperState) -> dict:
     )
 
     intent_diagnostics = empty_intent_diagnostics()
+    cost_diagnostics = empty_bank_cost_diagnostics()
     bank_intent_catalog: List[dict] = []
     bank_intent_assignments: Dict[str, dict] = {}
     bank_intent_remaining: List[dict] = []
@@ -141,6 +146,7 @@ async def prepare_bank_batch(state: PaperState) -> dict:
             concept_catalog=diversity_catalog,
             model_id=state.get("generator_model"),
             diagnostics=intent_diagnostics,
+            cost_diagnostics=cost_diagnostics,
         )
         available_probe, _filtered = filter_intents_against_used(
             base_catalog, bank_questions=seed_qs
@@ -173,6 +179,7 @@ async def prepare_bank_batch(state: PaperState) -> dict:
                 cache_key=str(intent_diagnostics.get("cache_key") or ""),
                 book_id=book_id,
                 content_hash=str(intent_diagnostics.get("content_hash") or ""),
+                cost_diagnostics=cost_diagnostics,
             )
         bank_intent_catalog = list(base_catalog)
         bank_intent_assignments, bank_intent_remaining, intent_diagnostics = (
@@ -233,10 +240,15 @@ async def prepare_bank_batch(state: PaperState) -> dict:
         "rejected_with_feedback": list(state.get("rejected_with_feedback") or []),
         "persisted_question_ids": list(state.get("persisted_question_ids") or []),
         "refill_diagnostics": empty_bank_refill_diagnostics(),
-        "cost_diagnostics": empty_bank_cost_diagnostics(),
+        "cost_diagnostics": cost_diagnostics,
         "target_refill_cycles_done": 0,
         "max_target_refill_cycles": max_target,
         "refill_phase": "normal",
+        "batch_started_at": float(state.get("batch_started_at") or time.time()),
+        "minimum_accepted_questions": state.get("minimum_accepted_questions"),
+        "max_batch_generation_attempts": state.get("max_batch_generation_attempts"),
+        "max_batch_runtime_seconds": state.get("max_batch_runtime_seconds"),
+        "batch_budget_exhausted_reason": state.get("batch_budget_exhausted_reason"),
     }
 
 
@@ -305,6 +317,21 @@ async def bank_target_refill(state: PaperState) -> dict:
             "target_refill_cycles_done": cycles_done,
         }
 
+    if bank_batch_budget_exhausted(state):
+        logger.info(
+            f"Bank target refill skipped: batch budget exhausted "
+            f"(reason={state.get('batch_budget_exhausted_reason')}) "
+            f"accepted={accepted}/{requested} failed={len(failed)}"
+        )
+        diag = dict(state.get("refill_diagnostics") or empty_bank_refill_diagnostics())
+        diag["accepted_after_target_refill"] = accepted
+        diag["target_refill_cycles_run"] = cycles_done
+        return {
+            "refill_diagnostics": diag,
+            "target_refill_cycles_done": cycles_done,
+            "batch_budget_exhausted_reason": state.get("batch_budget_exhausted_reason"),
+        }
+
     cycle_num = cycles_done + 1
     missing_before = len(failed)
     accepted_before = accepted
@@ -367,12 +394,35 @@ async def bank_target_refill(state: PaperState) -> dict:
 
 async def audit_bank_batch_node(state: PaperState) -> dict:
     """Run bank-batch audit (partial success allowed)."""
+    import time
+
     raw = state.get("bank_batch_blueprint") or {}
     blueprint = bank_batch_from_dict(raw)
-    approved = state.get("approved") or []
+    approved, pos_diag = apply_answer_position_audit(list(state.get("approved") or []))
     failed = state.get("failed_slots") or []
     rejected = state.get("rejected_with_feedback") or []
-    audit = audit_bank_batch(blueprint, approved, failed, options_per_question=5)
+    started = state.get("batch_started_at")
+    runtime_s = (
+        max(0.0, time.time() - float(started)) if started is not None else 0.0
+    )
+    cost = finalize_bank_cost_diagnostics(
+        state.get("cost_diagnostics") or empty_bank_cost_diagnostics(),
+        accepted_count=len(approved),
+        processing_time_seconds=runtime_s,
+    )
+    intent_diag = dict(state.get("intent_diagnostics") or empty_intent_diagnostics())
+    catalog_exhausted = int(intent_diag.get("catalog_exhaustion_count") or 0) > 0
+    audit = audit_bank_batch(
+        blueprint,
+        approved,
+        failed,
+        options_per_question=5,
+        minimum_accepted_questions=state.get("minimum_accepted_questions"),
+        budget_exhausted_reason=state.get("batch_budget_exhausted_reason"),
+        generated_attempts=int(cost.get("generated_attempts") or 0),
+        runtime_seconds=runtime_s,
+        catalog_exhausted=catalog_exhausted,
+    )
     sat = compute_bank_batch_saturation_diagnostics(
         seed_questions=state.get("bank_duplicate_seed_questions") or [],
         approved=approved,
@@ -386,10 +436,6 @@ async def audit_bank_batch_node(state: PaperState) -> dict:
         )
     if not diag.get("accepted_after_target_refill"):
         diag["accepted_after_target_refill"] = len(approved)
-    cost = finalize_bank_cost_diagnostics(
-        state.get("cost_diagnostics") or empty_bank_cost_diagnostics()
-    )
-    intent_diag = dict(state.get("intent_diagnostics") or empty_intent_diagnostics())
     accepted_n = max(1, len(approved)) if approved else 0
     gen_attempts = int(cost.get("generated_attempts") or 0)
     if approved:
@@ -403,9 +449,13 @@ async def audit_bank_batch_node(state: PaperState) -> dict:
     audit["refill_diagnostics"] = diag
     audit["cost_diagnostics"] = cost
     audit["intent_diagnostics"] = intent_diag
+    audit["answer_position"] = pos_diag
     logger.info(
         f"Bank batch audit status={audit.get('status')} "
         f"accepted={audit.get('accepted')}/{audit.get('requested')} "
+        f"stop_reason={audit.get('stop_reason')} "
+        f"min_target={audit.get('minimum_accepted_questions')} "
+        f"min_reached={audit.get('minimum_target_reached')} "
         f"errors={len(audit.get('errors') or [])}; "
         f"saturation seeds={sat.get('existing_seed_count')} "
         f"dup_rejects={sat.get('duplicate_rejection_count')}; "
@@ -423,6 +473,7 @@ async def audit_bank_batch_node(state: PaperState) -> dict:
     )
     return {
         "audit": audit,
+        "approved": approved,
         "rejected_with_feedback": rejected,
         "refill_diagnostics": diag,
         "cost_diagnostics": cost,
@@ -535,9 +586,12 @@ async def persist_bank_batch(state: PaperState) -> dict:
 
 
 def _needs_refill_bank(state: PaperState) -> str:
-    if state.get("failed_slots"):
-        return "refill_slots"
-    return "mark_after_normal_refill"
+    if not state.get("failed_slots"):
+        return "mark_after_normal_refill"
+    # Additional batch-level ceiling: skip further refill attempts when exhausted.
+    if state.get("bank_batch_mode") and bank_batch_budget_exhausted(state):
+        return "mark_after_normal_refill"
+    return "refill_slots"
 
 
 def _needs_target_refill(state: PaperState) -> str:
@@ -555,6 +609,8 @@ def _needs_target_refill(state: PaperState) -> str:
     except Exception:
         requested = len(state.get("slots") or []) or 0
     if len(approved) >= requested:
+        return "audit_bank_batch"
+    if bank_batch_budget_exhausted(state):
         return "audit_bank_batch"
     cycles_done = int(state.get("target_refill_cycles_done") or 0)
     max_cycles = int(

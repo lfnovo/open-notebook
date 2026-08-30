@@ -3,9 +3,14 @@ import { toast } from 'sonner'
 import { questionPaperApi } from '@/lib/api/question-paper'
 import type {
   GeneratePaperRequest,
+  GenerateBankBatchRequest,
+  BankBatchStatusResponse,
+  BankBatchResultResponse,
+  BankBatchSummary,
   PaperStatusResponse,
   PaperResult,
 } from '@/lib/types/question-paper'
+import { isBankBatchActive, isBankBatchTerminal } from '@/lib/question-paper-bank-batch'
 
 export const QUESTION_PAPER_KEYS = {
   all: ['question-papers'] as const,
@@ -13,6 +18,9 @@ export const QUESTION_PAPER_KEYS = {
   status: (id: string) => [...QUESTION_PAPER_KEYS.all, 'status', id] as const,
   result: (id: string) => [...QUESTION_PAPER_KEYS.all, 'result', id] as const,
   bank: (q: string) => ['question-bank', q] as const,
+  bankBatches: () => ['question-bank-batch', 'list'] as const,
+  bankBatchStatus: (id: string) => ['question-bank-batch', 'status', id] as const,
+  bankBatchResult: (id: string) => ['question-bank-batch', 'result', id] as const,
   books: ['question-books'] as const,
 }
 
@@ -55,6 +63,54 @@ export function useGeneratePaper() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to start paper generation')
+    },
+  })
+}
+
+export function useGenerateBankBatch() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (request: GenerateBankBatchRequest) => questionPaperApi.generateBankBatch(request),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['question-bank'] })
+      queryClient.invalidateQueries({ queryKey: QUESTION_PAPER_KEYS.bankBatches() })
+    },
+  })
+}
+
+export function useBankBatches() {
+  return useQuery<BankBatchSummary[]>({
+    queryKey: QUESTION_PAPER_KEYS.bankBatches(),
+    queryFn: questionPaperApi.listBankBatches,
+    refetchInterval: (query) => {
+      const rows = query.state.data
+      if (Array.isArray(rows) && rows.some((batch) => isBankBatchActive(batch.status))) {
+        return 3000
+      }
+      return false
+    },
+  })
+}
+
+export function useBankBatchResult(batchId: string | null, enabled: boolean = true) {
+  return useQuery<BankBatchResultResponse>({
+    queryKey: QUESTION_PAPER_KEYS.bankBatchResult(batchId ?? ''),
+    queryFn: () => questionPaperApi.getBankBatchResult(batchId!),
+    enabled: !!batchId && enabled,
+    retry: false,
+  })
+}
+
+export function useBankBatchStatus(batchId: string | null, enabled: boolean = true) {
+  return useQuery<BankBatchStatusResponse>({
+    queryKey: QUESTION_PAPER_KEYS.bankBatchStatus(batchId ?? ''),
+    queryFn: () => questionPaperApi.getBankBatchStatus(batchId!),
+    enabled: !!batchId && enabled,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status
+      if (isBankBatchTerminal(status)) return false
+      return 3000
     },
   })
 }

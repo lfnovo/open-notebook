@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from api.question_paper_service import (
     BookService,
+    ExportBankXlsxRequest,
     GenerateBankBatchRequest,
     GenerateBankBatchResponse,
     GeneratePaperRequest,
@@ -180,6 +181,18 @@ async def delete_paper(paper_id: str):
         raise HTTPException(status_code=500, detail="Failed to delete paper")
 
 
+@router.get("/papers/bank/batches")
+async def list_bank_batches():
+    """List existing Question Bank Batch jobs (metadata only). Does not generate."""
+    try:
+        return await QuestionPaperService.list_bank_batches()
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error listing bank batches: {e}")
+        raise HTTPException(status_code=500, detail="Failed to list bank batches")
+
+
 @router.post("/papers/bank/batch/generate", response_model=GenerateBankBatchResponse)
 async def generate_bank_batch(request: GenerateBankBatchRequest):
     """Submit an async Question Bank Batch generation job (single chapter × difficulty)."""
@@ -229,6 +242,25 @@ async def search_question_bank(
     except Exception as e:
         logger.error(f"Error searching question bank: {e}")
         raise HTTPException(status_code=500, detail="Failed to search question bank")
+
+
+@router.post("/papers/bank/export/xlsx")
+async def export_question_bank_xlsx(request: ExportBankXlsxRequest):
+    """Download currently selected Question Bank rows as Excel. Read-only."""
+    try:
+        xlsx_bytes = await QuestionPaperService.export_bank_xlsx(request.question_ids)
+        return Response(
+            content=xlsx_bytes,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": 'attachment; filename="question_bank.xlsx"'
+            },
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting question bank xlsx: {e}")
+        raise HTTPException(status_code=500, detail="Failed to export question bank")
 
 
 @router.get("/papers/books")

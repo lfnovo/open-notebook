@@ -1,10 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -18,9 +17,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Loader2, Search } from 'lucide-react'
+import { Loader2, Search, Download } from 'lucide-react'
+import { toast } from 'sonner'
 import { useBooks, useQuestionBank, useQuestionBooks } from '@/lib/hooks/use-question-paper'
+import { questionPaperApi } from '@/lib/api/question-paper'
 import { bookRecordId, gradesMatch } from '@/components/question-paper/BookUploader'
+import {
+  BANK_FIELD_CONTROL_CLASS,
+  BANK_FIELD_GRID_CLASS,
+  BankFormField,
+  bankFieldLabelId,
+} from '@/components/question-paper/BankFormField'
 import type { BankQuestion } from '@/lib/types/question-paper'
 import {
   OPTION_LETTERS,
@@ -105,8 +112,10 @@ export function BankView() {
   const [chapter, setChapter] = useState('')
   const [difficulty, setDifficulty] = useState('')
   const [answerType, setAnswerType] = useState('')
+  const [batchId, setBatchId] = useState('')
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<BankQuestion | null>(null)
+  const [downloading, setDownloading] = useState(false)
 
   const { data: questions = [], isLoading } = useQuestionBank('')
   const { data: libraryBooks = [] } = useBooks()
@@ -227,6 +236,7 @@ export function BankView() {
       if (chapter && String(q.chapter || '') !== chapter) return false
       if (difficulty && difficultyKey(questionDifficulty(q)) !== difficulty) return false
       if (answerType && formatAnswerType(q.type, q.answer_type) !== answerType) return false
+      if (batchId && String(q.batch_id || '') !== batchId) return false
       if (needle) {
         const haystack = [q.question, q.topic, q.sub_topic, q.chapter_title]
           .filter(Boolean)
@@ -236,7 +246,7 @@ export function BankView() {
       }
       return true
     })
-  }, [questions, grade, year, bookId, booksForYear, chapter, difficulty, answerType, search])
+  }, [questions, grade, year, bookId, booksForYear, chapter, difficulty, answerType, batchId, search])
 
   const summary = useMemo(() => {
     const counts = { total: filtered.length, easy: 0, medium: 0, difficult: 0 }
@@ -254,9 +264,10 @@ export function BankView() {
       parts.push(formatChapterLabel(chapter))
     }
     if (difficulty) parts.push(formatDifficulty(difficulty))
+    if (batchId) parts.push(batchId)
     parts.push(`${filtered.length} Questions`)
     return parts.join(' · ')
-  }, [bookId, bookTitles, booksById, chapter, difficulty, filtered.length])
+  }, [bookId, bookTitles, booksById, chapter, difficulty, batchId, filtered.length])
 
   const resetFilters = () => {
     setGrade('')
@@ -265,7 +276,34 @@ export function BankView() {
     setChapter('')
     setDifficulty('')
     setAnswerType('')
+    setBatchId('')
     setSearch('')
+  }
+
+  const batches = useMemo(
+    () => uniqueSorted(questions.map((q) => q.batch_id)),
+    [questions],
+  )
+
+  const downloadFiltered = async () => {
+    if (filtered.length === 0 || downloading) return
+    setDownloading(true)
+    try {
+      const blob = await questionPaperApi.exportBankXlsx(filtered.map((q) => q.id))
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      const batchPart = batchId ? batchId.replace(/[:/\\]/g, '_') : 'filtered'
+      link.download = `question_bank_${batchPart}.xlsx`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error(t.questionPaper.bankDownloadFailed)
+    } finally {
+      setDownloading(false)
+    }
   }
 
   const yearDisabled = !grade
@@ -275,25 +313,40 @@ export function BankView() {
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <SummaryTile label={t.questionPaper.bankSummaryTotal} value={summary.total} />
-        <SummaryTile label={t.questionPaper.easy} value={summary.easy} />
-        <SummaryTile label={t.questionPaper.medium} value={summary.medium} />
-        <SummaryTile label={t.questionPaper.difficult} value={summary.difficult} />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="bank-summary-cards">
+        <SummaryTile
+          testId="bank-summary-total"
+          label={t.questionPaper.bankSummaryTotal}
+          value={summary.total}
+        />
+        <SummaryTile testId="bank-summary-easy" label={t.questionPaper.easy} value={summary.easy} />
+        <SummaryTile testId="bank-summary-medium" label={t.questionPaper.medium} value={summary.medium} />
+        <SummaryTile
+          testId="bank-summary-difficult"
+          label={t.questionPaper.difficult}
+          value={summary.difficult}
+        />
       </div>
       <p className="text-sm text-muted-foreground">{t.questionPaper.bankDesc}</p>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <FilterField label={t.questionPaper.grade}>
+      <div className="space-y-3" data-testid="bank-filter-fields">
+        <div className={BANK_FIELD_GRID_CLASS} data-testid="bank-filter-row-1">
+        <BankFormField id="bank-filter-grade" label={t.questionPaper.grade}>
           <Select
-            value={grade || ALL}
+            value={grade || undefined}
             onValueChange={(value) => {
               setGrade(value === ALL ? '' : value)
               setChapter('')
               setDifficulty('')
             }}
           >
-            <SelectTrigger><SelectValue placeholder={t.questionPaper.filterAll} /></SelectTrigger>
+            <SelectTrigger
+              id="bank-filter-grade"
+              aria-labelledby={bankFieldLabelId('bank-filter-grade')}
+              className={BANK_FIELD_CONTROL_CLASS}
+            >
+              <SelectValue placeholder={t.questionPaper.bankSelectGrade} />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value={ALL}>{t.questionPaper.filterAll}</SelectItem>
               {grades.map((value) => (
@@ -301,9 +354,9 @@ export function BankView() {
               ))}
             </SelectContent>
           </Select>
-        </FilterField>
+        </BankFormField>
 
-        <FilterField label={t.questionPaper.year}>
+        <BankFormField id="bank-filter-year" label={t.questionPaper.year}>
           <Select
             value={year || undefined}
             disabled={yearDisabled}
@@ -314,7 +367,13 @@ export function BankView() {
               setDifficulty('')
             }}
           >
-            <SelectTrigger><SelectValue placeholder={t.questionPaper.selectYear} /></SelectTrigger>
+            <SelectTrigger
+              id="bank-filter-year"
+              aria-labelledby={bankFieldLabelId('bank-filter-year')}
+              className={BANK_FIELD_CONTROL_CLASS}
+            >
+              <SelectValue placeholder={t.questionPaper.bankSelectYear} />
+            </SelectTrigger>
             <SelectContent>
               {yearsForGrade.years.map((value) => (
                 <SelectItem key={value} value={value}>{value}</SelectItem>
@@ -324,9 +383,9 @@ export function BankView() {
               )}
             </SelectContent>
           </Select>
-        </FilterField>
+        </BankFormField>
 
-        <FilterField label={t.questionPaper.bankFilterBook}>
+        <BankFormField id="bank-filter-book" label={t.questionPaper.bankFilterBook}>
           <Select
             value={bookId || undefined}
             disabled={bookDisabled}
@@ -336,14 +395,12 @@ export function BankView() {
               setDifficulty('')
             }}
           >
-            <SelectTrigger>
-              <SelectValue
-                placeholder={
-                  sortedBooksForYear.length > 1
-                    ? t.questionPaper.selectBookRequired
-                    : t.questionPaper.selectBook
-                }
-              />
+            <SelectTrigger
+              id="bank-filter-book"
+              aria-labelledby={bankFieldLabelId('bank-filter-book')}
+              className={BANK_FIELD_CONTROL_CLASS}
+            >
+              <SelectValue placeholder={t.questionPaper.bankSelectBook} />
             </SelectTrigger>
             <SelectContent>
               {sortedBooksForYear.map((id) => (
@@ -357,17 +414,23 @@ export function BankView() {
               ))}
             </SelectContent>
           </Select>
-        </FilterField>
+        </BankFormField>
 
-        <FilterField label={t.questionPaper.chapter}>
+        <BankFormField id="bank-filter-chapter" label={t.questionPaper.chapter}>
           <Select
-            value={chapter || ALL}
+            value={chapter || undefined}
             disabled={chapterDisabled}
             onValueChange={(value) => {
               setChapter(value === ALL ? '' : value)
             }}
           >
-            <SelectTrigger><SelectValue placeholder={t.questionPaper.filterAll} /></SelectTrigger>
+            <SelectTrigger
+              id="bank-filter-chapter"
+              aria-labelledby={bankFieldLabelId('bank-filter-chapter')}
+              className={BANK_FIELD_CONTROL_CLASS}
+            >
+              <SelectValue placeholder={t.questionPaper.bankSelectChapter} />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value={ALL}>{t.questionPaper.filterAll}</SelectItem>
               {chaptersForBook.map((value) => (
@@ -375,15 +438,23 @@ export function BankView() {
               ))}
             </SelectContent>
           </Select>
-        </FilterField>
+        </BankFormField>
+        </div>
 
-        <FilterField label={t.questionPaper.difficulty}>
+        <div className={BANK_FIELD_GRID_CLASS} data-testid="bank-filter-row-2">
+        <BankFormField id="bank-filter-difficulty" label={t.questionPaper.difficulty}>
           <Select
-            value={difficulty || ALL}
+            value={difficulty || undefined}
             disabled={difficultyDisabled}
             onValueChange={(value) => setDifficulty(value === ALL ? '' : value)}
           >
-            <SelectTrigger><SelectValue placeholder={t.questionPaper.filterAll} /></SelectTrigger>
+            <SelectTrigger
+              id="bank-filter-difficulty"
+              aria-labelledby={bankFieldLabelId('bank-filter-difficulty')}
+              className={BANK_FIELD_CONTROL_CLASS}
+            >
+              <SelectValue placeholder={t.questionPaper.bankSelectDifficulty} />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value={ALL}>{t.questionPaper.filterAll}</SelectItem>
               <SelectItem value="easy">{t.questionPaper.easy}</SelectItem>
@@ -391,14 +462,20 @@ export function BankView() {
               <SelectItem value="difficult">{t.questionPaper.difficult}</SelectItem>
             </SelectContent>
           </Select>
-        </FilterField>
+        </BankFormField>
 
-        <FilterField label={t.questionPaper.bankFilterAnswerType}>
+        <BankFormField id="bank-filter-answer-type" label={t.questionPaper.bankFilterAnswerType}>
           <Select
-            value={answerType || ALL}
+            value={answerType || undefined}
             onValueChange={(value) => setAnswerType(value === ALL ? '' : value)}
           >
-            <SelectTrigger><SelectValue placeholder={t.questionPaper.filterAll} /></SelectTrigger>
+            <SelectTrigger
+              id="bank-filter-answer-type"
+              aria-labelledby={bankFieldLabelId('bank-filter-answer-type')}
+              className={BANK_FIELD_CONTROL_CLASS}
+            >
+              <SelectValue placeholder={t.questionPaper.bankSelectAnswerType} />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value={ALL}>{t.questionPaper.filterAll}</SelectItem>
               <SelectItem value="Single Correct">{t.questionPaper.singleCorrect}</SelectItem>
@@ -406,25 +483,59 @@ export function BankView() {
               <SelectItem value={OTHER_LEGACY}>{t.questionPaper.otherLegacy}</SelectItem>
             </SelectContent>
           </Select>
-        </FilterField>
+        </BankFormField>
 
-        <div className="space-y-1.5">
-          <Label>{t.questionPaper.bankFilterSearch}</Label>
+        <BankFormField id="bank-filter-batch" label={t.questionPaper.bankFilterBatch}>
+          <Select
+            value={batchId || undefined}
+            onValueChange={(value) => setBatchId(value === ALL ? '' : value)}
+          >
+            <SelectTrigger
+              id="bank-filter-batch"
+              aria-labelledby={bankFieldLabelId('bank-filter-batch')}
+              className={BANK_FIELD_CONTROL_CLASS}
+            >
+              <SelectValue placeholder={t.questionPaper.bankSelectBatch} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>{t.questionPaper.filterAll}</SelectItem>
+              {batches.map((value) => (
+                <SelectItem key={value} value={value}>{value}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </BankFormField>
+
+        <BankFormField id="bank-filter-search" label={t.questionPaper.bankFilterSearch}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
+              id="bank-filter-search"
               placeholder={t.questionPaper.bankSearchPlaceholder}
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              className="pl-9"
+              className={`${BANK_FIELD_CONTROL_CLASS} pl-9`}
             />
           </div>
+        </BankFormField>
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
         <Button variant="outline" size="sm" onClick={resetFilters}>
           {t.questionPaper.bankFilterReset}
+        </Button>
+        <Button
+          size="sm"
+          onClick={downloadFiltered}
+          disabled={filtered.length === 0 || downloading}
+        >
+          {downloading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
+          {t.questionPaper.bankDownloadExcel}
         </Button>
       </div>
 
@@ -486,20 +597,19 @@ export function BankView() {
   )
 }
 
-function SummaryTile({ label, value }: { label: string; value: number }) {
+function SummaryTile({
+  label,
+  value,
+  testId,
+}: {
+  label: string
+  value: number
+  testId: string
+}) {
   return (
-    <div className="rounded-md border bg-muted/30 px-3 py-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-xl font-semibold mt-1">{value}</p>
-    </div>
-  )
-}
-
-function FilterField({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="space-y-1.5">
-      <Label>{label}</Label>
-      {children}
+    <div className="rounded-md border bg-card px-3 py-3" data-testid={testId}>
+      <p className="text-sm font-medium text-foreground">{label}</p>
+      <p className="text-2xl font-semibold tabular-nums mt-1">{value}</p>
     </div>
   )
 }

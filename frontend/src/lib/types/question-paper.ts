@@ -82,6 +82,89 @@ export interface GeneratePaperResponse {
   topic: string
 }
 
+export type BankBatchDifficulty = CognitiveDifficulty
+export type BankBatchStatus =
+  | 'pending'
+  | 'submitted'
+  | 'running'
+  | 'completed'
+  | 'completed_partial'
+  | 'failed'
+  | string
+
+export interface GenerateBankBatchRequest {
+  book_id: string
+  grade: string
+  subject: string
+  chapter: number
+  difficulty: BankBatchDifficulty
+  total_questions: number
+  single_correct: number
+  multiple_correct: number
+  language?: string
+}
+
+export interface GenerateBankBatchResponse {
+  job_id: string
+  batch_id: string
+  status: string
+  message: string
+  requested: number
+}
+
+export interface BankBatchSummary {
+  batch_id: string
+  grade?: string | null
+  book_id?: string | null
+  chapter?: number | string | null
+  difficulty?: string | null
+  requested: number
+  accepted: number
+  failed?: number | null
+  status: BankBatchStatus
+  created: string
+  error_message?: string | null
+  stop_reason?: string | null
+  saved_question_ids?: string[]
+  subject?: string | null
+}
+
+export interface BankBatchStatusResponse {
+  batch_id: string
+  status: BankBatchStatus
+  job_status?: string | null
+  book_id?: string | null
+  grade?: string | null
+  subject?: string | null
+  chapter?: number | null
+  difficulty?: string | null
+  requested?: number | null
+  accepted?: number | null
+  failed?: number | null
+  minimum_accepted_questions?: number | null
+  error_message?: string | null
+  stop_reason?: string | null
+  created?: string | null
+}
+
+export interface BankBatchResultResponse {
+  batch_id: string
+  status: BankBatchStatus
+  book_id?: string | null
+  grade?: string | null
+  subject?: string | null
+  chapter?: number | null
+  difficulty?: string | null
+  requested?: number | null
+  accepted?: number | null
+  failed?: number | null
+  saved_question_ids?: string[]
+  questions?: BankQuestion[]
+  error_message?: string | null
+  stop_reason?: string | null
+  audit?: { stop_reason?: string | null } | null
+}
+
 export interface PaperSummary {
   paper_id: string
   topic: string

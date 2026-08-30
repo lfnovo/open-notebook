@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import HTTPException, UploadFile
 from loguru import logger
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from surreal_commands import get_command_status, submit_command
 
 from open_notebook.database.repository import repo_create, repo_delete, repo_query, repo_update
@@ -75,6 +75,12 @@ class GenerateBankBatchRequest(BaseModel):
     max_slot_attempts: int = 3
     max_refill_attempts: int = 5
     slot_concurrency: int = 3
+    # Optional minimum-target mode (null/omitted → current full-target-only semantics).
+    # Does not lower validation quality; only softens stop classification when budget ends.
+    minimum_accepted_questions: Optional[int] = None
+    # Optional extra batch-level ceilings (null → rely on existing slot/refill/target limits).
+    max_batch_generation_attempts: Optional[int] = None
+    max_batch_runtime_seconds: Optional[int] = None
 
 
 class GenerateBankBatchResponse(BaseModel):
@@ -85,6 +91,12 @@ class GenerateBankBatchResponse(BaseModel):
     requested: int
 
 
+class ExportBankXlsxRequest(BaseModel):
+    """Read-only export of existing Question Bank rows. Does not generate or mutate."""
+
+    question_ids: List[str] = Field(..., min_length=1)
+
+
 def _as_int(value: Any, default: int = 0) -> int:
     try:
         if value is None:
@@ -92,6 +104,47 @@ def _as_int(value: Any, default: int = 0) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def serialize_bank_batch_summary(record: Dict[str, Any]) -> Dict[str, Any]:
+    """Map a stored question_bank_batch row for history UI. Read-only; does not generate."""
+    requested = record.get("requested")
+    if requested is None:
+        requested = record.get("total_questions")
+    saved_ids = [
+        str(item) for item in (record.get("saved_question_ids") or []) if item is not None
+    ]
+    accepted = record.get("accepted")
+    if accepted is None:
+        accepted = len(saved_ids)
+    book_id = record.get("book_id")
+    return {
+        "batch_id": str(record.get("id", "")),
+        "grade": record.get("grade"),
+        "book_id": str(book_id) if book_id else None,
+        "chapter": record.get("chapter"),
+        "difficulty": record.get("difficulty"),
+        "requested": _as_int(requested, 0),
+        "accepted": _as_int(accepted, 0),
+        "failed": _as_int(record.get("failed"), 0),
+        "status": record.get("status") or "unknown",
+        "created": str(record.get("created", "")),
+        "error_message": record.get("error_message"),
+        "stop_reason": _batch_stop_reason(record),
+        "saved_question_ids": saved_ids,
+        "subject": record.get("subject"),
+    }
+
+
+def _batch_stop_reason(record: Dict[str, Any]) -> Optional[str]:
+    """Read stored stop_reason only. Does not reclassify batch status."""
+    reason = record.get("stop_reason")
+    if reason:
+        return str(reason)
+    audit = record.get("audit")
+    if isinstance(audit, dict) and audit.get("stop_reason"):
+        return str(audit.get("stop_reason"))
+    return None
 
 
 def _section_config_total(section_config: Any) -> int:
@@ -842,6 +895,143 @@ class QuestionPaperService:
         return [QuestionPaperService._bank_search_item(r) for r in (results or [])]
 
     @staticmethod
+    def _stored_cell(value: Any) -> Any:
+        if value is None:
+            return ""
+        if isinstance(value, (str, int, float, bool)):
+            return value
+        return str(value)
+
+    @staticmethod
+    async def export_bank_xlsx(question_ids: List[str]) -> bytes:
+        """Export existing bank rows to Excel. Read-only; does not rewrite questions."""
+        from io import BytesIO
+
+        from openpyxl import Workbook
+        from openpyxl.styles import Alignment, Font, PatternFill
+        from openpyxl.utils import get_column_letter
+
+        from open_notebook.database.repository import ensure_record_id
+
+        ordered_ids = [str(i).strip() for i in question_ids if str(i).strip()]
+        if not ordered_ids:
+            raise HTTPException(status_code=400, detail="No question IDs to export")
+        if len(ordered_ids) > 2000:
+            raise HTTPException(status_code=400, detail="Too many questions to export")
+
+        rows = await repo_query(
+            "SELECT * FROM question_bank WHERE id IN $ids",
+            {"ids": [ensure_record_id(i) for i in ordered_ids]},
+        )
+        by_id = {str(r.get("id")): r for r in (rows or [])}
+        missing = [i for i in ordered_ids if i not in by_id]
+        if missing:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Question Bank records not found: {', '.join(missing[:8])}",
+            )
+
+        book_ids = sorted(
+            {
+                str(by_id[i].get("book_id"))
+                for i in ordered_ids
+                if by_id[i].get("book_id")
+            }
+        )
+        books: Dict[str, Dict[str, Any]] = {}
+        if book_ids:
+            book_rows = await repo_query(
+                "SELECT id, display_name, book_name, title, year FROM question_book "
+                "WHERE id IN $ids",
+                {"ids": [ensure_record_id(b) for b in book_ids]},
+            )
+            for b in book_rows or []:
+                books[str(b.get("id"))] = b
+
+        headers = [
+            "Question ID",
+            "Question",
+            "Option A",
+            "Option B",
+            "Option C",
+            "Option D",
+            "Option E",
+            "Correct Answer",
+            "Answer Type",
+            "Explanation",
+            "Grade",
+            "Year",
+            "Book",
+            "Chapter",
+            "Difficulty",
+            "Topic",
+            "Subtopic",
+            "Cognitive Score",
+            "Batch ID",
+        ]
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Question Bank"
+        ws.append(headers)
+        wrap = Alignment(wrap_text=True, vertical="top")
+        header_fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+        for cell in ws[1]:
+            cell.font = Font(bold=True)
+            cell.fill = header_fill
+        widths = [28, 50, 28, 28, 28, 28, 28, 24, 18, 40, 10, 10, 36, 12, 14, 28, 28, 16, 36]
+        for i, w in enumerate(widths, 1):
+            ws.column_dimensions[get_column_letter(i)].width = w
+        ws.freeze_panes = "A2"
+        ws.auto_filter.ref = ws.dimensions
+
+        stored = QuestionPaperService._stored_cell
+        for qid in ordered_ids:
+            r = by_id[qid]
+            options = list(r.get("options") or [])
+            while len(options) < 5:
+                options.append("")
+            book_id = str(r.get("book_id") or "")
+            book = books.get(book_id) or {}
+            book_label = (
+                book.get("display_name")
+                or book.get("book_name")
+                or book.get("title")
+                or book_id
+            )
+            difficulty = r.get("target_difficulty")
+            if difficulty is None or difficulty == "":
+                difficulty = r.get("difficulty")
+            row = [
+                stored(r.get("id")),
+                stored(r.get("question")),
+                stored(options[0]),
+                stored(options[1]),
+                stored(options[2]),
+                stored(options[3]),
+                stored(options[4]),
+                stored(r.get("answer")),
+                stored(r.get("answer_type")),
+                stored(r.get("explanation")),
+                stored(r.get("grade")),
+                stored(book.get("year")),
+                stored(book_label),
+                stored(r.get("chapter")),
+                stored(difficulty),
+                stored(r.get("topic")),
+                stored(r.get("sub_topic")),
+                stored(r.get("difficulty_score")),
+                stored(r.get("batch_id")),
+            ]
+            ws.append(row)
+            for cell in ws[ws.max_row]:
+                cell.alignment = wrap
+
+        buf = BytesIO()
+        wb.save(buf)
+        return buf.getvalue()
+
+    @staticmethod
     async def _load_paper_for_export(paper_id: str) -> dict:
         """Load and validate paper for export."""
         from open_notebook.database.repository import ensure_record_id
@@ -1417,6 +1607,27 @@ class QuestionPaperService:
                 detail="total_questions must be between 1 and 200",
             )
 
+        from open_notebook.graphs.question_paper_blueprint import (
+            validate_minimum_accepted_questions,
+            validate_optional_batch_budget,
+        )
+
+        try:
+            minimum_accepted = validate_minimum_accepted_questions(
+                request.minimum_accepted_questions,
+                requested=request.total_questions,
+            )
+            max_batch_attempts = validate_optional_batch_budget(
+                request.max_batch_generation_attempts,
+                field_name="max_batch_generation_attempts",
+            )
+            max_batch_runtime = validate_optional_batch_budget(
+                request.max_batch_runtime_seconds,
+                field_name="max_batch_runtime_seconds",
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
         blueprint_dict = {
             "book_id": request.book_id.strip(),
             "grade": request.grade.strip(),
@@ -1466,6 +1677,9 @@ class QuestionPaperService:
             "status": "pending",
             "requested": blueprint.total_questions,
             "blueprint": blueprint_dict,
+            "minimum_accepted_questions": minimum_accepted,
+            "max_batch_generation_attempts": max_batch_attempts,
+            "max_batch_runtime_seconds": max_batch_runtime,
         }
         raw_batch = await repo_create("question_bank_batch", batch_data)
         if not raw_batch:
@@ -1496,6 +1710,9 @@ class QuestionPaperService:
                     "max_slot_attempts": request.max_slot_attempts,
                     "max_refill_attempts": request.max_refill_attempts,
                     "slot_concurrency": request.slot_concurrency,
+                    "minimum_accepted_questions": minimum_accepted,
+                    "max_batch_generation_attempts": max_batch_attempts,
+                    "max_batch_runtime_seconds": max_batch_runtime,
                 },
             )
         except Exception as e:
@@ -1525,6 +1742,25 @@ class QuestionPaperService:
             ),
             requested=blueprint.total_questions,
         )
+
+    @staticmethod
+    async def list_bank_batches() -> List[Dict[str, Any]]:
+        """List existing bank batch jobs (metadata only). Does not generate."""
+        query = (
+            "SELECT id, book_id, grade, subject, chapter, difficulty, requested, "
+            "total_questions, accepted, failed, status, created, error_message, "
+            "stop_reason, saved_question_ids FROM question_bank_batch ORDER BY created DESC LIMIT 100"
+        )
+        try:
+            results = await repo_query(query)
+        except Exception as e:
+            logger.warning(f"Bank batch list query failed, retrying without saved ids: {e}")
+            results = await repo_query(
+                "SELECT id, book_id, grade, subject, chapter, difficulty, requested, "
+                "total_questions, accepted, failed, status, created, error_message, "
+                "stop_reason FROM question_bank_batch ORDER BY created DESC LIMIT 100"
+            )
+        return [serialize_bank_batch_summary(row) for row in (results or [])]
 
     @staticmethod
     async def get_bank_batch_status(batch_id: str) -> Dict[str, Any]:
@@ -1565,7 +1801,9 @@ class QuestionPaperService:
             "requested": batch.get("requested"),
             "accepted": batch.get("accepted"),
             "failed": batch.get("failed"),
+            "minimum_accepted_questions": batch.get("minimum_accepted_questions"),
             "error_message": batch.get("error_message"),
+            "stop_reason": _batch_stop_reason(batch),
             "created": str(batch.get("created", "")),
         }
 
@@ -1611,6 +1849,7 @@ class QuestionPaperService:
             "requested": batch.get("requested"),
             "accepted": batch.get("accepted"),
             "failed": batch.get("failed"),
+            "minimum_accepted_questions": batch.get("minimum_accepted_questions"),
             "audit": batch.get("audit"),
             "failure_summary": batch.get("failure_summary"),
             "failed_slots": batch.get("failed_slots") or [],
@@ -1618,6 +1857,7 @@ class QuestionPaperService:
             "saved_question_ids": saved_ids,
             "questions": questions,
             "error_message": batch.get("error_message"),
+            "stop_reason": _batch_stop_reason(batch),
         }
 
 

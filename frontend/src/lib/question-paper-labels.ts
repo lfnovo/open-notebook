@@ -116,6 +116,35 @@ export function questionDifficulty(q: BankQuestion): string {
   return q.validated_cognitive_difficulty || q.target_difficulty || q.difficulty || ''
 }
 
+export function correctOptionIndices(q: BankQuestion): number[] {
+  const fromIndices = (q.correct_indices || []).filter(
+    (index) => Number.isInteger(index) && index >= 0 && index < OPTION_LETTERS.length,
+  )
+  if (fromIndices.length > 0) {
+    return Array.from(new Set(fromIndices))
+  }
+
+  const formatted = formatCorrectAnswer(q).replace(/^Correct Answer:\s*/i, '').toUpperCase()
+  if (!formatted || formatted === '—') return []
+  const matches = formatted.match(/\b[A-E]\b/g) || []
+  return Array.from(
+    new Set(
+      matches
+        .map((letter) => OPTION_LETTERS.indexOf(letter as (typeof OPTION_LETTERS)[number]))
+        .filter((index) => index >= 0),
+    ),
+  )
+}
+
+export function formatCorrectAnswerLetters(q: BankQuestion): string {
+  const letters = correctOptionIndices(q)
+    .map((index) => OPTION_LETTERS[index])
+    .filter(Boolean)
+  if (letters.length > 0) return letters.join(', ')
+  const cleaned = formatCorrectAnswer(q).replace(/^Correct Answer:\s*/i, '').trim()
+  return cleaned && cleaned !== '—' ? cleaned : '—'
+}
+
 export function formatCorrectAnswer(q: BankQuestion): string {
   const lettersFromIndices = (q.correct_indices || [])
     .map((index) => OPTION_LETTERS[index])

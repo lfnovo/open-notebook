@@ -16,7 +16,7 @@ import asyncio
 import json
 import re
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import END, START, StateGraph
@@ -24,13 +24,33 @@ from loguru import logger
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
+from open_notebook.ai.llm_usage import (
+    AsyncUsageCaptureCallback,
+    LLMUsageRecord,
+    LLM_STAGE_BLIND_SOLVER,
+    LLM_STAGE_COGNITIVE_QUALITY,
+    LLM_STAGE_CORE_GENERATION,
+    LLM_STAGE_EXPLANATION_GENERATE,
+    LLM_STAGE_EXPLANATION_VALIDATE,
+    LLM_STAGE_LENGTH_RECOVERY,
+    build_prompt_composition,
+    extract_usage_from_message,
+    record_llm_stage_usage,
+    tag_last_llm_call,
+    tag_recent_llm_calls,
+)
 from open_notebook.ai.provision import provision_langchain_model
 from open_notebook.domain.question_bank import QuestionRecord
+from open_notebook.exceptions import ExternalServiceError
 from open_notebook.graphs.question_bank_intent import (
     ADHERENCE_PARTIAL,
     INTENT_DRIFT_REJECTION,
+    apply_academic_failure_intent_policy,
     apply_duplicate_intent_policy,
+    attach_variety_diagnostics,
+    classify_academic_failure_family,
     classify_intent_adherence,
+    classify_variety_relation,
     cognitive_form_correction_hint,
     empty_intent_diagnostics,
     ensure_easy_safe_assigned_intent,
@@ -41,14 +61,13 @@ from open_notebook.graphs.question_bank_intent import (
     partial_adherence_may_continue,
     question_task_form,
     record_adherence_diagnostic,
-    rejection_is_cognitive,
-    rejection_is_distractor_or_answer,
     rejection_is_duplicate,
     replenish_running_pool,
     select_closest_bank_stems_for_intent,
     should_early_reject_for_intent_drift,
     should_replenish_catalog,
     take_next_unused_intent,
+    variety_counts_toward_intent_retirement,
 )
 from open_notebook.graphs.question_paper_blueprint import (
     CHAPTER_CHUNK_SIZE,
@@ -58,9 +77,11 @@ from open_notebook.graphs.question_paper_blueprint import (
     MAX_SLOT_ATTEMPTS,
     MAX_SLOT_CONCURRENCY,
     VALIDATOR_CRITERION_RUBRIC,
+    VALIDATOR_UNAVAILABLE_KEY,
     QuestionSlot,
     apply_independent_validation,
     audit_paper,
+    bank_batch_generation_budget_block_reason,
     build_effective_preset,
     build_rejected_attempt_record,
     build_slot_avoidance_history,
@@ -78,17 +99,27 @@ from open_notebook.graphs.question_paper_blueprint import (
     format_bank_batch_duplicate_retry_guidance,
     format_bank_batch_strategy_guidance,
     format_diversity_guidance,
+    format_slot_difficulty_guidance,
     format_underused_concept_hints,
     generator_structural_self_check,
     is_bank_diversity_planner_enabled,
+    is_llm_timeout_error,
     is_near_duplicate,
+    bank_batch_llm_timeout_seconds,
+    map_bank_batch_timeout_stage,
+    record_llm_timeout,
     normalize_difficulty,
     plan_bank_batch_diversity,
     record_bank_cost_stage,
+    record_blind_solver_outcome,
+    parse_completion_usage_from_exc,
+    record_validation_chunk_reselection,
     run_bank_batch_early_gates,
     select_bank_batch_forbidden_stems,
     select_blind_solver_source_snippet,
+    select_cognitive_source_window,
     select_source_grounding_window,
+    select_validation_chunk_for_generated,
     select_chapter_chunk,
     select_chunk_avoiding_history,
     select_chunk_for_diversity_plan,
@@ -106,6 +137,74 @@ SECTION_RE = re.compile(
     re.S,
 )
 
+# Generator completion budget.
+# Final Paper: 2048 first, then one 4096 retry on LengthFinishReasonError.
+# Bank Batch core generation: 4096 first (no discarded 2048 attempt).
+GENERATOR_MAX_TOKENS = 2048
+GENERATOR_LENGTH_RETRY_MAX_TOKENS = 4096
+BANK_BATCH_GENERATOR_MAX_TOKENS = 4096
+# Cognitive validator: 2048 first; one 4096 retry on LengthFinishReasonError only.
+COGNITIVE_MAX_TOKENS = 2048
+COGNITIVE_LENGTH_RETRY_MAX_TOKENS = 4096
+# Blind solver: 2048 first; Bank Batch only — one 4096 retry on LengthFinishReasonError.
+BLIND_MAX_TOKENS = 2048
+BLIND_LENGTH_RETRY_MAX_TOKENS = 4096
+# Bank Batch: initial explanation + one corrective retry (core stays frozen).
+MAX_EXPLANATION_ATTEMPTS = 2
+EXPLANATION_MAX_TOKENS = 1024
+
+
+def is_structured_output_length_error(exc: BaseException) -> bool:
+    """True when structured generation exhausted completion/length with no usable output."""
+    if is_llm_timeout_error(exc):
+        return False
+    parts: List[str] = [type(exc).__name__, str(exc)]
+    cause = getattr(exc, "__cause__", None)
+    if cause is not None:
+        parts.append(type(cause).__name__)
+        parts.append(str(cause))
+    blob = " ".join(parts).lower()
+    if "lengthfinishreason" in blob:
+        return True
+    if "length limit was reached" in blob:
+        return True
+    if "could not parse response content as the length limit" in blob:
+        return True
+    return False
+
+
+def cognitive_validator_unavailable_payload(
+    exc: BaseException,
+) -> Tuple[dict, dict]:
+    """Fail-closed Cognitive result when the validator LLM did not complete.
+
+    Does not invent criterion scores or quality flags (no fake Easy-8 / Grade /
+    grounding). apply_independent_validation still rejects the attempt.
+    """
+    if is_structured_output_length_error(exc):
+        reason = (
+            "validator_unavailable: cognitive validator length limit was reached"
+        )
+    else:
+        reason = f"validator_unavailable: cognitive validator error: {exc}"
+    return {}, {
+        VALIDATOR_UNAVAILABLE_KEY: True,
+        "reasons": [reason],
+    }
+
+
+class BlindSolverUnavailable:
+    """Bank Batch: Blind LLM did not complete after length recovery. Fail-closed."""
+
+    def __init__(self, reason: str):
+        self.reason = reason
+
+
+def blind_validator_unavailable_reason(exc: BaseException) -> str:
+    if is_structured_output_length_error(exc):
+        return "validator_unavailable: blind solver length limit was reached"
+    return f"validator_unavailable: blind solver error: {exc}"
+
 
 # ---------------------------------------------------------------------------
 # Structured output schemas
@@ -121,6 +220,27 @@ class SlotGeneratedQuestion(BaseModel):
     )
     answer: str = Field(description="Correct option letter(s) and/or option text")
     explanation: str
+
+
+class CoreGeneratedQuestion(BaseModel):
+    """Bank Batch core generation — explanation is produced only after core validation."""
+
+    question: str
+    topic: str
+    sub_topic: str = ""
+    options: List[str] = Field(description="Exactly five options, A–E, in order")
+    correct_indices: List[int] = Field(
+        description="0-based indices of every correct option"
+    )
+    answer: str = Field(description="Correct option letter(s) and/or option text")
+
+
+class ExplanationOnlyOutput(BaseModel):
+    """Post-core explanation for an already-validated Bank Batch question core."""
+
+    explanation: str = Field(
+        description="Clear Grade-appropriate explanation defending the correct answer(s)"
+    )
 
 
 class CognitiveCriterionScores(BaseModel):
@@ -142,16 +262,16 @@ class CoverageReportOutput(BaseModel):
 class OptionDefensibility(BaseModel):
     option: str = Field(description="Option label, e.g. A, B, C, D, E")
     defensible: bool
-    reason: str = ""
 
 
 class BlindSolverOutput(BaseModel):
-    """Stage 1: solve without seeing the answer key."""
+    """Stage 1: solve without seeing the answer key. Validation fields only."""
+
     independently_derived_indices: List[int] = Field(
         description="0-based indices of every option the solver believes is correct"
     )
     option_analysis: List[OptionDefensibility] = Field(
-        description="Per-option defensibility analysis for A–E"
+        description="Per-option A–E: label and whether the option is defensible"
     )
     information_sufficient: bool = Field(
         description="Does the stem provide enough information to uniquely determine the answer?"
@@ -166,13 +286,6 @@ class BlindSolverOutput(BaseModel):
         default=True,
         description="Are specialized/advanced terms in the stem explicitly supported by the provided chapter excerpt?"
     )
-    terminology_issues: List[str] = Field(
-        default_factory=list,
-        description="Up to a few specialized terms that were not clearly present in the chapter excerpt (if any).",
-    )
-    solver_reasoning: str = Field(
-        default="", description="Brief reasoning for the derived answer"
-    )
 
 
 class IndependentValidatorOutput(BaseModel):
@@ -185,6 +298,43 @@ class IndependentValidatorOutput(BaseModel):
     unambiguous: bool
     language_clear: bool
     grounded_in_material: bool = True
+    explanation_valid: bool
+    concept_relevant: bool = True
+    no_unrelated_external_knowledge: bool = True
+    stem_self_contained: bool = True
+    natural_assessment_wording: bool = True
+    scenario_focused: bool = True
+    options_independently_assessable: bool = True
+    option_style_balanced: bool = True
+    misconception_based_distractors: bool = True
+    reasons: List[str] = Field(default_factory=list)
+
+
+class CoreIndependentValidatorOutput(BaseModel):
+    """Bank Batch core phase — same quality flags without explanation_valid."""
+
+    criterion_scores: CognitiveCriterionScores
+    content_valid: bool
+    answer_valid: bool
+    grade_appropriate: bool
+    distractors_ok: bool
+    unambiguous: bool
+    language_clear: bool
+    grounded_in_material: bool = True
+    concept_relevant: bool = True
+    no_unrelated_external_knowledge: bool = True
+    stem_self_contained: bool = True
+    natural_assessment_wording: bool = True
+    scenario_focused: bool = True
+    options_independently_assessable: bool = True
+    option_style_balanced: bool = True
+    misconception_based_distractors: bool = True
+    reasons: List[str] = Field(default_factory=list)
+
+
+class ExplanationValidatorOutput(BaseModel):
+    """Bank Batch explanation-only validation after a frozen core passes."""
+
     explanation_valid: bool
     reasons: List[str] = Field(default_factory=list)
 
@@ -248,6 +398,12 @@ class PaperState(TypedDict, total=False):
     max_target_refill_cycles: int
     refill_phase: str
     slot_avoidance_by_number: dict
+    # Optional Bank Batch minimum-target + batch-level generation ceilings
+    minimum_accepted_questions: Optional[int]
+    max_batch_generation_attempts: Optional[int]
+    max_batch_runtime_seconds: Optional[int]
+    batch_started_at: float
+    batch_budget_exhausted_reason: Optional[str]
 
 
 # ---------------------------------------------------------------------------
@@ -282,11 +438,31 @@ async def _invoke_structured(
     *,
     max_tokens: int = 4096,
     temperature: float = 0.7,
+    llm_stage: Optional[str] = None,
+    cost_diagnostics: Optional[dict] = None,
+    prompt_composition: Optional[dict] = None,
+    usage_tags: Optional[dict] = None,
+    bank_batch_mode: bool = False,
 ):
     """
     Invoke a model with structured output enforcement via with_structured_output().
     Falls back to plain JSON extraction if the provider does not support it.
+
+    Optional ``llm_stage`` + ``cost_diagnostics`` record provider usage without
+    altering prompts or model behavior.
+
+    Bank Batch only: ``bank_batch_mode=True`` wraps the provider ``ainvoke`` in
+    ``asyncio.wait_for`` using ``BANK_BATCH_LLM_TIMEOUT_SECONDS`` (default 180).
+    Timeout is an infrastructure failure, not a quality/academic failure.
+    Final Paper callers omit ``bank_batch_mode`` and are unchanged.
     """
+    t0 = time.perf_counter()
+    usage = LLMUsageRecord()
+    resolved_model_id = model_id
+    timed_out = False
+    request_timeout = (
+        bank_batch_llm_timeout_seconds() if bank_batch_mode else None
+    )
     try:
         model = await provision_langchain_model(
             system_prompt,
@@ -295,30 +471,106 @@ async def _invoke_structured(
             max_tokens=max_tokens,
             temperature=temperature,
         )
+        resolved_model_id = (
+            getattr(model, "model_name", None)
+            or getattr(model, "model", None)
+            or model_id
+        )
         messages = [
             SystemMessage(content=system_prompt),
             HumanMessage(content=user_prompt),
         ]
-        try:
-            structured = model.with_structured_output(output_schema)
-            result = await structured.ainvoke(messages)
-            return result
-        except (NotImplementedError, AttributeError):
-            logger.debug(
-                f"Structured output not supported, falling back to plain JSON for {output_schema.__name__}"
-            )
-            response = await model.ainvoke(messages)
-            content = response.content
-            if isinstance(content, list):
-                content = " ".join(
-                    part.get("text", "") if isinstance(part, dict) else str(part)
-                    for part in content
+
+        async def _invoke_model():
+            nonlocal usage
+            try:
+                try:
+                    structured = model.with_structured_output(
+                        output_schema, include_raw=True
+                    )
+                    wrapper = await structured.ainvoke(messages)
+                    if isinstance(wrapper, dict) and wrapper.get("parsed") is not None:
+                        result = wrapper["parsed"]
+                        raw_msg = wrapper.get("raw")
+                        if raw_msg is not None:
+                            usage = extract_usage_from_message(raw_msg)
+                    else:
+                        result = wrapper
+                except TypeError:
+                    handler = AsyncUsageCaptureCallback()
+                    structured = model.with_structured_output(output_schema)
+                    result = await structured.ainvoke(
+                        messages, config={"callbacks": [handler]}
+                    )
+                    usage = handler.usage
+            except (NotImplementedError, AttributeError):
+                logger.debug(
+                    f"Structured output not supported, falling back to plain JSON for {output_schema.__name__}"
                 )
-            raw = json.loads(_extract_json(str(content)))
-            return output_schema.model_validate(raw)
+                handler = AsyncUsageCaptureCallback()
+                response = await model.ainvoke(
+                    messages, config={"callbacks": [handler]}
+                )
+                usage = handler.usage or extract_usage_from_message(response)
+                content = response.content
+                if isinstance(content, list):
+                    content = " ".join(
+                        part.get("text", "") if isinstance(part, dict) else str(part)
+                        for part in content
+                    )
+                raw = json.loads(_extract_json(str(content)))
+                result = output_schema.model_validate(raw)
+            return result
+
+        invoke_t0 = time.perf_counter()
+        try:
+            if request_timeout:
+                result = await asyncio.wait_for(
+                    _invoke_model(), timeout=request_timeout
+                )
+            else:
+                result = await _invoke_model()
+            return result
+        except asyncio.TimeoutError:
+            timed_out = True
+            elapsed_ms = (time.perf_counter() - invoke_t0) * 1000.0
+            mapped = map_bank_batch_timeout_stage(llm_stage)
+            record_llm_timeout(
+                cost_diagnostics,
+                stage=mapped,
+                duration_ms=elapsed_ms,
+                limit_seconds=request_timeout,
+            )
+            logger.error(
+                f"Bank Batch LLM timeout stage={mapped} after {elapsed_ms:.0f}ms "
+                f"(limit={request_timeout:g}s)"
+            )
+            raise ExternalServiceError(
+                f"llm_timeout: {mapped} exceeded {request_timeout:g}s "
+                f"after {elapsed_ms:.0f}ms"
+            )
+    except ExternalServiceError:
+        raise
     except Exception as e:
         exc_class, message = classify_error(e)
         raise exc_class(message) from e
+    finally:
+        elapsed_ms = (time.perf_counter() - t0) * 1000.0
+        if cost_diagnostics is not None and llm_stage:
+            if usage.model is None and resolved_model_id:
+                usage.model = str(resolved_model_id)
+            tags = dict(usage_tags or {})
+            if timed_out:
+                tags["outcome"] = "llm_timeout"
+            record_llm_stage_usage(
+                cost_diagnostics,
+                llm_stage,
+                usage,
+                elapsed_ms=elapsed_ms,
+                prompt_composition=prompt_composition,
+                model_id=str(resolved_model_id) if resolved_model_id else None,
+                tags=tags or None,
+            )
 
 
 def parse_book_chapters(
@@ -404,16 +656,61 @@ RULES:
 - Do not create artificial difficulty with confusing wording, tricks, excessive arithmetic, or out-of-syllabus content.
 - Use grade-appropriate vocabulary, examples, reasoning complexity, and distractors.
 - Phrase questions directly. NEVER start with "According to the excerpt", "As per the passage", or "Based on the text".
+- Never write student-facing stems that mention the chapter, book, textbook, excerpt, source material, or what was listed/cited/stated there.
 - Set topic and sub_topic from the chapter content.
 - Explanation must justify the correct answer(s) and why the other options are wrong.
+
+CONCEPT AND LEARNING OBJECTIVE:
+- Identify the concept being tested and the learning objective (what the student must know or understand to answer).
+- When assigned intent metadata is provided (topic, sub_topic, concept, objective, cognitive_form), use it. Do not invent a parallel intent.
+- Direct recall is valid, especially for Easy items. Do not ban recall.
+
+GROUNDING (selected book + chapter):
+- Stay inside the selected book_id, grade, and chapter content for this slot.
+- Allowed: directly taught content; straightforward application; comparison of taught concepts; a reasonable consequence of taught concepts.
+- A related concept is allowed only if it can reasonably be derived from THIS chapter without unrelated external knowledge.
+- Do not introduce unrelated concepts merely to make the item more interesting or more difficult.
+- For a normal conceptual question: the underlying concept must be taught/supported by the selected chapter; options must be reasonable applications of that taught concept. An option does NOT need to appear verbatim in the textbook to be conceptually valid. Do not mark a valid concept application wrong only because that exact example was absent from a textbook list.
+- Still forbid: unrelated outside-domain examples; unsupported specialist facts; hallucinated claims; concepts beyond this chapter's scope.
+
+DO NOT COPY THE BOOK MECHANICALLY:
+- Understand the concept, then write a fresh assessment question.
+- Do not take a textbook sentence and add a question mark.
+- Prefer natural assessment wording over near-verbatim copying.
+
+SELF-CONTAINED STEMS:
+- The stem must stand on its own.
+- The selected chapter/book is INTERNAL grounding only. Never mention the chapter, book, textbook, excerpt, source material, or what was "listed/cited/stated" there in the student-facing stem.
+- A normal question must be understandable and answerable without the student knowing which chapter was supplied to the generator.
+- Do not use source-pointing language (including "according to the chapter/book/textbook", "listed/cited in the chapter").
+- Do NOT write textbook-memory questions such as "Which examples were specifically listed in the chapter?"
+
+CLEAR NATURAL CONSTRUCTION:
+- Write clear, concise, grammatically unambiguous, professional, student-friendly stems.
+- Avoid: unnecessarily long wording; artificial formality; difficult vocabulary used only to create difficulty; double negatives; hidden assumptions; gotcha wording; wordplay; misleading grammar; irrelevant details.
+- Language must not be the source of difficulty. Grade and Difficulty are separate: a higher Grade does not mean a harder cognitive band.
+
+SCENARIOS:
+- Use a scenario only when it naturally supports the concept.
+- Scenarios must be realistic, grade-appropriate, fully informative, and free of unnecessary storytelling.
+- Do not force a scenario into every question.
+
+NUMERICAL ITEMS:
+- When calculation is naturally relevant, use realistic numbers and mathematically valid arithmetic.
+- Do not add unnecessary arithmetic just to increase difficulty.
 """
 
 BOOK_GROUNDED_RULES = """
 BOOK-GROUNDED MODE:
 Derive the question exclusively from the CHAPTER CONTENT provided for this slot.
-- Every fact, concept, example, and distractor must be grounded in that chapter content.
-- Do NOT invent information that is not in the chapter content.
+- The underlying concept/fact must be taught or supported by that chapter content.
+- Options and examples must be reasonable applications of the taught concept within this chapter's academic scope and Grade.
+- An example/option does NOT have to appear verbatim in the chapter to be conceptually valid.
+- Do NOT invent unsupported specialist facts, unrelated outside-domain examples, or concepts beyond this chapter.
 - Later or earlier parts of the book that are not in this chapter content are out of scope.
+- Do not require knowledge that is unrelated to the selected chapter.
+- Related ideas are allowed only when they follow directly from this chapter's taught content.
+- Never mention the chapter/book/textbook in the student-facing stem; chapter text is backend grounding only.
 """
 
 TOPIC_ONLY_RULES = """
@@ -468,6 +765,31 @@ Avoid:
 Illustrative misconception patterns (examples of the principle — derive from THIS chapter, do not force these finance examples if irrelevant):
 - Numerical: wrong base for a percentage; forgetting the time period; confusing principal with interest; mixing simple vs compound interest
 - Conceptual: confusing related chapter terms with each other; swapping cause and effect; applying a definition to the wrong scenario
+
+SINGLE CORRECT: exactly one defensible option. The other four must be plausible misconceptions of THIS concept, not fillers.
+MULTIPLE CORRECT: 2–4 independently assessable correct options. Students must judge each option on its own. Do not write options that logically reveal another option. Do not make all correct options near-paraphrases.
+EASY DISTRACTORS: plausible, not deceptively sophisticated. Do not raise cognitive difficulty through harder distractors.
+"""
+
+NFO_OPTION_DISTRACTOR_RULES = """
+OPTION AND DISTRACTOR QUALITY (mandatory):
+Single Correct: exactly five options; exactly one defensible correct answer; four incorrect options that are plausible, relevant, and meaningful.
+Multiple Correct: exactly five options; 2–4 correct; every option independently assessable; the defensible set must match the answer key.
+
+Build distractors as: concept → likely student misconception or error → option.
+Do not build: concept → random alternative.
+
+Preferred incorrect-option types: common misconception; confusion between related concepts or similar terms; incorrect application; reversed cause and effect; partially correct interpretation; realistic calculation error (wrong operation, wrong quantity, intermediate value, misapplied formula) when the item is numerical.
+Do not force numerical error distractors on non-numerical items.
+
+Do not write distractors that are random, absurd, irrelevant, obviously false, from an unrelated category, or filler to reach five options.
+Do not create a second defensible correct answer on Single Correct.
+On Multiple Correct, avoid options that logically reveal another option, obviously similar correct wording, unrelated incorrect options, or an ambiguous set.
+
+Options should be reasonably comparable in grammar, specificity, complexity, terminology, detail, and natural length. Naturalness matters more than forced equal length.
+The correct answer must not stand out only because it is much longer/shorter, the only grammatical option, a stem repeat, the only technical option, the only qualifier, or the only positive/negative statement without a conceptual reason.
+
+Do not shuffle or balance answer letters. Do not raise Easy/Medium/Difficult by making distractors trickier.
 """
 
 # Bank Batch only — Easy generation calibration (validator mapping unchanged).
@@ -496,28 +818,61 @@ Do NOT write Easy items that:
 Quality still matters: Grade-appropriate language; plausible misconception distractors (not jokes, not giveaways). Stay Easy without becoming trivial.
 """
 
+# Compact Easy slot contract echoed in the user prompt (no extra LLM call).
+BANK_BATCH_EASY_SLOT_CONTRACT = """
+EASY SLOT CONTRACT (mandatory — known before generation; validators still apply unchanged):
+- Correct Grade hard constraint; selected chapter scope only
+- Assigned concept/objective mandatory; one primary concept only
+- 0–1 meaningful reasoning step; recall/basic comprehension/direct one-step application
+- No multi-concept integration
+- Avoid subjective best / most appropriate / most reasonable wording unless an explicit objective criterion makes exactly one answer defensible
+- Exactly 5 options; Single = exactly 1 defensible answer; Multiple = 2–4 defensible answers
+- Distractors from plausible misconceptions/errors of the taught concept
+- No chapter/book/textbook wording in the student-facing stem
+- Avoid forbidden/duplicate opening stem patterns
+"""
+
+# Compact Difficult slot contract echoed in the user prompt (no extra LLM call).
+BANK_BATCH_DIFFICULT_SLOT_CONTRACT = """
+DIFFICULT SLOT CONTRACT (mandatory — known before generation; validators still apply unchanged; Difficult = score 19–24):
+- Require genuine analysis, inference, evaluation, and/or transfer — not recall padded with a long story
+- Require multiple connected reasoning steps
+- Recall alone is insufficient; direct one-step application is insufficient
+- Simple constraint matching (limits/fees/hours alone) is insufficient
+- Simple comparison alone is insufficient
+- Scenario length does not equal difficulty; complexity must come from reasoning, not wording/vocabulary
+- Where naturally supported by the selected chapter, integrate 2+ connected concepts
+- One concept is allowed only when it truly needs deep multi-step reasoning
+- Do not force unrelated concept combinations merely to look Difficult
+- Do not use obscure, trick, or confusing wording to manufacture difficulty
+- No chapter/book/textbook wording in the student-facing stem
+"""
+
 BLIND_SOLVER_SYSTEM = """You are an independent exam-question solver. You have NOT seen the answer key.
 
-TASK:
+TASK (decisions only; no explanations):
 1. Read the question stem and all five options (A-E).
 2. Using ONLY the stem, options, and any chapter content provided, determine which option(s) are correct.
-3. For EACH option A-E, decide whether it is defensible (could be correct) and give a brief reason.
-4. Check whether the stem provides ENOUGH INFORMATION to uniquely determine the answer.
-5. Re-verify any arithmetic or numerical claims in the stem and options.
-6. Flag any absolute or misleading claims not supported by the provided material (e.g. "guaranteed returns", "always grows faster", "banks guarantee wealth").
-7. Specialized terminology grounding: identify specialized terms/phrases used in the stem and check whether each is explicitly present in the provided chapter excerpt. If not, set terminology_grounded=false and list a few terminology_issues.
+3. For EACH option A-E, set defensible true or false. Do not write a reason.
+4. Set information_sufficient true only if the stem uniquely determines the answer.
+5. Set arithmetic_consistent from numerical claims in the stem and options.
+6. Set no_unsupported_claims false for absolute or misleading claims not supported by the provided material (e.g. "guaranteed returns", "always grows faster", "banks guarantee wealth").
+7. Specialized terminology grounding: set terminology_grounded true only if specialized terms/phrases in the stem are explicitly present in the provided chapter excerpt.
 
 RULES:
 - Do NOT assume any option is correct. Solve from first principles.
 - For Single Correct: exactly ONE option should be defensible.
 - For Multiple Correct: the question wording should indicate multiple answers; at least two should be defensible.
 - IMPORTANT (Single Correct defensibility): mark an option defensible only if it fully answers the full objective of the stem. Directionally true but incomplete options are NOT defensible.
+- When the stem tests a concept taught by the supplied material, apply the taught definition/principle to the options. Do NOT require an option or example to appear verbatim in the grounding excerpt merely to be defensible.
+- This is concept application of the supplied chapter concept — not permission to use unrelated external specialist knowledge.
+- The concept itself must be supported by the supplied chapter grounding; unsupported terminology/facts should still fail.
 - If the stem lacks information to uniquely determine the answer, set information_sufficient to false.
 - If any number (percentage, amount, calculation) is inconsistent between stem, options, or implied logic, set arithmetic_consistent to false.
 - If the question makes unsupported absolute financial/factual claims, set no_unsupported_claims to false.
 - If terminology_grounded is false, treat the item as invalid (specialized terminology not supported by the chapter excerpt).
 
-Return structured output. Do not include chain-of-thought outside solver_reasoning."""
+Return structured JSON only. No explanations. No reasoning text. Do not describe the solving process."""
 
 VALIDATOR_SYSTEM = f"""You are an independent exam-question validator. You did not write the question.
 
@@ -529,18 +884,81 @@ Do NOT guess or report an overall Easy/Medium/Difficult label.
 Also judge quality as booleans:
 - content_valid: tests curriculum-appropriate content for the given grade and chapter
 - answer_valid: marked answers are actually correct; unmarked options are incorrect
-- grade_appropriate: vocabulary, examples, and reasoning fit the stated grade
-- distractors_ok: incorrect options represent realistic, grade-appropriate misconceptions. Reject if distractors are obviously absurd, irrelevant, nonsensical, or trivially eliminated without understanding the concept.
+- grade_appropriate: vocabulary, sentence complexity, assumed knowledge, scenario maturity, and numerical demand fit the stated Grade. Do NOT treat a higher Grade as requiring a harder Easy/Medium/Difficult cognitive band.
+- distractors_ok: incorrect options represent realistic, grade-appropriate misconceptions. Reject if distractors are obviously absurd, irrelevant, nonsensical, or trivially eliminated without understanding the concept. Put a short diagnostic in reasons when possible: irrelevant distractor; absurd/obvious distractor; another defensible answer; answer-style clue; weak misconception basis; option not independently assessable. Do not expose chain-of-thought.
 - unambiguous: only one defensible reading of the question
 - language_clear: clear, grade-appropriate language without trick wording; difficulty must come from reasoning, not harder vocabulary
-- grounded_in_material: true if chapter content is provided and the question stays inside it; true if no chapter content was provided
+- grounded_in_material: true if chapter content is provided and the underlying concept/fact is supported by that material (options may be reasonable concept applications that do not appear word-for-word in the chapter); true if no chapter content was provided. False if the concept itself is unsupported/hallucinated or outside the selected material.
 - explanation_valid: explanation correctly defends the answers AND is consistent with the stem and options
+- concept_relevant: the item tests a concept that belongs to the selected chapter / assigned intent
+- no_unrelated_external_knowledge: answering does not require unrelated knowledge from outside the selected chapter
+- stem_self_contained: the stem stands alone and does not lean on unnecessary chapter/page/book/material references
+- natural_assessment_wording: a genuine assessment question, not a textbook sentence with a question mark
+- scenario_focused: true if there is no scenario, or the scenario is realistic, sufficient, relevant, and free of unnecessary storytelling; false if the scenario is padded, missing information, or age-inappropriate
+- options_independently_assessable: each option can be judged on its own; false if one option logically reveals another
+- option_style_balanced: the keyed answer does not stand out from style/length/grammar clues alone
+- misconception_based_distractors: wrong options follow from the tested concept (misconception/error), not random alternatives. For Easy items, distractors may be plausible without being deceptively sophisticated.
 
 For Multiple Correct questions, do NOT fail the item merely because more than one option is correct.
 For Single Correct questions, fail answer_valid if more than one option is defensible.
 
 Return structured scores and flags. Put concise rejection reasons in `reasons` when any check fails.
 Do not include chain-of-thought.
+"""
+
+# Bank Batch core phase: identical quality rubric without explanation_valid.
+CORE_VALIDATOR_SYSTEM = f"""You are an independent exam-question validator. You did not write the question.
+This is a CORE validation pass: there is NO explanation yet. Do NOT judge explanation quality.
+
+Score the question on eight cognitive criteria from 1 to 3. Do NOT compute a total.
+Do NOT guess or report an overall Easy/Medium/Difficult label.
+
+{VALIDATOR_CRITERION_RUBRIC}
+
+Also judge quality as booleans:
+- content_valid: tests curriculum-appropriate content for the given grade and chapter
+- answer_valid: marked answers are actually correct; unmarked options are incorrect
+- grade_appropriate: vocabulary, sentence complexity, assumed knowledge, scenario maturity, and numerical demand fit the stated Grade. Do NOT treat a higher Grade as requiring a harder Easy/Medium/Difficult cognitive band.
+- distractors_ok: incorrect options represent realistic, grade-appropriate misconceptions. Reject if distractors are obviously absurd, irrelevant, nonsensical, or trivially eliminated without understanding the concept. Put a short diagnostic in reasons when possible: irrelevant distractor; absurd/obvious distractor; another defensible answer; answer-style clue; weak misconception basis; option not independently assessable. Do not expose chain-of-thought.
+- unambiguous: only one defensible reading of the question
+- language_clear: clear, grade-appropriate language without trick wording; difficulty must come from reasoning, not harder vocabulary
+- grounded_in_material: true if chapter content is provided and the underlying concept/fact is supported by that material (options may be reasonable concept applications that do not appear word-for-word in the chapter); true if no chapter content was provided. False if the concept itself is unsupported/hallucinated or outside the selected material.
+- concept_relevant: the item tests a concept that belongs to the selected chapter / assigned intent
+- no_unrelated_external_knowledge: answering does not require unrelated knowledge from outside the selected chapter
+- stem_self_contained: the stem stands alone and does not lean on unnecessary chapter/page/book/material references
+- natural_assessment_wording: a genuine assessment question, not a textbook sentence with a question mark
+- scenario_focused: true if there is no scenario, or the scenario is realistic, sufficient, relevant, and free of unnecessary storytelling; false if the scenario is padded, missing information, or age-inappropriate
+- options_independently_assessable: each option can be judged on its own; false if one option logically reveals another
+- option_style_balanced: the keyed answer does not stand out from style/length/grammar clues alone
+- misconception_based_distractors: wrong options follow from the tested concept (misconception/error), not random alternatives. For Easy items, distractors may be plausible without being deceptively sophisticated.
+
+For Multiple Correct questions, do NOT fail the item merely because more than one option is correct.
+For Single Correct questions, fail answer_valid if more than one option is defensible.
+
+Return structured scores and flags. Put concise rejection reasons in `reasons` when any check fails.
+Do not include chain-of-thought.
+"""
+
+EXPLANATION_GENERATOR_SYSTEM = """You write a short, Grade-appropriate explanation for an already-validated exam question.
+
+RULES:
+- Defend ONLY the given correct answer(s). Do not change or suggest different answers.
+- Do not rewrite the stem or options.
+- Stay grounded in the taught concept from the supplied chapter material when provided.
+- Do not invent unsupported facts.
+- Do not mention chapter/book/textbook/page/generation-process wording.
+- Be clear and concise. No chain-of-thought dump.
+"""
+
+EXPLANATION_VALIDATOR_SYSTEM = """You validate ONLY the explanation for an exam question whose stem, options, and answer key are already fixed and validated.
+
+Check:
+- explanation_valid: the explanation correctly defends the stored correct answer(s), is consistent with the stem and options, is Grade-appropriate, grounded in the taught concept when material is provided, does not invent unsupported facts, and does not unnecessarily mention chapter/book/textbook/generation context.
+
+Return explanation_valid and concise machine-readable reasons when invalid.
+Do not include chain-of-thought.
+Do not re-score cognitive difficulty.
+Do not change the answer key.
 """
 
 
@@ -602,9 +1020,12 @@ async def _generate_for_slot(
     intent_guidance: Optional[str] = None,
     novelty_brief: Optional[str] = None,
     forbidden_stems: Optional[List[str]] = None,
+    cost_diagnostics: Optional[dict] = None,
 ) -> Optional[dict]:
     book_grounded = bool(state.get("book_grounded") and chapter_excerpt)
-    system = GENERATOR_SYSTEM + (BOOK_GROUNDED_RULES if book_grounded else TOPIC_ONLY_RULES)
+    system = GENERATOR_SYSTEM + NFO_OPTION_DISTRACTOR_RULES + (
+        BOOK_GROUNDED_RULES if book_grounded else TOPIC_ONLY_RULES
+    )
     bank_batch_mode = bool(state.get("bank_batch_mode"))
     if bank_batch_mode:
         system = system + BANK_BATCH_TOPIC_METADATA_RULES + BANK_BATCH_DISTRACTOR_RULES
@@ -673,42 +1094,204 @@ async def _generate_for_slot(
             "recall/recognition/basic comprehension or one-step application; 0–1 reasoning step. "
             "Avoid multi-concept, multi-step, evaluation/best-decision, inference-from-several-facts, "
             "and interpretation-plus-calculation items. Keep distractors plausible and Grade-appropriate.\n"
+            f"{BANK_BATCH_EASY_SLOT_CONTRACT}"
+        )
+    difficult_cal_block = ""
+    if bank_batch_mode and normalize_difficulty(slot.target_difficulty) == "difficult":
+        difficult_cal_block = (
+            "\nDIFFICULT CALIBRATION (Bank Batch): Raise genuine reasoning demand. "
+            "Multiple connected steps; analysis/inference/evaluation/transfer. "
+            "Length and vocabulary do not create Difficult. "
+            "Integrate connected chapter concepts only when natural.\n"
+            f"{BANK_BATCH_DIFFICULT_SLOT_CONTRACT}"
         )
     user_prompt = f"""Generate one exam question for this slot.
 
-Grade: {slot.grade or 'not specified'}
+Book ID: {state.get('book_id') or 'not specified'}
+Grade: {slot.grade or 'not specified'} (hard constraint; independent of difficulty)
 Subject: {slot.subject}
 Exam topic: {state.get('topic') or slot.subject}
 {objectives_block}Question number: {slot.question_number}
 Chapter: {slot.chapter} — {slot.chapter_title}
-Target cognitive difficulty: {slot.target_difficulty.upper()}
+Target cognitive difficulty (independent of grade): {slot.target_difficulty.upper()}
 Answer type: {slot.answer_type} ({answer_rule})
 Language: {state.get('language') or 'en'}
 Options: exactly 5 (A–E)
-{topic_meta_block}{easy_cal_block}{intent_block}{novelty_block}{diversity_block}{coverage_block}
+{topic_meta_block}{easy_cal_block}{difficult_cal_block}{intent_block}{novelty_block}{diversity_block}{coverage_block}
 Forbidden opening stems: [{forbidden_str}]
 {feedback_block}{chapter_block}
 Follow the cognitive difficulty definition for {slot.target_difficulty.upper()} exactly.
-Use grade-appropriate language for grade "{slot.grade or 'unspecified'}".
+{format_slot_difficulty_guidance(slot.target_difficulty)}
+Keep Grade "{slot.grade or 'unspecified'}" as a hard constraint on vocabulary, assumed knowledge, scenarios, and numerical demand.
+Do not raise cognitive difficulty just because the Grade is higher.
+Write a self-contained assessment question from the concept and learning objective; do not mechanically copy the chapter.
+{"Do NOT write an explanation. Produce only the question stem, options, correct answer/indices, and topic metadata." if bank_batch_mode else "Include a clear explanation defending the correct answer(s)."}
 """
-    try:
-        result: SlotGeneratedQuestion = await _invoke_structured(
+
+    output_schema = CoreGeneratedQuestion if bank_batch_mode else SlotGeneratedQuestion
+
+    difficulty_contract = easy_cal_block + difficult_cal_block
+    if slot.target_difficulty:
+        difficulty_contract += format_slot_difficulty_guidance(slot.target_difficulty)
+    structural_rules = (
+        topic_meta_block
+        + objectives_block
+        + f"Forbidden opening stems: [{forbidden_str}]\n"
+        + diversity_block
+        + coverage_block
+    )
+    intent_objective_form = intent_block + novelty_block
+
+    def _generator_composition() -> dict:
+        return build_prompt_composition(
+            system_prompt=system,
+            user_prompt=user_prompt,
+            grounding_text=chapter_excerpt or "",
+            static_system_instructions=system,
+            difficulty_contract=difficulty_contract,
+            structural_answer_rules=structural_rules,
+            intent_objective_form=intent_objective_form,
+            retry_feedback=feedback_block,
+        )
+
+    async def _call_generator(max_tokens: int, *, llm_stage: str) -> dict:
+        result = await _invoke_structured(
             system,
             user_prompt,
             state.get("generator_model"),
-            SlotGeneratedQuestion,
-            max_tokens=2048,
+            output_schema,
+            max_tokens=max_tokens,
             temperature=0.7,
+            llm_stage=llm_stage,
+            cost_diagnostics=cost_diagnostics,
+            prompt_composition=_generator_composition(),
+            bank_batch_mode=bank_batch_mode,
         )
         data = result.model_dump()
         options = list(data.get("options") or [])
         if len(options) > 5:
             options = options[:5]
         data["options"] = options
+        if bank_batch_mode:
+            # Core phase: never carry a generated explanation forward.
+            data["explanation"] = ""
         return data
-    except Exception as e:
-        logger.error(f"Generator failed for slot {slot.question_number}: {e}")
-        return None
+
+    initial_max_tokens = (
+        BANK_BATCH_GENERATOR_MAX_TOKENS
+        if bank_batch_mode
+        else GENERATOR_MAX_TOKENS
+    )
+    # Bank Batch already starts at 4096; a same-budget length retry is wasted.
+    allow_length_retry = (not bank_batch_mode) and (
+        GENERATOR_LENGTH_RETRY_MAX_TOKENS > initial_max_tokens
+    )
+
+    try:
+        data = await _call_generator(
+            initial_max_tokens, llm_stage=LLM_STAGE_CORE_GENERATION
+        )
+        if cost_diagnostics is not None:
+            tag_last_llm_call(cost_diagnostics, outcome="core_produced")
+        return data
+    except Exception as first_err:
+        if not is_structured_output_length_error(first_err) or not allow_length_retry:
+            logger.error(f"Generator failed for slot {slot.question_number}: {first_err}")
+            if cost_diagnostics is not None:
+                tag_last_llm_call(cost_diagnostics, outcome="generation_failed")
+            return None
+        # Final Paper only: exactly one recovery at a larger completion budget.
+        if cost_diagnostics is not None:
+            tag_last_llm_call(cost_diagnostics, outcome="length_recovery_discarded")
+            cost_diagnostics["length_limit_retry_attempted"] = (
+                int(cost_diagnostics.get("length_limit_retry_attempted") or 0) + 1
+            )
+            cost_diagnostics["length_limit_retry_initial_tokens"] = GENERATOR_MAX_TOKENS
+            cost_diagnostics["length_limit_retry_retry_tokens"] = (
+                GENERATOR_LENGTH_RETRY_MAX_TOKENS
+            )
+        logger.warning(
+            f"Generator length-limit for slot {slot.question_number}; "
+            f"retrying once with max_tokens={GENERATOR_LENGTH_RETRY_MAX_TOKENS}"
+        )
+        try:
+            data = await _call_generator(
+                GENERATOR_LENGTH_RETRY_MAX_TOKENS,
+                llm_stage=LLM_STAGE_LENGTH_RECOVERY,
+            )
+            if cost_diagnostics is not None:
+                tag_last_llm_call(cost_diagnostics, outcome="core_produced")
+                cost_diagnostics["length_limit_retry_succeeded"] = (
+                    int(cost_diagnostics.get("length_limit_retry_succeeded") or 0) + 1
+                )
+            return data
+        except Exception as retry_err:
+            if cost_diagnostics is not None:
+                tag_last_llm_call(cost_diagnostics, outcome="generation_failed")
+                cost_diagnostics["length_limit_retry_failed"] = (
+                    int(cost_diagnostics.get("length_limit_retry_failed") or 0) + 1
+                )
+            logger.error(
+                f"Generator failed for slot {slot.question_number} "
+                f"after length-limit retry: {retry_err}"
+            )
+            return None
+
+
+def _chapter_short_term_source(
+    state: PaperState,
+    slot: QuestionSlot,
+    excerpt: str,
+) -> str:
+    """Full selected-chapter text for abbreviation extraction (retrieval only)."""
+    chunks = (state.get("chapter_chunks") or {}).get(str(slot.chapter)) or []
+    joined = "\n".join(str(c) for c in chunks if str(c).strip())
+    return joined.strip() or (excerpt or "")
+
+
+def _bank_batch_validation_excerpt(
+    state: PaperState,
+    slot: QuestionSlot,
+    generated: dict,
+    chunks: Sequence[Any],
+    original_index: Optional[int],
+    excerpt: str,
+    cost_diagnostics: Optional[dict],
+) -> str:
+    """Re-select same-chapter evidence chunk after generation. Bank Batch only."""
+    if not state.get("bank_batch_mode"):
+        return excerpt or ""
+    texts = [str(c or "") for c in (chunks or [])]
+    selection = select_validation_chunk_for_generated(
+        texts,
+        generated,
+        original_index=original_index,
+        chapter_term_source=_chapter_short_term_source(state, slot, excerpt or ""),
+    )
+    if not selection.get("excerpt") and excerpt:
+        selection["excerpt"] = excerpt
+    record_validation_chunk_reselection(cost_diagnostics, selection)
+    return str(selection.get("excerpt") or excerpt or "")
+
+
+def _last_logged_blind_tokens(
+    diagnostics: Optional[dict],
+) -> Tuple[Optional[int], Optional[int]]:
+    if not diagnostics:
+        return None, None
+    log = diagnostics.get("llm_call_log") or []
+    for entry in reversed(log):
+        if entry.get("stage") != LLM_STAGE_BLIND_SOLVER:
+            continue
+        completion = entry.get("output_tokens")
+        if completion is None:
+            completion = entry.get("completion_tokens")
+        reasoning = entry.get("reasoning_tokens")
+        return (
+            int(completion) if completion is not None else None,
+            int(reasoning) if reasoning is not None else None,
+        )
+    return None, None
 
 
 async def _blind_solve(
@@ -716,7 +1299,9 @@ async def _blind_solve(
     generated: dict,
     state: PaperState,
     chapter_excerpt: str,
-) -> Optional[BlindSolverOutput]:
+    *,
+    cost_diagnostics: Optional[dict] = None,
+) -> Optional[BlindSolverOutput] | BlindSolverUnavailable:
     """Stage 1: solve without seeing the answer key, explanation, or target difficulty."""
     source_text = chapter_excerpt or ""
     if state.get("bank_batch_mode"):
@@ -724,6 +1309,11 @@ async def _blind_solve(
             chapter_excerpt or "",
             str(generated.get("question") or ""),
             list(generated.get("options") or []),
+            term_source_text=_chapter_short_term_source(
+                state, slot, chapter_excerpt or ""
+            ),
+            diagnostics=cost_diagnostics,
+            stage="blind_solver",
         )
     chapter_block = ""
     if source_text:
@@ -749,21 +1339,89 @@ Question: {generated.get('question')}
 Options:
 {json.dumps(generated.get('options') or [], indent=2)}
 {chapter_block}
-Determine which option(s) are correct. Analyse each option A-E for defensibility.
-Check information sufficiency, arithmetic consistency, and unsupported claims.
+Set independently_derived_indices and defensible for A-E. Set information_sufficient, arithmetic_consistent, no_unsupported_claims, and terminology_grounded. JSON only.
 """
-    try:
+    composition = build_prompt_composition(
+        system_prompt=BLIND_SOLVER_SYSTEM,
+        user_prompt=user_prompt,
+        grounding_text=source_text or "",
+        static_system_instructions=BLIND_SOLVER_SYSTEM,
+    )
+
+    def _bump_blind_retry(field: str) -> None:
+        if cost_diagnostics is None:
+            return
+        cost_diagnostics[field] = int(cost_diagnostics.get(field) or 0) + 1
+
+    def _record_ok() -> None:
+        comp, reason = _last_logged_blind_tokens(cost_diagnostics)
+        record_blind_solver_outcome(
+            cost_diagnostics,
+            success=True,
+            length_failure=False,
+            completion_tokens=comp,
+            reasoning_tokens=reason,
+        )
+
+    def _record_fail(exc: BaseException) -> None:
+        comp, reason = parse_completion_usage_from_exc(exc)
+        if comp is None and reason is None:
+            comp, reason = _last_logged_blind_tokens(cost_diagnostics)
+        record_blind_solver_outcome(
+            cost_diagnostics,
+            success=False,
+            length_failure=is_structured_output_length_error(exc),
+            completion_tokens=comp,
+            reasoning_tokens=reason,
+        )
+
+    async def _invoke_blind(max_tokens: int) -> BlindSolverOutput:
         return await _invoke_structured(
             BLIND_SOLVER_SYSTEM,
             user_prompt,
             state.get("reviewer_model") or state.get("generator_model"),
             BlindSolverOutput,
-            max_tokens=2048,
+            max_tokens=max_tokens,
             temperature=0.2,
+            llm_stage=LLM_STAGE_BLIND_SOLVER,
+            cost_diagnostics=cost_diagnostics,
+            prompt_composition=composition,
+            bank_batch_mode=bool(state.get("bank_batch_mode")),
         )
-    except Exception as e:
-        logger.error(f"Blind solver failed for slot {slot.question_number}: {e}")
-        return None
+
+    try:
+        result = await _invoke_blind(max_tokens=2048)
+        _record_ok()
+        return result
+    except Exception as first_err:
+        logger.error(
+            f"Blind solver failed for slot {slot.question_number}: {first_err}"
+        )
+        _record_fail(first_err)
+        if not is_structured_output_length_error(first_err) or not state.get(
+            "bank_batch_mode"
+        ):
+            return None
+        _bump_blind_retry("blind_length_retry_attempted")
+        logger.warning(
+            f"Blind solver length-limit for slot {slot.question_number}; "
+            f"retrying once with max_tokens={BLIND_LENGTH_RETRY_MAX_TOKENS}"
+        )
+        try:
+            result = await _invoke_blind(max_tokens=BLIND_LENGTH_RETRY_MAX_TOKENS)
+            _bump_blind_retry("blind_length_retry_success")
+            _record_ok()
+            return result
+        except Exception as retry_err:
+            _bump_blind_retry("blind_length_retry_failed")
+            logger.error(
+                f"Blind solver failed for slot {slot.question_number} "
+                f"after length-limit retry: {retry_err}"
+            )
+            _record_fail(retry_err)
+            return BlindSolverUnavailable(
+                blind_validator_unavailable_reason(retry_err)
+            )
 
 
 async def _validate_cognitive_quality(
@@ -771,26 +1429,48 @@ async def _validate_cognitive_quality(
     generated: dict,
     state: PaperState,
     chapter_excerpt: str,
+    *,
+    cost_diagnostics: Optional[dict] = None,
 ) -> Tuple[dict, dict]:
-    """Stage 2: cognitive scoring + quality flags (receives the full answer key)."""
+    """Stage 2: cognitive scoring + quality flags (receives the full answer key).
+
+    Bank Batch core phase omits explanation from the prompt and does not ask for
+    explanation_valid; explanation is validated later in a dedicated pass.
+    """
+    bank_core = bool(state.get("bank_batch_mode")) and not str(
+        generated.get("explanation") or ""
+    ).strip()
     source_text = chapter_excerpt or ""
     if state.get("bank_batch_mode") and source_text:
-        probe = " ".join(
-            [
-                str(generated.get("question") or ""),
-                str(generated.get("topic") or ""),
-                str(generated.get("sub_topic") or ""),
-                str(generated.get("explanation") or ""),
-            ]
+        probe_parts = [
+            str(generated.get("question") or ""),
+            str(generated.get("topic") or ""),
+            str(generated.get("sub_topic") or ""),
+        ]
+        if not bank_core:
+            probe_parts.append(str(generated.get("explanation") or ""))
+        source_text = select_cognitive_source_window(
+            source_text,
+            " ".join(probe_parts),
+            term_source_text=_chapter_short_term_source(
+                state, slot, chapter_excerpt or ""
+            ),
+            diagnostics=cost_diagnostics,
+            stage="cognitive_quality",
         )
-        source_text = select_source_grounding_window(source_text, probe)
     chapter_block = ""
     if source_text:
         chapter_block = (
             f"\n--- CHAPTER CONTENT ---\n{source_text}\n--- END CHAPTER CONTENT ---\n"
         )
+    explanation_block = ""
+    if not bank_core:
+        explanation_block = f"Explanation: {generated.get('explanation')}\n"
     user_prompt = f"""Validate this exam question. Do not infer a requested difficulty label.
+Grade and Difficulty are separate constraints. Judge grade_appropriate against Grade only.
+{"This is a CORE validation pass: ignore explanation quality." if bank_core else ""}
 
+Book ID: {state.get('book_id') or 'not specified'}
 Grade: {slot.grade or 'not specified'}
 Subject: {slot.subject}
 Chapter: {slot.chapter} — {slot.chapter_title}
@@ -801,38 +1481,333 @@ Options:
 {json.dumps(generated.get('options') or [], indent=2)}
 Marked correct_indices (0-based): {generated.get('correct_indices')}
 Stated answer: {generated.get('answer')}
-Explanation: {generated.get('explanation')}
-Topic / sub-topic: {generated.get('topic')} / {generated.get('sub_topic')}
+{explanation_block}Topic / sub-topic: {generated.get('topic')} / {generated.get('sub_topic')}
 {chapter_block}
 Score the eight criteria 1-3. Set the quality booleans. Do not total the scores.
 """
-    try:
-        result: IndependentValidatorOutput = await _invoke_structured(
+    composition = build_prompt_composition(
+        system_prompt=CORE_VALIDATOR_SYSTEM if bank_core else VALIDATOR_SYSTEM,
+        user_prompt=user_prompt,
+        grounding_text=source_text or "",
+        static_system_instructions=CORE_VALIDATOR_SYSTEM if bank_core else VALIDATOR_SYSTEM,
+    )
+
+    def _bump_cognitive_retry(field: str) -> None:
+        if cost_diagnostics is None:
+            return
+        cost_diagnostics[field] = int(cost_diagnostics.get(field) or 0) + 1
+
+    async def _invoke_cognitive(max_tokens: int) -> Tuple[dict, dict]:
+        if bank_core:
+            result: CoreIndependentValidatorOutput = await _invoke_structured(
+                CORE_VALIDATOR_SYSTEM,
+                user_prompt,
+                state.get("reviewer_model") or state.get("generator_model"),
+                CoreIndependentValidatorOutput,
+                max_tokens=max_tokens,
+                temperature=0.2,
+                llm_stage=LLM_STAGE_COGNITIVE_QUALITY,
+                cost_diagnostics=cost_diagnostics,
+                prompt_composition=composition,
+                bank_batch_mode=bool(state.get("bank_batch_mode")),
+            )
+            flags = result.model_dump()
+            scores = flags.pop("criterion_scores")
+            # explanation_valid is deferred; do not invent a pass.
+            flags.pop("explanation_valid", None)
+            return scores, flags
+        result_full: IndependentValidatorOutput = await _invoke_structured(
             VALIDATOR_SYSTEM,
             user_prompt,
             state.get("reviewer_model") or state.get("generator_model"),
             IndependentValidatorOutput,
-            max_tokens=2048,
+            max_tokens=max_tokens,
             temperature=0.2,
+            llm_stage=LLM_STAGE_COGNITIVE_QUALITY,
+            cost_diagnostics=cost_diagnostics,
+            prompt_composition=composition,
+            bank_batch_mode=bool(state.get("bank_batch_mode")),
         )
-        flags = result.model_dump()
+        flags = result_full.model_dump()
         scores = flags.pop("criterion_scores")
         return scores, flags
+
+    try:
+        return await _invoke_cognitive(COGNITIVE_MAX_TOKENS)
+    except Exception as first_err:
+        if not is_structured_output_length_error(first_err) or not state.get(
+            "bank_batch_mode"
+        ):
+            logger.error(
+                f"Cognitive validator failed for slot {slot.question_number}: {first_err}"
+            )
+            return cognitive_validator_unavailable_payload(first_err)
+        _bump_cognitive_retry("cognitive_length_retry_attempted")
+        logger.warning(
+            f"Cognitive validator length-limit for slot {slot.question_number}; "
+            f"retrying once with max_tokens={COGNITIVE_LENGTH_RETRY_MAX_TOKENS}"
+        )
+        try:
+            scores, flags = await _invoke_cognitive(COGNITIVE_LENGTH_RETRY_MAX_TOKENS)
+            _bump_cognitive_retry("cognitive_length_retry_succeeded")
+            return scores, flags
+        except Exception as retry_err:
+            _bump_cognitive_retry("cognitive_length_retry_failed")
+            logger.error(
+                f"Cognitive validator failed for slot {slot.question_number} "
+                f"after length-limit retry: {retry_err}"
+            )
+            return cognitive_validator_unavailable_payload(retry_err)
+
+
+async def _generate_explanation_for_core(
+    slot: QuestionSlot,
+    core: dict,
+    state: PaperState,
+    chapter_excerpt: str,
+    *,
+    rejection_feedback: Optional[str] = None,
+    cost_diagnostics: Optional[dict] = None,
+) -> Optional[str]:
+    """Generate explanation only; must not alter the frozen question core."""
+    source_text = chapter_excerpt or ""
+    if state.get("bank_batch_mode") and source_text:
+        probe = " ".join(
+            [
+                str(core.get("question") or ""),
+                str(core.get("topic") or ""),
+                str(core.get("sub_topic") or ""),
+            ]
+        )
+        source_text = select_source_grounding_window(source_text, probe)
+    chapter_block = ""
+    if source_text:
+        chapter_block = (
+            f"\n--- CHAPTER CONTENT ---\n{source_text}\n--- END CHAPTER CONTENT ---\n"
+        )
+    feedback_block = ""
+    if rejection_feedback:
+        feedback_block = (
+            "\nPREVIOUS EXPLANATION WAS REJECTED. Fix only the explanation:\n"
+            f"{rejection_feedback}\n"
+        )
+    user_prompt = f"""Write an explanation for this validated exam question.
+Do NOT change the stem, options, or correct answer.
+
+Grade: {slot.grade or 'not specified'}
+Subject: {slot.subject}
+Chapter: {slot.chapter} — {slot.chapter_title}
+Answer type: {slot.answer_type}
+
+Question: {core.get('question')}
+Options:
+{json.dumps(core.get('options') or [], indent=2)}
+Correct indices (0-based, frozen): {core.get('correct_indices')}
+Correct answer (frozen): {core.get('answer')}
+Topic / sub-topic: {core.get('topic')} / {core.get('sub_topic')}
+{feedback_block}{chapter_block}
+"""
+    composition = build_prompt_composition(
+        system_prompt=EXPLANATION_GENERATOR_SYSTEM,
+        user_prompt=user_prompt,
+        grounding_text=source_text or "",
+        static_system_instructions=EXPLANATION_GENERATOR_SYSTEM,
+        retry_feedback=feedback_block,
+    )
+    try:
+        result: ExplanationOnlyOutput = await _invoke_structured(
+            EXPLANATION_GENERATOR_SYSTEM,
+            user_prompt,
+            state.get("generator_model"),
+            ExplanationOnlyOutput,
+            max_tokens=EXPLANATION_MAX_TOKENS,
+            temperature=0.4,
+            llm_stage=LLM_STAGE_EXPLANATION_GENERATE,
+            cost_diagnostics=cost_diagnostics,
+            prompt_composition=composition,
+            bank_batch_mode=bool(state.get("bank_batch_mode")),
+        )
+        text = str(result.explanation or "").strip()
+        return text or None
     except Exception as e:
-        logger.error(f"Cognitive validator failed for slot {slot.question_number}: {e}")
-        scores = {k: 1 for k in COGNITIVE_CRITERIA}
-        flags = {
-            "content_valid": False,
-            "answer_valid": False,
-            "grade_appropriate": False,
-            "distractors_ok": False,
-            "unambiguous": False,
-            "language_clear": False,
-            "grounded_in_material": False,
-            "explanation_valid": False,
-            "reasons": [f"validator error: {e}"],
-        }
-        return scores, flags
+        logger.error(
+            f"Explanation generator failed for slot {slot.question_number}: {e}"
+        )
+        return None
+
+
+async def _validate_explanation_only(
+    slot: QuestionSlot,
+    core: dict,
+    explanation: str,
+    state: PaperState,
+    chapter_excerpt: str,
+    *,
+    cost_diagnostics: Optional[dict] = None,
+) -> Tuple[bool, List[str]]:
+    """Validate explanation against a frozen core. Does not re-run cognitive scoring."""
+    source_text = chapter_excerpt or ""
+    if state.get("bank_batch_mode") and source_text:
+        probe = " ".join(
+            [
+                str(core.get("question") or ""),
+                str(core.get("topic") or ""),
+                str(explanation or ""),
+            ]
+        )
+        source_text = select_source_grounding_window(source_text, probe)
+    chapter_block = ""
+    if source_text:
+        chapter_block = (
+            f"\n--- CHAPTER CONTENT ---\n{source_text}\n--- END CHAPTER CONTENT ---\n"
+        )
+    user_prompt = f"""Validate ONLY this explanation for a frozen exam question.
+
+Grade: {slot.grade or 'not specified'}
+Subject: {slot.subject}
+Chapter: {slot.chapter} — {slot.chapter_title}
+Answer type: {slot.answer_type}
+
+Question: {core.get('question')}
+Options:
+{json.dumps(core.get('options') or [], indent=2)}
+Correct indices (0-based, frozen): {core.get('correct_indices')}
+Correct answer (frozen): {core.get('answer')}
+Explanation under review:
+{explanation}
+{chapter_block}
+Set explanation_valid. List concise reasons if invalid.
+"""
+    composition = build_prompt_composition(
+        system_prompt=EXPLANATION_VALIDATOR_SYSTEM,
+        user_prompt=user_prompt,
+        grounding_text=source_text or "",
+        static_system_instructions=EXPLANATION_VALIDATOR_SYSTEM,
+    )
+    try:
+        result: ExplanationValidatorOutput = await _invoke_structured(
+            EXPLANATION_VALIDATOR_SYSTEM,
+            user_prompt,
+            state.get("reviewer_model") or state.get("generator_model"),
+            ExplanationValidatorOutput,
+            max_tokens=1024,
+            temperature=0.2,
+            llm_stage=LLM_STAGE_EXPLANATION_VALIDATE,
+            cost_diagnostics=cost_diagnostics,
+            prompt_composition=composition,
+            bank_batch_mode=bool(state.get("bank_batch_mode")),
+        )
+        reasons = [str(r) for r in (result.reasons or []) if str(r).strip()]
+        if not result.explanation_valid and not reasons:
+            reasons = ["explanation is invalid"]
+        return bool(result.explanation_valid), reasons
+    except Exception as e:
+        logger.error(
+            f"Explanation validator failed for slot {slot.question_number}: {e}"
+        )
+        return False, [f"explanation validator error: {e}"]
+
+
+async def _finalize_bank_batch_explanation(
+    slot: QuestionSlot,
+    generated: dict,
+    state: PaperState,
+    chapter_excerpt: str,
+    *,
+    cost_diagnostics: Optional[dict] = None,
+    cost_lock: Optional[asyncio.Lock] = None,
+) -> Tuple[bool, dict, List[str]]:
+    """
+    After core validation passes: generate + validate explanation with bounded retries.
+
+    Returns (ok, updated_generated, failure_reasons). On success, generated includes
+    a validated explanation and the frozen core fields are unchanged.
+    """
+    frozen = {
+        "question": generated.get("question"),
+        "options": list(generated.get("options") or []),
+        "correct_indices": list(generated.get("correct_indices") or []),
+        "answer": generated.get("answer"),
+        "topic": generated.get("topic"),
+        "sub_topic": generated.get("sub_topic"),
+    }
+    feedback: Optional[str] = None
+    last_reasons: List[str] = ["explanation is invalid"]
+
+    async def _bump(field: str, amount: int = 1) -> None:
+        if cost_diagnostics is None:
+            return
+
+        def _do() -> None:
+            cost_diagnostics[field] = int(cost_diagnostics.get(field) or 0) + amount
+
+        if cost_lock is not None:
+            async with cost_lock:
+                _do()
+        else:
+            _do()
+
+    async def _stage(name: str, elapsed_ms: float) -> None:
+        if cost_diagnostics is None:
+            return
+        if cost_lock is not None:
+            async with cost_lock:
+                record_bank_cost_stage(cost_diagnostics, name, elapsed_ms)
+        else:
+            record_bank_cost_stage(cost_diagnostics, name, elapsed_ms)
+
+    t_wall = time.perf_counter()
+    for attempt in range(1, MAX_EXPLANATION_ATTEMPTS + 1):
+        if attempt > 1:
+            await _bump("explanation_retry_calls")
+        t0 = time.perf_counter()
+        explanation = await _generate_explanation_for_core(
+            slot,
+            frozen,
+            state,
+            chapter_excerpt,
+            rejection_feedback=feedback,
+            cost_diagnostics=cost_diagnostics,
+        )
+        await _stage("explanation_generate", (time.perf_counter() - t0) * 1000.0)
+        await _bump("explanation_generation_calls")
+        if not explanation:
+            last_reasons = ["explanation generation failed"]
+            feedback = "Produce a complete Grade-appropriate explanation defending the correct answer(s)."
+            continue
+
+        # Freeze invariant: core must remain identical.
+        for key, value in frozen.items():
+            if generated.get(key) != value:
+                generated[key] = value
+
+        t1 = time.perf_counter()
+        ok, reasons = await _validate_explanation_only(
+            slot,
+            frozen,
+            explanation,
+            state,
+            chapter_excerpt,
+            cost_diagnostics=cost_diagnostics,
+        )
+        await _stage("explanation_validate", (time.perf_counter() - t1) * 1000.0)
+        await _bump("explanation_validation_calls")
+        if ok:
+            generated["explanation"] = explanation
+            if attempt > 1:
+                await _bump("explanation_retries_succeeded")
+            await _stage(
+                "explanation_finalize", (time.perf_counter() - t_wall) * 1000.0
+            )
+            return True, generated, []
+
+        await _bump("explanation_validation_failures")
+        last_reasons = reasons or ["explanation is invalid"]
+        feedback = "; ".join(last_reasons)
+
+    await _bump("explanation_retries_failed")
+    await _stage("explanation_finalize", (time.perf_counter() - t_wall) * 1000.0)
+    return False, generated, last_reasons
 
 
 async def _validate_slot_independently(
@@ -844,17 +1819,49 @@ async def _validate_slot_independently(
     existing_questions: Optional[List[dict]] = None,
     cost_diagnostics: Optional[dict] = None,
     cost_lock: Optional[asyncio.Lock] = None,
+    assigned_intent: Optional[dict] = None,
 ) -> dict:
-    """Two-stage validation: blind solve (no answer key) then cognitive + quality."""
-    t0 = time.perf_counter()
-    solver_result = await _blind_solve(slot, generated, state, chapter_excerpt)
-    blind_ms = (time.perf_counter() - t0) * 1000.0
+    """Blind solve + cognitive/quality concurrently; both mandatory, then combine.
 
-    t1 = time.perf_counter()
-    scores, flags = await _validate_cognitive_quality(
-        slot, generated, state, chapter_excerpt
+    Neither call's result is used as input to the other. Blind remains answer-key
+    blind; cognitive still receives the full key. Results merge only afterward via
+    apply_independent_validation.
+
+    Bank Batch core phase defers explanation_valid to a later explanation pass.
+    """
+
+    async def _timed_blind():
+        t0 = time.perf_counter()
+        result = await _blind_solve(
+            slot, generated, state, chapter_excerpt, cost_diagnostics=cost_diagnostics
+        )
+        return result, (time.perf_counter() - t0) * 1000.0
+
+    async def _timed_cognitive():
+        t0 = time.perf_counter()
+        result = await _validate_cognitive_quality(
+            slot,
+            generated,
+            state,
+            chapter_excerpt,
+            cost_diagnostics=cost_diagnostics,
+        )
+        return result, (time.perf_counter() - t0) * 1000.0
+
+    t_wall = time.perf_counter()
+    # return_exceptions=True waits for both tasks (no orphans). Propagate any
+    # unexpected raise so a single surviving validator cannot accept alone.
+    gathered = await asyncio.gather(
+        _timed_blind(), _timed_cognitive(), return_exceptions=True
     )
-    cog_ms = (time.perf_counter() - t1) * 1000.0
+    wall_ms = (time.perf_counter() - t_wall) * 1000.0
+
+    failures = [item for item in gathered if isinstance(item, BaseException)]
+    if failures:
+        raise failures[0]
+
+    solver_result, blind_ms = gathered[0]
+    (scores, flags), cog_ms = gathered[1]
 
     if cost_diagnostics is not None:
         async def _bump() -> None:
@@ -866,6 +1873,9 @@ async def _validate_slot_independently(
                 int(cost_diagnostics.get("cognitive_quality_calls") or 0) + 1
             )
             record_bank_cost_stage(cost_diagnostics, "cognitive_quality", cog_ms)
+            record_bank_cost_stage(
+                cost_diagnostics, "concurrent_validation", wall_ms
+            )
 
         if cost_lock is not None:
             async with cost_lock:
@@ -874,9 +1884,18 @@ async def _validate_slot_independently(
             await _bump()
 
     solver_data = None
-    if solver_result:
+    flags = dict(flags or {})
+    if isinstance(solver_result, BlindSolverUnavailable):
+        flags[VALIDATOR_UNAVAILABLE_KEY] = True
+        extra = list(flags.get("reasons") or [])
+        extra.append(solver_result.reason)
+        flags["reasons"] = extra
+    elif solver_result is not None:
         solver_data = solver_result.model_dump()
 
+    bank_core = bool(state.get("bank_batch_mode")) and not str(
+        generated.get("explanation") or ""
+    ).strip()
     return apply_independent_validation(
         slot=slot,
         criterion_scores=scores,
@@ -887,6 +1906,8 @@ async def _validate_slot_independently(
         book_grounded=bool(state.get("book_grounded") and chapter_excerpt),
         blind_solver=solver_data,
         content_aware_lexical=bool(state.get("bank_batch_mode")),
+        assigned_intent=assigned_intent,
+        require_explanation_valid=not bank_core,
     )
 
 
@@ -1057,6 +2078,7 @@ async def fill_slots(state: PaperState) -> dict:
     intent_remaining: List[dict] = list(state.get("bank_intent_remaining") or [])
     intent_retired_ids: set = set()
     intent_dup_hits: Dict[str, int] = {}
+    intent_family_hits: Dict[str, Dict[str, int]] = {}
     slot_prev_rejected_form: Dict[str, str] = {}
     intent_planner_on = bool(
         state.get("bank_batch_mode") and is_bank_intent_planner_enabled()
@@ -1117,18 +2139,23 @@ async def fill_slots(state: PaperState) -> dict:
                 cache_key=str(intent_ctx.get("cache_key") or ""),
                 book_id=str(intent_ctx.get("book_id") or state.get("book_id") or ""),
                 content_hash=str(intent_ctx.get("content_hash") or ""),
+                cost_diagnostics=cost_diagnostics,
             )
             async with lock:
                 state["bank_intent_catalog"] = new_cat
                 intent_remaining[:] = new_rem
         if not active:
             async with lock:
+                usage_qs = list(state.get("bank_duplicate_seed_questions") or []) + list(
+                    approved
+                )
                 nxt = take_next_unused_intent(
                     intent_remaining,
                     retired_ids=intent_retired_ids,
                     assigned_values=list(intent_assignments.values()),
                     target_difficulty=target_difficulty,
                     diagnostics=intent_diagnostics,
+                    usage_questions=usage_qs,
                 )
                 if nxt:
                     intent_assignments[slot_key] = nxt
@@ -1163,6 +2190,20 @@ async def fill_slots(state: PaperState) -> dict:
             active_intent = intent_assignments.get(slot_key)
         async with semaphore:
             for attempt in range(1, max_attempts + 1):
+                if state.get("bank_batch_mode"):
+                    async with lock:
+                        budget_block = bank_batch_generation_budget_block_reason(
+                            state, cost_diagnostics=cost_diagnostics
+                        )
+                        if budget_block:
+                            state["batch_budget_exhausted_reason"] = budget_block
+                            feedback = (
+                                "Batch generation budget exhausted; "
+                                "preserving accepted questions and stopping new attempts."
+                            )
+                            outcome = "needs_manual_review"
+                            break
+                variety_diag = None
                 chunks = chapter_chunks.get(str(slot.chapter), [])
                 if intent_planner_on:
                     active_intent = await _top_up_intents(
@@ -1321,6 +2362,9 @@ async def fill_slots(state: PaperState) -> dict:
                             rejected_log=rejected_log,
                             active_intent=active_intent,
                         )
+                length_retries_before = int(
+                    cost_diagnostics.get("length_limit_retry_attempted") or 0
+                )
                 generated = await _generate_for_slot(
                     slot,
                     state,
@@ -1331,12 +2375,36 @@ async def fill_slots(state: PaperState) -> dict:
                     intent_guidance=intent_guidance,
                     novelty_brief=novelty_brief,
                     forbidden_stems=forbidden_stems,
+                    cost_diagnostics=cost_diagnostics,
                 )
                 if state.get("bank_batch_mode"):
                     async with lock:
-                        cost_diagnostics["generated_attempts"] = (
-                            int(cost_diagnostics.get("generated_attempts") or 0) + 1
+                        length_extra = max(
+                            0,
+                            int(cost_diagnostics.get("length_limit_retry_attempted") or 0)
+                            - length_retries_before,
                         )
+                        cost_diagnostics["generated_attempts"] = (
+                            int(cost_diagnostics.get("generated_attempts") or 0)
+                            + 1
+                            + length_extra
+                        )
+                        cost_diagnostics["core_generation_calls"] = (
+                            int(cost_diagnostics.get("core_generation_calls") or 0)
+                            + 1
+                            + length_extra
+                        )
+                        cost_diagnostics["core_generation_llm_calls"] = int(
+                            cost_diagnostics.get("core_generation_calls") or 0
+                        )
+                        if length_extra:
+                            cost_diagnostics["length_recovery_extra_calls"] = (
+                                int(
+                                    cost_diagnostics.get("length_recovery_extra_calls")
+                                    or 0
+                                )
+                                + length_extra
+                            )
                         record_bank_cost_stage(
                             cost_diagnostics,
                             "generate",
@@ -1345,6 +2413,14 @@ async def fill_slots(state: PaperState) -> dict:
                 if not generated:
                     feedback = "Generation failed; rewrite a complete MCQ with five options A–E."
                     outcome = decide_slot_outcome(False, attempt, max_attempts)
+                    if state.get("bank_batch_mode"):
+                        async with lock:
+                            cost_diagnostics["core_generation_failures"] = (
+                                int(
+                                    cost_diagnostics.get("core_generation_failures") or 0
+                                )
+                                + 1
+                            )
                     if outcome == "retry":
                         continue
                     break
@@ -1358,6 +2434,23 @@ async def fill_slots(state: PaperState) -> dict:
                         outcome = decide_slot_outcome(False, attempt, max_attempts)
                         async with lock:
                             bump_bank_early_exit(cost_diagnostics, "structural")
+                            cost_diagnostics["explanations_avoided_core_failed"] = (
+                                int(
+                                    cost_diagnostics.get(
+                                        "explanations_avoided_core_failed"
+                                    )
+                                    or 0
+                                )
+                                + 1
+                            )
+                            cost_diagnostics["cores_rejected_before_explanation"] = (
+                                int(
+                                    cost_diagnostics.get(
+                                        "explanations_avoided_core_failed"
+                                    )
+                                    or 0
+                                )
+                            )
                             rejected_log.append(
                                 build_rejected_attempt_record(
                                     slot=slot,
@@ -1411,6 +2504,23 @@ async def fill_slots(state: PaperState) -> dict:
                                 int(intent_diagnostics.get("drift_early_exits") or 0) + 1
                             )
                             bump_bank_early_exit(cost_diagnostics, "intent_drift")
+                            cost_diagnostics["explanations_avoided_core_failed"] = (
+                                int(
+                                    cost_diagnostics.get(
+                                        "explanations_avoided_core_failed"
+                                    )
+                                    or 0
+                                )
+                                + 1
+                            )
+                            cost_diagnostics["cores_rejected_before_explanation"] = (
+                                int(
+                                    cost_diagnostics.get(
+                                        "explanations_avoided_core_failed"
+                                    )
+                                    or 0
+                                )
+                            )
                             rej = build_rejected_attempt_record(
                                 slot=slot,
                                 attempt=attempt,
@@ -1451,15 +2561,25 @@ async def fill_slots(state: PaperState) -> dict:
                         async with lock:
                             bump_bank_early_exit(cost_diagnostics, early_cat)
                     else:
+                        validation_excerpt = _bank_batch_validation_excerpt(
+                            state,
+                            slot,
+                            generated,
+                            chunks,
+                            prev_chunk_index,
+                            excerpt or "",
+                            cost_diagnostics,
+                        )
                         validation = await _validate_slot_independently(
                             slot,
                             generated,
                             state,
-                            excerpt,
+                            validation_excerpt,
                             existing_texts,
                             existing_questions=existing_qs,
                             cost_diagnostics=cost_diagnostics,
                             cost_lock=lock,
+                            assigned_intent=active_intent,
                         )
                 elif is_near_duplicate(
                     generated.get("question", ""),
@@ -1479,14 +2599,80 @@ async def fill_slots(state: PaperState) -> dict:
                     validation = await _validate_slot_independently(
                         slot, generated, state, excerpt, existing_texts,
                         existing_questions=existing_qs,
+                        assigned_intent=active_intent,
                     )
 
                 record = _compose_question_record(slot, generated, validation, attempt)
                 if state.get("bank_batch_mode") and prev_chunk_index is not None:
                     record["source_chunk_index"] = prev_chunk_index
                 last_record = record
+                variety_diag = None
+                if state.get("bank_batch_mode") and generated:
+                    variety_diag = classify_variety_relation(
+                        active_intent or {},
+                        generated.get("question") or "",
+                        existing_qs,
+                        target_difficulty=slot.target_difficulty,
+                    )
                 stem = " ".join((generated.get("question") or "").split()[:4])
                 prev_intent_words = _extract_intent_words(generated.get("question", ""))
+
+                if validation["passed"]:
+                    # Race-safe duplicate check before spending explanation tokens.
+                    async with lock:
+                        post_texts, post_qs = _duplicate_context(state, approved)
+                        if is_near_duplicate(
+                            generated.get("question", ""),
+                            post_texts,
+                            content_aware=_lex_aware,
+                        ):
+                            validation["passed"] = False
+                            validation["validation_status"] = "rejected"
+                            validation["validation_reasons"] = [
+                                "duplicate or near-duplicate of an existing question"
+                            ]
+                            record["validation_status"] = "rejected"
+                            record["validation_reasons"] = validation["validation_reasons"]
+                            existing_qs = post_qs
+
+                # Bank Batch: core-validated only → generate/validate explanation.
+                if validation["passed"] and state.get("bank_batch_mode"):
+                    record["core_validated"] = True
+                    async with lock:
+                        cost_diagnostics["core_validated_count"] = (
+                            int(cost_diagnostics.get("core_validated_count") or 0) + 1
+                        )
+                    expl_ok, generated, expl_reasons = await _finalize_bank_batch_explanation(
+                        slot,
+                        generated,
+                        state,
+                        excerpt,
+                        cost_diagnostics=cost_diagnostics,
+                        cost_lock=lock,
+                    )
+                    if not expl_ok:
+                        validation["passed"] = False
+                        validation["validation_status"] = "rejected"
+                        validation["validation_reasons"] = [
+                            r if "explanation" in r.lower() else f"explanation is invalid: {r}"
+                            for r in (expl_reasons or ["explanation is invalid"])
+                        ]
+                        generated["explanation"] = ""
+                        record = _compose_question_record(
+                            slot, generated, validation, attempt
+                        )
+                        if prev_chunk_index is not None:
+                            record["source_chunk_index"] = prev_chunk_index
+                        record["core_validated"] = True
+                        last_record = record
+                    else:
+                        record = _compose_question_record(
+                            slot, generated, validation, attempt
+                        )
+                        if prev_chunk_index is not None:
+                            record["source_chunk_index"] = prev_chunk_index
+                        record["core_validated"] = True
+                        last_record = record
 
                 if validation["passed"]:
                     async with lock:
@@ -1504,6 +2690,17 @@ async def fill_slots(state: PaperState) -> dict:
                             record["validation_status"] = "rejected"
                             record["validation_reasons"] = validation["validation_reasons"]
                             existing_qs = post_qs
+                        elif state.get("bank_batch_mode") and not str(
+                            record.get("explanation") or ""
+                        ).strip():
+                            # Safety: never accept/persist without a validated explanation.
+                            validation["passed"] = False
+                            validation["validation_status"] = "rejected"
+                            validation["validation_reasons"] = [
+                                "explanation is invalid"
+                            ]
+                            record["validation_status"] = "rejected"
+                            record["validation_reasons"] = validation["validation_reasons"]
                         else:
                             approved.append(record)
                             if stem:
@@ -1544,6 +2741,29 @@ async def fill_slots(state: PaperState) -> dict:
                             )
                             return
 
+                # Core failed after blind/cognitive (and no explanation was attempted).
+                if (
+                    state.get("bank_batch_mode")
+                    and not validation.get("passed")
+                    and not record.get("core_validated")
+                ):
+                    async with lock:
+                        cost_diagnostics["explanations_avoided_core_failed"] = (
+                            int(
+                                cost_diagnostics.get("explanations_avoided_core_failed")
+                                or 0
+                            )
+                            + 1
+                        )
+                        cost_diagnostics["cores_rejected_before_explanation"] = int(
+                            cost_diagnostics.get("explanations_avoided_core_failed") or 0
+                        )
+                        tag_recent_llm_calls(
+                            cost_diagnostics,
+                            count=3,
+                            outcome="core_rejected_before_explanation",
+                        )
+
                 if stem:
                     async with lock:
                         used_stems.append(stem)
@@ -1557,9 +2777,14 @@ async def fill_slots(state: PaperState) -> dict:
                     reasons,
                     bank_batch_mode=bool(state.get("bank_batch_mode")),
                 )
-                # Step 8: duplicate keeps same intent until repeated exhaustion
+                # Step 8: duplicate keeps same intent until repeated exhaustion.
+                # Academic failure families: first hit → corrective retry; second same
+                # family → retire intent and pick a fresh underrepresented replacement.
                 if intent_planner_on:
                     async with lock:
+                        usage_qs = list(state.get("bank_duplicate_seed_questions") or []) + list(
+                            approved
+                        )
                         if rejection_is_duplicate(reasons) and active_intent:
                             prev_form = question_task_form(
                                 generated.get("question") or ""
@@ -1576,33 +2801,71 @@ async def fill_slots(state: PaperState) -> dict:
                                 intent_diagnostics=intent_diagnostics,
                                 dup_match=dup_match,
                                 target_difficulty=slot.target_difficulty,
+                                usage_questions=usage_qs,
                             )
                             if extra_fb:
                                 feedback = f"{feedback}\n\n{extra_fb}"
-                        elif rejection_is_cognitive(reasons) and active_intent:
-                            feedback = (
-                                f"{feedback}\n\n"
-                                f"{cognitive_form_correction_hint(active_intent, slot.target_difficulty)}"
+                        elif (
+                            variety_counts_toward_intent_retirement(variety_diag)
+                            and active_intent
+                        ):
+                            intent_diagnostics["variety_low_novelty_retries"] = (
+                                int(
+                                    intent_diagnostics.get("variety_low_novelty_retries")
+                                    or 0
+                                )
+                                + 1
                             )
-                        elif rejection_is_distractor_or_answer(reasons) and active_intent:
-                            # Keep same intent; reinforce in feedback
-                            feedback = (
-                                f"{feedback}\n\n"
-                                "INTENT RETRY: Keep the same assigned concept/objective; "
-                                "fix distractors/answer validity only."
+                            active_intent, extra_fb, _retired = apply_duplicate_intent_policy(
+                                active_intent=active_intent,
+                                intent_dup_hits=intent_dup_hits,
+                                intent_retired_ids=intent_retired_ids,
+                                intent_remaining=intent_remaining,
+                                intent_assignments=intent_assignments,
+                                slot_key=slot_key,
+                                intent_diagnostics=intent_diagnostics,
+                                dup_match=dup_match,
+                                target_difficulty=slot.target_difficulty,
+                                usage_questions=usage_qs,
                             )
+                            if extra_fb:
+                                feedback = f"{feedback}\n\n{extra_fb}"
+                        elif active_intent:
+                            family = classify_academic_failure_family(reasons)
+                            if family:
+                                active_intent, extra_fb, _retired = (
+                                    apply_academic_failure_intent_policy(
+                                        active_intent=active_intent,
+                                        failure_family=family,
+                                        intent_family_hits=intent_family_hits,
+                                        intent_retired_ids=intent_retired_ids,
+                                        intent_remaining=intent_remaining,
+                                        intent_assignments=intent_assignments,
+                                        slot_key=slot_key,
+                                        intent_diagnostics=intent_diagnostics,
+                                        target_difficulty=slot.target_difficulty,
+                                        usage_questions=usage_qs,
+                                        rejection_reasons=reasons,
+                                    )
+                                )
+                                if extra_fb:
+                                    feedback = f"{feedback}\n\n{extra_fb}"
                 async with lock:
                     if state.get("bank_batch_mode"):
                         rejected_log.append(
-                            build_rejected_attempt_record(
-                                slot=slot,
-                                attempt=attempt,
-                                generated=generated,
-                                rejection_reasons=reasons,
-                                rewrite_instruction=feedback,
-                                duplicate_match=dup_match,
-                                source_chunk_index=prev_chunk_index,
-                                phase="fill",
+                            attach_variety_diagnostics(
+                                build_rejected_attempt_record(
+                                    slot=slot,
+                                    attempt=attempt,
+                                    generated=generated,
+                                    rejection_reasons=reasons,
+                                    rewrite_instruction=feedback,
+                                    duplicate_match=dup_match,
+                                    source_chunk_index=prev_chunk_index,
+                                    phase="fill",
+                                ),
+                                variety_diag,
+                                active_intent,
                             )
                         )
                     else:
@@ -1657,6 +2920,7 @@ async def fill_slots(state: PaperState) -> dict:
         "bank_intent_remaining": intent_remaining,
         "bank_intent_catalog": list(state.get("bank_intent_catalog") or []),
         "intent_diagnostics": intent_diagnostics,
+        "batch_budget_exhausted_reason": state.get("batch_budget_exhausted_reason"),
     }
 
 
@@ -1884,6 +3148,7 @@ async def refill_slots(state: PaperState) -> dict:
     intent_remaining: List[dict] = list(state.get("bank_intent_remaining") or [])
     intent_retired_ids: set = set()
     intent_dup_hits: Dict[str, int] = {}
+    intent_family_hits: Dict[str, Dict[str, int]] = {}
     slot_prev_rejected_form: Dict[str, str] = {}
     intent_planner_on = bool(bank_batch_mode and is_bank_intent_planner_enabled())
     lock = asyncio.Lock()
@@ -1940,18 +3205,23 @@ async def refill_slots(state: PaperState) -> dict:
                 cache_key=str(intent_ctx.get("cache_key") or ""),
                 book_id=str(intent_ctx.get("book_id") or state.get("book_id") or ""),
                 content_hash=str(intent_ctx.get("content_hash") or ""),
+                cost_diagnostics=cost_diagnostics,
             )
             async with lock:
                 state["bank_intent_catalog"] = new_cat
                 intent_remaining[:] = new_rem
         if not active:
             async with lock:
+                usage_qs = list(state.get("bank_duplicate_seed_questions") or []) + list(
+                    approved
+                )
                 nxt = take_next_unused_intent(
                     intent_remaining,
                     retired_ids=intent_retired_ids,
                     assigned_values=list(intent_assignments.values()),
                     target_difficulty=target_difficulty,
                     diagnostics=intent_diagnostics,
+                    usage_questions=usage_qs,
                 )
                 if nxt:
                     intent_assignments[slot_key] = nxt
@@ -2082,6 +3352,20 @@ async def refill_slots(state: PaperState) -> dict:
 
         async with semaphore:
             for attempt in range(1, max_refill + 1):
+                if bank_batch_mode:
+                    async with lock:
+                        budget_block = bank_batch_generation_budget_block_reason(
+                            state, cost_diagnostics=cost_diagnostics
+                        )
+                        if budget_block:
+                            state["batch_budget_exhausted_reason"] = budget_block
+                            feedback = (
+                                "Batch generation budget exhausted; "
+                                "preserving accepted questions and stopping new attempts."
+                            )
+                            outcome = "needs_manual_review"
+                            break
+                variety_diag = None
                 chunks = chapter_chunks.get(str(slot.chapter), [])
                 if intent_planner_on:
                     active_intent = await _top_up_intents(
@@ -2242,6 +3526,9 @@ async def refill_slots(state: PaperState) -> dict:
                             rejected_log=rejected_log,
                             active_intent=active_intent,
                         )
+                length_retries_before = int(
+                    cost_diagnostics.get("length_limit_retry_attempted") or 0
+                )
                 generated = await _generate_for_slot(
                     slot,
                     state,
@@ -2252,12 +3539,36 @@ async def refill_slots(state: PaperState) -> dict:
                     intent_guidance=intent_guidance,
                     novelty_brief=novelty_brief,
                     forbidden_stems=forbidden_stems,
+                    cost_diagnostics=cost_diagnostics,
                 )
                 if bank_batch_mode:
                     async with lock:
-                        cost_diagnostics["generated_attempts"] = (
-                            int(cost_diagnostics.get("generated_attempts") or 0) + 1
+                        length_extra = max(
+                            0,
+                            int(cost_diagnostics.get("length_limit_retry_attempted") or 0)
+                            - length_retries_before,
                         )
+                        cost_diagnostics["generated_attempts"] = (
+                            int(cost_diagnostics.get("generated_attempts") or 0)
+                            + 1
+                            + length_extra
+                        )
+                        cost_diagnostics["core_generation_calls"] = (
+                            int(cost_diagnostics.get("core_generation_calls") or 0)
+                            + 1
+                            + length_extra
+                        )
+                        cost_diagnostics["core_generation_llm_calls"] = int(
+                            cost_diagnostics.get("core_generation_calls") or 0
+                        )
+                        if length_extra:
+                            cost_diagnostics["length_recovery_extra_calls"] = (
+                                int(
+                                    cost_diagnostics.get("length_recovery_extra_calls")
+                                    or 0
+                                )
+                                + length_extra
+                            )
                         record_bank_cost_stage(
                             cost_diagnostics,
                             "generate",
@@ -2280,6 +3591,23 @@ async def refill_slots(state: PaperState) -> dict:
                         async with lock:
                             bump_bank_early_exit(cost_diagnostics, "structural")
                             bump_reason_counts(diagnostics, self_check_errors)
+                            cost_diagnostics["explanations_avoided_core_failed"] = (
+                                int(
+                                    cost_diagnostics.get(
+                                        "explanations_avoided_core_failed"
+                                    )
+                                    or 0
+                                )
+                                + 1
+                            )
+                            cost_diagnostics["cores_rejected_before_explanation"] = (
+                                int(
+                                    cost_diagnostics.get(
+                                        "explanations_avoided_core_failed"
+                                    )
+                                    or 0
+                                )
+                            )
                             rejected_log.append(
                                 build_rejected_attempt_record(
                                     slot=slot,
@@ -2334,6 +3662,23 @@ async def refill_slots(state: PaperState) -> dict:
                             )
                             bump_bank_early_exit(cost_diagnostics, "intent_drift")
                             bump_reason_counts(diagnostics, [INTENT_DRIFT_REJECTION])
+                            cost_diagnostics["explanations_avoided_core_failed"] = (
+                                int(
+                                    cost_diagnostics.get(
+                                        "explanations_avoided_core_failed"
+                                    )
+                                    or 0
+                                )
+                                + 1
+                            )
+                            cost_diagnostics["cores_rejected_before_explanation"] = (
+                                int(
+                                    cost_diagnostics.get(
+                                        "explanations_avoided_core_failed"
+                                    )
+                                    or 0
+                                )
+                            )
                             rej = build_rejected_attempt_record(
                                 slot=slot,
                                 attempt=MAX_SLOT_ATTEMPTS + attempt,
@@ -2375,15 +3720,25 @@ async def refill_slots(state: PaperState) -> dict:
                         async with lock:
                             bump_bank_early_exit(cost_diagnostics, early_cat)
                     else:
+                        validation_excerpt = _bank_batch_validation_excerpt(
+                            state,
+                            slot,
+                            generated,
+                            chunks,
+                            prev_chunk_index,
+                            excerpt or "",
+                            cost_diagnostics,
+                        )
                         validation = await _validate_slot_independently(
                             slot,
                             generated,
                             state,
-                            excerpt,
+                            validation_excerpt,
                             existing_texts,
                             existing_questions=existing_qs,
                             cost_diagnostics=cost_diagnostics,
                             cost_lock=lock,
+                            assigned_intent=active_intent,
                         )
                 elif is_near_duplicate(
                     generated.get("question", ""),
@@ -2405,6 +3760,7 @@ async def refill_slots(state: PaperState) -> dict:
                     validation = await _validate_slot_independently(
                         slot, generated, state, excerpt, existing_texts,
                         existing_questions=existing_qs,
+                        assigned_intent=active_intent,
                     )
 
                 record = _compose_question_record(
@@ -2413,6 +3769,14 @@ async def refill_slots(state: PaperState) -> dict:
                 if bank_batch_mode and prev_chunk_index is not None:
                     record["source_chunk_index"] = prev_chunk_index
                 last_record = record
+                variety_diag = None
+                if bank_batch_mode and generated:
+                    variety_diag = classify_variety_relation(
+                        active_intent or {},
+                        generated.get("question") or "",
+                        existing_qs,
+                        target_difficulty=slot.target_difficulty,
+                    )
                 stem = " ".join((generated.get("question") or "").split()[:4])
                 new_fp = intent_fingerprint(generated.get("question") or "")
 
@@ -2430,6 +3794,65 @@ async def refill_slots(state: PaperState) -> dict:
                                 "duplicate or near-duplicate of an existing question"
                             ]
                             existing_qs = post_qs
+
+                if validation["passed"] and bank_batch_mode:
+                    record["core_validated"] = True
+                    async with lock:
+                        cost_diagnostics["core_validated_count"] = (
+                            int(cost_diagnostics.get("core_validated_count") or 0) + 1
+                        )
+                    expl_ok, generated, expl_reasons = await _finalize_bank_batch_explanation(
+                        slot,
+                        generated,
+                        state,
+                        excerpt,
+                        cost_diagnostics=cost_diagnostics,
+                        cost_lock=lock,
+                    )
+                    if not expl_ok:
+                        validation["passed"] = False
+                        validation["validation_status"] = "rejected"
+                        validation["validation_reasons"] = [
+                            r if "explanation" in r.lower() else f"explanation is invalid: {r}"
+                            for r in (expl_reasons or ["explanation is invalid"])
+                        ]
+                        generated["explanation"] = ""
+                        record = _compose_question_record(
+                            slot, generated, validation, MAX_SLOT_ATTEMPTS + attempt
+                        )
+                        if prev_chunk_index is not None:
+                            record["source_chunk_index"] = prev_chunk_index
+                        record["core_validated"] = True
+                        last_record = record
+                    else:
+                        record = _compose_question_record(
+                            slot, generated, validation, MAX_SLOT_ATTEMPTS + attempt
+                        )
+                        if prev_chunk_index is not None:
+                            record["source_chunk_index"] = prev_chunk_index
+                        record["core_validated"] = True
+                        last_record = record
+
+                if validation["passed"]:
+                    async with lock:
+                        post_texts, post_qs = _duplicate_context(state, approved)
+                        if is_near_duplicate(
+                            generated.get("question", ""),
+                            post_texts,
+                            content_aware=_lex_aware,
+                        ):
+                            validation["passed"] = False
+                            record["validation_status"] = "rejected"
+                            record["validation_reasons"] = [
+                                "duplicate or near-duplicate of an existing question"
+                            ]
+                            existing_qs = post_qs
+                        elif bank_batch_mode and not str(
+                            record.get("explanation") or ""
+                        ).strip():
+                            validation["passed"] = False
+                            record["validation_status"] = "rejected"
+                            record["validation_reasons"] = ["explanation is invalid"]
                         else:
                             approved.append(record)
                             approved_ids.add(id(record))
@@ -2468,6 +3891,28 @@ async def refill_slots(state: PaperState) -> dict:
                             )
                             return
 
+                if (
+                    bank_batch_mode
+                    and not validation.get("passed")
+                    and not record.get("core_validated")
+                ):
+                    async with lock:
+                        cost_diagnostics["explanations_avoided_core_failed"] = (
+                            int(
+                                cost_diagnostics.get("explanations_avoided_core_failed")
+                                or 0
+                            )
+                            + 1
+                        )
+                        cost_diagnostics["cores_rejected_before_explanation"] = int(
+                            cost_diagnostics.get("explanations_avoided_core_failed") or 0
+                        )
+                        tag_recent_llm_calls(
+                            cost_diagnostics,
+                            count=3,
+                            outcome="core_rejected_before_explanation",
+                        )
+
                 if stem:
                     async with lock:
                         used_stems.append(stem)
@@ -2489,9 +3934,14 @@ async def refill_slots(state: PaperState) -> dict:
                     bank_batch_mode=bank_batch_mode,
                     duplicate_match=dup_match,
                 )
-                # Step 8: duplicate keeps same intent until repeated exhaustion
+                # Step 8: duplicate keeps same intent until repeated exhaustion.
+                # Academic failure families: first hit → corrective retry; second same
+                # family → retire intent and pick a fresh underrepresented replacement.
                 if intent_planner_on:
                     async with lock:
+                        usage_qs = list(state.get("bank_duplicate_seed_questions") or []) + list(
+                            approved
+                        )
                         if rejection_is_duplicate(reasons) and active_intent:
                             prev_form = question_task_form(
                                 generated.get("question") or ""
@@ -2508,20 +3958,55 @@ async def refill_slots(state: PaperState) -> dict:
                                 intent_diagnostics=intent_diagnostics,
                                 dup_match=dup_match,
                                 target_difficulty=slot.target_difficulty,
+                                usage_questions=usage_qs,
                             )
                             if extra_fb:
                                 feedback = f"{feedback}\n\n{extra_fb}"
-                        elif rejection_is_cognitive(reasons) and active_intent:
-                            feedback = (
-                                f"{feedback}\n\n"
-                                f"{cognitive_form_correction_hint(active_intent, slot.target_difficulty)}"
+                        elif (
+                            variety_counts_toward_intent_retirement(variety_diag)
+                            and active_intent
+                        ):
+                            intent_diagnostics["variety_low_novelty_retries"] = (
+                                int(
+                                    intent_diagnostics.get("variety_low_novelty_retries")
+                                    or 0
+                                )
+                                + 1
                             )
-                        elif rejection_is_distractor_or_answer(reasons) and active_intent:
-                            feedback = (
-                                f"{feedback}\n\n"
-                                "INTENT RETRY: Keep the same assigned concept/objective; "
-                                "fix distractors/answer validity only."
+                            active_intent, extra_fb, _retired = apply_duplicate_intent_policy(
+                                active_intent=active_intent,
+                                intent_dup_hits=intent_dup_hits,
+                                intent_retired_ids=intent_retired_ids,
+                                intent_remaining=intent_remaining,
+                                intent_assignments=intent_assignments,
+                                slot_key=slot_key,
+                                intent_diagnostics=intent_diagnostics,
+                                dup_match=dup_match,
+                                target_difficulty=slot.target_difficulty,
+                                usage_questions=usage_qs,
                             )
+                            if extra_fb:
+                                feedback = f"{feedback}\n\n{extra_fb}"
+                        elif active_intent:
+                            family = classify_academic_failure_family(reasons)
+                            if family:
+                                active_intent, extra_fb, _retired = (
+                                    apply_academic_failure_intent_policy(
+                                        active_intent=active_intent,
+                                        failure_family=family,
+                                        intent_family_hits=intent_family_hits,
+                                        intent_retired_ids=intent_retired_ids,
+                                        intent_remaining=intent_remaining,
+                                        intent_assignments=intent_assignments,
+                                        slot_key=slot_key,
+                                        intent_diagnostics=intent_diagnostics,
+                                        target_difficulty=slot.target_difficulty,
+                                        usage_questions=usage_qs,
+                                        rejection_reasons=reasons,
+                                    )
+                                )
+                                if extra_fb:
+                                    feedback = f"{feedback}\n\n{extra_fb}"
                 # Refresh strategy for subsequent attempts using updated avoidance
                 if bank_batch_mode:
                     if prev_intent_fp and new_fp and new_fp != prev_intent_fp:
@@ -2534,15 +4019,19 @@ async def refill_slots(state: PaperState) -> dict:
                         prev_intent_fp = new_fp
                     async with lock:
                         # provisional append for avoidance rebuild
-                        tmp_rec = build_rejected_attempt_record(
-                            slot=slot,
-                            attempt=MAX_SLOT_ATTEMPTS + attempt,
-                            generated=generated,
-                            rejection_reasons=reasons,
-                            rewrite_instruction=feedback,
-                            duplicate_match=dup_match,
-                            source_chunk_index=prev_chunk_index,
-                            phase=f"refill_{refill_phase}",
+                        tmp_rec = attach_variety_diagnostics(
+                            build_rejected_attempt_record(
+                                slot=slot,
+                                attempt=MAX_SLOT_ATTEMPTS + attempt,
+                                generated=generated,
+                                rejection_reasons=reasons,
+                                rewrite_instruction=feedback,
+                                duplicate_match=dup_match,
+                                source_chunk_index=prev_chunk_index,
+                                phase=f"refill_{refill_phase}",
+                            ),
+                            variety_diag,
+                            active_intent,
                         )
                         avoidance = build_slot_avoidance_history(
                             rejected_log + [tmp_rec], qn
@@ -2567,15 +4056,19 @@ async def refill_slots(state: PaperState) -> dict:
                     bump_reason_counts(diagnostics, reasons)
                     if bank_batch_mode:
                         rejected_log.append(
-                            build_rejected_attempt_record(
-                                slot=slot,
-                                attempt=MAX_SLOT_ATTEMPTS + attempt,
-                                generated=generated,
-                                rejection_reasons=reasons,
-                                rewrite_instruction=feedback,
-                                duplicate_match=dup_match,
-                                source_chunk_index=prev_chunk_index,
-                                phase=f"refill_{refill_phase}",
+                            attach_variety_diagnostics(
+                                build_rejected_attempt_record(
+                                    slot=slot,
+                                    attempt=MAX_SLOT_ATTEMPTS + attempt,
+                                    generated=generated,
+                                    rejection_reasons=reasons,
+                                    rewrite_instruction=feedback,
+                                    duplicate_match=dup_match,
+                                    source_chunk_index=prev_chunk_index,
+                                    phase=f"refill_{refill_phase}",
+                                ),
+                                variety_diag,
+                                active_intent,
                             )
                         )
                     else:
@@ -2646,6 +4139,7 @@ async def refill_slots(state: PaperState) -> dict:
         "bank_intent_remaining": intent_remaining,
         "bank_intent_catalog": list(state.get("bank_intent_catalog") or []),
         "intent_diagnostics": intent_diagnostics,
+        "batch_budget_exhausted_reason": state.get("batch_budget_exhausted_reason"),
     }
 
 

@@ -31,7 +31,10 @@ function renderPreview(source: string) {
 }
 
 describe('MarkdownEditor theme', () => {
+  const themeStorage = useThemeStore.persist.getOptions().storage
+
   afterEach(() => {
+    useThemeStore.persist.setOptions({ storage: themeStorage })
     useThemeStore.getState().setTheme('system')
     useThemeStore.getState().setHasHydrated(true)
   })
@@ -58,6 +61,26 @@ describe('MarkdownEditor theme', () => {
 
     act(() => useThemeStore.getState().setHasHydrated(true))
     expect(screen.getByTestId('md-editor')).toHaveAttribute('data-color-mode', 'dark')
+  })
+
+  it('renders after persisted theme hydration fails', async () => {
+    useThemeStore.persist.setOptions({
+      storage: {
+        getItem: () => {
+          throw new Error('malformed theme storage')
+        },
+        setItem: () => undefined,
+        removeItem: () => undefined,
+      },
+    })
+    act(() => useThemeStore.getState().setHasHydrated(false))
+    render(<MarkdownEditor />)
+    expect(screen.queryByTestId('md-editor')).toBeNull()
+
+    await act(async () => {
+      await useThemeStore.persist.rehydrate()
+    })
+    expect(screen.getByTestId('md-editor')).toBeInTheDocument()
   })
 })
 

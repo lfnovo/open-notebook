@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { createJSONStorage, persist } from 'zustand/middleware'
 
 export type Theme = 'light' | 'dark' | 'system'
 
@@ -12,11 +12,13 @@ interface ThemeState {
   getEffectiveTheme: () => 'light' | 'dark'
 }
 
+const themeStorage = createJSONStorage<Pick<ThemeState, 'theme'>>(() => localStorage)
+
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({
       theme: 'system',
-      hasHydrated: false,
+      hasHydrated: !themeStorage,
 
       setHasHydrated: (state: boolean) => {
         set({ hasHydrated: state })
@@ -50,9 +52,10 @@ export const useThemeStore = create<ThemeState>()(
     }),
     {
       name: 'theme-storage',
+      storage: themeStorage,
       partialize: (state) => ({ theme: state.theme }),
-      onRehydrateStorage: () => (state) => {
-        state?.setHasHydrated(true)
+      onRehydrateStorage: (state) => () => {
+        state.setHasHydrated(true)
       }
     }
   )

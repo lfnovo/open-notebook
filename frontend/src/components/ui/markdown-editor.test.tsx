@@ -1,8 +1,16 @@
-import { describe, it, expect } from 'vitest'
-import { render } from '@testing-library/react'
+import { afterEach, describe, it, expect, vi } from 'vitest'
+import { act, render, screen } from '@testing-library/react'
 import MarkdownPreview from '@uiw/react-markdown-preview'
 
-import { PREVIEW_OPTIONS } from './markdown-editor'
+import { useThemeStore } from '@/lib/stores/theme-store'
+import { MarkdownEditor, PREVIEW_OPTIONS } from './markdown-editor'
+
+vi.mock('next/dynamic', () => ({
+  default: () =>
+    function MockMarkdownEditor(props: { 'data-color-mode'?: string }) {
+      return <div data-testid="md-editor" data-color-mode={props['data-color-mode']} />
+    },
+}))
 
 // MarkdownEditor's live preview renders through @uiw/react-markdown-preview,
 // which parses raw HTML in the markdown source into real elements (its `raw`
@@ -21,6 +29,21 @@ function renderPreview(source: string) {
     />
   )
 }
+
+describe('MarkdownEditor theme', () => {
+  afterEach(() => {
+    useThemeStore.getState().setTheme('system')
+  })
+
+  it('follows theme changes without remounting', () => {
+    act(() => useThemeStore.getState().setTheme('light'))
+    render(<MarkdownEditor />)
+    expect(screen.getByTestId('md-editor')).toHaveAttribute('data-color-mode', 'light')
+
+    act(() => useThemeStore.getState().setTheme('dark'))
+    expect(screen.getByTestId('md-editor')).toHaveAttribute('data-color-mode', 'dark')
+  })
+})
 
 describe('MarkdownEditor preview sanitization', () => {
   it('strips a raw <iframe> to a live, embeddable element', () => {

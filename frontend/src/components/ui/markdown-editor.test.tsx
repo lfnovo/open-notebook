@@ -80,7 +80,10 @@ describe('MarkdownEditor theme', () => {
     await act(async () => {
       await useThemeStore.persist.rehydrate()
     })
-    expect(screen.getByTestId('md-editor')).toBeInTheDocument()
+    expect(screen.getByTestId('md-editor')).toHaveAttribute(
+      'data-color-mode',
+      useThemeStore.getState().getEffectiveTheme()
+    )
   })
 })
 

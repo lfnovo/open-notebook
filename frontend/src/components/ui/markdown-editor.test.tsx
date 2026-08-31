@@ -33,14 +33,30 @@ function renderPreview(source: string) {
 describe('MarkdownEditor theme', () => {
   afterEach(() => {
     useThemeStore.getState().setTheme('system')
+    useThemeStore.getState().setHasHydrated(true)
   })
 
   it('follows theme changes without remounting', () => {
+    useThemeStore.getState().setHasHydrated(true)
     act(() => useThemeStore.getState().setTheme('light'))
     render(<MarkdownEditor />)
-    expect(screen.getByTestId('md-editor')).toHaveAttribute('data-color-mode', 'light')
+    const editor = screen.getByTestId('md-editor')
+    expect(editor).toHaveAttribute('data-color-mode', 'light')
 
     act(() => useThemeStore.getState().setTheme('dark'))
+    expect(screen.getByTestId('md-editor')).toBe(editor)
+    expect(editor).toHaveAttribute('data-color-mode', 'dark')
+  })
+
+  it('waits for persisted theme hydration before rendering', () => {
+    act(() => {
+      useThemeStore.getState().setTheme('dark')
+      useThemeStore.getState().setHasHydrated(false)
+    })
+    render(<MarkdownEditor />)
+    expect(screen.queryByTestId('md-editor')).toBeNull()
+
+    act(() => useThemeStore.getState().setHasHydrated(true))
     expect(screen.getByTestId('md-editor')).toHaveAttribute('data-color-mode', 'dark')
   })
 })

@@ -5,7 +5,9 @@ export type Theme = 'light' | 'dark' | 'system'
 
 interface ThemeState {
   theme: Theme
+  hasHydrated: boolean
   setTheme: (theme: Theme) => void
+  setHasHydrated: (state: boolean) => void
   getSystemTheme: () => 'light' | 'dark'
   getEffectiveTheme: () => 'light' | 'dark'
 }
@@ -14,6 +16,11 @@ export const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({
       theme: 'system',
+      hasHydrated: false,
+
+      setHasHydrated: (state: boolean) => {
+        set({ hasHydrated: state })
+      },
       
       setTheme: (theme: Theme) => {
         set({ theme })
@@ -43,17 +50,21 @@ export const useThemeStore = create<ThemeState>()(
     }),
     {
       name: 'theme-storage',
-      partialize: (state) => ({ theme: state.theme })
+      partialize: (state) => ({ theme: state.theme }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true)
+      }
     }
   )
 )
 
 // Hook for components to use theme
 export function useTheme() {
-  const { theme, setTheme, getEffectiveTheme } = useThemeStore()
+  const { theme, hasHydrated, setTheme, getEffectiveTheme } = useThemeStore()
   
   return {
     theme,
+    hasHydrated,
     setTheme,
     effectiveTheme: getEffectiveTheme(),
     isDark: getEffectiveTheme() === 'dark'

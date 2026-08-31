@@ -229,6 +229,8 @@ async def repo_insert(
         data = [data]
 
     results = []
+    if batch_size <= 0:
+        raise ValueError("batch_size must be greater than zero")
     for i in range(0, len(data), batch_size):
         chunk = data[i : i + batch_size]
         try:

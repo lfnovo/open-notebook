@@ -485,6 +485,7 @@ export const plPL = {
     searchDesc: "Przeszukaj swoją bazę wiedzy pod kątem konkretnych słów kluczowych lub pojęć",
     enterSearchPlaceholder: "Wpisz zapytanie wyszukiwania...",
     pressToSearch: "Naciśnij Enter, aby wyszukać",
+    searchCoverage: "Wyszukiwanie tekstowe znajduje tytuły i treść źródeł, wglądy oraz tytuły i treść notatek.",
     searchType: "Typ wyszukiwania",
     vectorSearchWarning: "Wyszukiwanie wektorowe wymaga modelu osadzania. Dostępne jest tylko wyszukiwanie tekstowe.",
     textSearch: "Wyszukiwanie tekstowe",

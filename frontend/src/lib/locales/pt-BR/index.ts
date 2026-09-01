@@ -485,6 +485,7 @@ export const ptBR = {
     searchDesc: "Busque em sua base de conhecimento por palavras-chave ou conceitos específicos",
     enterSearchPlaceholder: "Digite sua busca...",
     pressToSearch: "Pressione Enter para buscar",
+    searchCoverage: "A busca por texto encontra títulos e conteúdo das fontes, insights e títulos e conteúdo das notas.",
     searchType: "Tipo de Busca",
     vectorSearchWarning: "Busca vetorial requer um modelo de embedding. Apenas busca por texto está disponível.",
     textSearch: "Busca por Texto",

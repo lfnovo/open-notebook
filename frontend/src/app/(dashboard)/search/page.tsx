@@ -350,6 +350,7 @@ export default function SearchPage() {
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">{t('searchPage.pressToSearch')}</p>
+                  <p className="text-xs text-muted-foreground">{t('searchPage.searchCoverage')}</p>
                 </div>
 
                 {/* Search Options */}

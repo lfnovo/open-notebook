@@ -485,6 +485,7 @@ export const zhTW = {
     searchDesc: "在您的知識庫中搜尋特定的關鍵字或概念",
     enterSearchPlaceholder: "輸入搜尋查詢...",
     pressToSearch: "按 Enter 鍵搜尋",
+    searchCoverage: "文字搜尋會比對來源標題與內容、洞察，以及筆記標題與內容。",
     searchType: "搜尋類型",
     vectorSearchWarning: "向量搜尋需要嵌入模型。目前僅文本搜尋可用。",
     textSearch: "文本搜尋",

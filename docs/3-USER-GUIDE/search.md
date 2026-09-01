@@ -64,6 +64,14 @@ Ranked by how close together they are
 - Synonyms: searching "large" won't find "big"
 - Concepts: searching "similarity" won't find "likeness"
 
+**Content searched:**
+Text search looks through:
+- **Source titles** — matching keywords in source names
+- **Source content** — the full text and its chunks
+- **Insights** — content generated from sources (e.g., dense summaries)
+- **Note titles** — matching keywords in note names
+- **Note content** — the body of your notes
+
 ---
 
 ### Search Type 2: VECTOR SEARCH (Semantic/Concept Matching)
@@ -106,6 +114,14 @@ But all are semantically related
 - Exact keywords: if you search a rare word, vector search might miss it
 - Specific numbers: "1994" vs "1993" are semantically different
 - Technical jargon: "LSTM" and "RNN" are different even if related
+
+**Content searched:**
+Vector search compares your query against embeddings of:
+- **Source content** — source chunks (embeddings)
+- **Insights** — content generated from sources (embeddings)
+- **Note content** — the body of your notes (embeddings)
+
+Vector search works on embedded content only, so source and note *titles* are not matched semantically.
 
 ---
 

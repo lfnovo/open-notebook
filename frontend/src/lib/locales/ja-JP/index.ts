@@ -485,6 +485,7 @@ export const jaJP = {
     searchDesc: "特定のキーワードやコンセプトでナレッジベース内を検索",
     enterSearchPlaceholder: "検索クエリを入力...",
     pressToSearch: "Enterで検索",
+    searchCoverage: "テキスト検索は、ソースのタイトルとコンテンツ、インサイト、ノートのタイトルとコンテンツを検索します。",
     searchType: "検索タイプ",
     vectorSearchWarning: "ベクトル検索にはEmbeddingモデルが必要です。テキスト検索のみ利用可能です。",
     textSearch: "テキスト検索",

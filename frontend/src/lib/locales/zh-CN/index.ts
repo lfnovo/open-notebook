@@ -485,6 +485,7 @@ export const zhCN = {
     searchDesc: "在您的知识库中搜索特定的关键字或概念",
     enterSearchPlaceholder: "输入搜索查询...",
     pressToSearch: "按 Enter 键搜索",
+    searchCoverage: "文本搜索会匹配来源标题和内容、洞察，以及笔记标题和内容。",
     searchType: "搜索类型",
     vectorSearchWarning: "向量搜索需要嵌入模型。目前仅文本搜索可用。",
     textSearch: "文本搜索",

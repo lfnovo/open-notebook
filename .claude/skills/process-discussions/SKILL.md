@@ -46,7 +46,14 @@ gh api graphql -f query='
 ```
 
 (Category `Ideas` = `DIC_kwDONDsQ184CjkD_`; `Feedback Requests` = `DIC_kwDONDsQ184DBrfp`.
-Repo id: `R_kgDONDsQ1w`.)
+Repo id: `R_kgDONDsQ1w`. These are GitHub GraphQL node ids for lfnovo/open-notebook;
+they change if a category is recreated or the skill is used on a fork. Regenerate:
+
+```bash
+gh api graphql -f query='{ repository(owner: "lfnovo", name: "open-notebook") {
+  id discussionCategories(first: 20) { nodes { id name } } } }'
+```
+)
 
 Split into cohorts: post-Bet-#1 form entries (`[Idea]:` prefix) vs. pre-form
 legacy. Note authors with multiple entries (their items often interconnect)

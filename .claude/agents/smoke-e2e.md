@@ -256,7 +256,6 @@ curl -s -X POST http://localhost:5055/api/search/ask/simple \
   -H "Content-Type: application/json" \
   -d '{
     "question": "What is the Turing test and how does it relate to AI?",
-    "notebook_id": "<notebook_id>",
     "strategy_model": "<default_chat_model_id>",
     "answer_model": "<default_chat_model_id>",
     "final_answer_model": "<default_chat_model_id>"
@@ -264,6 +263,8 @@ curl -s -X POST http://localhost:5055/api/search/ask/simple \
 ```
 
 Verify: Response contains `answer` field with a synthesized answer, and `question` field echoing the original question.
+
+Note: ask is **global by design** — `AskRequest` (api/models.py) has no `notebook_id`; an unknown field is silently ignored by Pydantic, so never send one and never assume the answer is scoped to the smoke-test notebook (see 1.9).
 
 ### 1.7 Transformation -> Note
 

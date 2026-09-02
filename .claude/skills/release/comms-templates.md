@@ -29,8 +29,10 @@ Tone: honest and specific. Say what protections do AND what stays supported
    `git log <last-tag>..<tag> --pretty='%an <%ae>' | sort | uniq -c | sort -rn`
 2. Map every non-obvious name to a GitHub handle via their PR:
    `gh pr view <n> --json author --jq .author.login`
-   (PR list: `gh pr list --state merged --limit 100 --json number,author,mergedAt,title`
-   filtered to merges after the previous tag — beware PRs merged before the
+   (PR list: `gh pr list --state merged --limit 1000 --search "merged:>=<prev-tag-date>" --json number,author,mergedAt,title`
+   — filter by merge date server-side; a small `--limit` caps the list *before*
+   any date filtering and silently drops contributors. Then exclude PRs merged
+   before the previous tag — beware PRs merged before the
    previous tag was cut appearing in date filters.)
 3. One bullet per contributor: **@handle** — what they shipped, with refs.
 4. Close with a collective thank-you to issue reporters.

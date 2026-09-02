@@ -14,10 +14,12 @@ gh run watch <run-id> --exit-status                        # background it
 ## Verify pushed manifests
 
 ```bash
-for ref in lfnovo/open_notebook:<ver> lfnovo/open_notebook:<ver>-single ghcr.io/lfnovo/open-notebook:<ver>; do
+for ref in lfnovo/open_notebook:<ver> lfnovo/open_notebook:<ver>-single ghcr.io/lfnovo/open-notebook:<ver> ghcr.io/lfnovo/open-notebook:<ver>-single; do
   docker manifest inspect "$ref" | python3 -c "import json,sys; d=json.load(sys.stdin); print(sorted(set(m['platform']['architecture'] for m in d.get('manifests',[]) if m['platform']['architecture']!='unknown')))"
 done
-# expect ['amd64', 'arm64'] for each; repeat with v1-latest after publication
+# expect ['amd64', 'arm64'] for all four (`make docker-push` publishes both
+# registries × {plain, -single}); repeat with v1-latest and v1-latest-single
+# on both registries after publication
 ```
 
 ## RC stack with a copy of the owner's dev data (Phase 6)

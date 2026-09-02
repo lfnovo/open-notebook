@@ -13,7 +13,9 @@ is Bet #1). The maintainer (Luis) is the **decision owner**: every outcome
 and reply is approved by him before posting. You prepare; he decides.
 
 This process was calibrated by hand on 2026-08-16 across 10 Ideas
-(#1210–#1265). The patterns below are ratified practice, not theory.
+(#1210–#1265) and re-run on 2026-09-02 (6 follow-ups + 3 new ideas), which
+added the `incubating` status and the pull rule. The patterns below are
+ratified practice, not theory.
 
 **Ground rules:**
 
@@ -93,11 +95,26 @@ Vocabulary (from the essay's qualification stage, as exercised):
 | Outcome | When | Reply must include |
 |---|---|---|
 | **exploring** | Real, aligned problem; open solution space | Sharpening questions that actually shape the design |
-| **accepted → graduated** | Small, well-defined, one right answer | Issue(s) opened immediately — see graduation rules |
+| **incubating** | Direction decided, *timing* open (waits on vision fit, capacity, or a champion) | The settled spec, what it waits on, "this Discussion stays the home" |
+| **accepted → graduated** | Someone will build it now: a builder (maintainer or champion) + closed spec | Issue(s) opened immediately — see graduation rules |
 | **parked until champion** | Valid but needs a community owner (e.g. packaging channels) | Explicit return condition + how to volunteer |
 | **combine** | Duplicate/facet of an existing theme | Link to the canonical home |
 | **answer** | Already exists / documented | The answer, plus where docs fell short |
 | **bug** | Reproducible defect | Graduate straight to a bug Issue |
+
+**Graduation is pull, not push** (ratified 2026-09-02). An Issue is born
+when someone is going to build it — never because the idea became clear.
+`ready` is a promise of execution; filling it with well-discussed items and
+no builder recreates the stale-backlog problem. A discussed-but-unscheduled
+idea is **incubating** and the Discussion remains its home. Exceptions that
+still graduate immediately: verified **bugs**, and small items the
+maintainer will do next.
+
+**Close on `answer`.** When the outcome is `answer` and the need has a
+better home (an existing Issue, upstream, or "not planned"), post the reply
+and close the Discussion as resolved (`closeDiscussion(reason: RESOLVED)`);
+an open thread with a final answer clutters the queue. Anyone can reopen
+with a new argument.
 
 **Graduation rules** (for `accepted → graduated` and `bug`):
 - Issue gets: Context (with Discussion origin link), Expected outcome,
@@ -137,6 +154,10 @@ Structure that worked, in order:
    testers get test asks, implementers get building invites, design
    volunteers get design questions.
 7. Close with `Status: **<outcome>**` plus a one-line summary of the routing.
+8. When the answer is **no**, say it in the first paragraph with the reasons
+   (e.g. "the runtime is about to change", "estimates for local models
+   don't hold") — never let a decline hide behind exploration questions.
+   Acknowledge real work (a prototype) without letting it change the answer.
 
 Honesty rules: no feature promises, no timelines ("no commitment on timing
 yet"); constraints stated with their reasons (link the PDR); "the door is

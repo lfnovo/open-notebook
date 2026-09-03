@@ -92,11 +92,24 @@ export function getApiErrorMessage(
 export function formatApiError(error: unknown): string {
   if (typeof error === 'string') return error;
   
-  const err = error as { response?: { data?: { detail?: string } }, detail?: string, message?: string };
-  const detail = err?.response?.data?.detail || err?.detail || err?.message;
+  const err = error as {
+    response?: { data?: { detail?: unknown } }
+    detail?: unknown
+    message?: string
+  };
+  const detail = err?.response?.data?.detail ?? err?.detail ?? err?.message;
   
   if (typeof detail === 'string') {
-    return detail; // We'll handle the actual translation using the key in the hook/component
+    return detail;
+  }
+
+  // FastAPI / Pydantic validation errors return detail as an array of
+  // {loc, msg, type} objects. Surface the first message so UI toasts are not blank.
+  if (Array.isArray(detail) && detail.length > 0) {
+    const first = detail[0] as { msg?: unknown }
+    if (typeof first?.msg === 'string' && first.msg.trim()) {
+      return first.msg
+    }
   }
   
   return "An unexpected error occurred";

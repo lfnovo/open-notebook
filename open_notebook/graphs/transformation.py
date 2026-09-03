@@ -1,7 +1,11 @@
+import os
+from functools import cache
+
 from ai_prompter import Prompter
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
+from loguru import logger
 from typing_extensions import TypedDict
 
 from open_notebook.ai.provision import provision_langchain_model
@@ -11,6 +15,36 @@ from open_notebook.exceptions import OpenNotebookError
 from open_notebook.utils import clean_thinking_content
 from open_notebook.utils.error_classifier import classify_error
 from open_notebook.utils.text_utils import extract_text_content
+
+DEFAULT_TRANSFORM_MAX_TOKENS = 8192
+TRANSFORM_MAX_TOKENS_ENV_VAR = "OPEN_NOTEBOOK_TRANSFORM_MAX_TOKENS"
+
+
+@cache
+def get_transform_max_tokens() -> int:
+    """Read the configured output budget for transformation / insight generation."""
+    raw = os.environ.get(TRANSFORM_MAX_TOKENS_ENV_VAR)
+    if raw is None:
+        return DEFAULT_TRANSFORM_MAX_TOKENS
+
+    raw = raw.strip()
+    try:
+        max_tokens = int(raw)
+    except ValueError:
+        logger.warning(
+            f"{TRANSFORM_MAX_TOKENS_ENV_VAR}={raw!r} is not a valid integer; "
+            f"using the default of {DEFAULT_TRANSFORM_MAX_TOKENS}"
+        )
+        return DEFAULT_TRANSFORM_MAX_TOKENS
+
+    if max_tokens <= 0:
+        logger.warning(
+            f"{TRANSFORM_MAX_TOKENS_ENV_VAR}={raw!r} is not positive; "
+            f"using the default of {DEFAULT_TRANSFORM_MAX_TOKENS}"
+        )
+        return DEFAULT_TRANSFORM_MAX_TOKENS
+
+    return max_tokens
 
 
 class TransformationState(TypedDict):
@@ -48,7 +82,7 @@ async def run_transformation(state: dict, config: RunnableConfig) -> dict:
             str(payload),
             config.get("configurable", {}).get("model_id"),
             "transformation",
-            max_tokens=8192,
+            max_tokens=get_transform_max_tokens(),
         )
 
         response = await chain.ainvoke(payload)

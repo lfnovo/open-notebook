@@ -330,3 +330,9 @@ If you have these variables configured from a previous installation, click the *
 | `AZURE_OPENAI_API_KEY_EMBEDDING` | Azure OpenAI | Configure per-service in credential |
 | `AZURE_OPENAI_ENDPOINT_EMBEDDING` | Azure OpenAI | Configure per-service in credential |
 | `AZURE_OPENAI_API_VERSION_EMBEDDING` | Azure OpenAI | Configure per-service in credential |
+
+### `OPEN_NOTEBOOK_TRANSFORM_MAX_TOKENS`
+
+Maximum output tokens for source insights / transformations. Default: `8192`.
+Invalid or non-positive values fall back to `8192`.
+

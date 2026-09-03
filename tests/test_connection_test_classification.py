@@ -24,6 +24,10 @@ GOOGLE_RETIRED_MODEL_404 = (
     "404 models/gemini-2.0-flash is not found for API version v1beta, "
     "or is not supported for generateContent."
 )
+ANTHROPIC_RETIRED_HAIKU_404 = (
+    "Error code: 404 - {'type': 'error', 'error': {'type': 'not_found_error', "
+    "'message': 'model: claude-3-haiku-20240307'}, 'request_id': 'req_test'}"
+)
 GOOGLE_DEPRECATED = "400 Model gemini-1.5-pro has been deprecated."
 GOOGLE_BAD_KEY_401 = "401 API key not valid. Please pass a valid API key."
 GOOGLE_PERM_403 = "403 Permission denied on resource project."
@@ -51,11 +55,17 @@ class TestConnectionFailureReason:
 
     @pytest.mark.parametrize(
         "msg",
-        [GOOGLE_RETIRED_MODEL_404, GOOGLE_DEPRECATED, GOOGLE_QUOTA_429],
+        [GOOGLE_RETIRED_MODEL_404, GOOGLE_DEPRECATED, GOOGLE_QUOTA_429, ANTHROPIC_RETIRED_HAIKU_404],
     )
     def test_provider_reached_returns_none(self, msg):
         # A model/quota problem came back FROM the provider — not a failure.
         assert _connection_failure_reason(msg) is None
+
+    def test_model_id_date_suffix_is_not_a_403(self):
+        # Regression for #1282: "20240307" contains the digits 403 but is not
+        # an HTTP 403 permission failure.
+        assert _connection_failure_reason(ANTHROPIC_RETIRED_HAIKU_404) is None
+        assert _connection_failure_reason(GOOGLE_PERM_403) is not None
 
 
 class TestRateLimitDetection:
@@ -84,6 +94,15 @@ class TestClassifyProviderTestError:
         success, message = classify_provider_test_error(GOOGLE_RETIRED_MODEL_404)
         assert success is True
         assert "test model unavailable" in message
+
+    def test_anthropic_retired_haiku_with_403_date_suffix_is_success(self):
+        # #1282: Anthropic's not_found_error for claude-3-haiku-20240307 must
+        # not be misclassified as "lacks required permissions" because the
+        # model id embeds the digit sequence 403.
+        success, message = classify_provider_test_error(ANTHROPIC_RETIRED_HAIKU_404)
+        assert success is True
+        assert "test model unavailable" in message
+        assert "permissions" not in message
 
     def test_deprecated_model_is_success(self):
         success, _ = classify_provider_test_error(GOOGLE_DEPRECATED)

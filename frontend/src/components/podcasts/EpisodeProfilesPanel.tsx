@@ -115,6 +115,9 @@ export function EpisodeProfilesPanel({
               profile.speaker_config
             )
             const unconfigured = needsModelSetup(profile)
+            const voiceModelLabel = speakerSummary?.voice_model
+              ? (modelNameMap[speakerSummary.voice_model] ?? speakerSummary.voice_model)
+              : null
 
             return (
               <Card key={profile.id}>
@@ -237,16 +240,20 @@ export function EpisodeProfilesPanel({
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         {t('podcasts.speakerProfile')}
                       </p>
-                      <div className="flex items-center gap-2 text-foreground">
-                        <Users className="h-4 w-4" />
+                      <div className="flex flex-wrap items-center gap-2 text-foreground">
+                        <Users className="h-4 w-4 shrink-0" />
                         <span>
                           {profile.speaker_config_name ??
                             speakerSummary?.name ??
                             t('podcasts.notConfigured')}
                         </span>
-                        {speakerSummary?.voice_model ? (
-                          <Badge variant="outline" className="text-xs">
-                            {modelNameMap[speakerSummary.voice_model] ?? speakerSummary.voice_model}
+                        {voiceModelLabel ? (
+                          <Badge
+                            variant="outline"
+                            className="min-w-0 max-w-full shrink text-xs"
+                            title={voiceModelLabel}
+                          >
+                            <span className="truncate">{voiceModelLabel}</span>
                           </Badge>
                         ) : null}
                       </div>

@@ -1,0 +1,23 @@
+open_notebook/graphs/source.py
+  s_c1bd782d0ec3da::t_88f5d120f92783 20-21,34-35,93-94
+tests/test_graphs.py
+  s_c1bd782d0ec3da::t_9859efa02820a6 406,432-475,504,553,588-590,616-618
+open_notebook/domain/content_settings.py
+  s_c1bd782d0ec3da::t_88f5d120f92783 45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "9fb2600b9f59f728f7563657154b78b6a86ab542",
+  "prompts": {},
+  "sessions": {
+    "s_c1bd782d0ec3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d04bd113-987d-49e9-af38-12cb4d8b30bb",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

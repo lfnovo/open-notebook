@@ -15,6 +15,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Community contribution intake now separates exploration from execution: feature requests, product/design/architecture ideas and contribution proposals start in GitHub Discussions, while Issues are reserved for reproducible bugs and maintainer-approved work items. The Issue chooser routes contributors accordingly, a structured Ideas Discussion form starts from user goals and outcomes, and the contributor/maintainer docs plus PR template now describe the Discussion → Issue → PR graduation path (#1204).
 - Release image gate gained a `probe` scenario (`make release-test` runs it as part of `all`): container-level checks that a Python test suite can't cover because they depend on the shipped image's process supervision — `OPEN_NOTEBOOK_WORKER_MAX_TASKS` reaching the in-image worker (the supervisord `sh -c` expansion), and the worker surviving startup with `HTTP_PROXY` set while a user's `NO_PROXY` value is preserved (the internal SurrealDB websocket not being tunneled). Both were manual probes during the v1.14.0 release; they now run automatically. Release-process docs gained the post-tag re-cut sequence and a note on never leaving the version bump uncommitted (v1.14.0 retro)
 
+### Fixed
+- **Source Chat streaming no longer drops or corrupts tokens.** The SSE reader decoded each network chunk in isolation, so a \`data:\` line split across two chunks was silently discarded and a multibyte character straddling a chunk boundary rendered as \`�\`. The reader now keeps a carry-over buffer and streaming decoder, matching the pattern Ask already used (#1289)
+- **Markdown editor follows the app theme.** The note editor's preview/edit surface was hardcoded to light mode, making it unreadable in dark mode; it now tracks the effective theme, gated on store hydration so there is no light flash before the persisted theme loads (#1294, #1268)
+- **Bullet and numbered list markers are visible again in the note editor preview.** Tailwind v4's preflight reset removed list markers that the preview library relies on the browser default for; two low-specificity rules restore them without affecting nested-list numbering or task lists (#1300, #1299)
+- Long voice-model names no longer overflow the speaker-profile card in Podcasts → Episode Profiles; the badge truncates with a tooltip (#1259, #1196)
+- Theme, Language and Sign Out actions in the expanded sidebar footer are left-aligned again (the Theme button was missing the icon padding the others get) (#1288)
+
+### Changed
+- Search page explains what each mode covers: text search matches source titles and full text, insights, and note titles and content, while vector search matches embedded source chunks, insights and note content only. Documented in \`docs/3-FEATURES/search.md\` and shown as a mode-aware hint under the search box, translated across all 14 locales (#1295, #1267)
+- README star-history chart points at a working renderer; the previous endpoint had been returning a "GitHub restricted access to star data" placeholder (#1262)
+
 ## [1.14.0] - 2026-07-20
 
 ### Added

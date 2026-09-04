@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render } from '@testing-library/react'
 import MarkdownPreview from '@uiw/react-markdown-preview'
 
@@ -56,6 +56,37 @@ describe('MarkdownEditor preview sanitization', () => {
     const { container } = renderPreview('Inline math $x^2 + y^2 = z^2$')
     expect(container.querySelector('.katex')).not.toBeNull()
     expect(container.querySelector('.katex-mathml math')).not.toBeNull()
+  })
+
+  describe('KATEX_OPTIONS unknownSymbol suppression', () => {
+    // KaTeX's default strict mode warns on every Unicode character outside
+    // its symbol table. AI-generated content routinely has one inside a
+    // legitimate single-dollar math span (this project's prompts steer
+    // models to emit inline math as $...$) - e.g. an en-dash in a price
+    // range. That specific warning is intentionally suppressed; every other
+    // strict warning is not, so a future edit that widens the ignore list
+    // (or removes it) shows up here instead of silently regressing.
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    it('does not warn on the em/en-dash-in-price-range pattern that motivated this fix', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      renderPreview('Price range: $5 – $10')
+      const unknownSymbolWarnings = warn.mock.calls.filter(([msg]) =>
+        typeof msg === 'string' && msg.includes('[unknownSymbol]')
+      )
+      expect(unknownSymbolWarnings).toHaveLength(0)
+    })
+
+    it('still warns on a different strict violation (comment with no terminating newline)', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      renderPreview('Still checked: $x^2 %comment$')
+      const commentWarnings = warn.mock.calls.filter(([msg]) =>
+        typeof msg === 'string' && msg.includes('[commentAtEnd]')
+      )
+      expect(commentWarnings.length).toBeGreaterThan(0)
+    })
   })
 
   it('still syntax-highlights fenced code blocks', () => {

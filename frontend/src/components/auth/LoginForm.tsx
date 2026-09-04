@@ -90,7 +90,7 @@ export function LoginForm() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-start gap-2 text-red-600 text-sm">
+              <div className="flex items-start gap-2 text-destructive text-sm">
                 <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
                   {error || t('auth.connectErrorHint')}
@@ -159,7 +159,7 @@ export function LoginForm() {
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 text-red-600 text-sm">
+              <div className="flex items-center gap-2 text-destructive text-sm">
                 <AlertCircle className="h-4 w-4" />
                 {error}
               </div>

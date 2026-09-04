@@ -40,14 +40,14 @@ export function ContextToggle<TMode extends ContextMode = ContextMode>({
     insights: {
       icon: Lightbulb,
       label: t('common.contextModes.insights'),
-      color: 'text-amber-600',
-      bgColor: 'hover:bg-amber-50'
+      color: 'text-ctx-insights',
+      bgColor: 'hover:bg-ctx-insights-tint'
     },
     full: {
       icon: FileText,
       label: t('common.contextModes.full'),
-      color: 'text-primary',
-      bgColor: 'hover:bg-primary/10'
+      color: 'text-ctx-full',
+      bgColor: 'hover:bg-ctx-full-tint'
     }
   } as const
   const config = MODE_CONFIG[mode]

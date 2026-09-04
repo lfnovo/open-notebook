@@ -130,7 +130,10 @@ docs/custom_gpt
 doc_exports/
 
 specs/
-.claude
+# .claude: personal state stays local; skills and agents are shared project tooling
+.claude/*
+!.claude/skills
+!.claude/agents
 .sisyphus
 
 .playwright-mcp/

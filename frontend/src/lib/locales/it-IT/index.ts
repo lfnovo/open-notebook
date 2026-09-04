@@ -485,6 +485,8 @@ export const itIT = {
     searchDesc: "Cerca nella tua base di conoscenza parole chiave o concetti specifici",
     enterSearchPlaceholder: "Inserisci la query di ricerca...",
     pressToSearch: "Premi invio per cercare",
+    searchCoverageText: "La ricerca testuale trova titoli e contenuti delle fonti, approfondimenti e titoli e contenuti delle note.",
+    searchCoverageVector: "La ricerca vettoriale trova contenuti delle fonti, approfondimenti e contenuti delle note per similarità semantica. I titoli non vengono confrontati.",
     searchType: "Tipo di ricerca",
     vectorSearchWarning: "La ricerca vettoriale richiede un modello di embedding. Solo la ricerca testuale è disponibile.",
     textSearch: "Ricerca testuale",

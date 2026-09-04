@@ -42,6 +42,6 @@ class ContentSettings(RecordModel):
         ),
     )
     youtube_preferred_languages: Optional[List[str]] = Field(
-        ["en", "pt", "es", "de", "nl", "en-GB", "fr", "de", "hi", "ja"],
+        ["en", "pt", "es", "de", "nl", "en-GB", "fr", "hi", "ja", "zh-CN", "zh-TW"],
         description="Preferred languages for YouTube transcripts",
     )

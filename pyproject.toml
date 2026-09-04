@@ -22,7 +22,7 @@ dependencies = [
     "langchain-text-splitters>=1.1.2,<2",
     "langgraph>=1.0.5,<2",
     "tiktoken>=0.12.0",
-    "langgraph-checkpoint-sqlite>=3.0.1,<4",
+    "langgraph-checkpoint-sqlite>=3.1.1,<4",
     # The langchain-* provider packages below have no direct imports in this
     # codebase: they are runtime requirements of esperanto's dynamic
     # `to_langchain()` (esperanto declares them only as optional extras).

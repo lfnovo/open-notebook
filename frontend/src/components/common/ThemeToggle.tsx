@@ -25,12 +25,12 @@ export function ThemeToggle({ iconOnly = false }: ThemeToggleProps) {
         <Button 
           variant={iconOnly ? "ghost" : "outline"} 
           size={iconOnly ? "icon" : "default"} 
-          className={iconOnly ? "h-9 w-full sidebar-menu-item" : "w-full justify-start gap-2 sidebar-menu-item"}
+          className={iconOnly ? "h-9 w-full sidebar-menu-item" : "w-full justify-start gap-2 px-3 sidebar-menu-item"}
         >
-          <div className="relative h-[1.2rem] w-[1.2rem]">
-            <Sun className="absolute inset-0 h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute inset-0 h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          </div>
+          <span className="relative size-4">
+            <Sun className="absolute inset-0 size-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute inset-0 size-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          </span>
           {!iconOnly && <span>{t('common.theme')}</span>}
           <span className="sr-only">{t('navigation.theme')}</span>
         </Button>

@@ -485,6 +485,8 @@ export const caES = {
     searchDesc: "Cerca a la teva base de coneixement paraules clau o conceptes específics",
     enterSearchPlaceholder: "Introdueix la consulta de cerca...",
     pressToSearch: "Prem Retorn per cercar",
+    searchCoverageText: "La cerca de text troba títols i contingut de les fonts, anàlisis i títols i contingut de les notes.",
+    searchCoverageVector: "La cerca vectorial troba contingut de les fonts, anàlisis i contingut de les notes per similitud semàntica. Els títols no es comparen.",
     searchType: "Tipus de cerca",
     vectorSearchWarning: "La cerca vectorial requereix un model d'incrustació. Només està disponible la cerca de text.",
     textSearch: "Cerca de text",

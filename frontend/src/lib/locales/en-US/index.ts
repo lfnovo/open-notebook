@@ -483,6 +483,8 @@ export const enUS = {
     searchDesc: "Search your knowledge base for specific keywords or concepts",
     enterSearchPlaceholder: "Enter search query...",
     pressToSearch: "Press Enter to search",
+    searchCoverageText: "Text search matches source titles and content, insights, and note titles and content.",
+    searchCoverageVector: "Vector search matches source content, insights, and note content by semantic similarity. Titles are not matched.",
     searchType: "Search Type",
     vectorSearchWarning: "Vector search requires an embedding model. Only text search is available.",
     textSearch: "Text Search",

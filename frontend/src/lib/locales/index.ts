@@ -12,6 +12,7 @@ import { esES } from './es-ES';
 import { deDE } from './de-DE';
 import { plPL } from './pl-PL';
 import { trTR } from './tr-TR';
+import { arSA } from './ar-SA';
 
 export const resources = {
   'zh-CN': { translation: zhCN },
@@ -28,6 +29,8 @@ export const resources = {
   'de-DE': { translation: deDE },
   'pl-PL': { translation: plPL },
   'tr-TR': { translation: trTR },
+  'ar-SA': { translation: arSA },
+
 } as const;
 
 export type TranslationKeys = typeof enUS;
@@ -54,6 +57,7 @@ export const languages: Language[] = [
   { code: 'es-ES', label: 'Español' },
   { code: 'de-DE', label: 'Deutsch' },
   { code: 'pl-PL', label: 'Polski' },
+  { code: 'ar-SA', label: 'العربية' },
 ];
 
-export { zhCN, enUS, zhTW, ptBR, jaJP, itIT, frFR, ruRU, bnIN, caES, esES, deDE, plPL, trTR };
+export { zhCN, enUS, zhTW, ptBR, jaJP, itIT, frFR, ruRU, bnIN, caES, esES, deDE, plPL, trTR, arSA };

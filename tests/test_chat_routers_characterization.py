@@ -14,7 +14,7 @@ DB access and LangGraph state are mocked following the style of
 tests/test_crud_404.py.
 """
 
-import time
+import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -346,17 +346,20 @@ async def test_stream_source_chat_emits_keepalive_while_invoke_runs():
     with patch.object(
         source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01
     ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
-        mock_graph.get_state.return_value = _graph_state({"messages": []})
+        mock_graph.aupdate_state = AsyncMock()
 
-        def slow_invoke(*_args, **_kwargs):
-            time.sleep(0.1)
+        async def slow_ainvoke(*_args, **_kwargs):
+            await asyncio.sleep(0.1)
             return {"messages": []}
 
-        mock_graph.invoke.side_effect = slow_invoke
+        mock_graph.ainvoke.side_effect = slow_ainvoke
+
+        request = MagicMock()
+        request.is_disconnected = AsyncMock(return_value=False)
 
         chunks = []
         async for chunk in stream_source_chat_response(
-            "chat_session:abc", "source:xyz", "hello"
+            request, "chat_session:abc", "source:xyz", "hello"
         ):
             chunks.append(chunk)
 
@@ -364,3 +367,41 @@ async def test_stream_source_chat_emits_keepalive_while_invoke_runs():
     assert chunks[-1].startswith('data: {"type": "complete"')
     # Keepalive comments are emitted between the user_message and completion.
     assert ": ping\n\n" in chunks
+
+
+@pytest.mark.asyncio
+async def test_stream_source_chat_cancels_invoke_on_disconnect():
+    """When the client disconnects mid-generation, generation is cancelled
+    server-side and the stream ends without a completion event."""
+    from api.routers import source_chat as source_chat_router
+    from api.routers.source_chat import stream_source_chat_response
+
+    cancelled = asyncio.Event()
+
+    async def blocking_ainvoke(*_args, **_kwargs):
+        try:
+            await asyncio.Event().wait()  # blocks until cancelled
+        except asyncio.CancelledError:
+            cancelled.set()
+            raise
+
+    with patch.object(
+        source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01
+    ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
+        mock_graph.aupdate_state = AsyncMock()
+        mock_graph.ainvoke.side_effect = blocking_ainvoke
+
+        request = MagicMock()
+        request.is_disconnected = AsyncMock(return_value=True)
+
+        chunks = []
+        async for chunk in stream_source_chat_response(
+            request, "chat_session:abc", "source:xyz", "hello"
+        ):
+            chunks.append(chunk)
+
+    # The user message is still yielded up front, but the stream stops without
+    # a completion event and the in-flight invoke task was cancelled.
+    assert chunks[0].startswith('data: {"type": "user_message"')
+    assert not any(c.startswith('data: {"type": "complete"') for c in chunks)
+    assert cancelled.is_set()

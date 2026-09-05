@@ -2,7 +2,7 @@ import asyncio
 import json
 from typing import AsyncGenerator, List, Optional
 
-from fastapi import APIRouter, HTTPException, Path
+from fastapi import APIRouter, HTTPException, Path, Request
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
@@ -336,51 +336,38 @@ async def delete_source_chat_session(
 
 
 async def stream_source_chat_response(
-    session_id: str, source_id: str, message: str, model_override: Optional[str] = None
+    request: Request,
+    session_id: str,
+    source_id: str,
+    message: str,
+    model_override: Optional[str] = None,
 ) -> AsyncGenerator[str, None]:
     """Stream the source chat response as Server-Sent Events."""
+    config = RunnableConfig(
+        configurable={"thread_id": session_id, "model_id": model_override}
+    )
+    invoke_task: Optional[asyncio.Task] = None
     try:
-        # Get current state
-        # Use sync get_state() in a thread since SqliteSaver doesn't support async
-        current_state = await asyncio.to_thread(
-            source_chat_graph.get_state,
-            config=RunnableConfig(configurable={"thread_id": session_id}),
+        # Persist the user message to the checkpoint up front so it survives a
+        # mid-generation disconnect (the frontend refetches the checkpoint on
+        # cancel/complete and would otherwise drop the user's message).
+        await source_chat_graph.aupdate_state(
+            config, {"messages": [HumanMessage(content=message)]}
         )
-
-        # Prepare state for execution
-        state_values = current_state.values if current_state else {}
-        state_values["messages"] = state_values.get("messages", [])
-        state_values["source_id"] = source_id
-        state_values["model_override"] = model_override
-
-        # Add user message to state
-        user_message = HumanMessage(content=message)
-        state_values["messages"].append(user_message)
 
         # Send user message event
         user_event = {"type": "user_message", "content": message, "timestamp": None}
         yield f"data: {json.dumps(user_event)}\n\n"
 
-        # Run the synchronous LangGraph invoke in a thread so it doesn't block the
-        # event loop (mirrors the get_state() calls above). While the LLM generates,
-        # emit an SSE comment every KEEPALIVE_INTERVAL_SECONDS so the connection
-        # never goes idle — otherwise proxies (incl. the Next.js rewrite in front of
-        # FastAPI) may drop it and the reply only appears after a refetch.
-        # The lambda pins down which `invoke` overload is used; asyncio.to_thread
-        # can't resolve overloaded callables on its own. The ignore is a langgraph
+        # Run the async graph with ainvoke so generation is cancellable. Only the
+        # per-message config is passed as input; the messages (incl. the user
+        # message above) are read from the checkpoint. The ignore is a langgraph
         # typing limitation: it accepts a partial state dict at runtime, but the
         # signature requires the full state type.
         invoke_task = asyncio.create_task(
-            asyncio.to_thread(
-                lambda: source_chat_graph.invoke(
-                    input=state_values,  # type: ignore[arg-type]
-                    config=RunnableConfig(
-                        configurable={
-                            "thread_id": session_id,
-                            "model_id": model_override,
-                        }
-                    ),
-                )
+            source_chat_graph.ainvoke(
+                input={"source_id": source_id, "model_override": model_override},  # type: ignore[call-overload]
+                config=config,
             )
         )
         while True:
@@ -391,6 +378,9 @@ async def stream_source_chat_response(
                 # Re-raises on graph error, caught by the outer try/except below.
                 result = invoke_task.result()
                 break
+            if await request.is_disconnected():
+                # Client went away — stop generating instead of burning tokens.
+                return
             # SSE comment — ignored by clients, keeps the connection alive.
             yield ": ping\n\n"
 
@@ -424,10 +414,17 @@ async def stream_source_chat_response(
         logger.error(f"Error in source chat streaming: {str(e)}")
         error_event = {"type": "error", "message": error_message}
         yield f"data: {json.dumps(error_event)}\n\n"
+    finally:
+        # Stop generation if the generator is torn down mid-flight (client
+        # disconnect or server cancellation) so the model doesn't keep running.
+        if invoke_task is not None and not invoke_task.done():
+            invoke_task.cancel()
+            await asyncio.gather(invoke_task, return_exceptions=True)
 
 
 @router.post("/sources/{source_id}/chat/sessions/{session_id}/messages")
 async def send_message_to_source_chat(
+    http_request: Request,
     request: SendMessageRequest,
     source_id: str = Path(..., description="Source ID"),
     session_id: str = Path(..., description="Session ID"),
@@ -453,6 +450,7 @@ async def send_message_to_source_chat(
         # Return streaming response
         return StreamingResponse(
             stream_source_chat_response(
+                http_request,
                 session_id=full_session_id,
                 source_id=full_source_id,
                 message=request.message,

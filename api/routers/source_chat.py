@@ -32,6 +32,12 @@ from open_notebook.utils.graph_utils import (
 router = APIRouter()
 
 
+# Seconds between SSE keepalive comments while the LLM generates. Keeps the
+# connection from going idle so proxies (incl. the Next.js rewrite in front of
+# FastAPI) don't drop it mid-generation.
+KEEPALIVE_INTERVAL_SECONDS = 15.0
+
+
 # Request/Response models
 class CreateSourceChatSessionRequest(BaseModel):
     source_id: str = Field(..., description="Source ID to create chat session for")
@@ -376,20 +382,37 @@ async def stream_source_chat_response(
         yield f"data: {json.dumps(user_event)}\n\n"
 
         # Run the synchronous LangGraph invoke in a thread so it doesn't block the
-        # event loop. While blocked, even the already-yielded SSE events can't
-        # flush and every other request stalls until the LLM finishes. Mirrors the
-        # get_state() calls above.
-        # invoke_chat_turn also drops the question from the checkpoint when the
-        # turn fails, so a retry doesn't add it twice.
-        result = await asyncio.to_thread(
-            invoke_chat_turn,
-            source_chat_graph,
-            state_values,
-            RunnableConfig(
-                configurable={"thread_id": session_id, "model_id": model_override}
-            ),
-            user_message,
+        # event loop (mirrors the get_state() calls above). While the LLM generates,
+        # emit an SSE comment every KEEPALIVE_INTERVAL_SECONDS so the connection
+        # never goes idle — otherwise proxies (incl. the Next.js rewrite in front of
+        # FastAPI) may drop it and the reply only appears after a refetch.
+        # The lambda pins down which `invoke` overload is used; asyncio.to_thread
+        # can't resolve overloaded callables on its own. The ignore is a langgraph
+        # typing limitation: it accepts a partial state dict at runtime, but the
+        # signature requires the full state type.
+        invoke_task = asyncio.create_task(
+            asyncio.to_thread(
+                lambda: source_chat_graph.invoke(
+                    input=state_values,  # type: ignore[arg-type]
+                    config=RunnableConfig(
+                        configurable={
+                            "thread_id": session_id,
+                            "model_id": model_override,
+                        }
+                    ),
+                )
+            )
         )
+        while True:
+            done, _ = await asyncio.wait(
+                {invoke_task}, timeout=KEEPALIVE_INTERVAL_SECONDS
+            )
+            if done:
+                # Re-raises on graph error, caught by the outer try/except below.
+                result = invoke_task.result()
+                break
+            # SSE comment — ignored by clients, keeps the connection alive.
+            yield ": ping\n\n"
 
         # Stream this turn's AI response. result["messages"] is the full
         # checkpointed history, so only the last message is new.

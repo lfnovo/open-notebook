@@ -87,7 +87,7 @@ You should see the Open Notebook interface!
 
 ## Step 4: Configure Your AI Provider (1 min)
 
-1. Go to **Settings** → **Models**
+1. Go to **Manage** → **Models**
 2. Click **Add Credential**
 3. Select your provider (e.g., Anthropic, Google, Groq, OpenRouter)
 4. Give it a name, paste your API key
@@ -103,9 +103,8 @@ Your provider's models are now available!
 
 ## Step 5: Configure Your Model (1 min)
 
-1. Go to **Settings** (gear icon)
-2. Navigate to **Models**
-3. Select your provider's model:
+1. In the sidebar, open **Manage** → **Models**
+2. Select your provider's model:
 
 | Provider | Recommended Model | Notes |
 |----------|-------------------|-------|
@@ -115,7 +114,7 @@ Your provider's models are now available!
 | **Groq** | `llama-3.3-70b-versatile` | Ultra-fast |
 | **Mistral** | `mistral-large-latest` | Strong European option |
 
-4. Click **Save**
+3. Click **Save**
 
 ---
 
@@ -167,7 +166,7 @@ Your provider's models are now available!
 
 ### "Model not found" Error
 
-1. Go to **Settings** → **Models**
+1. Go to **Manage** → **Models**
 2. Click **Test Connection** on your credential
 3. If valid, click **Discover Models** → **Register Models**
 4. Check you have credits/access for the model

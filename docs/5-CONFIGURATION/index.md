@@ -23,7 +23,7 @@ Three things:
 - **Google Gemini** (multi-modal, long context)
 - **Groq** (ultra-fast inference)
 
-Setup: Get API key → Add credential in Settings UI → Done
+Setup: Get API key → Add credential in Manage → Models → Done
 
 → Go to **[AI Providers Guide](ai-providers.md)**
 
@@ -93,7 +93,7 @@ We need access to LLMs in order for the app to work. AI provider credentials are
 
 1. Set `OPEN_NOTEBOOK_ENCRYPTION_KEY` in your environment (required for storing credentials)
 2. Start services
-3. Go to **Settings → Models → Add Credential**
+3. Go to **Manage → Models → Add Credential**
 4. Select your provider, paste your API key
 5. **Test Connection** → **Discover Models** → **Register Models**
 
@@ -102,9 +102,9 @@ We need access to LLMs in order for the app to work. AI provider credentials are
 OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
 ```
 
-> **Ollama users**: Add an Ollama credential in Settings → Models with the correct base URL. See [Ollama Setup](ollama.md) for network configuration help.
+> **Ollama users**: Add an Ollama credential in Manage → Models with the correct base URL. See [Ollama Setup](ollama.md) for network configuration help.
 
-> **LM Studio / OpenAI-Compatible**: Add an OpenAI-Compatible credential in Settings → Models. See [OpenAI-Compatible Guide](openai-compatible.md).
+> **LM Studio / OpenAI-Compatible**: Add an OpenAI-Compatible credential in Manage → Models. See [OpenAI-Compatible Guide](openai-compatible.md).
 
 
 ### API URL (If Behind Reverse Proxy)
@@ -126,7 +126,7 @@ Auto-detection works for most setups.
 # In docker.env:
 OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
 # Everything else uses defaults
-# Then configure AI provider in Settings → Models
+# Then configure AI provider in Manage → Models
 ```
 
 ### Scenario 2: Docker on Remote Server
@@ -148,14 +148,14 @@ API_URL=https://your-domain.com
 ```env
 # In .env:
 OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
-# Then add Ollama credential in Settings → Models
+# Then add Ollama credential in Manage → Models
 ```
 
 ### Scenario 5: Using Azure OpenAI
 ```env
 # In docker.env:
 OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
-# Then add Azure OpenAI credential in Settings → Models
+# Then add Azure OpenAI credential in Manage → Models
 ```
 
 ---
@@ -241,7 +241,7 @@ The recommended way to configure AI providers:
 
 ```
 1. Open Open Notebook in your browser
-2. Go to Settings → Models
+2. Go to Manage → Models
 3. Click "Add Credential"
 4. Select provider, enter API key
 5. Click Save, then Test Connection
@@ -282,7 +282,7 @@ After configuration, verify it works:
 
 ```
 1. Open your notebook
-2. Go to Settings → Models
+2. Go to Manage → Models
 3. You should see your configured provider
 4. Try a simple Chat question
 5. If it responds, configuration is correct!
@@ -294,7 +294,7 @@ After configuration, verify it works:
 
 | Mistake | Problem | Fix |
 |---------|---------|-----|
-| No credential configured | Models not available | Add credential in Settings → Models |
+| No credential configured | Models not available | Add credential in Manage → Models |
 | Missing encryption key | Can't save credentials | Set OPEN_NOTEBOOK_ENCRYPTION_KEY |
 | Wrong database URL | Can't start API | Check SURREAL_URL format |
 | Expose port 5055 | "Can't connect to server" | Expose 5055 in docker-compose |
@@ -326,7 +326,7 @@ Once configured:
 **Minimal configuration to run:**
 1. Set `OPEN_NOTEBOOK_ENCRYPTION_KEY` in your environment
 2. Start services
-3. Add AI provider credential in Settings → Models
+3. Add AI provider credential in Manage → Models
 4. Done!
 
 Everything else is optional optimization.

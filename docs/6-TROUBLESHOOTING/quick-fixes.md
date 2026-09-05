@@ -37,19 +37,19 @@ docker compose restart
 
 ## #2: "Invalid API key" or "Models not showing"
 
-**Symptom:** Settings → Models shows "No models available"
+**Symptom:** Manage → Models shows "No models available"
 
 **Cause:** No credential configured, or credential has invalid API key
 
 **Solution (1 minute):**
 
 ```
-1. Go to Settings → Models
+1. Go to Manage → Models
 2. If no credential exists, click "Add Credential" and add one
 3. If a credential exists, click "Test Connection"
 4. If test fails, delete and re-create with correct key
 5. After test passes, click "Discover Models" → "Register Models"
-6. Go to Settings → Models to verify models appear
+6. Go to Manage → Models to verify models appear
 ```
 
 **If still broken:**
@@ -122,7 +122,7 @@ docker compose restart
 
 ```bash
 # Step 1: Check which model you're using
-# Settings → Models
+# Manage → Models
 # Note the model name
 
 # Step 2: Try a cheaper/faster model

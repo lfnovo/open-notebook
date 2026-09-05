@@ -23,6 +23,13 @@ export function useSourceChat(sourceId: string) {
   const [contextIndicators, setContextIndicators] = useState<SourceChatContextIndicator | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
+  // Abort any in-flight stream when the component unmounts.
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort()
+    }
+  }, [])
+
   // Fetch sessions
   const { data: sessions = [], isLoading: loadingSessions, refetch: refetchSessions } = useQuery<SourceChatSession[]>({
     queryKey: ['sourceChatSessions', sourceId],
@@ -103,6 +110,11 @@ export function useSourceChat(sourceId: string) {
 
   // Send message with streaming
   const sendMessage = useCallback(async (message: string, modelOverride?: string) => {
+    // Abort any previous in-flight request
+    abortControllerRef.current?.abort()
+    abortControllerRef.current = new AbortController()
+    const signal = abortControllerRef.current.signal
+
     let sessionId = currentSessionId
 
     // Auto-create session if none exists
@@ -135,7 +147,7 @@ export function useSourceChat(sourceId: string) {
       const response = await sourceChatApi.sendMessage(sourceId, sessionId, {
         message,
         model_override: modelOverride
-      })
+      }, signal)
 
       if (!response) {
         throw new Error('No response body')
@@ -199,6 +211,10 @@ export function useSourceChat(sourceId: string) {
         }
       }
     } catch (err: unknown) {
+      // Cancelled by the user — the finally block still refetches persisted messages.
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return
+      }
       const error = err as { response?: { data?: { detail?: string } }, message?: string };
       console.error('Error sending message:', error)
       toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToSendMessage'))
@@ -213,10 +229,9 @@ export function useSourceChat(sourceId: string) {
 
   // Cancel streaming
   const cancelStreaming = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-      setIsStreaming(false)
-    }
+    abortControllerRef.current?.abort()
+    abortControllerRef.current = null
+    setIsStreaming(false)
   }, [])
 
   // Switch session

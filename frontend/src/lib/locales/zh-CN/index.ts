@@ -461,6 +461,7 @@ export const zhCN = {
     sessionCreated: "聊天会话已创建",
     sessionUpdated: "会话已更新",
     sessionDeleted: "会话已删除",
+    stop: "停止",
   },
   searchPage: {
     askAndSearch: "提问与搜索",

@@ -14,6 +14,7 @@ DB access and LangGraph state are mocked following the style of
 tests/test_crud_404.py.
 """
 
+import time
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -330,3 +331,36 @@ async def test_get_source_chat_session_happy_path_shapes(
         "insights": [],
         "notes": [],
     }
+
+
+# --- source_chat.py: SSE keepalive --------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_stream_source_chat_emits_keepalive_while_invoke_runs():
+    """While the model generates, the generator yields an SSE comment so the
+    connection never goes idle (proxies may otherwise drop it)."""
+    from api.routers import source_chat as source_chat_router
+    from api.routers.source_chat import stream_source_chat_response
+
+    with patch.object(
+        source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01
+    ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
+        mock_graph.get_state.return_value = _graph_state({"messages": []})
+
+        def slow_invoke(*_args, **_kwargs):
+            time.sleep(0.1)
+            return {"messages": []}
+
+        mock_graph.invoke.side_effect = slow_invoke
+
+        chunks = []
+        async for chunk in stream_source_chat_response(
+            "chat_session:abc", "source:xyz", "hello"
+        ):
+            chunks.append(chunk)
+
+    assert chunks[0].startswith('data: {"type": "user_message"')
+    assert chunks[-1].startswith('data: {"type": "complete"')
+    # Keepalive comments are emitted between the user_message and completion.
+    assert ": ping\n\n" in chunks

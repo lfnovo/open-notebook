@@ -58,15 +58,24 @@ def explain_generation_failure(error_msg: str) -> Optional[str]:
             "since each attempt is a fresh sample."
         )
 
-    if "Requested entity was not found" in error_msg or (
-        "Voice name" in error_msg and "not supported" in error_msg
-    ):
+    if "Voice name" in error_msg and "not supported" in error_msg:
         return (
-            "The speaker profile's voice_id is not valid for its TTS model - "
-            "Google returns 'Requested entity was not found' for an unknown "
-            "voice, which reads like a missing model. Check the voices in "
-            "Settings -> Speaker Profiles against the ones your voice model "
-            "provides (the profiles seeded on install use OpenAI voice names)."
+            "The speaker profile's voice_id is not valid for its TTS model. "
+            "Check the voices in Settings -> Speaker Profiles against the ones "
+            "your voice model provides (the profiles seeded on install use "
+            "OpenAI voice names)."
+        )
+
+    if "Requested entity was not found" in error_msg:
+        return (
+            "Google returns this for any resource it cannot find, without "
+            "naming which one. Two candidates, likeliest first: a speaker "
+            "profile voice_id that its TTS model doesn't provide (the profiles "
+            "seeded on install use OpenAI voice names, which Gemini voice "
+            "models reject with exactly this message), or a model id in the "
+            "episode profile that doesn't exist for its provider. If the "
+            "transcript finished and the failure came during audio, it is the "
+            "voice."
         )
 
     if "Invalid json output" in error_msg or "Expecting value" in error_msg:
@@ -400,8 +409,19 @@ async def generate_podcast_command(
             processing_time=processing_time,
         )
 
-    except ValueError:
-        raise
+    except ValueError as e:
+        # ValueError is the command layer's "permanent failure, do not retry"
+        # signal (retry config uses stop_on=[ValueError]), so the type has to
+        # survive - but LangChain's OutputParserException and
+        # json.JSONDecodeError are ValueError subclasses too. Every parser
+        # failure therefore left through here, past the hint mapper below:
+        # the placeholder speaker name and the truncated-JSON cases reached
+        # the user with no guidance at all (#1238).
+        hint = explain_generation_failure(str(e))
+        if not hint:
+            raise
+        logger.error(f"Podcast generation failed: {e}")
+        raise ValueError(f"{e}\n\nNOTE: {hint}") from e
 
     except Exception as e:
         logger.error(f"Podcast generation failed: {e}")

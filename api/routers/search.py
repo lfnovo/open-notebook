@@ -136,6 +136,10 @@ async def stream_ask_response(
 async def ask_knowledge_base(ask_request: AskRequest):
     """Ask the knowledge base a question using AI models."""
     try:
+        # Cheapest check first: a malformed or unknown scope fails before any
+        # model lookup or embedding check can mask it.
+        notebook_ids = await resolve_notebook_scope(ask_request.scope_notebook_ids)
+
         # Validate models exist
         strategy_model = await Model.get(ask_request.strategy_model)
         answer_model = await Model.get(ask_request.answer_model)
@@ -163,8 +167,6 @@ async def ask_knowledge_base(ask_request: AskRequest):
                 status_code=400,
                 detail="Ask feature requires an embedding model. Please configure one in the Models section.",
             )
-
-        notebook_ids = await resolve_notebook_scope(ask_request.scope_notebook_ids)
 
         # For streaming response
         return StreamingResponse(
@@ -196,6 +198,10 @@ async def ask_knowledge_base(ask_request: AskRequest):
 async def ask_knowledge_base_simple(ask_request: AskRequest):
     """Ask the knowledge base a question and return a simple response (non-streaming)."""
     try:
+        # Cheapest check first: a malformed or unknown scope fails before any
+        # model lookup or embedding check can mask it.
+        notebook_ids = await resolve_notebook_scope(ask_request.scope_notebook_ids)
+
         # Validate models exist
         strategy_model = await Model.get(ask_request.strategy_model)
         answer_model = await Model.get(ask_request.answer_model)
@@ -223,8 +229,6 @@ async def ask_knowledge_base_simple(ask_request: AskRequest):
                 status_code=400,
                 detail="Ask feature requires an embedding model. Please configure one in the Models section.",
             )
-
-        notebook_ids = await resolve_notebook_scope(ask_request.scope_notebook_ids)
 
         # Run the ask graph and get final result
         final_answer = None

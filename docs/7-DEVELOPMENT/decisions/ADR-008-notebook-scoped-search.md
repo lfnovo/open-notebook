@@ -6,9 +6,7 @@
 
 ## Context
 
-Search and Ask always ran against the whole knowledge base. `notebook_id` was accepted by `POST /api/search` and silently ignored because the request model never declared it. Two long-standing requests (#574, API; #87, UI) asked for the same thing: limit Search and Ask to one or more notebooks.
-
-Discussion #1315 places scoped retrieval inside a broader design — a retrieval contract shared by Search, Ask and chat, an evidence bundle, validated citations. That design is deliberated until October 2026 and will land in stages. The question was whether to wait for it or ship the filter now.
+Search and Ask always ran against the whole knowledge base, and `notebook_id` was accepted by `POST /api/search` but silently ignored because the request model never declared it. Two long-standing requests (#574, API; #87, UI) asked for the same thing: limit Search and Ask to one or more notebooks. Discussion #1315 places scoped retrieval inside a broader design — a retrieval contract shared by Search, Ask and chat, an evidence bundle, validated citations. That design is deliberated until October 2026 and will land in stages, so the question was whether to wait for it or ship the filter now.
 
 ## Decision
 

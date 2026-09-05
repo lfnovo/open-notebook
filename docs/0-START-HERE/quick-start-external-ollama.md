@@ -109,7 +109,7 @@ Wait 10-15 seconds for services to start.
 
 ## Step 5: Configure Ollama Provider (1 min)
 
-1. Go to **Settings** → **Models**
+1. Go to **Manage** → **Models**
 2. Click **Add Credential**
 3. Select provider: **Ollama**
 4. Give it a name (e.g., "Local Ollama")
@@ -124,7 +124,7 @@ Wait 10-15 seconds for services to start.
 
 ## Step 6: Configure Models (1 min)
 
-1. Go to **Settings** → **Models**
+1. Go to **Manage** → **Models**
 2. Set:
    - **Language Model**: `ollama/mistral` (or whichever model you downloaded)
    - **Embedding Model**: `ollama/nomic-embed-text`

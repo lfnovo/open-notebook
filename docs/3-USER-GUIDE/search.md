@@ -64,6 +64,14 @@ Ranked by how close together they are
 - Synonyms: searching "large" won't find "big"
 - Concepts: searching "similarity" won't find "likeness"
 
+**Content searched:**
+Text search looks through:
+- **Source titles** — matching keywords in source names
+- **Source content** — the full text and its chunks
+- **Insights** — content generated from sources (e.g., dense summaries)
+- **Note titles** — matching keywords in note names
+- **Note content** — the body of your notes
+
 ---
 
 ### Search Type 2: VECTOR SEARCH (Semantic/Concept Matching)
@@ -106,6 +114,14 @@ But all are semantically related
 - Exact keywords: if you search a rare word, vector search might miss it
 - Specific numbers: "1994" vs "1993" are semantically different
 - Technical jargon: "LSTM" and "RNN" are different even if related
+
+**Content searched:**
+Vector search compares your query against embeddings of:
+- **Source content** — source chunks (embeddings)
+- **Insights** — content generated from sources (embeddings)
+- **Note content** — the body of your notes (embeddings)
+
+Vector search works on embedded content only, so source and note *titles* are not matched semantically.
 
 ---
 
@@ -163,6 +179,21 @@ Results show:
   - Preview of surrounding text
   - Different sources mixed together
 ```
+
+### Scoping to Notebooks
+
+By default Search and Ask look at your **whole knowledge base** — every source and note in every notebook. To narrow the scope, open the **Notebooks** selector above the search options and check one or more notebooks:
+
+```
+1. Open the Notebooks selector (it reads "All notebooks" until you pick one)
+2. Check the notebook(s) you want to search
+3. Run your Search or Ask as usual
+4. Click "Clear" to go back to the whole knowledge base
+```
+
+The scope is shared by the Search and Ask tabs, so a question asked right after a scoped search uses the same notebooks. Only sources and notes linked to the selected notebooks are considered; a source that lives in several notebooks matches when any of them is selected.
+
+For API clients, pass `notebook_ids` (a list) or `notebook_id` (a single id) to `POST /api/search` and `POST /api/search/ask`. Omitting both keeps the global behavior. An id that does not name an existing notebook returns `404`.
 
 ---
 
@@ -279,6 +310,7 @@ Result: Comprehensive answer, not just search results
 | Problem | Cause | Solution |
 |---------|-------|----------|
 | 1000+ results | Search too broad | Be more specific |
+| | All notebooks | Scope the search to one or a few notebooks |
 | | All sources | Filter by source |
 | | Keyword matches rare words | Use vector search instead |
 

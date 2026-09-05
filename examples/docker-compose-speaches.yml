@@ -97,7 +97,7 @@ volumes:
 #    - Base URL for STT: (same as TTS)
 # 4. Click Save → Test Connection
 #
-# 5. Go to Settings → Models
+# 5. Go to Manage → Models
 # 6. Add TTS Model:
 #    - Provider: openai_compatible
 #    - Model Name: speaches-ai/Kokoro-82M-v1.0-ONNX

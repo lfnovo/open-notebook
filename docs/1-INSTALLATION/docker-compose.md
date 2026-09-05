@@ -126,7 +126,7 @@ You should see the Open Notebook interface!
 
 ## Step 4: Configure AI Provider (2 min)
 
-1. Go to **Settings** → **Models**
+1. Go to **Manage** → **Models**
 2. Click **Add Credential**
 3. Select your provider (e.g., OpenAI, Anthropic, Google)
 4. Give it a name, paste your API key
@@ -193,7 +193,7 @@ docker exec open-notebook-local-ollama-1 ollama pull mistral
 ```
 
 Configure Ollama in the Settings UI:
-1. Go to **Settings** → **Models**
+1. Go to **Manage** → **Models**
 2. Click **Add Credential** → Select **Ollama**
 3. Enter base URL: `http://ollama:11434`
 4. Click **Save**, then **Test Connection**
@@ -292,7 +292,7 @@ Then access at `http://localhost:8503`
 
 ### Credential Issues
 
-1. Go to **Settings** → **Models**
+1. Go to **Manage** → **Models**
 2. Click **Test Connection** on the credential
 3. If it fails, verify key at provider's website
 4. Check you have credits in your account
@@ -353,7 +353,7 @@ Each example includes detailed comments and usage instructions.
 ## Next Steps
 
 1. **Add Content**: Sources, notebooks, documents
-2. **Configure Models**: Settings → Models (choose your preferences)
+2. **Configure Models**: Manage → Models (choose your preferences)
 3. **Explore Features**: Chat, search, transformations
 4. **Read Guide**: [User Guide](../3-USER-GUIDE/index.md)
 

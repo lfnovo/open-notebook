@@ -228,7 +228,7 @@ GOOGLE_API_KEY=your-key-here
 
 ## Available AI Models
 
-Once running, add models in Settings. Common model names:
+Once running, add models in Manage → Models. Common model names:
 
 | Provider  | Models                                                       |
 | --------- | ------------------------------------------------------------ |

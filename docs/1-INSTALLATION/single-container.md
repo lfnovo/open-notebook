@@ -47,7 +47,7 @@ docker compose up -d
 Access: `http://localhost:8502`
 
 Then configure your AI provider:
-1. Go to **Settings** → **Models**
+1. Go to **Manage** → **Models**
 2. Click **Add Credential** → Select your provider → Paste API key
 3. Click **Save**, then **Test Connection**
 4. Click **Discover Models** → **Register Models**
@@ -59,14 +59,14 @@ Then configure your AI provider:
 2. Search "Open Notebook"
 3. Set environment variables (at minimum: `OPEN_NOTEBOOK_ENCRYPTION_KEY`)
 4. Click "Deploy"
-5. Open the app → Go to **Settings → Models** to configure your AI provider
+5. Open the app → Go to **Manage → Models** to configure your AI provider
 
 **Railway:**
 1. Create new project
 2. Add `lfnovo/open_notebook:v1-latest-single`
 3. Set environment variables (at minimum: `OPEN_NOTEBOOK_ENCRYPTION_KEY`)
 4. Deploy
-5. Open the app → Go to **Settings → Models** to configure your AI provider
+5. Open the app → Go to **Manage → Models** to configure your AI provider
 
 **Render:**
 1. Create new Web Service
@@ -104,7 +104,7 @@ Open Notebook ships an EasyPanel template at [`examples/easypanel/`](https://git
 - **One-click (recommended):** once the template is published to the official [EasyPanel template gallery](https://github.com/easypanel-io/templates), create a new service from "Open Notebook", set an app password (or leave it blank to auto-generate one), and deploy.
 - **Manual:** copy `examples/easypanel/` into `templates/open-notebook` in a checkout of [`easypanel-io/templates`](https://github.com/easypanel-io/templates), run the templates playground (`npm run dev`), and create the template from the generated JSON in your EasyPanel instance.
 
-After deployment, open the EasyPanel domain and configure your AI provider in **Settings → Models**. See [`examples/easypanel/README.md`](https://github.com/lfnovo/open-notebook/blob/main/examples/easypanel/README.md) for details.
+After deployment, open the EasyPanel domain and configure your AI provider in **Manage → Models**. See [`examples/easypanel/README.md`](https://github.com/lfnovo/open-notebook/blob/main/examples/easypanel/README.md) for details.
 
 ---
 
@@ -120,7 +120,7 @@ After deployment, open the EasyPanel domain and configure your AI provider in **
 | `SURREAL_DATABASE` | DB name | `open_notebook` |
 | `API_URL` | External URL (for remote access) | `https://myapp.example.com` |
 
-AI provider API keys are configured via the **Settings → Models** UI after deployment.
+AI provider API keys are configured via the **Manage → Models** UI after deployment.
 
 ---
 
@@ -140,7 +140,7 @@ AI provider API keys are configured via the **Settings → Models** UI after dep
 
 Same as Docker Compose setup - just access via `http://localhost:8502` (local) or your platform's URL (cloud).
 
-1. Go to **Settings → Models** to add your AI provider credential
+1. Go to **Manage → Models** to add your AI provider credential
 2. **Test Connection** and **Discover Models**
 
 See [Docker Compose](docker-compose.md) for full post-install guide.

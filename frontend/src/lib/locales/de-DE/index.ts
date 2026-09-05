@@ -488,6 +488,8 @@ export const deDE = {
     searchDesc: "Durchsuche deine Wissensbasis nach bestimmten Stichwörtern oder Konzepten",
     enterSearchPlaceholder: "Suchanfrage eingeben...",
     pressToSearch: "Drücke Enter zum Suchen",
+    searchCoverageText: "Die Textsuche findet Quellen-Titel und -Inhalt, Erkenntnisse sowie Notiz-Titel und -Inhalt.",
+    searchCoverageVector: "Die Vektorsuche findet Quellen-Inhalt, Erkenntnisse und Notiz-Inhalt anhand semantischer Ähnlichkeit. Titel werden nicht berücksichtigt.",
     searchType: "Suchtyp",
     vectorSearchWarning: "Vektorsuche benötigt ein Embedding-Modell. Es ist nur Textsuche verfügbar.",
     textSearch: "Textsuche",

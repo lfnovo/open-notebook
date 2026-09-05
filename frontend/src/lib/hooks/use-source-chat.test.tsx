@@ -30,7 +30,6 @@ const session: SourceChatSession = {
   source_id: 'source:1',
   created: '2026-01-01T00:00:00Z',
   updated: '2026-01-02T00:00:00Z',
-  model_override: null,
 }
 
 // Build a ReadableStream of SSE frames shaped like the backend's
@@ -127,7 +126,7 @@ describe('useSourceChat sendMessage streaming', () => {
 
     await waitFor(() => expect(result.current.currentSessionId).toBe('session:1'))
 
-    let sendPromise: Promise<void>
+    let sendPromise!: Promise<void>
     act(() => {
       sendPromise = result.current.sendMessage('hello')
     })

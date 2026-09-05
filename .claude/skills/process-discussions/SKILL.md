@@ -198,13 +198,15 @@ uses this fixed format, in the owner's language:
 2. **Resumo** — what the thread is, how it was decomposed, current status
 3. **Último movimento** — who did what, when; what changed since the last run
    (a graduated Issue closing, an upstream release, a user answering)
-4. **Sugestão ou dúvida** — the proposed outcome and the full draft reply,
-   or the concrete question when the call is the owner's; when offering
-   options, label them (a)/(b)/(c) and say which one you recommend
+4. **Sugestão ou dúvida** — the proposed outcome, the full draft reply,
+   and every side action the package includes (Issues to open, renames,
+   closures); or the concrete question when the call is the owner's. When
+   offering options, label them (a)/(b)/(c) and say which one you recommend
 
-Post immediately on approval, report the URL, then present the next
-decision. Number them ("Decisão 2 de 4") so the owner knows the size of the
-session. After approval:
+On approval, execute the whole package in the order below (side actions
+first, reply last), report the URLs, then present the next decision.
+Number them ("Decisão 2 de 4") so the owner knows the size of the session.
+After approval:
 
 - Write bodies to scratchpad files; post via GraphQL (`addDiscussionComment`,
   `updateDiscussion` for renames) with `-F body=@file` — avoids shell

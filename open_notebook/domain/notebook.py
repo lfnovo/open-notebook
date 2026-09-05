@@ -832,7 +832,16 @@ async def vector_search(
                 "minimum_score": minimum_score,
             },
         )
-        return search_results
+        # SurrealDB fn::vector_search declares ORDER BY similarity DESC, but the
+        # SELECT * FROM fn::... wrapper can still return rows out of rank order.
+        # Enforce descending similarity (stable by id for ties) before returning.
+        return sorted(
+            search_results or [],
+            key=lambda item: (
+                -float(item.get("similarity") or 0.0),
+                str(item.get("id") or ""),
+            ),
+        )
     except Exception as e:
         logger.error(f"Error performing vector search: {str(e)}")
         logger.exception(e)

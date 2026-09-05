@@ -143,6 +143,23 @@ class TestEmptyStrategyHandling:
             result = await provide_answer(state, EMPTY_CONFIG)  # type: ignore[arg-type]
         assert result == {"answers": []}
 
+    @pytest.mark.asyncio
+    async def test_truncated_thinking_partial_answer_is_skipped(self):
+        """Budget exhausted inside <think> must not leak reasoning as an answer."""
+        state = {"question": "q", "term": "rag", "instructions": "extract"}
+        with (
+            patch(
+                "open_notebook.graphs.ask.vector_search",
+                new=AsyncMock(return_value=[{"id": "source:1", "content": "x"}]),
+            ),
+            patch(
+                "open_notebook.graphs.ask.provision_langchain_model",
+                new=AsyncMock(return_value=_model_returning("<think>cut off mid")),
+            ),
+        ):
+            result = await provide_answer(state, EMPTY_CONFIG)  # type: ignore[arg-type]
+        assert result == {"answers": []}
+
     def test_search_model_accepts_blank_term(self):
         """The filter, not the schema, is responsible for blank terms."""
         assert Search(term="", instructions="x").term == ""

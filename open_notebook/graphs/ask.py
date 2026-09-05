@@ -89,8 +89,8 @@ async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -
             raise ExternalServiceError(
                 "The strategy model returned no search terms for this question. "
                 "This usually means the model spent its output budget on reasoning "
-                "or returned an empty response. Try a different strategy model in "
-                "Settings → Models, or rephrase the question."
+                "or returned an empty response. Pick a different strategy model in "
+                "the Ask page's advanced model options, or rephrase the question."
             )
 
         return {"strategy": strategy}

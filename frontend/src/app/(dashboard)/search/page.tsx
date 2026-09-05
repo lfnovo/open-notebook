@@ -23,6 +23,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { StreamingResponse } from '@/components/search/StreamingResponse'
 import { AdvancedModelsDialog } from '@/components/search/AdvancedModelsDialog'
 import { SaveToNotebooksDialog } from '@/components/search/SaveToNotebooksDialog'
+import { NotebookScopeSelector } from '@/components/search/NotebookScopeSelector'
 
 export default function SearchPage() {
   const { t } = useTranslation()
@@ -42,6 +43,9 @@ export default function SearchPage() {
   const [searchType, setSearchType] = useState<'text' | 'vector'>('text')
   const [searchSources, setSearchSources] = useState(true)
   const [searchNotes, setSearchNotes] = useState(true)
+
+  // Notebook scope shared by Ask and Search; empty = whole knowledge base (#574, #87)
+  const [scopeNotebookIds, setScopeNotebookIds] = useState<string[]>([])
 
   // Ask state
   const [askQuestion, setAskQuestion] = useState(urlMode === 'ask' ? urlQuery : '')
@@ -91,9 +95,10 @@ export default function SearchPage() {
       limit: 100,
       search_sources: searchSources,
       search_notes: searchNotes,
-      minimum_score: 0.2
+      minimum_score: 0.2,
+      ...(scopeNotebookIds.length > 0 ? { notebook_ids: scopeNotebookIds } : {})
     })
-  }, [searchQuery, searchType, searchSources, searchNotes, searchMutation])
+  }, [searchQuery, searchType, searchSources, searchNotes, scopeNotebookIds, searchMutation])
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -110,8 +115,8 @@ export default function SearchPage() {
       finalAnswer: modelDefaults.default_chat_model
     }
 
-    ask.sendAsk(askQuestion, models)
-  }, [askQuestion, modelDefaults, customModels, ask])
+    ask.sendAsk(askQuestion, models, { notebookIds: scopeNotebookIds })
+  }, [askQuestion, modelDefaults, customModels, scopeNotebookIds, ask])
 
   // Auto-trigger search/ask when arriving with URL params
   useEffect(() => {
@@ -207,6 +212,13 @@ export default function SearchPage() {
                   />
                   <p className="text-xs text-muted-foreground">{t('searchPage.pressToSubmit')}</p>
                 </div>
+
+                {/* Notebook scope */}
+                <NotebookScopeSelector
+                  selectedIds={scopeNotebookIds}
+                  onChange={setScopeNotebookIds}
+                  disabled={ask.isStreaming}
+                />
 
                 {/* Models Display */}
                 {!hasEmbeddingModel ? (
@@ -359,6 +371,13 @@ export default function SearchPage() {
 
                 {/* Search Options */}
                 <div className="space-y-4">
+                  {/* Notebook scope */}
+                  <NotebookScopeSelector
+                    selectedIds={scopeNotebookIds}
+                    onChange={setScopeNotebookIds}
+                    disabled={searchMutation.isPending}
+                  />
+
                   {/* Search Type */}
                   <div className="space-y-2" role="group" aria-labelledby="search-type-label">
                     <span id="search-type-label" className="text-sm font-medium leading-none">{t('searchPage.searchType')}</span>

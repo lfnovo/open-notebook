@@ -41,9 +41,9 @@ Open Notebook can connect to any server using this format.
 3. Download a model (e.g., Llama 3)
 4. Start the local server (default: port 1234)
 
-### Step 2: Configure in Settings UI (Recommended)
+### Step 2: Configure in Manage → Models (Recommended)
 
-1. Go to **Settings** → **API Keys**
+1. Go to **Manage** → **Models**
 2. Click **Add Credential** → Select **OpenAI-Compatible**
 3. Enter base URL: `http://host.docker.internal:1234/v1` (Docker) or `http://localhost:1234/v1` (local)
 4. API key: `lm-studio` (placeholder, LM Studio doesn't require one)
@@ -57,7 +57,7 @@ export OPENAI_COMPATIBLE_API_KEY=not-needed
 
 ### Step 3: Add Model in Open Notebook
 
-1. Go to **Settings** → **Models**
+1. Go to **Manage** → **Models**
 2. Click **Add Model**
 3. Configure:
    - **Provider**: `openai_compatible`
@@ -71,7 +71,7 @@ export OPENAI_COMPATIBLE_API_KEY=not-needed
 
 The recommended way to configure OpenAI-compatible providers is through the Settings UI:
 
-1. Go to **Settings** → **API Keys**
+1. Go to **Manage** → **Models**
 2. Click **Add Credential** → Select **OpenAI-Compatible**
 3. Enter your base URL and API key (if needed)
 4. Optionally configure per-service URLs for LLM, Embedding, TTS, and STT
@@ -113,7 +113,7 @@ OPENAI_COMPATIBLE_API_KEY_STT=optional-api-key
 
 ## Docker Networking
 
-When Open Notebook runs in Docker and your compatible server runs on the host, use the appropriate base URL when adding your credential in **Settings → API Keys**:
+When Open Notebook runs in Docker and your compatible server runs on the host, use the appropriate base URL when adding your credential in **Manage → Models**:
 
 ### macOS / Windows
 
@@ -140,7 +140,7 @@ services:
       - "1234:1234"
 ```
 
-**Base URL in Settings → API Keys:** `http://lm-studio:1234/v1`
+**Base URL in Manage → Models:** `http://lm-studio:1234/v1`
 
 ---
 
@@ -154,7 +154,7 @@ python server.py --api --listen
 
 ### Configure Open Notebook
 
-In **Settings → API Keys**, add an **OpenAI-Compatible** credential with base URL: `http://localhost:5000/v1`
+In **Manage → Models**, add an **OpenAI-Compatible** credential with base URL: `http://localhost:5000/v1`
 
 ### Docker Compose Example
 
@@ -177,7 +177,7 @@ services:
       - text-gen
 ```
 
-Then in **Settings → API Keys**, add an **OpenAI-Compatible** credential with base URL: `http://text-gen:5000/v1`
+Then in **Manage → Models**, add an **OpenAI-Compatible** credential with base URL: `http://text-gen:5000/v1`
 
 ---
 
@@ -193,7 +193,7 @@ python -m vllm.entrypoints.openai.api_server \
 
 ### Configure Open Notebook
 
-In **Settings → API Keys**, add an **OpenAI-Compatible** credential with base URL: `http://localhost:8000/v1`
+In **Manage → Models**, add an **OpenAI-Compatible** credential with base URL: `http://localhost:8000/v1`
 
 ### Docker Compose with GPU
 
@@ -225,7 +225,7 @@ services:
       - vllm
 ```
 
-Then in **Settings → API Keys**, add an **OpenAI-Compatible** credential with base URL: `http://vllm:8000/v1`
+Then in **Manage → Models**, add an **OpenAI-Compatible** credential with base URL: `http://vllm:8000/v1`
 
 ---
 
@@ -233,7 +233,7 @@ Then in **Settings → API Keys**, add an **OpenAI-Compatible** credential with 
 
 ### Via Settings UI
 
-1. Go to **Settings** → **Models**
+1. Go to **Manage** → **Models**
 2. Click **Add Model** in appropriate section
 3. Select **Provider**: `openai_compatible`
 4. Enter **Model Name**: exactly as the server expects
@@ -321,7 +321,7 @@ Problem: 401 or authentication failed
 
 Solutions:
 1. Check if server requires API key
-2. Set the API key in your credential (Settings → API Keys)
+2. Set the API key in your credential (Manage → Models)
 3. Some servers need any non-empty key (use a placeholder like "not-needed")
 ```
 
@@ -341,7 +341,7 @@ Solutions:
 
 ## Multiple Compatible Endpoints
 
-You can use different compatible servers for different purposes. When adding an **OpenAI-Compatible** credential in **Settings → API Keys**, you can configure per-service URLs:
+You can use different compatible servers for different purposes. When adding an **OpenAI-Compatible** credential in **Manage → Models**, you can configure per-service URLs:
 
 - **LLM URL**: e.g., `http://localhost:1234/v1` (LM Studio)
 - **Embedding URL**: e.g., `http://localhost:8080/v1` (different server)

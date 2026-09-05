@@ -19,7 +19,7 @@ Error executing chat: Model is not a LanguageModel: None
 
 ### Solution 1: Check Default Model Configuration
 ```
-1. Go to Settings → Models
+1. Go to Manage → Models
 2. Scroll to "Default Models" section
 3. Verify "Default Chat Model" has a model selected
 4. If empty, select an available language model
@@ -42,7 +42,7 @@ ollama list
 ### Solution 3: Re-add Missing Models
 ```
 1. Note the exact model names from your provider
-2. Go to Settings → Models
+2. Go to Manage → Models
 3. Delete any misconfigured models
 4. Add models with exact names
 5. Set new defaults
@@ -63,7 +63,7 @@ ollama list
 
 ## "Models not available" or "Models not showing"
 
-**Symptom:** Settings → Models shows empty, or "No models configured"
+**Symptom:** Manage → Models shows empty, or "No models configured"
 
 **Cause:** No credential configured, or credential has invalid API key
 
@@ -71,18 +71,18 @@ ollama list
 
 ### Solution 1: Add Credential via Settings UI
 ```
-1. Go to Settings → API Keys
+1. Go to Manage → Models
 2. Click "Add Credential"
 3. Select your provider (e.g., OpenAI, Anthropic, Google)
 4. Enter your API key
 5. Click Save, then Test Connection
 6. Click Discover Models → Register Models
-7. Go to Settings → Models to verify
+7. Go to Manage → Models to verify
 ```
 
 ### Solution 2: Check Key is Valid
 ```
-1. Go to Settings → API Keys
+1. Go to Manage → Models
 2. Click "Test Connection" on your credential
 3. If it shows "Invalid API key":
    - Get a fresh key from the provider's website
@@ -91,10 +91,10 @@ ollama list
 
 ### Solution 3: Switch Provider
 ```
-1. Go to Settings → API Keys
+1. Go to Manage → Models
 2. Add a credential for a different provider
 3. Test Connection → Discover Models → Register Models
-4. Go to Settings → Models to select the new provider's models
+4. Go to Manage → Models to select the new provider's models
 ```
 
 ---
@@ -109,7 +109,7 @@ ollama list
 
 ### Step 1: Test Your Credential
 ```
-1. Go to Settings → API Keys
+1. Go to Manage → Models
 2. Click "Test Connection" on your credential
 3. If it fails, proceed to Step 2
 ```
@@ -126,7 +126,7 @@ Generate new key and copy exactly (no extra spaces)
 
 ### Step 3: Update Credential
 ```
-1. Go to Settings → API Keys
+1. Go to Manage → Models
 2. Delete the old credential
 3. Click "Add Credential" → select provider
 4. Paste the new key
@@ -136,7 +136,7 @@ Generate new key and copy exactly (no extra spaces)
 
 ### Step 4: Verify in UI
 ```
-1. Go to Settings → Models
+1. Go to Manage → Models
 2. Verify models are available
 3. Try a test chat
 ```
@@ -178,7 +178,7 @@ Anthropic:
   Current: claude-3-5-haiku → Switch to: claude-3-5-sonnet
 
 To change:
-1. Settings → Models
+1. Manage → Models
 2. Select model
 3. Try chat again
 ```
@@ -206,7 +206,7 @@ Fast: OpenAI gpt-4o-mini
 Medium: Anthropic claude-3-5-haiku
 Slow: Anthropic claude-3-5-sonnet
 
-Switch in: Settings → Models
+Switch in: Manage → Models
 ```
 
 ### Solution 2: Reduce Context
@@ -307,7 +307,7 @@ Google: Google Cloud Console
 Current: GPT-4o (128K tokens) → Switch to: Claude (200K tokens)
 Current: Claude Haiku (200K) → Switch to: Gemini (1M tokens)
 
-To change: Settings → Models
+To change: Manage → Models
 ```
 
 ### Solution 2: Reduce Context
@@ -350,7 +350,7 @@ Groq: Check website
 
 ### Use Different Model/Provider
 ```
-1. Settings → Models
+1. Manage → Models
 2. Try different provider
 3. If OpenAI down, use Anthropic
 ```

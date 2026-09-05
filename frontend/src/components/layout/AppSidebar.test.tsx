@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { usePathname } from 'next/navigation'
 import { AppSidebar } from './AppSidebar'
 import { useSidebarStore } from '@/lib/stores/sidebar-store'
 
@@ -13,6 +14,23 @@ vi.mock('@/components/ui/tooltip', () => ({
 }))
 
 describe('AppSidebar', () => {
+  afterEach(() => {
+    vi.mocked(usePathname).mockReturnValue('')
+  })
+
+  it('highlights only Models (not Settings) on the Models page', () => {
+    vi.mocked(usePathname).mockReturnValue('/settings/models')
+
+    const { container } = render(<AppSidebar />)
+
+    const modelsButton = container.querySelector('a[href="/settings/models"] button')
+    const settingsButton = container.querySelector('a[href="/settings"] button')
+
+    expect(modelsButton?.className).toContain('font-semibold')
+    expect(settingsButton?.className).toContain('font-medium')
+    expect(settingsButton?.className).not.toContain('font-semibold')
+  })
+
   it('renders correctly when expanded', () => {
     render(<AppSidebar />)
 

@@ -10,6 +10,10 @@ updates:
       all-actions:
         patterns:
           - "*"
+      actions-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
 
   - package-ecosystem: "uv"
     directory: "/"
@@ -19,6 +23,10 @@ updates:
       default-days: 7
     groups:
       all-python:
+        patterns:
+          - "*"
+      python-security:
+        applies-to: security-updates
         patterns:
           - "*"
 
@@ -32,6 +40,10 @@ updates:
       all-npm:
         patterns:
           - "*"
+      npm-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/"
@@ -41,5 +53,9 @@ updates:
       default-days: 7
     groups:
       all-docker:
+        patterns:
+          - "*"
+      docker-security:
+        applies-to: security-updates
         patterns:
           - "*"

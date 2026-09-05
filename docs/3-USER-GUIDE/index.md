@@ -136,7 +136,7 @@ Task: "I'm exploring a concept without knowing exact words"
 → Use: Search / Vector Search (semantic similarity)
 
 Task: "I need to add or change my AI provider API keys"
-→ Use: Settings / API Keys (configure providers without editing files)
+→ Use: Settings / Models (configure providers without editing files)
 ```
 
 ---

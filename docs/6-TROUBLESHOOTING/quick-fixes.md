@@ -44,7 +44,7 @@ docker compose restart
 **Solution (1 minute):**
 
 ```
-1. Go to Settings → API Keys
+1. Go to Settings → Models
 2. If no credential exists, click "Add Credential" and add one
 3. If a credential exists, click "Test Connection"
 4. If test fails, delete and re-create with correct key

@@ -429,7 +429,7 @@ ESPERANTO_SSL_VERIFY=false
 ### Solution 3: Use HTTP Instead
 If services are on a trusted local network, HTTP is acceptable:
 ```
-Change the base URL in your credential (Settings → API Keys) from https:// to http://
+Change the base URL in your credential (Settings → Models) from https:// to http://
 Example: http://localhost:1234/v1
 ```
 

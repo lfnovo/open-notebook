@@ -402,7 +402,7 @@ Connection error when using HTTPS endpoints
 Works with HTTP but fails with HTTPS
 ```
 
-**Cause:** Self-signed certificates not trusted by Python's SSL verification
+**Cause:** Self-signed or privately issued certificates not trusted by Python's SSL verification inside the container. Chat via Esperanto may honor `ESPERANTO_SSL_*`, but **Test Connection** and **Discover Models** used raw httpx and historically ignored those settings (fixed so they share the same env vars).
 
 **Solutions:**
 
@@ -419,12 +419,16 @@ environment:
   - ESPERANTO_SSL_CA_BUNDLE=/certs/ca-bundle.pem
 ```
 
+This applies to chat **and** to credential Test Connection / model discovery.
+
 ### Solution 2: Disable SSL Verification (Development Only)
 ```bash
 # WARNING: Only use in trusted development environments
 # In .env:
 ESPERANTO_SSL_VERIFY=false
 ```
+
+Same scope: Esperanto providers, Test Connection, and Discover Models.
 
 ### Solution 3: Use HTTP Instead
 If services are on a trusted local network, HTTP is acceptable:
@@ -434,6 +438,11 @@ Example: http://localhost:1234/v1
 ```
 
 > **Security Note:** Disabling SSL verification exposes you to man-in-the-middle attacks. Always prefer custom CA bundle or HTTP on trusted networks.
+
+> **Note:** SSL failures on Test Connection are often reported as a generic
+> "Cannot connect to server" message (httpx wraps `CERTIFICATE_VERIFY_FAILED`
+> as `ConnectError`). If chat or `curl -k` works but Test Connection fails,
+> check `ESPERANTO_SSL_CA_BUNDLE` / `ESPERANTO_SSL_VERIFY` first.
 
 ---
 

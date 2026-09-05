@@ -961,6 +961,7 @@ export const bnIN = {
     configNameHint: "এই কনফিগারেশনের জন্য একটি বর্ণনামূলক নাম (যেমন, 'Production', 'Development')",
     baseUrl: "বেস URL",
     baseUrlOverrideHint: "শুধুমাত্র তখনই এটি পরিবর্তন করুন যদি আপনার প্রোভাইডারের ডিফল্ট API এন্ডপয়েন্ট ওভাররাইড করতে হয়।",
+    openAICompatibleBaseUrlHint: "আপনার সার্ভারের জন্য প্রয়োজনীয় API সংস্করণের পাথ অন্তর্ভুক্ত করুন। Docker-এ LM Studio-এর জন্য http://host.docker.internal:1234/v1 ব্যবহার করুন।",
     numCtx: "কনটেক্সট উইন্ডো (num_ctx)",
     numCtxHint: "Ollama মডেলের জন্য সর্বোচ্চ কনটেক্সট উইন্ডো। ডিফল্ট (8192) ব্যবহার করতে খালি রাখুন। শুধুমাত্র আপনার হার্ডওয়্যার বড় উইন্ডো সামলাতে পারলে বাড়ান।",
     deleteConfigConfirm: "আপনি কি নিশ্চিত '{{name}}' মুছে ফেলতে চান? এটি পুনরায় করা যাবে না।",

@@ -960,6 +960,7 @@ export const ptBR = {
     configNameHint: "Um nome descritivo para esta configuração (ex.: 'Produção', 'Desenvolvimento')",
     baseUrl: "URL Base",
     baseUrlOverrideHint: "Altere apenas se precisar sobrescrever o endpoint padrão do provedor.",
+    openAICompatibleBaseUrlHint: "Inclua o caminho da versão da API exigido pelo servidor. Para o LM Studio no Docker, use http://host.docker.internal:1234/v1.",
     numCtx: "Janela de Contexto (num_ctx)",
     numCtxHint: "Janela de contexto máxima para modelos Ollama. Deixe vazio para usar o padrão (8192). Aumente apenas se seu hardware suportar uma janela maior.",
     deleteConfigConfirm: "Tem certeza de que deseja excluir '{{name}}'? Esta ação não pode ser desfeita.",

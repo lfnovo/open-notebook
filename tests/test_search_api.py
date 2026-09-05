@@ -102,3 +102,85 @@ class TestTextSearchHighlightOverflowFallback:
         ):
             with pytest.raises(DatabaseOperationError):
                 await notebook_module.text_search("hello", 10)
+
+
+class TestVectorSearchOrdering:
+    """vector_search() must return results in descending similarity order (#1301)."""
+
+    @pytest.mark.asyncio
+    async def test_reorders_results_by_descending_similarity(self):
+        from open_notebook.domain import notebook as notebook_module
+
+        unordered = [
+            {"id": "source:vehicle", "similarity": 0.353189},
+            {"id": "source:medical", "similarity": 0.548259},
+            {"id": "source:finance", "similarity": 0.389266},
+        ]
+        with (
+            patch.object(
+                notebook_module,
+                "generate_embedding",
+                create=True,
+                new_callable=AsyncMock,
+                return_value=[0.1, 0.2],
+            ),
+            patch(
+                "open_notebook.utils.embedding.generate_embedding",
+                new_callable=AsyncMock,
+                return_value=[0.1, 0.2],
+            ),
+            patch.object(
+                notebook_module,
+                "repo_query",
+                new_callable=AsyncMock,
+                return_value=unordered,
+            ),
+        ):
+            result = await notebook_module.vector_search(
+                "Which document discusses examination of a person's eyesight?",
+                10,
+                True,
+                False,
+                0.1,
+            )
+
+        assert [item["id"] for item in result] == [
+            "source:medical",
+            "source:finance",
+            "source:vehicle",
+        ]
+        assert [item["similarity"] for item in result] == [
+            0.548259,
+            0.389266,
+            0.353189,
+        ]
+
+    @pytest.mark.asyncio
+    async def test_tie_break_is_deterministic_by_id(self):
+        from open_notebook.domain import notebook as notebook_module
+
+        tied = [
+            {"id": "source:b", "similarity": 0.5},
+            {"id": "source:a", "similarity": 0.5},
+            {"id": "source:c", "similarity": 0.4},
+        ]
+        with (
+            patch(
+                "open_notebook.utils.embedding.generate_embedding",
+                new_callable=AsyncMock,
+                return_value=[0.1],
+            ),
+            patch.object(
+                notebook_module,
+                "repo_query",
+                new_callable=AsyncMock,
+                return_value=tied,
+            ),
+        ):
+            result = await notebook_module.vector_search("q", 3)
+
+        assert [item["id"] for item in result] == [
+            "source:a",
+            "source:b",
+            "source:c",
+        ]

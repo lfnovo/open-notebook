@@ -287,6 +287,8 @@ Renders JavaScript pages in a local Chromium browser — no API key required. Cr
 
 ```env
 CRAWL4AI_API_URL=http://crawl4ai.example.com:11235
+# Required by Crawl4AI Docker >= 0.9.0 (bearer token for external connections)
+CRAWL4AI_API_TOKEN=your-crawl4ai-token
 ```
 
 See [Content Processing Engines → Optional engines](../3-USER-GUIDE/content-processing-engines.md#optional-engines-docling--crawl4ai) for details.

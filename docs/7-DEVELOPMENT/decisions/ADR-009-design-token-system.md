@@ -1,4 +1,4 @@
-# ADR-008: Visual identity is a token contract in globals.css, reviewed through /dev/design
+# ADR-009: Visual identity is a token contract in globals.css, reviewed through /dev/design
 
 - **Status**: Accepted
 - **Date**: 2026-07

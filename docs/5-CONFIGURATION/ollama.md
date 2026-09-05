@@ -45,7 +45,7 @@ ollama pull mxbai-embed-large  # Best embedding model for Ollama
 4. Click **Save**, then **Test Connection**
 5. Click **Discover Models** → **Register Models**
 
-**Legacy (Deprecated) — Environment variables:**
+**Environment variable fallback (Deprecated):**
 ```bash
 # For local installation:
 export OLLAMA_API_BASE=http://localhost:11434
@@ -53,7 +53,7 @@ export OLLAMA_API_BASE=http://localhost:11434
 export OLLAMA_API_BASE=http://host.docker.internal:11434
 ```
 
-> **Note**: The `OLLAMA_API_BASE` environment variable is deprecated. Configure Ollama via Settings → API Keys instead.
+> **Deprecated**: `OLLAMA_API_BASE` is a deprecated fallback. It still works today, but there is no guarantee it keeps working in future releases, and new automation should not be built on it. Configure Ollama via **Settings → API Keys** instead. For headless/CI/Docker setups, see the [environment reference](environment-reference.md#legacy-ai-provider-environment-variables-deprecated) and the provisioning discussion in [#765](https://github.com/lfnovo/open-notebook/discussions/765).
 
 ## Network Configuration Guide
 
@@ -543,7 +543,7 @@ export OLLAMA_NUM_PARALLEL=4           # Parallel request handling
 export OLLAMA_FLASH_ATTENTION=1        # Enable flash attention (if supported)
 
 # Open Notebook configuration (configure via Settings → API Keys instead)
-# OLLAMA_API_BASE=http://localhost:11434  # Deprecated — use Settings UI
+# OLLAMA_API_BASE=http://localhost:11434  # Deprecated fallback — works today, no guarantee
 ```
 
 ### SSL Configuration (Self-Signed Certificates)

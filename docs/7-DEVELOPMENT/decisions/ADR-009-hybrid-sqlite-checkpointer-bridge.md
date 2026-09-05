@@ -25,5 +25,5 @@ The async/event-loop and thread boundaries stay clean: the model node runs as a 
 ## Consequences
 
 - One checkpointer type and one SQLite file serve both the chat and source-chat graphs; the async path is a small delegation layer, not a second persistence implementation.
-- Any future checkpointer API surface must keep the `aget`/`aput`/`aput_writes`/`alist` delegation in sync with `SqliteSaver`'s sync surface; if langgraph adds new async methods, the bridge raises `NotImplementedError` until extended.
+- Any future checkpointer API surface must keep the `aget`/`aget_tuple`/`aput`/`aput_writes`/`alist` delegation in sync with `SqliteSaver`'s sync surface; if langgraph adds new async methods, the bridge raises `NotImplementedError` until extended.
 - Correctness depends on `SqliteSaver`'s internal `threading.Lock` continuing to guard every connection access. If that upstream guarantee ever changed, this bridge would need its own lock or a real async saver.

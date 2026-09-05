@@ -23,7 +23,7 @@ Three things:
 - **Google Gemini** (multi-modal, long context)
 - **Groq** (ultra-fast inference)
 
-Setup: Get API key → Add credential in Settings UI → Done
+Setup: Get API key → Add credential in Manage → Models → Done
 
 → Go to **[AI Providers Guide](ai-providers.md)**
 

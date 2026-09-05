@@ -41,7 +41,7 @@ Open Notebook can connect to any server using this format.
 3. Download a model (e.g., Llama 3)
 4. Start the local server (default: port 1234)
 
-### Step 2: Configure in Settings UI (Recommended)
+### Step 2: Configure in Manage → Models (Recommended)
 
 1. Go to **Manage** → **Models**
 2. Click **Add Credential** → Select **OpenAI-Compatible**

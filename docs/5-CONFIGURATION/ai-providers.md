@@ -61,7 +61,7 @@ Heavy use: $50-100+/month
 ```
 
 **Troubleshooting:**
-- "Invalid API key" → Check key starts with "sk-proj-" and test the connection in Settings
+- "Invalid API key" → Check key starts with "sk-proj-" and test the connection in Manage → Models
 - "Rate limit exceeded" → Wait or upgrade account
 - "Model not available" → Try gpt-4o-mini instead, or re-discover models
 
@@ -109,7 +109,7 @@ Opus: $10-50+/month
 - Fast processing
 
 **Troubleshooting:**
-- "Invalid API key" → Check it starts with "sk-ant-" and test in Settings
+- "Invalid API key" → Check it starts with "sk-ant-" and test in Manage → Models
 - "Overloaded" → Anthropic is busy, retry later
 - "Model unavailable" → Re-discover models from the credential
 

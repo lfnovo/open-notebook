@@ -103,9 +103,8 @@ Your provider's models are now available!
 
 ## Step 5: Configure Your Model (1 min)
 
-1. Go to **Settings** (gear icon)
-2. Navigate to **Models**
-3. Select your provider's model:
+1. In the sidebar, open **Manage** → **Models**
+2. Select your provider's model:
 
 | Provider | Recommended Model | Notes |
 |----------|-------------------|-------|

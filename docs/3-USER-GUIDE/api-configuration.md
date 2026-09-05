@@ -70,8 +70,8 @@ API keys stored in the database are encrypted using Fernet (AES-128-CBC + HMAC-S
 
 ## Accessing Credential Configuration
 
-1. Click **Settings** in the navigation bar
-2. Select **Models** tab
+1. In the sidebar, find the **Manage** section
+2. Click **Models**
 3. You'll see existing credentials and an **Add Credential** button
 
 ```

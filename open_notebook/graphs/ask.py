@@ -11,10 +11,16 @@ from typing_extensions import TypedDict
 
 from open_notebook.ai.provision import provision_langchain_model
 from open_notebook.domain.notebook import vector_search
-from open_notebook.exceptions import OpenNotebookError
+from open_notebook.exceptions import ExternalServiceError, OpenNotebookError
 from open_notebook.utils import clean_thinking_content
 from open_notebook.utils.error_classifier import classify_error
 from open_notebook.utils.text_utils import extract_text_content
+
+# Output budget shared by the three Ask stages (strategy, per-search answers,
+# final synthesis). Matches chat and transformations. The previous 2000 cap
+# silently truncated answers in token-dense languages and left reasoning
+# models with no budget for the visible answer after their thinking (#1221).
+ASK_MAX_TOKENS = 8192
 
 
 class SubGraphState(TypedDict):
@@ -60,7 +66,7 @@ async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -
             system_prompt,
             config.get("configurable", {}).get("strategy_model"),
             "tools",
-            max_tokens=2000,
+            max_tokens=ASK_MAX_TOKENS,
             structured=dict(type="json"),
         )
         # model = model.bind_tools(tools)
@@ -73,6 +79,19 @@ async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -
 
         # Parse the cleaned JSON content
         strategy = parser.parse(cleaned_content)
+
+        # A reasoning model that spends its whole budget thinking returns a
+        # syntactically valid strategy with blank search terms. Drop those and
+        # fail loudly when nothing usable remains, instead of running empty
+        # vector searches and answering "no documents found".
+        strategy.searches = [s for s in strategy.searches if s.term.strip()]
+        if not strategy.searches:
+            raise ExternalServiceError(
+                "The strategy model returned no search terms for this question. "
+                "This usually means the model spent its output budget on reasoning "
+                "or returned an empty response. Try a different strategy model in "
+                "Settings → Models, or rephrase the question."
+            )
 
         return {"strategy": strategy}
     except OpenNotebookError:
@@ -114,11 +133,15 @@ async def provide_answer(state: SubGraphState, config: RunnableConfig) -> dict:
             system_prompt,
             config.get("configurable", {}).get("answer_model"),
             "tools",
-            max_tokens=2000,
+            max_tokens=ASK_MAX_TOKENS,
         )
         ai_message = await model.ainvoke(system_prompt)
-        ai_content = extract_text_content(ai_message.content)
-        return {"answers": [clean_thinking_content(ai_content)]}
+        ai_content = clean_thinking_content(extract_text_content(ai_message.content))
+        if not ai_content.strip():
+            # Nothing left after stripping thinking content — an empty partial
+            # answer only pollutes the final synthesis.
+            return {"answers": []}
+        return {"answers": [ai_content]}
     except OpenNotebookError:
         raise
     except Exception as e:
@@ -133,7 +156,7 @@ async def write_final_answer(state: ThreadState, config: RunnableConfig) -> dict
             system_prompt,
             config.get("configurable", {}).get("final_answer_model"),
             "tools",
-            max_tokens=2000,
+            max_tokens=ASK_MAX_TOKENS,
         )
         ai_message = await model.ainvoke(system_prompt)
         final_content = extract_text_content(ai_message.content)

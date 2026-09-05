@@ -112,8 +112,9 @@ export function useSourceChat(sourceId: string) {
   const sendMessage = useCallback(async (message: string, modelOverride?: string) => {
     // Abort any previous in-flight request
     abortControllerRef.current?.abort()
-    abortControllerRef.current = new AbortController()
-    const signal = abortControllerRef.current.signal
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+    const signal = controller.signal
 
     let sessionId = currentSessionId
 
@@ -221,9 +222,17 @@ export function useSourceChat(sourceId: string) {
       // Remove optimistic messages on error
       setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
     } finally {
-      setIsStreaming(false)
-      // Refetch session to get persisted messages
-      refetchCurrentSession()
+      // A superseded send (replaced by a newer one) must not clear the newer
+      // stream's loading state or refetch over its messages. A user-initiated
+      // cancel sets the ref to null (and clears isStreaming itself), so it still
+      // falls through to refetch the persisted user message.
+      const superseded =
+        abortControllerRef.current !== null && abortControllerRef.current !== controller
+      if (!superseded) {
+        setIsStreaming(false)
+        // Refetch session to get persisted messages
+        refetchCurrentSession()
+      }
     }
   }, [sourceId, currentSessionId, refetchCurrentSession, queryClient, t])
 

@@ -350,10 +350,26 @@ async def stream_source_chat_response(
     try:
         # Persist the user message to the checkpoint up front so it survives a
         # mid-generation disconnect (the frontend refetches the checkpoint on
-        # cancel/complete and would otherwise drop the user's message).
-        await source_chat_graph.aupdate_state(
-            config, {"messages": [HumanMessage(content=message)]}
+        # cancel/complete and would otherwise drop the user's message). Skip the
+        # append when this exact message is already the trailing (unanswered)
+        # turn — a retry after a failed generation would otherwise duplicate it.
+        # A completed exchange always ends with an AI message, so a trailing
+        # human turn is necessarily a pending one.
+        current_state = await asyncio.to_thread(
+            source_chat_graph.get_state, config=config
         )
+        already_pending = False
+        if current_state and current_state.values and "messages" in current_state.values:
+            existing_messages = current_state.values["messages"]
+            last_message = existing_messages[-1] if existing_messages else None
+            already_pending = (
+                isinstance(last_message, HumanMessage)
+                and last_message.content == message
+            )
+        if not already_pending:
+            await source_chat_graph.aupdate_state(
+                config, {"messages": [HumanMessage(content=message)]}
+            )
 
         # Send user message event
         user_event = {"type": "user_message", "content": message, "timestamp": None}

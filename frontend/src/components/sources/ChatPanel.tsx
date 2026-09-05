@@ -303,16 +303,29 @@ function ChatComposer({
           rows={1}
         />
         {isStreaming ? (
-          <Button
-            onClick={onCancel}
-            size="icon"
-            variant="secondary"
-            aria-label={t('chat.stop')}
-            title={t('chat.stop')}
-            className="h-[40px] w-[40px] flex-shrink-0"
-          >
-            <Square className="h-4 w-4" />
-          </Button>
+          onCancel ? (
+            <Button
+              onClick={onCancel}
+              size="icon"
+              variant="secondary"
+              aria-label={t('chat.stop')}
+              title={t('chat.stop')}
+              className="h-[40px] w-[40px] flex-shrink-0"
+            >
+              <Square className="h-4 w-4" />
+            </Button>
+          ) : (
+            // No cancel callback (e.g. notebook chat, which is not streamed) —
+            // show a disabled spinner rather than a dead Stop button.
+            <Button
+              disabled
+              size="icon"
+              aria-label={t('common.saving')}
+              className="h-[40px] w-[40px] flex-shrink-0"
+            >
+              <Loader2 className="h-4 w-4 animate-spin" />
+            </Button>
+          )
         ) : (
           <Button
             onClick={handleSend}

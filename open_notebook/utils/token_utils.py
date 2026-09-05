@@ -9,6 +9,8 @@ import re
 from typing import List, Optional, Tuple
 
 from open_notebook.config import TIKTOKEN_CACHE_DIR
+from open_notebook.exceptions import ContextLengthExceededError
+from open_notebook.utils.error_classifier import classify_error
 
 # Set tiktoken cache directory before importing tiktoken to ensure
 # tokenizer encodings are cached persistently in the data folder
@@ -28,6 +30,12 @@ DEFAULT_OUTPUT_TOKENS = 8192
 
 # Fraction of the context window reserved for the model's output.
 OUTPUT_RATIO = 0.10
+
+# Floor for the per-chunk output budget. 10% of a small window (8192 tokens
+# when the provider's error wording can't be parsed) is only ~819 tokens, which
+# truncates chunk results; reserve at least this many, capped at a quarter of
+# the window so tiny windows still leave room for input.
+MIN_CHUNK_OUTPUT_TOKENS = 2048
 
 
 def token_count(input_string: str) -> int:
@@ -86,7 +94,8 @@ def parse_context_limit_error(error: Exception) -> Optional[Tuple[Optional[int],
 
     - OpenAI: ``"maximum context length is 8192 tokens... 10000 tokens"``
     - Anthropic: ``"prompt is too long: 10000 tokens > 8192 maximum"``
-    - Google: ``"input token count (10000) exceeds the maximum (8192)"``
+    - Google: ``"input token count (10000) exceeds the maximum number of
+      tokens allowed (8192)"``
     - Generic variants: ``"10000 tokens > 8192"``, ``"tokens (10000) exceeded
       ... limit 8192"``, or a lone ``"max/maximum ... <limit>"``
 
@@ -130,9 +139,12 @@ def parse_context_limit_error(error: Exception) -> Optional[Tuple[Optional[int],
     if match:
         return int(match.group(1)), int(match.group(2))
 
-    # Google: "input token count (10000) exceeds the maximum (8192)"
+    # Google: "input token count (10000) exceeds the maximum number of tokens
+    # allowed (8192)" (older wording: "... exceeds the maximum (8192)")
     match = re.search(
-        r"input token count \((\d+)\) exceeds the maximum \((\d+)\)", error_str
+        r"input token count \((\d+)\) exceeds the maximum[^\d(]*\((\d+)\)",
+        error_str,
+        re.IGNORECASE,
     )
     if match:
         return int(match.group(1)), int(match.group(2))
@@ -160,58 +172,18 @@ def parse_context_limit_error(error: Exception) -> Optional[Tuple[Optional[int],
     return None
 
 
-def is_context_limit_error(error: Exception) -> bool:
+def is_context_limit_error(error: BaseException) -> bool:
     """Return True if the exception is a context/token-limit error (and not a
     rate limit, auth, quota, network, etc.).
 
-    Like ``parse_context_limit_error``, this matches provider wordings by
-    keyword: non-context errors are excluded first, then context keywords are
-    required. Unknown wordings return False, so callers treat the error as a
-    regular failure rather than chunking on it."""
-    error_msg = str(error).lower()
-
-    non_context_keywords = [
-        "rate limit",
-        "rate_limit",
-        "ratelimit",
-        "too many requests",
-        "quota exceeded",
-        "unauthorized",
-        "authentication",
-        "forbidden",
-        "not found",
-        "invalid api key",
-        "billing",
-        "insufficient_quota",
-        "server error",
-        "internal error",
-        "timeout",
-        "connection",
-    ]
-    for keyword in non_context_keywords:
-        if keyword in error_msg:
-            return False
-
-    context_keywords = [
-        "maximum context length",
-        "token limit",
-        "too many tokens",
-        "prompt is too long",
-        "exceeds the maximum",
-        "context window",
-        "max_tokens",
-        "token count",
-        "context length",
-        "input too long",
-        "request too large",
-        "payload size exceeds",
-        "you requested",
-    ]
-    for keyword in context_keywords:
-        if keyword in error_msg:
-            return True
-
-    return False
+    Thin wrapper over ``error_classifier.classify_error`` so there is exactly
+    one list of provider wordings in the codebase: to recognise a new
+    context-limit message, extend the context-length rule in
+    ``open_notebook/utils/error_classifier.py``. Unknown wordings classify as a
+    generic external error and return False here, so callers treat them as a
+    regular failure rather than chunking on them."""
+    error_class, _ = classify_error(error)
+    return issubclass(error_class, ContextLengthExceededError)
 
 
 def get_context_limit_from_error(
@@ -231,8 +203,12 @@ def get_context_limit_from_error(
 
 
 def calculate_output_buffer(context_limit: int) -> int:
-    """Reserve a slice of the context window for the model's output."""
-    return int(context_limit * OUTPUT_RATIO)
+    """Reserve a slice of the context window for the model's output when
+    processing a chunk: ``OUTPUT_RATIO`` of the window, but never less than
+    ``MIN_CHUNK_OUTPUT_TOKENS`` (or a quarter of the window, whichever is
+    smaller)."""
+    floor = min(MIN_CHUNK_OUTPUT_TOKENS, context_limit // 4)
+    return max(int(context_limit * OUTPUT_RATIO), floor)
 
 
 def chunk_text_by_tokens(text: str, max_tokens: int) -> List[str]:

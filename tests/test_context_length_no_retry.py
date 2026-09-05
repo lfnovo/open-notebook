@@ -21,8 +21,10 @@ from surreal_commands.core.retry import build_async_retry_instance
 
 import commands  # noqa: F401  -- import registers the @command decorators
 from open_notebook.exceptions import (
+    AuthenticationError,
     ContextLengthExceededError,
     ExternalServiceError,
+    RateLimitError,
 )
 from open_notebook.utils.error_classifier import classify_error
 
@@ -77,6 +79,45 @@ class TestClassification:
     def test_still_an_external_service_error(self):
         """Subclassing is load-bearing: it keeps the existing 502 handler."""
         assert issubclass(ContextLengthExceededError, ExternalServiceError)
+
+    @pytest.mark.parametrize(
+        "message",
+        [
+            # Anthropic. The token count contains "429" — a substring match on
+            # status codes would turn this into a rate limit (and retry it).
+            "prompt is too long: 142900 tokens > 200000 maximum",
+            # Google
+            "400 The input token count (250012) exceeds the maximum number of tokens allowed (131072).",
+            # OpenAI
+            "This model's maximum context length is 8192 tokens. However, your messages resulted in 10500 tokens.",
+        ],
+    )
+    def test_provider_wordings_are_context_length(self, message):
+        exc_class, _ = classify_error(Exception(message))
+
+        assert exc_class is ContextLengthExceededError
+
+    @pytest.mark.parametrize(
+        "message, expected",
+        [
+            ("Rate limit exceeded. Please wait a moment.", RateLimitError),
+            ("Error code: 429 - too many requests", RateLimitError),
+            ("Error code: 401 - invalid api key", AuthenticationError),
+            ("Error code: 503 - service unavailable", ExternalServiceError),
+        ],
+    )
+    def test_status_codes_still_match_as_standalone_numbers(self, message, expected):
+        exc_class, _ = classify_error(Exception(message))
+
+        assert exc_class is expected
+
+    def test_status_code_inside_a_larger_number_does_not_match(self):
+        """"4290 items" must not read as HTTP 429; unknown wording falls through
+        to the generic external error."""
+        exc_class, _ = classify_error(Exception("Processed 4290 items, then failed"))
+
+        assert exc_class is ExternalServiceError
+        assert not issubclass(exc_class, ContextLengthExceededError)
 
     def test_provider_5xx_stays_retryable(self):
         """The regression guard -- 5xx must NOT be swept up as permanent."""

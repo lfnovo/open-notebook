@@ -60,7 +60,7 @@ class TestAddInsightRaisesOnSubmissionFailure:
             await source.add_insight("", "some content")
 
 
-class TestTransformationGraphPropagatesFailure:
+class TestTryFullContentPropagatesFailure:
     """open_notebook/graphs/transformation.py: try_full_content().
 
     Upstream tested this contract on run_transformation(), the single node the
@@ -72,7 +72,7 @@ class TestTransformationGraphPropagatesFailure:
     """
 
     @pytest.mark.asyncio
-    async def test_add_insight_failure_propagates_out_of_run_transformation(self):
+    async def test_add_insight_failure_propagates_out_of_try_full_content(self):
         from open_notebook.graphs.transformation import try_full_content
 
         source = make_source()

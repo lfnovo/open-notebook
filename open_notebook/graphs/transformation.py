@@ -17,7 +17,7 @@ import weakref
 from typing import Annotated, List, Optional, Union
 
 from ai_prompter import Prompter
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
@@ -27,7 +27,7 @@ from typing_extensions import TypedDict
 from open_notebook.ai.provision import provision_langchain_model
 from open_notebook.domain.notebook import Source
 from open_notebook.domain.transformation import DefaultPrompts, Transformation
-from open_notebook.exceptions import OpenNotebookError
+from open_notebook.exceptions import ContextLengthExceededError, OpenNotebookError
 from open_notebook.utils import clean_thinking_content
 from open_notebook.utils.error_classifier import classify_error
 from open_notebook.utils.text_utils import extract_text_content
@@ -38,7 +38,6 @@ from open_notebook.utils.token_utils import (
     calculate_output_buffer,
     chunk_text_by_tokens,
     get_context_limit_from_error,
-    is_context_limit_error,
     token_count,
 )
 
@@ -118,6 +117,28 @@ def _extract_response_content(response) -> str:
     return clean_thinking_content(extract_text_content(response.content))
 
 
+async def _invoke_llm(
+    payload: List[BaseMessage],
+    model_id: Optional[str],
+    max_tokens: int,
+) -> str:
+    """Provision the transformation model, invoke it and return the cleaned
+    text. Raw provider exceptions are classified into ``OpenNotebookError``
+    subclasses so the worker's retry blocklist sees them (a context-length
+    rejection must not be retried) and users get a sanitized message."""
+    try:
+        chain = await provision_langchain_model(
+            str(payload), model_id, "transformation", max_tokens=max_tokens
+        )
+        response = await chain.ainvoke(payload)
+        return _extract_response_content(response)
+    except OpenNotebookError:
+        raise
+    except Exception as e:
+        error_class, user_message = classify_error(e)
+        raise error_class(user_message) from e
+
+
 def _build_system_prompt(state: dict) -> str:
     transformation: Transformation = state["transformation"]
     # transformation.prompt is user-controlled free text. Never compile it as
@@ -174,8 +195,11 @@ async def try_full_content(state: dict, config: RunnableConfig) -> dict:
     except OpenNotebookError:
         raise
     except Exception as e:
-        if not is_context_limit_error(e):
-            error_class, user_message = classify_error(e)
+        # Classify once: anything but a context-length rejection is a real
+        # failure and is re-raised sanitized; a context-length rejection means
+        # the document doesn't fit and we fall back to chunking.
+        error_class, user_message = classify_error(e)
+        if not issubclass(error_class, ContextLengthExceededError):
             raise error_class(user_message) from e
 
         tokens_sent, context_limit = get_context_limit_from_error(
@@ -252,16 +276,12 @@ async def process_chunk(state: ChunkState, config: RunnableConfig) -> dict:
         HumanMessage(content=state["chunk"]),
     ]
     async with _get_chunk_semaphore():
-        chain = await provision_langchain_model(
-            str(payload),
-            state.get("model_id"),
-            "transformation",
-            max_tokens=state["output_buffer"],
+        result = await _invoke_llm(
+            payload, state.get("model_id"), state["output_buffer"]
         )
-        response = await chain.ainvoke(payload)
 
     logger.info(f"Chunk {idx + 1}/{total} for '{title}' completed")
-    return {"chunk_results": [{"idx": idx, "result": _extract_response_content(response)}]}
+    return {"chunk_results": [{"idx": idx, "result": result}]}
 
 
 def _batch_results_by_tokens(results: List[str], budget: int) -> List[List[str]]:
@@ -294,14 +314,11 @@ async def _synthesize_once(
         HumanMessage(content=combined_text),
     ]
     async with _get_chunk_semaphore():
-        chain = await provision_langchain_model(
-            str(payload),
+        return await _invoke_llm(
+            payload,
             state.get("model_id"),
-            "transformation",
-            max_tokens=state.get("output_buffer", DEFAULT_OUTPUT_TOKENS),
+            state.get("output_buffer", DEFAULT_OUTPUT_TOKENS),
         )
-        response = await chain.ainvoke(payload)
-    return _extract_response_content(response)
 
 
 async def _reduce_results(

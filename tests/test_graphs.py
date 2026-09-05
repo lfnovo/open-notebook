@@ -198,6 +198,62 @@ class TestTransformationFullContentPath:
         assert provision.await_args is not None
         assert provision.await_args.kwargs["max_tokens"] == 8192
 
+    @staticmethod
+    def _state_and_provision(error: Exception):
+        from open_notebook.domain.transformation import Transformation
+
+        mock_transformation = MagicMock(spec=Transformation)
+        mock_transformation.prompt = "Summarize the document."
+        mock_transformation.title = "Summary"
+        state = {
+            "input_text": "Some content. " * 50,
+            "transformation": mock_transformation,
+            "source": None,
+        }
+        fake_chain = MagicMock()
+        fake_chain.ainvoke = AsyncMock(side_effect=error)
+        return state, AsyncMock(return_value=fake_chain)
+
+    @pytest.mark.asyncio
+    async def test_context_limit_error_falls_back_to_chunking(self):
+        """A provider context-length rejection switches to chunking with the
+        limit parsed from the message. The token count contains "429": the
+        classifier must not read that as a rate limit, or the document would
+        never be chunked (and the worker would retry it)."""
+        state, provision = self._state_and_provision(
+            Exception("prompt is too long: 142900 tokens > 200000 maximum")
+        )
+
+        with patch(
+            "open_notebook.graphs.transformation.provision_langchain_model",
+            new=provision,
+        ):
+            result = await try_full_content(state, {"configurable": {}})
+
+        assert result["needs_chunking"] is True
+        assert result["context_limit"] == 200000
+        assert result["chunks"]
+
+    @pytest.mark.asyncio
+    async def test_non_context_error_is_classified(self):
+        """Any other provider failure is re-raised as the classified
+        OpenNotebookError so the worker's retry blocklist and the UI see a
+        typed, sanitized error instead of the raw SDK exception."""
+        from open_notebook.exceptions import RateLimitError
+
+        state, provision = self._state_and_provision(
+            Exception("Error code: 429 - Rate limit exceeded")
+        )
+
+        with (
+            patch(
+                "open_notebook.graphs.transformation.provision_langchain_model",
+                new=provision,
+            ),
+            pytest.raises(RateLimitError),
+        ):
+            await try_full_content(state, {"configurable": {}})
+
 
 class TestProcessChunk:
     """Tests for the parallel chunk processor."""
@@ -235,6 +291,51 @@ class TestProcessChunk:
         assert system_message.content.startswith("Extract all names.")
         assert "section 2 of 3" in system_message.content
         assert result == {"chunk_results": [{"idx": 1, "result": "Alice, Bob"}]}
+
+    @pytest.mark.asyncio
+    async def test_provider_errors_are_classified(self):
+        """Chunk failures must surface as classified OpenNotebookErrors, like
+        the single-shot path: the worker's retry blocklist keys on the exception
+        type (a ContextLengthExceededError is never retried) and the message
+        must be user-safe rather than the raw SDK repr."""
+        from open_notebook.exceptions import (
+            ContextLengthExceededError,
+            ExternalServiceError,
+            RateLimitError,
+        )
+        from open_notebook.graphs.transformation import ChunkState, process_chunk
+
+        state: ChunkState = {
+            "system_prompt": "Extract all names.",
+            "model_id": None,
+            "output_buffer": 800,
+            "title": "Names",
+            "chunk": "Alice met Bob.",
+            "chunk_idx": 0,
+            "total_chunks": 2,
+        }
+
+        cases = [
+            (Exception("Error code: 429 - Rate limit exceeded"), RateLimitError),
+            (
+                Exception("prompt is too long: 9000 tokens > 8192 maximum"),
+                ContextLengthExceededError,
+            ),
+            (RuntimeError("x" * 500), ExternalServiceError),
+        ]
+        for raw, expected in cases:
+            fake_chain = MagicMock()
+            fake_chain.ainvoke = AsyncMock(side_effect=raw)
+            with (
+                patch(
+                    "open_notebook.graphs.transformation.provision_langchain_model",
+                    new=AsyncMock(return_value=fake_chain),
+                ),
+                pytest.raises(expected) as excinfo,
+            ):
+                await process_chunk(state, {"configurable": {}})
+            assert excinfo.value.__cause__ is raw
+            assert len(str(excinfo.value)) < 300  # truncated, not the raw repr
 
     def test_chunk_semaphore_is_per_event_loop(self):
         """Each event loop gets its own semaphore (a shared one would raise
@@ -321,6 +422,31 @@ class TestTransformationChunkingReduce:
         assert all(
             n <= budget for n in seen_call_tokens
         ), f"a synthesis call exceeded budget: {seen_call_tokens}"
+
+    @pytest.mark.asyncio
+    async def test_synthesis_provider_errors_are_classified(self):
+        """Synthesis calls get the same error classification as chunk calls."""
+        from open_notebook.exceptions import RateLimitError
+        from open_notebook.graphs.transformation import _synthesize_once
+
+        raw = Exception("Error code: 429 - Rate limit exceeded")
+        fake_chain = MagicMock()
+        fake_chain.ainvoke = AsyncMock(side_effect=raw)
+
+        with (
+            patch(
+                "open_notebook.graphs.transformation.provision_langchain_model",
+                new=AsyncMock(return_value=fake_chain),
+            ),
+            pytest.raises(RateLimitError) as excinfo,
+        ):
+            await _synthesize_once(
+                ["part one", "part two"],
+                {"model_id": None, "output_buffer": 1000},
+                "merge these",
+            )
+
+        assert excinfo.value.__cause__ is raw
 
 
 # ============================================================================

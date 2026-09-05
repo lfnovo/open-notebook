@@ -71,7 +71,7 @@ export function TransformationsList({ transformations, isLoading, onPlayground }
     <>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-lg font-semibold">{t('transformations.listTitle')}</h2>
+          <h2 className="font-display text-lg font-semibold tracking-tight">{t('transformations.listTitle')}</h2>
           <Button onClick={() => handleOpenEditor()}>
             <Plus className="h-4 w-4 mr-2" />
             {t('transformations.createNew')}

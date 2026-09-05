@@ -71,7 +71,7 @@ ollama list
 
 ### Solution 1: Add Credential via Settings UI
 ```
-1. Go to Settings → API Keys
+1. Go to Settings → Models
 2. Click "Add Credential"
 3. Select your provider (e.g., OpenAI, Anthropic, Google)
 4. Enter your API key
@@ -82,7 +82,7 @@ ollama list
 
 ### Solution 2: Check Key is Valid
 ```
-1. Go to Settings → API Keys
+1. Go to Settings → Models
 2. Click "Test Connection" on your credential
 3. If it shows "Invalid API key":
    - Get a fresh key from the provider's website
@@ -91,7 +91,7 @@ ollama list
 
 ### Solution 3: Switch Provider
 ```
-1. Go to Settings → API Keys
+1. Go to Settings → Models
 2. Add a credential for a different provider
 3. Test Connection → Discover Models → Register Models
 4. Go to Settings → Models to select the new provider's models
@@ -109,7 +109,7 @@ ollama list
 
 ### Step 1: Test Your Credential
 ```
-1. Go to Settings → API Keys
+1. Go to Settings → Models
 2. Click "Test Connection" on your credential
 3. If it fails, proceed to Step 2
 ```
@@ -126,7 +126,7 @@ Generate new key and copy exactly (no extra spaces)
 
 ### Step 3: Update Credential
 ```
-1. Go to Settings → API Keys
+1. Go to Settings → Models
 2. Delete the old credential
 3. Click "Add Credential" → select provider
 4. Paste the new key

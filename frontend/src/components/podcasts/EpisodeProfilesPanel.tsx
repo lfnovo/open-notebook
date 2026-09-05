@@ -87,7 +87,7 @@ export function EpisodeProfilesPanel({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">{t('podcasts.episodeProfilesTitle')}</h2>
+          <h2 className="font-display text-lg font-semibold tracking-tight">{t('podcasts.episodeProfilesTitle')}</h2>
           <p className="text-sm text-muted-foreground">
             {t('podcasts.episodeProfilesDesc')}
           </p>
@@ -98,13 +98,13 @@ export function EpisodeProfilesPanel({
       </div>
 
       {disableCreate ? (
-        <p className="rounded-lg border border-dashed bg-amber-50 p-4 text-sm text-amber-900">
+        <p className="rounded-lg border border-dashed bg-warn-tint p-4 text-sm text-warn">
           {t('podcasts.createSpeakerFirst')}
         </p>
       ) : null}
 
       {sortedProfiles.length === 0 ? (
-        <div className="rounded-lg border border-dashed bg-muted/30 p-10 text-center text-sm text-muted-foreground">
+        <div className="rounded-md border border-dashed p-10 text-center text-sm text-muted-foreground">
           {t('podcasts.noEpisodeProfiles')}
         </div>
       ) : (
@@ -115,9 +115,12 @@ export function EpisodeProfilesPanel({
               profile.speaker_config
             )
             const unconfigured = needsModelSetup(profile)
+            const voiceModelLabel = speakerSummary?.voice_model
+              ? (modelNameMap[speakerSummary.voice_model] ?? speakerSummary.voice_model)
+              : null
 
             return (
-              <Card key={profile.id} className="shadow-sm">
+              <Card key={profile.id}>
                 <CardHeader className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                   <div>
                     <div className="flex items-center gap-2">
@@ -125,7 +128,7 @@ export function EpisodeProfilesPanel({
                         {profile.name}
                       </CardTitle>
                       {unconfigured ? (
-                        <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs">
+                        <Badge variant="outline" className="text-warn border-warn/30 text-xs">
                           <AlertTriangle className="h-3 w-3 mr-1" />
                           {t('podcasts.setupRequired')}
                         </Badge>
@@ -237,16 +240,20 @@ export function EpisodeProfilesPanel({
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         {t('podcasts.speakerProfile')}
                       </p>
-                      <div className="flex items-center gap-2 text-foreground">
-                        <Users className="h-4 w-4" />
+                      <div className="flex flex-wrap items-center gap-2 text-foreground">
+                        <Users className="h-4 w-4 shrink-0" />
                         <span>
                           {profile.speaker_config_name ??
                             speakerSummary?.name ??
                             t('podcasts.notConfigured')}
                         </span>
-                        {speakerSummary?.voice_model ? (
-                          <Badge variant="outline" className="text-xs">
-                            {modelNameMap[speakerSummary.voice_model] ?? speakerSummary.voice_model}
+                        {voiceModelLabel ? (
+                          <Badge
+                            variant="outline"
+                            className="min-w-0 max-w-full shrink text-xs"
+                            title={voiceModelLabel}
+                          >
+                            <span className="truncate">{voiceModelLabel}</span>
                           </Badge>
                         ) : null}
                       </div>

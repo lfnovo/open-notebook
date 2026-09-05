@@ -249,7 +249,13 @@ export function CredentialFormDialog({
                 }
                 disabled={isSubmitting}
               />
-              <p className="text-xs text-muted-foreground">{t('apiKeys.baseUrlOverrideHint')}</p>
+              <p className="text-xs text-muted-foreground">
+                {t(
+                  isOpenAICompatible
+                    ? 'apiKeys.openAICompatibleBaseUrlHint'
+                    : 'apiKeys.baseUrlOverrideHint',
+                )}
+              </p>
             </div>
           )}
 

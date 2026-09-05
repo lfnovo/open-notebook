@@ -112,6 +112,7 @@ CORS_ORIGINS=https://notebook.example.com
 | `CCORE_FIRECRAWL_WAIT_FOR` | No | `3000` | Milliseconds Firecrawl waits for JavaScript to render before capturing the page |
 | `JINA_API_KEY` | No | None | Jina AI API key for web extraction |
 | `CRAWL4AI_API_URL` | No | None | Base URL of a remote Crawl4AI server. Set this to use Crawl4AI without a local install |
+| `CRAWL4AI_API_TOKEN` | No | None | Bearer token sent as `Authorization: Bearer …` to the remote Crawl4AI server. Required by Crawl4AI Docker ≥ 0.9.0, which rejects unauthenticated external connections by default. Ignored when unset |
 
 ### Optional heavy runtimes (installed on first startup)
 
@@ -192,7 +193,7 @@ SURREAL_PASSWORD=password
 SURREAL_NAMESPACE=open_notebook
 SURREAL_DATABASE=open_notebook
 ```
-Then configure AI providers via **Settings → API Keys** in the browser.
+Then configure AI providers via **Settings → Models** in the browser.
 
 ### Production Deployment
 ```
@@ -258,7 +259,7 @@ env | grep -E "^[A-Z_]+=" | sort
 - **Quote values:** Use quotes for values with spaces: `API_URL="http://my server:5055"`
 - **Restart required:** Changes take effect after restarting services
 - **Secrets:** Don't commit encryption keys or passwords to git
-- **AI Providers:** Configure via **Settings → API Keys** in the browser (not via env vars)
+- **AI Providers:** Configure via **Settings → Models** in the browser. The provider env vars listed under [Legacy](#legacy-ai-provider-environment-variables-deprecated) are a deprecated fallback
 - **Migration:** Use Settings UI to migrate existing env vars to the credential system. See [API Configuration](../3-USER-GUIDE/api-configuration.md#migrating-from-environment-variables)
 
 ---
@@ -268,7 +269,7 @@ env | grep -E "^[A-Z_]+=" | sort
 - [ ] Set `OPEN_NOTEBOOK_ENCRYPTION_KEY` in docker-compose.yml
 - [ ] Set database credentials (`SURREAL_*`)
 - [ ] Start services
-- [ ] Open browser → Go to **Settings → API Keys**
+- [ ] Open browser → Go to **Settings → Models**
 - [ ] **Add Credential** for your AI provider
 - [ ] **Test Connection** to verify
 - [ ] **Discover & Register Models**
@@ -282,31 +283,35 @@ Done!
 
 ## Legacy: AI Provider Environment Variables (Deprecated)
 
-> **Deprecated**: The following AI provider API key environment variables are deprecated. Configure providers via the Settings UI instead. These variables may still work as a fallback but are no longer recommended.
+> **Deprecated**: The following AI provider environment variables are a deprecated fallback. They still work today (the runtime reads the database first and falls back to the environment), but there is no guarantee they keep working in future releases, and new automation should not be built on them. Configure providers via **Settings → Models** instead.
 
-If you have these variables configured from a previous installation, click the **Migrate to Database** button in **Settings → API Keys** to import them into the credential system, then remove them from your configuration.
+Why the UI is the source of truth: credentials in the database are encrypted at rest (via `OPEN_NOTEBOOK_ENCRYPTION_KEY`), can be added or rotated at runtime without restarts, and support multiple credentials per provider — none of which a single env var can express.
+
+**Headless, CI/CD and Docker deployments:** a declarative provisioning contract over the credentials API (a file describing providers and credentials, with `${VAR}`-style references resolved from the environment) is being designed in [Discussion #765](https://github.com/lfnovo/open-notebook/discussions/765). Until it ships, the env fallback is the only unattended path — use it knowing it is deprecated.
+
+If you have these variables configured from a previous installation, click the **Migrate to Database** button in **Settings → Models** to import them into the credential system, then remove them from your configuration.
 
 | Variable | Provider | Replacement |
 |----------|----------|-------------|
-| `OPENAI_API_KEY` | OpenAI | Settings → API Keys → Add OpenAI Credential |
-| `ANTHROPIC_API_KEY` | Anthropic | Settings → API Keys → Add Anthropic Credential |
-| `GOOGLE_API_KEY` | Google Gemini | Settings → API Keys → Add Google Credential |
+| `OPENAI_API_KEY` | OpenAI | Settings → Models → Add OpenAI Credential |
+| `ANTHROPIC_API_KEY` | Anthropic | Settings → Models → Add Anthropic Credential |
+| `GOOGLE_API_KEY` | Google Gemini | Settings → Models → Add Google Credential |
 | `GEMINI_API_BASE_URL` | Google Gemini | Configure in Google Gemini credential |
-| `VERTEX_PROJECT` | Vertex AI | Settings → API Keys → Add Vertex AI Credential |
+| `VERTEX_PROJECT` | Vertex AI | Settings → Models → Add Vertex AI Credential |
 | `VERTEX_LOCATION` | Vertex AI | Configure in Vertex AI credential |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Vertex AI | Configure in Vertex AI credential |
-| `GROQ_API_KEY` | Groq | Settings → API Keys → Add Groq Credential |
-| `MISTRAL_API_KEY` | Mistral | Settings → API Keys → Add Mistral Credential |
-| `DEEPSEEK_API_KEY` | DeepSeek | Settings → API Keys → Add DeepSeek Credential |
-| `XAI_API_KEY` | xAI | Settings → API Keys → Add xAI Credential |
-| `OLLAMA_API_BASE` | Ollama | Settings → API Keys → Add Ollama Credential |
-| `OMLX_API_BASE` | oMLX | Settings → API Keys → Add oMLX Credential |
+| `GROQ_API_KEY` | Groq | Settings → Models → Add Groq Credential |
+| `MISTRAL_API_KEY` | Mistral | Settings → Models → Add Mistral Credential |
+| `DEEPSEEK_API_KEY` | DeepSeek | Settings → Models → Add DeepSeek Credential |
+| `XAI_API_KEY` | xAI | Settings → Models → Add xAI Credential |
+| `OLLAMA_API_BASE` | Ollama | Settings → Models → Add Ollama Credential |
+| `OMLX_API_BASE` | oMLX | Settings → Models → Add oMLX Credential |
 | `OMLX_API_KEY` | oMLX | Optional; only if oMLX was started with `--api-key` |
-| `OPENROUTER_API_KEY` | OpenRouter | Settings → API Keys → Add OpenRouter Credential |
+| `OPENROUTER_API_KEY` | OpenRouter | Settings → Models → Add OpenRouter Credential |
 | `OPENROUTER_BASE_URL` | OpenRouter | Configure in OpenRouter credential |
-| `VOYAGE_API_KEY` | Voyage AI | Settings → API Keys → Add Voyage AI Credential |
-| `ELEVENLABS_API_KEY` | ElevenLabs | Settings → API Keys → Add ElevenLabs Credential |
-| `OPENAI_COMPATIBLE_BASE_URL` | OpenAI-Compatible | Settings → API Keys → Add OpenAI-Compatible Credential |
+| `VOYAGE_API_KEY` | Voyage AI | Settings → Models → Add Voyage AI Credential |
+| `ELEVENLABS_API_KEY` | ElevenLabs | Settings → Models → Add ElevenLabs Credential |
+| `OPENAI_COMPATIBLE_BASE_URL` | OpenAI-Compatible | Settings → Models → Add OpenAI-Compatible Credential |
 | `OPENAI_COMPATIBLE_API_KEY` | OpenAI-Compatible | Configure in OpenAI-Compatible credential |
 | `OPENAI_COMPATIBLE_BASE_URL_LLM` | OpenAI-Compatible | Configure per-service URL in credential |
 | `OPENAI_COMPATIBLE_API_KEY_LLM` | OpenAI-Compatible | Configure per-service key in credential |
@@ -316,12 +321,12 @@ If you have these variables configured from a previous installation, click the *
 | `OPENAI_COMPATIBLE_API_KEY_STT` | OpenAI-Compatible | Configure per-service key in credential |
 | `OPENAI_COMPATIBLE_BASE_URL_TTS` | OpenAI-Compatible | Configure per-service URL in credential |
 | `OPENAI_COMPATIBLE_API_KEY_TTS` | OpenAI-Compatible | Configure per-service key in credential |
-| `DASHSCOPE_API_KEY` | DashScope (Qwen) | Settings → API Keys → Add DashScope Credential |
-| `MINIMAX_API_KEY` | MiniMax | Settings → API Keys → Add MiniMax Credential |
-| `NOVITA_API_KEY` | Novita | Settings → API Keys → Add Novita Credential |
-| `PPQ_API_KEY` | PayPerQ (PPQ) | Settings → API Keys → Add PayPerQ Credential |
-| `COHERE_API_KEY` | Cohere | Settings → API Keys → Add Cohere Credential |
-| `AZURE_OPENAI_API_KEY` | Azure OpenAI | Settings → API Keys → Add Azure OpenAI Credential |
+| `DASHSCOPE_API_KEY` | DashScope (Qwen) | Settings → Models → Add DashScope Credential |
+| `MINIMAX_API_KEY` | MiniMax | Settings → Models → Add MiniMax Credential |
+| `NOVITA_API_KEY` | Novita | Settings → Models → Add Novita Credential |
+| `PPQ_API_KEY` | PayPerQ (PPQ) | Settings → Models → Add PayPerQ Credential |
+| `COHERE_API_KEY` | Cohere | Settings → Models → Add Cohere Credential |
+| `AZURE_OPENAI_API_KEY` | Azure OpenAI | Settings → Models → Add Azure OpenAI Credential |
 | `AZURE_OPENAI_ENDPOINT` | Azure OpenAI | Configure in Azure OpenAI credential |
 | `AZURE_OPENAI_API_VERSION` | Azure OpenAI | Configure in Azure OpenAI credential |
 | `AZURE_OPENAI_API_KEY_LLM` | Azure OpenAI | Configure per-service in credential |

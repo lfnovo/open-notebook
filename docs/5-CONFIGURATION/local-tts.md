@@ -75,7 +75,7 @@ Play `test.mp3` to verify.
 ### Step 4: Configure Open Notebook
 
 **Via Settings UI (Recommended):**
-1. Go to **Settings** → **API Keys**
+1. Go to **Settings** → **Models**
 2. Click **Add Credential** → Select **OpenAI-Compatible**
 3. Enter base URL for TTS: `http://host.docker.internal:8969/v1` (Docker) or `http://localhost:8969/v1` (local)
 4. Click **Save**, then **Test Connection**
@@ -175,7 +175,7 @@ volumes:
 
 ## Docker Networking
 
-When configuring your OpenAI-Compatible credential in **Settings → API Keys**, use the appropriate TTS base URL for your setup:
+When configuring your OpenAI-Compatible credential in **Settings → Models**, use the appropriate TTS base URL for your setup:
 
 ### Open Notebook in Docker (macOS/Windows)
 
@@ -331,7 +331,7 @@ docker stats speaches
 Any OpenAI-compatible TTS server works. The key is:
 
 1. Server implements `/v1/audio/speech` endpoint
-2. Add an OpenAI-Compatible credential in **Settings → API Keys** with the TTS base URL
+2. Add an OpenAI-Compatible credential in **Settings → Models** with the TTS base URL
 3. Add model with provider `openai_compatible`
 
 ---

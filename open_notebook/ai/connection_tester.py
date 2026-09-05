@@ -8,6 +8,7 @@ configurations end-to-end.
 import io
 import json
 import os
+import re
 import struct
 from typing import Dict, Optional, Tuple
 
@@ -369,6 +370,13 @@ def _get_test_audio() -> io.BytesIO:
         return _generate_test_wav()
 
 
+def _contains_http_status(error_msg: str, code: int) -> bool:
+    """True when ``code`` appears as a standalone HTTP status, not as digits
+    inside a model id date (e.g. ``claude-3-haiku-20240307`` contains ``403``).
+    """
+    return re.search(rf"(?<!\d){code}(?!\d)", error_msg) is not None
+
+
 def _connection_failure_reason(error_msg: str) -> Optional[str]:
     """Classify whether an error means the provider is genuinely unreachable
     or the credentials are rejected.
@@ -384,9 +392,9 @@ def _connection_failure_reason(error_msg: str) -> Optional[str]:
     """
     lower = error_msg.lower()
 
-    if "401" in error_msg or "unauthorized" in lower:
+    if _contains_http_status(error_msg, 401) or "unauthorized" in lower:
         return "Invalid API key"
-    if "403" in error_msg or "forbidden" in lower:
+    if _contains_http_status(error_msg, 403) or "forbidden" in lower:
         return "API key lacks required permissions"
     if "timeout" in lower or "timed out" in lower:
         return "Connection timed out - check network/endpoint"
@@ -409,7 +417,7 @@ def _is_rate_limit(error_msg: str) -> bool:
     lower = error_msg.lower()
     return (
         ("rate" in lower and "limit" in lower)
-        or "429" in error_msg
+        or _contains_http_status(error_msg, 429)
         or "quota" in lower
         or "resource has been exhausted" in lower
         or "resource exhausted" in lower
@@ -430,7 +438,7 @@ def _normalize_error_message(error_msg: str) -> Tuple[bool, str]:
     if _is_rate_limit(error_msg):
         return True, "Rate limited - but connection works"
     lower = error_msg.lower()
-    if "not found" in lower and "model" in lower:
+    if ("not found" in lower or "not_found" in lower) and "model" in lower:
         return False, "Model not found on this provider"
 
     return False, error_msg
@@ -443,6 +451,7 @@ def _normalize_error_message(error_msg: str) -> Tuple[bool, str]:
 # model, never a user-supplied base URL.
 _MODEL_UNAVAILABLE_MARKERS = (
     "not found",
+    "not_found",
     "not supported",
     "does not exist",
     "deprecated",

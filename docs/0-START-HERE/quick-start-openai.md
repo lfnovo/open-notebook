@@ -85,7 +85,7 @@ You should see the Open Notebook interface!
 
 ## Step 4: Configure Your OpenAI Provider (1 min)
 
-1. Go to **Settings** → **API Keys**
+1. Go to **Settings** → **Models**
 2. Click **Add Credential**
 3. Select provider: **OpenAI**
 4. Give it a name (e.g., "My OpenAI Key")
@@ -160,7 +160,7 @@ Then access at `http://localhost:8503`
 
 ### "API key not working"
 
-1. Go to **Settings** → **API Keys**
+1. Go to **Settings** → **Models**
 2. Click **Test Connection** on your OpenAI credential
 3. If it fails, verify your key at https://platform.openai.com
 4. Delete the credential and create a new one with the correct key

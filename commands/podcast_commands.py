@@ -41,6 +41,49 @@ def build_episode_output_dir(podcasts_folder: str = PODCASTS_FOLDER) -> tuple[st
     return episode_dir_name, output_dir
 
 
+def explain_generation_failure(error_msg: str) -> Optional[str]:
+    """Map a podcast-generation failure to an actionable hint, or None.
+
+    Ordered most specific first. The GPT-5 extended-thinking hint used to be
+    the only one, so the two most common real failures got either nothing
+    (`Invalid speaker name`) or advice about the wrong provider - a truncated
+    Gemini response was told to switch to gpt-4o (#1238).
+    """
+    if "Invalid speaker name" in error_msg:
+        return (
+            "The transcript model returned a speaker name that is not in the "
+            "speaker profile - usually a placeholder copied from the prompt "
+            'such as "..." rather than an invented person. Speaker names must '
+            "match the profile exactly. Retrying the episode often succeeds, "
+            "since each attempt is a fresh sample."
+        )
+
+    if "Requested entity was not found" in error_msg or (
+        "Voice name" in error_msg and "not supported" in error_msg
+    ):
+        return (
+            "The speaker profile's voice_id is not valid for its TTS model - "
+            "Google returns 'Requested entity was not found' for an unknown "
+            "voice, which reads like a missing model. Check the voices in "
+            "Settings -> Speaker Profiles against the ones your voice model "
+            "provides (the profiles seeded on install use OpenAI voice names)."
+        )
+
+    if "Invalid json output" in error_msg or "Expecting value" in error_msg:
+        return (
+            "The model's response could not be parsed as JSON. Two common "
+            "causes: (1) the response was truncated - podcast-creator caps a "
+            "transcript segment at 5000 output tokens unless the episode "
+            "profile sets max_tokens, which is tight for long segments or "
+            "token-expensive languages, so raise max_tokens or use fewer and "
+            "shorter segments; (2) a model using extended thinking (e.g. "
+            "GPT-5) put all of its output inside <think> tags, leaving nothing "
+            "to parse - try gpt-4o, gpt-4o-mini or gpt-4-turbo instead."
+        )
+
+    return None
+
+
 class PodcastGenerationInput(CommandInput):
     episode_profile: str
     # Speaker profile record ID or name (the API boundary resolves the
@@ -365,11 +408,8 @@ async def generate_podcast_command(
         logger.exception(e)
 
         error_msg = str(e)
-        if "Invalid json output" in error_msg or "Expecting value" in error_msg:
-            error_msg += (
-                "\n\nNOTE: This error commonly occurs with GPT-5 models that use extended thinking. "
-                "The model may be putting all output inside <think> tags, leaving nothing to parse. "
-                "Try using gpt-4o, gpt-4o-mini, or gpt-4-turbo instead in your episode profile."
-            )
+        hint = explain_generation_failure(error_msg)
+        if hint:
+            error_msg += f"\n\nNOTE: {hint}"
 
         raise RuntimeError(error_msg) from e

@@ -124,13 +124,13 @@ volumes:
 # ==========================================
 #
 # 1. Configure Ollama:
-#    - Go to Settings → API Keys
+#    - Go to Manage → Models
 #    - Add Credential → Select "Ollama"
 #    - Base URL: http://ollama:11434
 #    - Save → Test Connection → Discover Models → Register Models
 #
 # 2. Configure Speaches (TTS/STT):
-#    - Go to Settings → API Keys
+#    - Go to Manage → Models
 #    - Add Credential → Select "OpenAI-Compatible"
 #    - Name: "Local Speaches"
 #    - Base URL for TTS: http://host.docker.internal:8969/v1  (macOS/Windows)

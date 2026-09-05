@@ -426,9 +426,10 @@ async def test_stream_source_chat_cancels_invoke_on_disconnect():
 async def test_stream_source_chat_skips_duplicate_pending_user_message():
     """A retry after a failed generation must not append the user message twice.
 
-    When the checkpoint already ends with the same (unanswered) human turn, the
-    router skips the up-front `aupdate_state`. A completed exchange always ends
-    with an AI message, so a trailing human turn is necessarily still pending.
+    When the checkpoint already ends with a human turn carrying the same client
+    `message_id` (an unanswered turn the frontend is retrying), the router skips
+    the up-front `aupdate_state`. A completed exchange always ends with an AI
+    message, so a trailing human turn is necessarily still pending.
     """
     from langchain_core.messages import HumanMessage
 
@@ -439,7 +440,7 @@ async def test_stream_source_chat_skips_duplicate_pending_user_message():
         source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01
     ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
         mock_graph.get_state.return_value = _graph_state(
-            {"messages": [HumanMessage(content="hello")]}
+            {"messages": [HumanMessage(content="hello", id="msg-1")]}
         )
         mock_graph.aupdate_state = AsyncMock()
         mock_graph.ainvoke = AsyncMock(return_value={"messages": []})
@@ -449,7 +450,7 @@ async def test_stream_source_chat_skips_duplicate_pending_user_message():
 
         chunks = []
         async for chunk in stream_source_chat_response(
-            request, "chat_session:abc", "source:xyz", "hello"
+            request, "chat_session:abc", "source:xyz", "hello", message_id="msg-1"
         ):
             chunks.append(chunk)
 
@@ -462,7 +463,7 @@ async def test_stream_source_chat_skips_duplicate_pending_user_message():
 @pytest.mark.asyncio
 async def test_stream_source_chat_appends_user_message_when_not_pending():
     """When the checkpoint ends with an AI message (a completed exchange), the
-    new user message IS appended up front."""
+    new user message IS appended up front, carrying the client message_id."""
     from api.routers import source_chat as source_chat_router
     from api.routers.source_chat import stream_source_chat_response
 
@@ -480,10 +481,52 @@ async def test_stream_source_chat_appends_user_message_when_not_pending():
 
         chunks = []
         async for chunk in stream_source_chat_response(
-            request, "chat_session:abc", "source:xyz", "hello"
+            request, "chat_session:abc", "source:xyz", "hello", message_id="msg-new"
         ):
             chunks.append(chunk)
 
     mock_graph.aupdate_state.assert_awaited_once()
+    _, payload = mock_graph.aupdate_state.await_args.args
+    assert payload["messages"][0].content == "hello"
+    assert payload["messages"][0].id == "msg-new"
+    assert chunks[0].startswith('data: {"type": "user_message"')
+    assert chunks[-1].startswith('data: {"type": "complete"')
+
+
+@pytest.mark.asyncio
+async def test_stream_source_chat_appends_distinct_identical_messages():
+    """Two distinct identical messages (same content, different message_id) are
+    both appended — dedup keys on identity, not content.
+
+    A trailing human turn with a *different* id is not the same retry, so the
+    new message must be persisted rather than silently dropped."""
+    from langchain_core.messages import HumanMessage
+
+    from api.routers import source_chat as source_chat_router
+    from api.routers.source_chat import stream_source_chat_response
+
+    with patch.object(
+        source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01
+    ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
+        mock_graph.get_state.return_value = _graph_state(
+            {"messages": [HumanMessage(content="hello", id="msg-1")]}
+        )
+        mock_graph.aupdate_state = AsyncMock()
+        mock_graph.ainvoke = AsyncMock(return_value={"messages": []})
+
+        request = MagicMock()
+        request.is_disconnected = AsyncMock(return_value=False)
+
+        chunks = []
+        async for chunk in stream_source_chat_response(
+            request, "chat_session:abc", "source:xyz", "hello", message_id="msg-2"
+        ):
+            chunks.append(chunk)
+
+    # Same content but a different id -> still appended, not deduplicated.
+    mock_graph.aupdate_state.assert_awaited_once()
+    _, payload = mock_graph.aupdate_state.await_args.args
+    assert payload["messages"][0].content == "hello"
+    assert payload["messages"][0].id == "msg-2"
     assert chunks[0].startswith('data: {"type": "user_message"')
     assert chunks[-1].startswith('data: {"type": "complete"')

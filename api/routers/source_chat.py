@@ -33,6 +33,21 @@ router = APIRouter()
 # FastAPI) don't drop it mid-generation.
 KEEPALIVE_INTERVAL_SECONDS = 15.0
 
+# Per-session locks serialize the read-modify-write sequence (snapshot -> append
+# user message -> invoke) in `stream_source_chat_response`. Without them, two
+# concurrent requests for the same thread could both read the same trailing
+# message and each start a generation. Created lazily; released in the generator's
+# finally block, so a session keeps its lock only while a stream is active.
+_session_locks: dict[str, asyncio.Lock] = {}
+
+
+def _get_session_lock(session_id: str) -> asyncio.Lock:
+    lock = _session_locks.get(session_id)
+    if lock is None:
+        lock = asyncio.Lock()
+        _session_locks[session_id] = lock
+    return lock
+
 
 # Request/Response models
 class CreateSourceChatSessionRequest(BaseModel):
@@ -82,6 +97,14 @@ class SourceChatSessionWithMessagesResponse(SourceChatSessionResponse):
 
 class SendMessageRequest(BaseModel):
     message: str = Field(..., description="User message content")
+    message_id: Optional[str] = Field(
+        None,
+        description=(
+            "Client-generated message identity, used to deduplicate a retry of "
+            "the same turn (same id) while still keeping distinct identical "
+            "messages (different ids)."
+        ),
+    )
     model_override: Optional[str] = Field(
         None, description="Optional model override for this message"
     )
@@ -341,20 +364,27 @@ async def stream_source_chat_response(
     source_id: str,
     message: str,
     model_override: Optional[str] = None,
+    message_id: Optional[str] = None,
 ) -> AsyncGenerator[str, None]:
     """Stream the source chat response as Server-Sent Events."""
     config = RunnableConfig(
         configurable={"thread_id": session_id, "model_id": model_override}
     )
     invoke_task: Optional[asyncio.Task] = None
+    # Serialize snapshot -> append -> invoke per session. Two concurrent requests
+    # for the same thread would otherwise both read the same trailing message and
+    # each start a generation. Held for the whole stream; released in finally.
+    lock = _get_session_lock(session_id)
+    await lock.acquire()
     try:
         # Persist the user message to the checkpoint up front so it survives a
         # mid-generation disconnect (the frontend refetches the checkpoint on
         # cancel/complete and would otherwise drop the user's message). Skip the
-        # append when this exact message is already the trailing (unanswered)
-        # turn — a retry after a failed generation would otherwise duplicate it.
-        # A completed exchange always ends with an AI message, so a trailing
-        # human turn is necessarily a pending one.
+        # append when this turn is already the trailing (unanswered) one. The
+        # guard keys on the client message id, not content: a retry that reuses
+        # the same id is deduplicated, while two distinct identical messages get
+        # distinct ids and are both kept. A completed exchange always ends with an
+        # AI message, so a trailing human turn is necessarily still pending.
         current_state = await asyncio.to_thread(
             source_chat_graph.get_state, config=config
         )
@@ -364,11 +394,12 @@ async def stream_source_chat_response(
             last_message = existing_messages[-1] if existing_messages else None
             already_pending = (
                 isinstance(last_message, HumanMessage)
-                and last_message.content == message
+                and message_id is not None
+                and getattr(last_message, "id", None) == message_id
             )
         if not already_pending:
             await source_chat_graph.aupdate_state(
-                config, {"messages": [HumanMessage(content=message)]}
+                config, {"messages": [HumanMessage(content=message, id=message_id)]}
             )
 
         # Send user message event
@@ -436,6 +467,7 @@ async def stream_source_chat_response(
         if invoke_task is not None and not invoke_task.done():
             invoke_task.cancel()
             await asyncio.gather(invoke_task, return_exceptions=True)
+        lock.release()
 
 
 @router.post("/sources/{source_id}/chat/sessions/{session_id}/messages")
@@ -471,6 +503,7 @@ async def send_message_to_source_chat(
                 source_id=full_source_id,
                 message=request.message,
                 model_override=model_override,
+                message_id=request.message_id,
             ),
             media_type="text/event-stream",
             headers={

@@ -130,9 +130,32 @@ export function useSourceChat(sourceId: string) {
         const error = err as { response?: { data?: { detail?: string } }, message?: string };
         console.error('Failed to create chat session:', error)
         toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToCreateSession'))
+        // This early return happens before the try/finally below, so clear the
+        // streaming state ourselves. Without it, a pending first send (whose
+        // session is still being created) would see this call's controller in the
+        // ref, treat itself as "superseded", and never clear isStreaming — leaving
+        // the UI stuck in the Stop state.
+        if (abortControllerRef.current === controller) {
+          abortControllerRef.current = null
+          setIsStreaming(false)
+        }
         return
       }
     }
+
+    // Reuse the trailing unanswered human turn's id when this is a retry of the
+    // same content (so the backend dedups it) and generate a fresh identity
+    // otherwise — two distinct identical messages must both be kept. Skip reuse
+    // when the trailing message is still an optimistic `temp-` id: the backend
+    // has the original uuid, not the temp id, so there is nothing to dedup
+    // against yet.
+    const trailing = messages[messages.length - 1]
+    const isRetry =
+      trailing?.type === 'human' &&
+      trailing.content === message &&
+      !!trailing.id &&
+      !trailing.id.startsWith('temp-')
+    const messageId = isRetry ? trailing.id : crypto.randomUUID()
 
     // Add user message optimistically
     const userMessage: SourceChatMessage = {
@@ -147,6 +170,7 @@ export function useSourceChat(sourceId: string) {
     try {
       const response = await sourceChatApi.sendMessage(sourceId, sessionId, {
         message,
+        message_id: messageId,
         model_override: modelOverride
       }, signal)
 
@@ -234,7 +258,7 @@ export function useSourceChat(sourceId: string) {
         refetchCurrentSession()
       }
     }
-  }, [sourceId, currentSessionId, refetchCurrentSession, queryClient, t])
+  }, [sourceId, currentSessionId, messages, refetchCurrentSession, queryClient, t])
 
   // Cancel streaming
   const cancelStreaming = useCallback(() => {

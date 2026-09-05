@@ -764,8 +764,23 @@ class ChatSession(ObjectModel):
         return await self.relate("refers_to", source_id)
 
 
+def _scope_record_ids(notebook_ids: Optional[List[str]]) -> Optional[List[RecordID]]:
+    """Normalize a notebook scope for fn::text_search / fn::vector_search.
+
+    Returns None for an empty scope (global search) so the SurrealQL functions
+    take their unfiltered path, otherwise the ids as RecordIDs.
+    """
+    if not notebook_ids:
+        return None
+    return [ensure_record_id(nb_id) for nb_id in notebook_ids]
+
+
 async def text_search(
-    keyword: str, results: int, source: bool = True, note: bool = True
+    keyword: str,
+    results: int,
+    source: bool = True,
+    note: bool = True,
+    notebook_ids: Optional[List[str]] = None,
 ):
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
@@ -773,9 +788,15 @@ async def text_search(
         search_results = await repo_query(
             """
             select *
-            from fn::text_search($keyword, $results, $source, $note)
+            from fn::text_search($keyword, $results, $source, $note, $notebook_ids)
             """,
-            {"keyword": keyword, "results": results, "source": source, "note": note},
+            {
+                "keyword": keyword,
+                "results": results,
+                "source": source,
+                "note": note,
+                "notebook_ids": _scope_record_ids(notebook_ids),
+            },
         )
         return search_results
     except RuntimeError as e:
@@ -788,7 +809,9 @@ async def text_search(
                 f"Highlight position overflow, falling back to vector search: {str(e)}"
             )
             try:
-                return await vector_search(keyword, results, source, note)
+                return await vector_search(
+                    keyword, results, source, note, notebook_ids=notebook_ids
+                )
             except Exception as ve:
                 # Both search paths failed (e.g. no embedding model configured).
                 # Surface the failure instead of returning [] — an empty list would
@@ -812,6 +835,7 @@ async def vector_search(
     source: bool = True,
     note: bool = True,
     minimum_score=0.2,
+    notebook_ids: Optional[List[str]] = None,
 ):
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
@@ -822,7 +846,7 @@ async def vector_search(
         embed = await generate_embedding(keyword)
         search_results = await repo_query(
             """
-            SELECT * FROM fn::vector_search($embed, $results, $source, $note, $minimum_score);
+            SELECT * FROM fn::vector_search($embed, $results, $source, $note, $minimum_score, $notebook_ids);
             """,
             {
                 "embed": embed,
@@ -830,6 +854,7 @@ async def vector_search(
                 "source": source,
                 "note": note,
                 "minimum_score": minimum_score,
+                "notebook_ids": _scope_record_ids(notebook_ids),
             },
         )
         # SurrealDB fn::vector_search declares ORDER BY similarity DESC, but the

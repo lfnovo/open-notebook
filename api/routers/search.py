@@ -1,5 +1,5 @@
 import json
-from typing import AsyncGenerator
+from typing import AsyncGenerator, List
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
@@ -7,10 +7,11 @@ from loguru import logger
 
 from api.models import AskRequest, AskResponse, SearchRequest, SearchResponse
 from open_notebook.ai.models import Model, model_manager
-from open_notebook.domain.notebook import text_search, vector_search
+from open_notebook.domain.notebook import Notebook, text_search, vector_search
 from open_notebook.exceptions import (
     DatabaseOperationError,
     InvalidInputError,
+    NotFoundError,
     OpenNotebookError,
 )
 from open_notebook.graphs.ask import graph as ask_graph
@@ -18,10 +19,36 @@ from open_notebook.graphs.ask import graph as ask_graph
 router = APIRouter()
 
 
+async def resolve_notebook_scope(notebook_ids: List[str]) -> List[str]:
+    """Validate a notebook scope before it reaches the search functions.
+
+    Every id must name an existing notebook: a typo would otherwise silently
+    return an empty result set that is indistinguishable from "no matches".
+    Returns the ids unchanged (empty list = whole knowledge base).
+    """
+    for notebook_id in notebook_ids:
+        # Notebook.get() resolves any table from the id prefix, so a source or
+        # note id would pass the existence check and then fail the typed
+        # record<notebook> parameter inside SurrealDB. Reject it up front.
+        if not notebook_id.startswith("notebook:"):
+            raise HTTPException(
+                status_code=400, detail=f"Invalid notebook id: {notebook_id}"
+            )
+        try:
+            await Notebook.get(notebook_id)
+        except NotFoundError:
+            raise HTTPException(
+                status_code=404, detail=f"Notebook {notebook_id} not found"
+            )
+    return notebook_ids
+
+
 @router.post("/search", response_model=SearchResponse)
 async def search_knowledge_base(search_request: SearchRequest):
     """Search the knowledge base using text or vector search."""
     try:
+        notebook_ids = await resolve_notebook_scope(search_request.scope_notebook_ids)
+
         if search_request.type == "vector":
             # Check if embedding model is available for vector search
             if not await model_manager.get_embedding_model():
@@ -36,6 +63,7 @@ async def search_knowledge_base(search_request: SearchRequest):
                 source=search_request.search_sources,
                 note=search_request.search_notes,
                 minimum_score=search_request.minimum_score,
+                notebook_ids=notebook_ids,
             )
         else:
             # Text search
@@ -44,6 +72,7 @@ async def search_knowledge_base(search_request: SearchRequest):
                 results=search_request.limit,
                 source=search_request.search_sources,
                 note=search_request.search_notes,
+                notebook_ids=notebook_ids,
             )
 
         return SearchResponse(
@@ -67,7 +96,11 @@ async def search_knowledge_base(search_request: SearchRequest):
 
 
 async def stream_ask_response(
-    question: str, strategy_model: Model, answer_model: Model, final_answer_model: Model
+    question: str,
+    strategy_model: Model,
+    answer_model: Model,
+    final_answer_model: Model,
+    notebook_ids: List[str],
 ) -> AsyncGenerator[str, None]:
     """Stream the ask response as Server-Sent Events."""
     try:
@@ -76,7 +109,7 @@ async def stream_ask_response(
         # LangGraph accepts a partial state dict at runtime, but its typed
         # overloads require the full state type (langgraph typing limitation).
         async for chunk in ask_graph.astream(  # type: ignore[call-overload]
-            input=dict(question=question),
+            input=dict(question=question, notebook_ids=notebook_ids),
             config=dict(
                 configurable=dict(
                     strategy_model=strategy_model.id,
@@ -152,10 +185,16 @@ async def ask_knowledge_base(ask_request: AskRequest):
                 detail="Ask feature requires an embedding model. Please configure one in the Models section.",
             )
 
+        notebook_ids = await resolve_notebook_scope(ask_request.scope_notebook_ids)
+
         # For streaming response
         return StreamingResponse(
             stream_ask_response(
-                ask_request.question, strategy_model, answer_model, final_answer_model
+                ask_request.question,
+                strategy_model,
+                answer_model,
+                final_answer_model,
+                notebook_ids,
             ),
             media_type="text/event-stream",
             headers={
@@ -206,12 +245,14 @@ async def ask_knowledge_base_simple(ask_request: AskRequest):
                 detail="Ask feature requires an embedding model. Please configure one in the Models section.",
             )
 
+        notebook_ids = await resolve_notebook_scope(ask_request.scope_notebook_ids)
+
         # Run the ask graph and get final result
         final_answer = None
         # LangGraph accepts a partial state dict at runtime, but its typed
         # overloads require the full state type (langgraph typing limitation).
         async for chunk in ask_graph.astream(  # type: ignore[call-overload]
-            input=dict(question=ask_request.question),
+            input=dict(question=ask_request.question, notebook_ids=notebook_ids),
             config=dict(
                 configurable=dict(
                     strategy_model=strategy_model.id,

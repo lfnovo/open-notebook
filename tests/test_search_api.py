@@ -53,7 +53,10 @@ class TestTextSearchHighlightOverflowFallback:
         )
         with (
             patch.object(
-                notebook_module, "repo_query", new_callable=AsyncMock, side_effect=overflow
+                notebook_module,
+                "repo_query",
+                new_callable=AsyncMock,
+                side_effect=overflow,
             ),
             patch.object(
                 notebook_module,
@@ -65,7 +68,7 @@ class TestTextSearchHighlightOverflowFallback:
             result = await notebook_module.text_search("hello", 10)
 
         assert result == [{"id": "source:1"}]
-        mock_vector.assert_awaited_once_with("hello", 10, True, True)
+        mock_vector.assert_awaited_once_with("hello", 10, True, True, notebook_ids=None)
 
     @pytest.mark.asyncio
     async def test_position_overflow_raises_when_vector_also_fails(self):
@@ -75,7 +78,10 @@ class TestTextSearchHighlightOverflowFallback:
         overflow = RuntimeError("position overflow: 1 - len: 0")
         with (
             patch.object(
-                notebook_module, "repo_query", new_callable=AsyncMock, side_effect=overflow
+                notebook_module,
+                "repo_query",
+                new_callable=AsyncMock,
+                side_effect=overflow,
             ),
             patch.object(
                 notebook_module,
@@ -184,3 +190,157 @@ class TestVectorSearchOrdering:
             "source:b",
             "source:c",
         ]
+
+
+class TestNotebookScopedSearchApi:
+    """POST /api/search accepts a notebook scope and forwards it (#574, #87)."""
+
+    @patch("api.routers.search.Notebook.get", new_callable=AsyncMock)
+    @patch("api.routers.search.text_search", new_callable=AsyncMock)
+    def test_notebook_ids_are_forwarded_to_text_search(
+        self, mock_text_search, mock_get, client
+    ):
+        mock_text_search.return_value = []
+        response = client.post(
+            "/api/search",
+            json={
+                "query": "x",
+                "type": "text",
+                "notebook_ids": ["notebook:a", "notebook:b"],
+            },
+        )
+        assert response.status_code == 200
+        assert mock_text_search.await_args is not None
+        assert mock_text_search.await_args.kwargs["notebook_ids"] == [
+            "notebook:a",
+            "notebook:b",
+        ]
+        assert mock_get.await_count == 2
+
+    @patch("api.routers.search.Notebook.get", new_callable=AsyncMock)
+    @patch(
+        "api.routers.search.model_manager.get_embedding_model", new_callable=AsyncMock
+    )
+    @patch("api.routers.search.vector_search", new_callable=AsyncMock)
+    def test_single_notebook_id_is_forwarded_to_vector_search(
+        self, mock_vector_search, mock_embedding, mock_get, client
+    ):
+        """`notebook_id` (the #574 shape, already sent by clients) is honored too."""
+        mock_embedding.return_value = object()
+        mock_vector_search.return_value = []
+        response = client.post(
+            "/api/search",
+            json={"query": "x", "type": "vector", "notebook_id": "notebook:a"},
+        )
+        assert response.status_code == 200
+        assert mock_vector_search.await_args is not None
+        assert mock_vector_search.await_args.kwargs["notebook_ids"] == ["notebook:a"]
+
+    @patch("api.routers.search.Notebook.get", new_callable=AsyncMock)
+    @patch("api.routers.search.text_search", new_callable=AsyncMock)
+    def test_no_scope_means_global_search(self, mock_text_search, mock_get, client):
+        mock_text_search.return_value = []
+        response = client.post("/api/search", json={"query": "x", "type": "text"})
+        assert response.status_code == 200
+        assert mock_text_search.await_args is not None
+        assert mock_text_search.await_args.kwargs["notebook_ids"] == []
+        mock_get.assert_not_awaited()
+
+    @patch("api.routers.search.Notebook.get", new_callable=AsyncMock)
+    @patch("api.routers.search.text_search", new_callable=AsyncMock)
+    def test_unknown_notebook_returns_404(self, mock_text_search, mock_get, client):
+        from open_notebook.exceptions import NotFoundError
+
+        mock_get.side_effect = NotFoundError("nope")
+        response = client.post(
+            "/api/search",
+            json={"query": "x", "type": "text", "notebook_ids": ["notebook:zzz"]},
+        )
+        assert response.status_code == 404
+        assert "notebook:zzz" in response.json()["detail"]
+        mock_text_search.assert_not_awaited()
+
+    @patch("api.routers.search.Notebook.get", new_callable=AsyncMock)
+    @patch("api.routers.search.text_search", new_callable=AsyncMock)
+    def test_non_notebook_id_returns_400(self, mock_text_search, mock_get, client):
+        response = client.post(
+            "/api/search",
+            json={"query": "x", "type": "text", "notebook_ids": ["source:abc"]},
+        )
+        assert response.status_code == 400
+        mock_get.assert_not_awaited()
+        mock_text_search.assert_not_awaited()
+
+    def test_scope_merges_and_dedupes_single_and_list(self):
+        from api.models import SearchRequest
+
+        request = SearchRequest(
+            query="x",
+            notebook_id="notebook:a",
+            notebook_ids=["notebook:b", "notebook:a"],
+        )
+        assert request.scope_notebook_ids == ["notebook:a", "notebook:b"]
+        assert SearchRequest(query="x").scope_notebook_ids == []
+
+
+class TestNotebookScopedSearchDomain:
+    """text_search / vector_search bind the scope as record ids (#574, #87)."""
+
+    @pytest.mark.asyncio
+    async def test_text_search_binds_notebook_record_ids(self):
+        from surrealdb import RecordID
+
+        from open_notebook.domain import notebook as notebook_module
+
+        with patch.object(
+            notebook_module, "repo_query", new_callable=AsyncMock, return_value=[]
+        ) as mock_query:
+            await notebook_module.text_search(
+                "hello", 10, notebook_ids=["notebook:a", "notebook:b"]
+            )
+
+        assert mock_query.await_args is not None
+
+        query, params = mock_query.await_args.args
+        assert "$notebook_ids" in query
+        assert params["notebook_ids"] == [
+            RecordID("notebook", "a"),
+            RecordID("notebook", "b"),
+        ]
+
+    @pytest.mark.asyncio
+    async def test_empty_scope_binds_none_for_global_search(self):
+        from open_notebook.domain import notebook as notebook_module
+
+        with patch.object(
+            notebook_module, "repo_query", new_callable=AsyncMock, return_value=[]
+        ) as mock_query:
+            await notebook_module.text_search("hello", 10, notebook_ids=[])
+            await notebook_module.text_search("hello", 10)
+
+        for call in mock_query.await_args_list:
+            assert call.args[1]["notebook_ids"] is None
+
+    @pytest.mark.asyncio
+    async def test_vector_search_binds_notebook_record_ids(self):
+        from surrealdb import RecordID
+
+        from open_notebook.domain import notebook as notebook_module
+
+        with (
+            patch(
+                "open_notebook.utils.embedding.generate_embedding",
+                new_callable=AsyncMock,
+                return_value=[0.1],
+            ),
+            patch.object(
+                notebook_module, "repo_query", new_callable=AsyncMock, return_value=[]
+            ) as mock_query,
+        ):
+            await notebook_module.vector_search("q", 3, notebook_ids=["notebook:a"])
+
+        assert mock_query.await_args is not None
+
+        query, params = mock_query.await_args.args
+        assert "$notebook_ids" in query
+        assert params["notebook_ids"] == [RecordID("notebook", "a")]

@@ -21,6 +21,7 @@ from open_notebook.graphs.ask import (
     ThreadState,
     call_model_with_messages,
     provide_answer,
+    trigger_queries,
     write_final_answer,
 )
 
@@ -163,3 +164,78 @@ class TestEmptyStrategyHandling:
     def test_search_model_accepts_blank_term(self):
         """The filter, not the schema, is responsible for blank terms."""
         assert Search(term="", instructions="x").term == ""
+
+
+class TestNotebookScope:
+    """The notebook scope travels from the thread state into every search (#574, #87)."""
+
+    @pytest.mark.asyncio
+    async def test_trigger_queries_forwards_scope_to_each_search(self):
+        state = cast(
+            ThreadState,
+            {
+                "question": "q",
+                "notebook_ids": ["notebook:a"],
+                "strategy": Strategy(
+                    reasoning="r",
+                    searches=[
+                        Search(term="one", instructions="x"),
+                        Search(term="two", instructions="y"),
+                    ],
+                ),
+            },
+        )
+        sends = await trigger_queries(state, EMPTY_CONFIG)
+        assert [s.arg["notebook_ids"] for s in sends] == [
+            ["notebook:a"],
+            ["notebook:a"],
+        ]
+
+    @pytest.mark.asyncio
+    async def test_trigger_queries_defaults_to_global_scope(self):
+        state = cast(
+            ThreadState,
+            {
+                "question": "q",
+                "strategy": Strategy(
+                    reasoning="r", searches=[Search(term="one", instructions="x")]
+                ),
+            },
+        )
+        sends = await trigger_queries(state, EMPTY_CONFIG)
+        assert sends[0].arg["notebook_ids"] == []
+
+    @pytest.mark.asyncio
+    async def test_provide_answer_scopes_vector_search(self):
+        state = {
+            "question": "q",
+            "term": "rag",
+            "instructions": "extract",
+            "notebook_ids": ["notebook:a"],
+        }
+        with (
+            patch(
+                "open_notebook.graphs.ask.vector_search",
+                new=AsyncMock(return_value=[{"id": "source:1", "content": "x"}]),
+            ) as search,
+            patch(
+                "open_notebook.graphs.ask.provision_langchain_model",
+                new=AsyncMock(return_value=_model_returning("partial")),
+            ),
+        ):
+            await provide_answer(state, EMPTY_CONFIG)  # type: ignore[arg-type]
+        assert search.await_args is not None
+        assert search.await_args.kwargs["notebook_ids"] == ["notebook:a"]
+
+    @pytest.mark.asyncio
+    async def test_provide_answer_without_scope_searches_globally(self):
+        state = {"question": "q", "term": "rag", "instructions": "extract"}
+        with (
+            patch(
+                "open_notebook.graphs.ask.vector_search",
+                new=AsyncMock(return_value=[]),
+            ) as search,
+        ):
+            await provide_answer(state, EMPTY_CONFIG)  # type: ignore[arg-type]
+        assert search.await_args is not None
+        assert search.await_args.kwargs["notebook_ids"] is None

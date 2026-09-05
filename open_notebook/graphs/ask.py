@@ -30,6 +30,7 @@ class SubGraphState(TypedDict):
     results: dict
     answer: str
     ids: list  # Added for provide_answer function
+    notebook_ids: list  # Notebook scope forwarded from ThreadState (#574, #87)
 
 
 class Search(BaseModel):
@@ -52,6 +53,9 @@ class ThreadState(TypedDict):
     strategy: Strategy
     answers: Annotated[list, operator.add]
     final_answer: str
+    # Optional notebook scope: when non-empty, every search the strategy fans
+    # out runs only against sources/notes linked to these notebooks (#574, #87).
+    notebook_ids: list
 
 
 async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
@@ -109,6 +113,7 @@ async def trigger_queries(state: ThreadState, config: RunnableConfig):
                 "question": state["question"],
                 "instructions": s.instructions,
                 "term": s.term,
+                "notebook_ids": state.get("notebook_ids") or [],
                 # "type": s.type,
             },
         )
@@ -122,7 +127,13 @@ async def provide_answer(state: SubGraphState, config: RunnableConfig) -> dict:
         # if state["type"] == "text":
         #     results = text_search(state["term"], 10, True, True)
         # else:
-        results = await vector_search(state["term"], 10, True, True)
+        results = await vector_search(
+            state["term"],
+            10,
+            True,
+            True,
+            notebook_ids=state.get("notebook_ids") or None,
+        )
         if len(results) == 0:
             return {"answers": []}
         payload["results"] = results

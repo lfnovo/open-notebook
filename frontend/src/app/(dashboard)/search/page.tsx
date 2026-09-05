@@ -350,6 +350,11 @@ export default function SearchPage() {
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">{t('searchPage.pressToSearch')}</p>
+                  {searchType === 'vector' ? (
+                    <p className="text-xs text-muted-foreground">{t('searchPage.searchCoverageVector')}</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">{t('searchPage.searchCoverageText')}</p>
+                  )}
                 </div>
 
                 {/* Search Options */}

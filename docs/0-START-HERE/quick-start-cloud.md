@@ -114,7 +114,7 @@ Your provider's models are now available!
 | **Groq** | `llama-3.3-70b-versatile` | Ultra-fast |
 | **Mistral** | `mistral-large-latest` | Strong European option |
 
-4. Click **Save**
+3. Click **Save**
 
 ---
 

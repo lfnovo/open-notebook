@@ -199,7 +199,7 @@ def _found(*ids):
 class TestNotebookScopedSearchApi:
     """POST /api/search accepts a notebook scope and forwards it (#574, #87)."""
 
-    @patch("api.routers.search.repo_query", new_callable=AsyncMock)
+    @patch("open_notebook.domain.notebook.repo_query", new_callable=AsyncMock)
     @patch("api.routers.search.text_search", new_callable=AsyncMock)
     def test_notebook_ids_are_forwarded_to_text_search(
         self, mock_text_search, mock_query, client
@@ -223,7 +223,7 @@ class TestNotebookScopedSearchApi:
         # Existence is checked with a single query for the whole scope.
         mock_query.assert_awaited_once()
 
-    @patch("api.routers.search.repo_query", new_callable=AsyncMock)
+    @patch("open_notebook.domain.notebook.repo_query", new_callable=AsyncMock)
     @patch(
         "api.routers.search.model_manager.get_embedding_model", new_callable=AsyncMock
     )
@@ -243,7 +243,7 @@ class TestNotebookScopedSearchApi:
         assert mock_vector_search.await_args is not None
         assert mock_vector_search.await_args.kwargs["notebook_ids"] == ["notebook:a"]
 
-    @patch("api.routers.search.repo_query", new_callable=AsyncMock)
+    @patch("open_notebook.domain.notebook.repo_query", new_callable=AsyncMock)
     @patch("api.routers.search.text_search", new_callable=AsyncMock)
     def test_no_scope_means_global_search(self, mock_text_search, mock_query, client):
         mock_text_search.return_value = []
@@ -253,7 +253,7 @@ class TestNotebookScopedSearchApi:
         assert mock_text_search.await_args.kwargs["notebook_ids"] == []
         mock_query.assert_not_awaited()
 
-    @patch("api.routers.search.repo_query", new_callable=AsyncMock)
+    @patch("open_notebook.domain.notebook.repo_query", new_callable=AsyncMock)
     @patch("api.routers.search.text_search", new_callable=AsyncMock)
     def test_unknown_notebook_returns_404(self, mock_text_search, mock_query, client):
         mock_query.return_value = _found("notebook:a")
@@ -269,7 +269,7 @@ class TestNotebookScopedSearchApi:
         assert "notebook:zzz" in response.json()["detail"]
         mock_text_search.assert_not_awaited()
 
-    @patch("api.routers.search.repo_query", new_callable=AsyncMock)
+    @patch("open_notebook.domain.notebook.repo_query", new_callable=AsyncMock)
     @patch("api.routers.search.text_search", new_callable=AsyncMock)
     def test_database_failure_during_scope_check_is_not_a_404(
         self, mock_text_search, mock_query, client
@@ -282,7 +282,7 @@ class TestNotebookScopedSearchApi:
         assert response.status_code == 500
         mock_text_search.assert_not_awaited()
 
-    @patch("api.routers.search.repo_query", new_callable=AsyncMock)
+    @patch("open_notebook.domain.notebook.repo_query", new_callable=AsyncMock)
     @patch("api.routers.search.text_search", new_callable=AsyncMock)
     def test_non_notebook_id_returns_400(self, mock_text_search, mock_query, client):
         response = client.post(
@@ -293,7 +293,7 @@ class TestNotebookScopedSearchApi:
         mock_query.assert_not_awaited()
         mock_text_search.assert_not_awaited()
 
-    @patch("api.routers.search.repo_query", new_callable=AsyncMock)
+    @patch("open_notebook.domain.notebook.repo_query", new_callable=AsyncMock)
     @patch("api.routers.search.text_search", new_callable=AsyncMock)
     def test_empty_notebook_id_is_rejected_not_widened(
         self, mock_text_search, mock_query, client
@@ -321,6 +321,49 @@ class TestNotebookScopedSearchApi:
         )
         assert request.scope_notebook_ids == ["notebook:a", "notebook:b"]
         assert SearchRequest(query="x").scope_notebook_ids == []
+
+
+class TestResolveNotebookScope:
+    """resolve_notebook_scope() validates ids before any search runs (#574, #87)."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("bad_id", ["", "notebook:", "source:abc", "abc"])
+    async def test_malformed_ids_raise_invalid_input(self, bad_id):
+        from open_notebook.domain import notebook as notebook_module
+        from open_notebook.exceptions import InvalidInputError
+
+        with patch.object(
+            notebook_module, "repo_query", new_callable=AsyncMock
+        ) as mock_query:
+            with pytest.raises(InvalidInputError):
+                await notebook_module.resolve_notebook_scope([bad_id])
+        mock_query.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_empty_scope_skips_the_database(self):
+        from open_notebook.domain import notebook as notebook_module
+
+        with patch.object(
+            notebook_module, "repo_query", new_callable=AsyncMock
+        ) as mock_query:
+            assert await notebook_module.resolve_notebook_scope([]) == []
+        mock_query.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_missing_notebooks_raise_not_found_listing_them(self):
+        from open_notebook.domain import notebook as notebook_module
+        from open_notebook.exceptions import NotFoundError
+
+        with patch.object(
+            notebook_module,
+            "repo_query",
+            new_callable=AsyncMock,
+            return_value=[{"id": "notebook:a"}],
+        ):
+            with pytest.raises(NotFoundError, match="notebook:zzz"):
+                await notebook_module.resolve_notebook_scope(
+                    ["notebook:a", "notebook:zzz"]
+                )
 
 
 class TestNotebookScopedSearchDomain:

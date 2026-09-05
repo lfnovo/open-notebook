@@ -10,7 +10,11 @@ from surrealdb import RecordID
 
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
+from open_notebook.exceptions import (
+    DatabaseOperationError,
+    InvalidInputError,
+    NotFoundError,
+)
 
 
 class Notebook(ObjectModel):
@@ -762,6 +766,45 @@ class ChatSession(ObjectModel):
         if not source_id:
             raise InvalidInputError("Source ID must be provided")
         return await self.relate("refers_to", source_id)
+
+
+async def resolve_notebook_scope(notebook_ids: List[str]) -> List[str]:
+    """Validate a notebook scope before it reaches text_search / vector_search.
+
+    Every id must be a well-formed `notebook:<key>` id naming an existing
+    notebook: a typo would otherwise silently return an empty result set that
+    is indistinguishable from "no matches". Existence is checked with one query
+    for the whole list. Returns the ids unchanged (empty list = whole knowledge
+    base). Raises InvalidInputError for malformed ids, NotFoundError for
+    unknown notebooks.
+    """
+    if not notebook_ids:
+        return []
+
+    # Only notebook ids are accepted: a source or note id would fail the typed
+    # record<notebook> parameter inside SurrealDB instead of returning cleanly,
+    # and "notebook:" with an empty key would blow up in RecordID.parse.
+    record_ids: List[RecordID] = []
+    invalid: List[str] = []
+    for nb_id in notebook_ids:
+        if not nb_id.startswith("notebook:") or not nb_id[len("notebook:") :]:
+            invalid.append(nb_id)
+            continue
+        try:
+            record_ids.append(ensure_record_id(nb_id))
+        except Exception:
+            invalid.append(nb_id)
+    if invalid:
+        raise InvalidInputError(f"Invalid notebook id(s): {', '.join(invalid)}")
+
+    rows = await repo_query(
+        "SELECT id FROM notebook WHERE id IN $ids", {"ids": record_ids}
+    )
+    found = {row["id"] for row in rows}
+    missing = [nb_id for nb_id in notebook_ids if nb_id not in found]
+    if missing:
+        raise NotFoundError(f"Notebook(s) not found: {', '.join(missing)}")
+    return notebook_ids
 
 
 def _scope_record_ids(notebook_ids: Optional[List[str]]) -> Optional[List[RecordID]]:

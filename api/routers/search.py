@@ -7,45 +7,19 @@ from loguru import logger
 
 from api.models import AskRequest, AskResponse, SearchRequest, SearchResponse
 from open_notebook.ai.models import Model, model_manager
-from open_notebook.database.repository import ensure_record_id, repo_query
-from open_notebook.domain.notebook import text_search, vector_search
+from open_notebook.domain.notebook import (
+    resolve_notebook_scope,
+    text_search,
+    vector_search,
+)
 from open_notebook.exceptions import (
     DatabaseOperationError,
     InvalidInputError,
-    NotFoundError,
     OpenNotebookError,
 )
 from open_notebook.graphs.ask import graph as ask_graph
 
 router = APIRouter()
-
-
-async def resolve_notebook_scope(notebook_ids: List[str]) -> List[str]:
-    """Validate a notebook scope before it reaches the search functions.
-
-    Every id must name an existing notebook: a typo would otherwise silently
-    return an empty result set that is indistinguishable from "no matches".
-    Existence is checked with one query for the whole list. Returns the ids
-    unchanged (empty list = whole knowledge base).
-    """
-    if not notebook_ids:
-        return []
-
-    # Only notebook ids are accepted: a source or note id would fail the typed
-    # record<notebook> parameter inside SurrealDB instead of returning cleanly.
-    invalid = [nb_id for nb_id in notebook_ids if not nb_id.startswith("notebook:")]
-    if invalid:
-        raise InvalidInputError(f"Invalid notebook id(s): {', '.join(invalid)}")
-
-    rows = await repo_query(
-        "SELECT id FROM notebook WHERE id IN $ids",
-        {"ids": [ensure_record_id(nb_id) for nb_id in notebook_ids]},
-    )
-    found = {row["id"] for row in rows}
-    missing = [nb_id for nb_id in notebook_ids if nb_id not in found]
-    if missing:
-        raise NotFoundError(f"Notebook(s) not found: {', '.join(missing)}")
-    return notebook_ids
 
 
 @router.post("/search", response_model=SearchResponse)

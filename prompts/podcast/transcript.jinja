@@ -27,7 +27,11 @@ The podcast features the following speakers:
   Personality: {{ speaker.personality }}
 {% endfor %}
 </speakers>
+{% if language %}
 
+IMPORTANT LANGUAGE INSTRUCTION: You MUST generate ALL dialogue and content in {{ language }}. Every speaker's dialogue must be written entirely in {{ language }}. Do not use English unless quoting specific English terms. The entire transcript must be in {{ language }}.
+
+{% endif %}
 Next, examine the outline produced by our director:
 <outline>
 {{ outline }}
@@ -74,17 +78,24 @@ Follow these format requirements strictly:
 {% endif %}
 
 
-```json
-{
-    "transcript": [
-        {
-            "speaker": "[Actual Speaker Name]",
-            "dialogue": "[Speaker's dialogue based on their personality and expertise]"
-        },
-    ...
-    ]
-}
-```
+Return exactly one JSON object with a single root key "transcript" whose value is a list of at least {{ turns }} entries. Each entry has exactly two keys, "speaker" and "dialogue", both strings.
+{% if not language %}
+The line below is a {% if speakers|length == 1 %}one-entry{% else %}two-entry{% endif %} EXCERPT showing that structure with sample dialogue - keep the structure, write your own words for this segment, and return at least {{ turns }} entries rather than the {% if speakers|length == 1 %}one{% else %}two{% endif %} shown:
+
+{% if speakers|length == 1 %}
+{"transcript": [{"speaker": {{ speaker_names[0]|tojson }}, "dialogue": "Let's pick up where we left off, because this is where the material really starts to come together."}]}
+{% else %}
+{"transcript": [{"speaker": {{ speaker_names[0]|tojson }}, "dialogue": "Let's pick up where we left off, because this is where the material really starts to come together."}, {"speaker": {{ (speaker_names[1] if speaker_names|length > 1 else speaker_names[0])|tojson }}, "dialogue": "Agreed, and the detail I keep coming back to is the one that changes how you read everything before it."}]}
+{% endif %}
+{% endif %}
+
+   - Every "speaker" value must be copied character-for-character from this list: {{ speaker_names|join(', ') }}
+   - Every "dialogue" value must be the finished words the speaker says out loud; it is sent straight to a text-to-speech engine.
+{%- if not language %}
+   - The sample dialogue above shows the structure only - write dialogue for this segment instead of reusing it.
+{%- endif %}
+   - Never emit placeholder or elided content: no "..." or "…", no "[like this]", no "<like this>", no "TODO", no empty strings, no trailing commas.
+   - Never shorten or truncate the list. Write out every entry in full.
 
 Formatting instructions:
 {{ format_instructions}}
@@ -119,9 +130,7 @@ IMPORTANT OUTPUT FORMAT:
 - If you use extended thinking with <think> tags, put ALL your reasoning inside <think></think> tags
 - Put the final JSON output OUTSIDE and AFTER any <think> tags
 - Do NOT wrap the JSON in ```json code blocks - return the raw JSON object only
-- Example correct format:
-  <think>Let me plan the dialogue...</think>
-  {"transcript": [...]}
+- Correct format: any reasoning inside <think></think> tags, then the JSON object described above, and nothing else
 
 When you're ready, provide the transcript.
 {% if speakers|length == 1 %}

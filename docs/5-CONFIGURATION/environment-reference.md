@@ -259,7 +259,7 @@ env | grep -E "^[A-Z_]+=" | sort
 - **Quote values:** Use quotes for values with spaces: `API_URL="http://my server:5055"`
 - **Restart required:** Changes take effect after restarting services
 - **Secrets:** Don't commit encryption keys or passwords to git
-- **AI Providers:** Configure via **Settings → API Keys** in the browser (not via env vars)
+- **AI Providers:** Configure via **Settings → API Keys** in the browser. The provider env vars listed under [Legacy](#legacy-ai-provider-environment-variables-deprecated) are a deprecated fallback
 - **Migration:** Use Settings UI to migrate existing env vars to the credential system. See [API Configuration](../3-USER-GUIDE/api-configuration.md#migrating-from-environment-variables)
 
 ---
@@ -283,7 +283,11 @@ Done!
 
 ## Legacy: AI Provider Environment Variables (Deprecated)
 
-> **Deprecated**: The following AI provider API key environment variables are deprecated. Configure providers via the Settings UI instead. These variables may still work as a fallback but are no longer recommended.
+> **Deprecated**: The following AI provider environment variables are a deprecated fallback. They still work today (the runtime reads the database first and falls back to the environment), but there is no guarantee they keep working in future releases, and new automation should not be built on them. Configure providers via **Settings → API Keys** instead.
+
+Why the UI is the source of truth: credentials in the database are encrypted at rest (via `OPEN_NOTEBOOK_ENCRYPTION_KEY`), can be added or rotated at runtime without restarts, and support multiple credentials per provider — none of which a single env var can express.
+
+**Headless, CI/CD and Docker deployments:** a declarative provisioning contract over the credentials API (a file describing providers and credentials, with `${VAR}`-style references resolved from the environment) is being designed in [Discussion #765](https://github.com/lfnovo/open-notebook/discussions/765). Until it ships, the env fallback is the only unattended path — use it knowing it is deprecated.
 
 If you have these variables configured from a previous installation, click the **Migrate to Database** button in **Settings → API Keys** to import them into the credential system, then remove them from your configuration.
 

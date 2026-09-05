@@ -485,6 +485,8 @@ export const frFR = {
     searchDesc: "Recherchez des mots-clés ou des concepts spécifiques dans votre base de connaissances",
     enterSearchPlaceholder: "Entrez votre recherche...",
     pressToSearch: "Appuyez sur Entrée pour rechercher",
+    searchCoverageText: "La recherche textuelle trouve les titres et contenus des sources, les aperçus, ainsi que les titres et contenus des notes.",
+    searchCoverageVector: "La recherche vectorielle trouve le contenu des sources, les aperçus et le contenu des notes par similarité sémantique. Les titres ne sont pas pris en compte.",
     searchType: "Type de recherche",
     vectorSearchWarning: "La recherche vectorielle nécessite un modèle d'embedding. Seule la recherche textuelle est disponible.",
     textSearch: "Recherche textuelle",

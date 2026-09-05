@@ -52,6 +52,10 @@ export function useAsk() {
   const mountedRef = useRef(true)
 
   useEffect(() => {
+    // Must be re-set on every mount: React Strict Mode mounts, unmounts and
+    // remounts in development, and the cleanup below would otherwise leave this
+    // false forever, making every mountedRef guard dead code.
+    mountedRef.current = true
     return () => {
       mountedRef.current = false
       if (streamTimeoutRef.current) {

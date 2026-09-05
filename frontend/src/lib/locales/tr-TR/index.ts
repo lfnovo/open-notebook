@@ -485,6 +485,8 @@ export const trTR = {
     searchDesc: "Bilgi tabanınızda belirli anahtar kelimeler veya kavramlar arayın",
     enterSearchPlaceholder: "Arama sorgusunu girin...",
     pressToSearch: "Aramak için Enter tuşuna basın",
+    searchCoverageText: "Metin araması kaynak başlıklarını ve içeriğini, içgörüleri ve not başlıklarını ve içeriğini bulur.",
+    searchCoverageVector: "Vektör araması kaynak içeriğini, içgörüleri ve not içeriğini anlamsal benzerliğe göre bulur. Başlıklar eşleştirilmez.",
     searchType: "Arama Türü",
     vectorSearchWarning: "Vektör araması için gömme modeli gereklidir. Yalnızca metin araması kullanılabilir.",
     textSearch: "Metin Araması",

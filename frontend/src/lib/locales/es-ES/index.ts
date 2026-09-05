@@ -485,6 +485,8 @@ export const esES = {
     searchDesc: "Busca en tu base de conocimiento palabras clave o conceptos específicos",
     enterSearchPlaceholder: "Escribe tu búsqueda...",
     pressToSearch: "Presiona Enter para buscar",
+    searchCoverageText: "La búsqueda de texto encuentra títulos y contenido de fuentes, análisis, y títulos y contenido de notas.",
+    searchCoverageVector: "La búsqueda vectorial encuentra contenido de fuentes, análisis y contenido de notas por similitud semántica. Los títulos no se comparan.",
     searchType: "Tipo de búsqueda",
     vectorSearchWarning: "La búsqueda vectorial requiere un modelo de embedding. Solo la búsqueda de texto está disponible.",
     textSearch: "Búsqueda de texto",

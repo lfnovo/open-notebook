@@ -7,7 +7,8 @@ from loguru import logger
 
 from api.models import AskRequest, AskResponse, SearchRequest, SearchResponse
 from open_notebook.ai.models import Model, model_manager
-from open_notebook.domain.notebook import Notebook, text_search, vector_search
+from open_notebook.database.repository import ensure_record_id, repo_query
+from open_notebook.domain.notebook import text_search, vector_search
 from open_notebook.exceptions import (
     DatabaseOperationError,
     InvalidInputError,
@@ -24,22 +25,26 @@ async def resolve_notebook_scope(notebook_ids: List[str]) -> List[str]:
 
     Every id must name an existing notebook: a typo would otherwise silently
     return an empty result set that is indistinguishable from "no matches".
-    Returns the ids unchanged (empty list = whole knowledge base).
+    Existence is checked with one query for the whole list. Returns the ids
+    unchanged (empty list = whole knowledge base).
     """
-    for notebook_id in notebook_ids:
-        # Notebook.get() resolves any table from the id prefix, so a source or
-        # note id would pass the existence check and then fail the typed
-        # record<notebook> parameter inside SurrealDB. Reject it up front.
-        if not notebook_id.startswith("notebook:"):
-            raise HTTPException(
-                status_code=400, detail=f"Invalid notebook id: {notebook_id}"
-            )
-        try:
-            await Notebook.get(notebook_id)
-        except NotFoundError:
-            raise HTTPException(
-                status_code=404, detail=f"Notebook {notebook_id} not found"
-            )
+    if not notebook_ids:
+        return []
+
+    # Only notebook ids are accepted: a source or note id would fail the typed
+    # record<notebook> parameter inside SurrealDB instead of returning cleanly.
+    invalid = [nb_id for nb_id in notebook_ids if not nb_id.startswith("notebook:")]
+    if invalid:
+        raise InvalidInputError(f"Invalid notebook id(s): {', '.join(invalid)}")
+
+    rows = await repo_query(
+        "SELECT id FROM notebook WHERE id IN $ids",
+        {"ids": [ensure_record_id(nb_id) for nb_id in notebook_ids]},
+    )
+    found = {row["id"] for row in rows}
+    missing = [nb_id for nb_id in notebook_ids if nb_id not in found]
+    if missing:
+        raise NotFoundError(f"Notebook(s) not found: {', '.join(missing)}")
     return notebook_ids
 
 

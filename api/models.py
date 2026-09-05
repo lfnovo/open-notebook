@@ -49,14 +49,17 @@ class NotebookScopeMixin(BaseModel):
     )
     notebook_ids: Optional[List[str]] = Field(
         None,
+        max_length=50,
         description="Restrict results to these notebooks (omit or empty for all)",
     )
 
     @property
     def scope_notebook_ids(self) -> List[str]:
+        # Keep empty strings so validation rejects them instead of silently
+        # widening the scope to the whole knowledge base.
         merged: List[str] = []
         for nb_id in [self.notebook_id, *(self.notebook_ids or [])]:
-            if nb_id and nb_id not in merged:
+            if nb_id is not None and nb_id not in merged:
                 merged.append(nb_id)
         return merged
 

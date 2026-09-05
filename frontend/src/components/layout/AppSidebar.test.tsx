@@ -22,6 +22,23 @@ describe('AppSidebar', () => {
     expect(screen.getByText('navigation.notebooks')).toBeDefined()
   })
 
+  it('uses consistent spacing for expanded footer actions', () => {
+    render(<AppSidebar />)
+
+    const themeButton = screen.getByText('common.theme').closest('button')
+    const languageButton = screen.getByText('common.language').closest('button')
+    const signOutButton = screen.getByRole('button', { name: 'common.signOut' })
+
+    expect(themeButton?.className.split(/\s+/)).toContain('px-3')
+
+    for (const button of [themeButton, languageButton, signOutButton]) {
+      expect(button?.className.split(/\s+/)).toContain('gap-2')
+    }
+
+    expect(themeButton?.querySelector(':scope > span.relative.size-4')).not.toBeNull()
+    expect(signOutButton.className.split(/\s+/)).not.toContain('gap-3')
+  })
+
   it('toggles collapse state when clicking handle', () => {
     const toggleCollapse = vi.fn()
     vi.mocked(useSidebarStore).mockReturnValue({

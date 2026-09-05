@@ -436,7 +436,7 @@ wheels = [
 
 [[package]]
 name = "content-core"
-version = "2.0.4"
+version = "2.0.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ai-prompter" },
@@ -466,9 +466,9 @@ dependencies = [
     { name = "validators" },
     { name = "youtube-transcript-api" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6a/59/acad9436e3b187d44e3d4676e572fcaa289a2f84e1d573690b080dbd02ac/content_core-2.0.4.tar.gz", hash = "sha256:bfbc7877e6c1ac8762e5e5bb953ddfbd817548c5c5404f5aa651a6135dfdf9c0", size = 20467845, upload-time = "2026-07-12T14:24:50.104Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/59/d4/85fcbe4cfefe0dc5c5bba7b9225b3c6bcebb73a432ab6cdf2bc22c08689a/content_core-2.0.7.tar.gz", hash = "sha256:926d7e5029acf3ec3502dc3cd2856fee355106314ba5b6d8819cde25764975d5", size = 19183270, upload-time = "2026-09-02T14:08:52.142Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/18/7c/50e546c2e7a9aa164d2b655b4e2f7b2666712a2c48284e88e8e1f138cdf3/content_core-2.0.4-py3-none-any.whl", hash = "sha256:673dd51faa40dd3012f611572287bd18e8b0504e3569f96f4a69fc3d10e0cc8f", size = 58190, upload-time = "2026-07-12T14:24:47.622Z" },
+    { url = "https://files.pythonhosted.org/packages/ec/f8/c265051ded9b2f0e5caeb0e05c5faa6a0f8a2817ab38d67c99de77252be7/content_core-2.0.7-py3-none-any.whl", hash = "sha256:bb05890e7142ddb16774e9a1b795256a0492c212b92f6e704a50b8196c818def", size = 59976, upload-time = "2026-09-02T14:08:50.308Z" },
 ]
 
 [[package]]
@@ -677,15 +677,15 @@ wheels = [
 
 [[package]]
 name = "esperanto"
-version = "2.25.1"
+version = "2.26.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d2/af/ff32061132276f1f509fe8343bf1ad462d639c9cda4e7f9487f68103e409/esperanto-2.25.1.tar.gz", hash = "sha256:335476f746d7055b0790c0cad2a37b56ad2df3ac1f07ae88aef0bb48f3bf34b8", size = 751470, upload-time = "2026-07-19T14:31:52.104Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3c/00/9f5197dfe620cc6e70bf31dc768a1d6cc5308d9f5b84cc66d0a7b35c448b/esperanto-2.26.0.tar.gz", hash = "sha256:21d33542b9c4805f41f7dd3c14bccc186b7b39dadd2489556719794b985facb3", size = 768871, upload-time = "2026-07-30T01:35:21.463Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/da/39/46b70b990d72e040691db22b1618e7e75bfe3b7f83b87df53cf85716578e/esperanto-2.25.1-py3-none-any.whl", hash = "sha256:db900cd10ebb921a34fe57d95879f77581564412c346cddbd46194c3d5911b70", size = 256893, upload-time = "2026-07-19T14:31:50.823Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/2e/81c692d47fc5fbba46a3e3f2addd1e46e0b64ed7aabff469fbaf7e86f63a/esperanto-2.26.0-py3-none-any.whl", hash = "sha256:1337ab83c78a836f671ed10fcd649bb8286991ee4ee55c9ef2c40d436539e8bc", size = 262587, upload-time = "2026-07-30T01:35:19.816Z" },
 ]
 
 [[package]]
@@ -2102,7 +2102,7 @@ notebooks = [
 requires-dist = [
     { name = "ai-prompter", specifier = ">=0.4,<1" },
     { name = "babel", specifier = ">=2.18.0" },
-    { name = "content-core", specifier = ">=2.0.4,<3" },
+    { name = "content-core", specifier = ">=2.0.7,<3" },
     { name = "esperanto", specifier = ">=2.25.1,<3" },
     { name = "fastapi", specifier = ">=0.104.0" },
     { name = "httpx", extras = ["socks"], specifier = ">=0.27.0" },
@@ -2362,7 +2362,7 @@ name = "pexpect"
 version = "4.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ptyprocess" },
+    { name = "ptyprocess", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/42/92/cc564bf6381ff43ce1f4d06852fc19a2f11d180f23dc32d9588bee2f149d/pexpect-4.9.0.tar.gz", hash = "sha256:ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f", size = 166450, upload-time = "2023-11-25T09:07:26.339Z" }
 wheels = [
@@ -3201,8 +3201,8 @@ name = "secretstorage"
 version = "3.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cryptography" },
-    { name = "jeepney" },
+    { name = "cryptography", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
+    { name = "jeepney", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/1c/03/e834bcd866f2f8a49a85eaff47340affa3bfa391ee9912a952a1faa68c7b/secretstorage-3.5.0.tar.gz", hash = "sha256:f04b8e4689cbce351744d5537bf6b1329c6fc68f91fa666f60a380edddcd11be", size = 19884, upload-time = "2025-11-23T19:02:53.191Z" }
 wheels = [

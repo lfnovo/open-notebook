@@ -112,6 +112,7 @@ CORS_ORIGINS=https://notebook.example.com
 | `CCORE_FIRECRAWL_WAIT_FOR` | No | `3000` | Milliseconds Firecrawl waits for JavaScript to render before capturing the page |
 | `JINA_API_KEY` | No | None | Jina AI API key for web extraction |
 | `CRAWL4AI_API_URL` | No | None | Base URL of a remote Crawl4AI server. Set this to use Crawl4AI without a local install |
+| `CRAWL4AI_API_TOKEN` | No | None | Bearer token sent as `Authorization: Bearer …` to the remote Crawl4AI server. Required by Crawl4AI Docker ≥ 0.9.0, which rejects unauthenticated external connections by default. Ignored when unset |
 
 ### Optional heavy runtimes (installed on first startup)
 

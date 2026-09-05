@@ -46,6 +46,13 @@ class ExternalServiceError(OpenNotebookError):
     pass
 
 
+class ContextLengthExceededError(ExternalServiceError):
+    """Content exceeds the model's context window. Retrying sends the same
+    oversized payload, so background commands must not retry this."""
+
+    pass
+
+
 class RateLimitError(OpenNotebookError):
     """Raised when a rate limit is exceeded."""
 

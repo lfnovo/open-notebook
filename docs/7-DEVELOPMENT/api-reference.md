@@ -64,7 +64,8 @@ Instead of memorizing endpoints, use the interactive API docs:
 
 **Search** - Find content by text or semantic similarity
 - `POST /search` - Full-text or vector search
-- `POST /ask` - Ask a question (search + synthesize)
+- `POST /search/ask` - Ask a question (search + synthesize)
+- Both accept an optional `notebook_ids` list (or a single `notebook_id`) to scope results to specific notebooks; omit for the whole knowledge base
 
 **Transformations** - Custom prompts for extracting insights
 - `GET/POST /transformations` - Create custom extraction rules

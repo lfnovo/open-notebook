@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { getApiErrorMessage } from '@/lib/utils/error-handler'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { sourceChatApi } from '@/lib/api/source-chat'
+import { selectMessageId } from '@/lib/utils/source-chat-message'
 import {
   SourceChatSession,
   SourceChatMessage,
@@ -145,21 +146,15 @@ export function useSourceChat(sourceId: string) {
 
     // Reuse the trailing unanswered human turn's id when this is a retry of the
     // same content (so the backend dedups it) and generate a fresh identity
-    // otherwise — two distinct identical messages must both be kept. Skip reuse
-    // when the trailing message is still an optimistic `temp-` id: the backend
-    // has the original uuid, not the temp id, so there is nothing to dedup
-    // against yet.
-    const trailing = messages[messages.length - 1]
-    const isRetry =
-      trailing?.type === 'human' &&
-      trailing.content === message &&
-      !!trailing.id &&
-      !trailing.id.startsWith('temp-')
-    const messageId = isRetry ? trailing.id : crypto.randomUUID()
+    // otherwise — two distinct identical messages must both be kept.
+    const messageId = selectMessageId(messages, message)
 
-    // Add user message optimistically
+    // Add the user message optimistically, carrying the same id sent to the
+    // backend. The backend keys its `already_pending` check on that id, so the
+    // optimistic entry must match the persisted one — a `temp-` placeholder here
+    // would make a retry of this turn unable to dedup against the real uuid.
     const userMessage: SourceChatMessage = {
-      id: `temp-${Date.now()}`,
+      id: messageId,
       type: 'human',
       content: message,
       timestamp: new Date().toISOString()
@@ -243,8 +238,6 @@ export function useSourceChat(sourceId: string) {
       const error = err as { response?: { data?: { detail?: string } }, message?: string };
       console.error('Error sending message:', error)
       toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToSendMessage'))
-      // Remove optimistic messages on error
-      setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
     } finally {
       // A superseded send (replaced by a newer one) must not clear the newer
       // stream's loading state or refetch over its messages. A user-initiated

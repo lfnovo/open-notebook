@@ -530,3 +530,30 @@ async def test_stream_source_chat_appends_distinct_identical_messages():
     assert payload["messages"][0].id == "msg-2"
     assert chunks[0].startswith('data: {"type": "user_message"')
     assert chunks[-1].startswith('data: {"type": "complete"')
+
+
+@pytest.mark.asyncio
+async def test_stream_source_chat_evicts_session_lock_after_stream():
+    """The per-session lock entry is evicted once the stream finishes, so a
+    long-lived process does not retain one lock per session it has ever seen."""
+    from api.routers import source_chat as source_chat_router
+    from api.routers.source_chat import stream_source_chat_response
+
+    session_id = "chat_session:lock-evict"
+
+    with patch.object(
+        source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01
+    ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
+        mock_graph.get_state.return_value = _graph_state({"messages": []})
+        mock_graph.aupdate_state = AsyncMock()
+        mock_graph.ainvoke = AsyncMock(return_value={"messages": []})
+
+        request = MagicMock()
+        request.is_disconnected = AsyncMock(return_value=False)
+
+        async for _chunk in stream_source_chat_response(
+            request, session_id, "source:xyz", "hello"
+        ):
+            pass
+
+    assert session_id not in source_chat_router._session_locks

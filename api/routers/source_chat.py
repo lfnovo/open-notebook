@@ -36,17 +36,39 @@ KEEPALIVE_INTERVAL_SECONDS = 15.0
 # Per-session locks serialize the read-modify-write sequence (snapshot -> append
 # user message -> invoke) in `stream_source_chat_response`. Without them, two
 # concurrent requests for the same thread could both read the same trailing
-# message and each start a generation. Created lazily; released in the generator's
-# finally block, so a session keeps its lock only while a stream is active.
-_session_locks: dict[str, asyncio.Lock] = {}
+# message and each start a generation. Created lazily; refcounted so the entry is
+# evicted once the last holder releases — a long-lived process must not keep one
+# lock per session it has ever seen.
+class _SessionLock:
+    __slots__ = ("lock", "holders")
+
+    def __init__(self) -> None:
+        self.lock = asyncio.Lock()
+        self.holders = 0
 
 
-def _get_session_lock(session_id: str) -> asyncio.Lock:
-    lock = _session_locks.get(session_id)
-    if lock is None:
-        lock = asyncio.Lock()
-        _session_locks[session_id] = lock
-    return lock
+_session_locks: dict[str, _SessionLock] = {}
+
+
+def _get_session_lock(session_id: str) -> _SessionLock:
+    # No `await` between these dict ops, so on a single event loop the
+    # read/create/increment is atomic. Registering the caller as a holder before
+    # it awaits `acquire` keeps the entry alive until it releases.
+    entry = _session_locks.get(session_id)
+    if entry is None:
+        entry = _SessionLock()
+        _session_locks[session_id] = entry
+    entry.holders += 1
+    return entry
+
+
+def _release_session_lock(session_id: str, entry: _SessionLock) -> None:
+    entry.lock.release()
+    entry.holders -= 1
+    # The `is entry` guard is defensive: the entry is only evicted when this was
+    # the last holder, so `session_id` must still map to this same entry.
+    if entry.holders == 0 and _session_locks.get(session_id) is entry:
+        _session_locks.pop(session_id, None)
 
 
 # Request/Response models
@@ -374,8 +396,8 @@ async def stream_source_chat_response(
     # Serialize snapshot -> append -> invoke per session. Two concurrent requests
     # for the same thread would otherwise both read the same trailing message and
     # each start a generation. Held for the whole stream; released in finally.
-    lock = _get_session_lock(session_id)
-    await lock.acquire()
+    lock_entry = _get_session_lock(session_id)
+    await lock_entry.lock.acquire()
     try:
         # Persist the user message to the checkpoint up front so it survives a
         # mid-generation disconnect (the frontend refetches the checkpoint on
@@ -467,7 +489,7 @@ async def stream_source_chat_response(
         if invoke_task is not None and not invoke_task.done():
             invoke_task.cancel()
             await asyncio.gather(invoke_task, return_exceptions=True)
-        lock.release()
+        _release_session_lock(session_id, lock_entry)
 
 
 @router.post("/sources/{source_id}/chat/sessions/{session_id}/messages")

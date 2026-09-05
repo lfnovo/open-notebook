@@ -807,7 +807,9 @@ async def resolve_notebook_scope(notebook_ids: List[str]) -> List[str]:
         logger.error(f"Error resolving notebook scope: {str(e)}")
         logger.exception(e)
         raise DatabaseOperationError("Failed to resolve notebook scope")
-    found = {row["id"] for row in rows}
+    # The driver returns ids as RecordID objects (unhashable, and never equal
+    # to the request strings), so normalize to strings before comparing.
+    found = {str(row["id"]) for row in rows}
     missing = [nb_id for nb_id in notebook_ids if nb_id not in found]
     if missing:
         raise NotFoundError(f"Notebook(s) not found: {', '.join(missing)}")

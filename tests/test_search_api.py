@@ -435,6 +435,23 @@ class TestResolveNotebookScope:
                     ["notebook:a", "notebook:zzz"]
                 )
 
+    @pytest.mark.asyncio
+    async def test_record_id_rows_from_driver_match_request_strings(self):
+        """The real driver returns RecordID objects, not strings (regression)."""
+        from surrealdb import RecordID
+
+        from open_notebook.domain import notebook as notebook_module
+
+        with patch.object(
+            notebook_module,
+            "repo_query",
+            new_callable=AsyncMock,
+            return_value=[{"id": RecordID("notebook", "a")}],
+        ):
+            assert await notebook_module.resolve_notebook_scope(["notebook:a"]) == [
+                "notebook:a"
+            ]
+
 
 class TestNotebookScopedSearchDomain:
     """text_search / vector_search bind the scope as record ids (#574, #87)."""

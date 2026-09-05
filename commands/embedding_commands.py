@@ -34,7 +34,7 @@ EMBED_RETRY_CONFIG = {
         ConfigurationError,
         ContextLengthExceededError,
     ],  # Don't retry validation/config errors
-    "retry_log_level": "debug",
+    "retry_log_level": "warning",
 }
 
 

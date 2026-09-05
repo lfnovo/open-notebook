@@ -14,6 +14,11 @@ interface AskModels {
   finalAnswer: string
 }
 
+interface AskOptions {
+  /** Notebook ids to scope the search to; empty = whole knowledge base. */
+  notebookIds?: string[]
+}
+
 interface StrategyData {
   reasoning: string
   searches: Array<{ term: string; instructions: string }>
@@ -100,7 +105,7 @@ export function useAsk() {
     }
   }, [clearStreamTimeout])
 
-  const sendAsk = useCallback(async (question: string, models: AskModels) => {
+  const sendAsk = useCallback(async (question: string, models: AskModels, options: AskOptions = {}) => {
     // Validate inputs
     if (!question.trim()) {
       toast.error(t('apiErrors.pleaseEnterQuestion'))
@@ -136,7 +141,10 @@ export function useAsk() {
         question,
         strategy_model: models.strategy,
         answer_model: models.answer,
-        final_answer_model: models.finalAnswer
+        final_answer_model: models.finalAnswer,
+        ...(options.notebookIds && options.notebookIds.length > 0
+          ? { notebook_ids: options.notebookIds }
+          : {})
       }, signal)
 
       if (!response) {

@@ -66,7 +66,7 @@ LOG_LEVEL=DEBUG
 
 After starting the API and frontend, configure your AI provider via the Settings UI:
 
-1. Open **http://localhost:3000** → **Settings** → **API Keys**
+1. Open **http://localhost:3000** → **Manage** → **Models**
 2. Click **Add Credential** → Select your provider
 3. Enter your API key (get from provider dashboard)
 4. Click **Save**, then **Test Connection**
@@ -436,7 +436,7 @@ ollama pull mistral
 ```
 
 Then configure via the Settings UI:
-1. Go to **Settings** → **API Keys** → **Add Credential** → **Ollama**
+1. Go to **Manage** → **Models** → **Add Credential** → **Ollama**
 2. Enter base URL: `http://localhost:11434`
 3. Click **Save**, then **Test Connection**
 4. Click **Discover Models** → **Register Models**

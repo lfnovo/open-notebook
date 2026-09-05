@@ -10,7 +10,11 @@ from surrealdb import RecordID
 
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
+from open_notebook.exceptions import (
+    DatabaseOperationError,
+    InvalidInputError,
+    NotFoundError,
+)
 
 
 class Notebook(ObjectModel):
@@ -764,8 +768,71 @@ class ChatSession(ObjectModel):
         return await self.relate("refers_to", source_id)
 
 
+async def resolve_notebook_scope(notebook_ids: List[str]) -> List[str]:
+    """Validate a notebook scope before it reaches text_search / vector_search.
+
+    Every id must be a well-formed `notebook:<key>` id naming an existing
+    notebook: a typo would otherwise silently return an empty result set that
+    is indistinguishable from "no matches". Existence is checked with one query
+    for the whole list. Returns the ids unchanged (empty list = whole knowledge
+    base). Raises InvalidInputError for malformed ids, NotFoundError for
+    unknown notebooks.
+    """
+    if not notebook_ids:
+        return []
+
+    # Only notebook ids are accepted: a source or note id would fail the typed
+    # record<notebook> parameter inside SurrealDB instead of returning cleanly,
+    # and "notebook:" with an empty key would blow up in RecordID.parse.
+    record_ids: List[RecordID] = []
+    invalid: List[str] = []
+    for nb_id in notebook_ids:
+        if not nb_id.startswith("notebook:") or not nb_id[len("notebook:") :]:
+            invalid.append(nb_id)
+            continue
+        try:
+            record_ids.append(ensure_record_id(nb_id))
+        except Exception:
+            invalid.append(nb_id)
+    if invalid:
+        raise InvalidInputError(f"Invalid notebook id(s): {', '.join(invalid)}")
+
+    try:
+        rows = await repo_query(
+            "SELECT id FROM notebook WHERE id IN $ids", {"ids": record_ids}
+        )
+    except Exception as e:
+        # Same contract as text_search / vector_search: log the raw driver
+        # error here, surface a typed error to the API layer.
+        logger.error(f"Error resolving notebook scope: {str(e)}")
+        logger.exception(e)
+        raise DatabaseOperationError("Failed to resolve notebook scope")
+    # The driver returns ids as RecordID objects (unhashable, and never equal
+    # to the request strings), so normalize to strings before comparing.
+    found = {str(row["id"]) for row in rows}
+    missing = [nb_id for nb_id in notebook_ids if nb_id not in found]
+    if missing:
+        raise NotFoundError(f"Notebook(s) not found: {', '.join(missing)}")
+    return notebook_ids
+
+
+def _scope_record_ids(notebook_ids: Optional[List[str]]) -> Optional[List[RecordID]]:
+    """Normalize a notebook scope for fn::text_search / fn::vector_search.
+
+    Returns None for an empty scope (global search) so the SurrealQL functions
+    take their unfiltered path, otherwise the ids as RecordIDs.
+    """
+    if not notebook_ids:
+        return None
+    return [ensure_record_id(nb_id) for nb_id in notebook_ids]
+
+
 async def text_search(
-    keyword: str, results: int, source: bool = True, note: bool = True
+    keyword: str,
+    results: int,
+    source: bool = True,
+    note: bool = True,
+    notebook_ids: Optional[List[str]] = None,
 ):
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
@@ -773,9 +840,15 @@ async def text_search(
         search_results = await repo_query(
             """
             select *
-            from fn::text_search($keyword, $results, $source, $note)
+            from fn::text_search($keyword, $results, $source, $note, $notebook_ids)
             """,
-            {"keyword": keyword, "results": results, "source": source, "note": note},
+            {
+                "keyword": keyword,
+                "results": results,
+                "source": source,
+                "note": note,
+                "notebook_ids": _scope_record_ids(notebook_ids),
+            },
         )
         return search_results
     except RuntimeError as e:
@@ -788,7 +861,9 @@ async def text_search(
                 f"Highlight position overflow, falling back to vector search: {str(e)}"
             )
             try:
-                return await vector_search(keyword, results, source, note)
+                return await vector_search(
+                    keyword, results, source, note, notebook_ids=notebook_ids
+                )
             except Exception as ve:
                 # Both search paths failed (e.g. no embedding model configured).
                 # Surface the failure instead of returning [] — an empty list would
@@ -812,6 +887,7 @@ async def vector_search(
     source: bool = True,
     note: bool = True,
     minimum_score=0.2,
+    notebook_ids: Optional[List[str]] = None,
 ):
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
@@ -822,7 +898,7 @@ async def vector_search(
         embed = await generate_embedding(keyword)
         search_results = await repo_query(
             """
-            SELECT * FROM fn::vector_search($embed, $results, $source, $note, $minimum_score);
+            SELECT * FROM fn::vector_search($embed, $results, $source, $note, $minimum_score, $notebook_ids);
             """,
             {
                 "embed": embed,
@@ -830,9 +906,19 @@ async def vector_search(
                 "source": source,
                 "note": note,
                 "minimum_score": minimum_score,
+                "notebook_ids": _scope_record_ids(notebook_ids),
             },
         )
-        return search_results
+        # SurrealDB fn::vector_search declares ORDER BY similarity DESC, but the
+        # SELECT * FROM fn::... wrapper can still return rows out of rank order.
+        # Enforce descending similarity (stable by id for ties) before returning.
+        return sorted(
+            search_results or [],
+            key=lambda item: (
+                -float(item.get("similarity") or 0.0),
+                str(item.get("id") or ""),
+            ),
+        )
     except Exception as e:
         logger.error(f"Error performing vector search: {str(e)}")
         logger.exception(e)

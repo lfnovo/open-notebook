@@ -108,6 +108,14 @@ class TestTextUtilities:
         assert thinking == "Some thinking content"
         assert cleaned == "Here is my answer"
 
+    def test_parse_thinking_content_truncated_no_close_tag(self):
+        """Output cut off inside <think> is all reasoning, never an answer."""
+        content = "<think>Let me reason about this at length and then"
+        thinking, cleaned = parse_thinking_content(content)
+        assert thinking == "Let me reason about this at length and then"
+        assert cleaned == ""
+        assert clean_thinking_content("  <think>partial") == ""
+
     def test_parse_thinking_content_invalid_input(self):
         """Test parsing with invalid input types."""
         # Non-string input (intentionally violates the signature to test the
@@ -472,14 +480,10 @@ class TestBuildSourceContext:
             "full_text": "e" + SOURCE_TRUNCATION_NOTICE,
         }
         notice_tokens = token_count(
-            _format_source_context(
-                {"sources": [notice_only], "insights": []}
-            )
+            _format_source_context({"sources": [notice_only], "insights": []})
         )
         one_character_tokens = token_count(
-            _format_source_context(
-                {"sources": [one_character], "insights": []}
-            )
+            _format_source_context({"sources": [one_character], "insights": []})
         )
         assert notice_tokens < one_character_tokens
 

@@ -7,10 +7,13 @@ on:
       - "scripts/check_md_links.py"
       - ".github/workflows/docs-links.yml"
 
+permissions:
+  contents: read
+
 jobs:
   check-links:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Check relative markdown links
         run: python3 scripts/check_md_links.py

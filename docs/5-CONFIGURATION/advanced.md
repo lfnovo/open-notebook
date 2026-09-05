@@ -197,7 +197,7 @@ ESPERANTO_SSL_VERIFY=false
 
 ### Use Different Providers for Different Tasks
 
-Configure multiple AI providers via **Settings → API Keys**. Each provider gets its own credential:
+Configure multiple AI providers via **Manage → Models**. Each provider gets its own credential:
 
 1. Add a credential for your main language model provider (e.g., OpenAI, Anthropic)
 2. Add a credential for embeddings (e.g., Voyage AI, or use the same provider)
@@ -208,7 +208,7 @@ Configure multiple AI providers via **Settings → API Keys**. Each provider get
 
 When using OpenAI-Compatible providers, you can configure per-service URLs in a single credential:
 
-1. Go to **Settings** → **API Keys**
+1. Go to **Manage** → **Models**
 2. Click **Add Credential** → Select **OpenAI-Compatible**
 3. Configure separate URLs for LLM, Embedding, TTS, and STT
 4. Click **Save**, then **Test Connection**
@@ -302,7 +302,7 @@ See [Content Processing Engines → Optional engines](../3-USER-GUIDE/content-pr
 OPEN_NOTEBOOK_ENCRYPTION_KEY    # Required for storing credentials
 ```
 
-AI provider API keys are configured via **Settings → API Keys** (not environment variables).
+AI provider API keys are configured via **Manage → Models** (not environment variables).
 
 ### Database
 ```env
@@ -336,7 +336,7 @@ ESPERANTO_LLM_TIMEOUT
 TTS_BATCH_SIZE
 ```
 
-> **Note:** `ELEVENLABS_API_KEY` is deprecated. Configure ElevenLabs via **Settings → API Keys**.
+> **Note:** `ELEVENLABS_API_KEY` is deprecated. Configure ElevenLabs via **Manage → Models**.
 
 ### Debugging
 ```env

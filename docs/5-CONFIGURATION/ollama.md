@@ -39,7 +39,7 @@ ollama pull mxbai-embed-large  # Best embedding model for Ollama
 ### 3. Configure Open Notebook
 
 **Via Settings UI (Recommended):**
-1. Go to **Settings** → **API Keys**
+1. Go to **Manage** → **Models**
 2. Click **Add Credential** → Select **Ollama**
 3. Enter the base URL (see [Network Configuration](#network-configuration-guide) below for correct URL)
 4. Click **Save**, then **Test Connection**
@@ -53,17 +53,17 @@ export OLLAMA_API_BASE=http://localhost:11434
 export OLLAMA_API_BASE=http://host.docker.internal:11434
 ```
 
-> **Deprecated**: `OLLAMA_API_BASE` is a deprecated fallback. It still works today, but there is no guarantee it keeps working in future releases, and new automation should not be built on it. Configure Ollama via **Settings → API Keys** instead. For headless/CI/Docker setups, see the [environment reference](environment-reference.md#legacy-ai-provider-environment-variables-deprecated) and the provisioning discussion in [#765](https://github.com/lfnovo/open-notebook/discussions/765).
+> **Deprecated**: `OLLAMA_API_BASE` is a deprecated fallback. It still works today, but there is no guarantee it keeps working in future releases, and new automation should not be built on it. Configure Ollama via **Manage → Models** instead. For headless/CI/Docker setups, see the [environment reference](environment-reference.md#legacy-ai-provider-environment-variables-deprecated) and the provisioning discussion in [#765](https://github.com/lfnovo/open-notebook/discussions/765).
 
 ## Network Configuration Guide
 
-When adding an Ollama credential in **Settings → API Keys**, you need to enter the correct base URL. The correct URL depends on your deployment scenario:
+When adding an Ollama credential in **Manage → Models**, you need to enter the correct base URL. The correct URL depends on your deployment scenario:
 
 ### Scenario 1: Local Installation (Same Machine)
 
 When both Open Notebook and Ollama run directly on your machine:
 
-**Base URL to enter in Settings → API Keys:** `http://localhost:11434`
+**Base URL to enter in Manage → Models:** `http://localhost:11434`
 
 Alternative: `http://127.0.0.1:11434` (use if you have DNS resolution issues with localhost)
 
@@ -71,7 +71,7 @@ Alternative: `http://127.0.0.1:11434` (use if you have DNS resolution issues wit
 
 When Open Notebook runs in Docker but Ollama runs on your host machine:
 
-**Base URL to enter in Settings → API Keys:** `http://host.docker.internal:11434`
+**Base URL to enter in Manage → Models:** `http://host.docker.internal:11434`
 
 **⚠️ CRITICAL: Ollama must accept external connections:**
 ```bash
@@ -113,7 +113,7 @@ httpcore.ConnectError: [Errno -2] Name or service not known
 
 When both Open Notebook and Ollama run in the same Docker Compose stack:
 
-**Base URL to enter in Settings → API Keys:** `http://ollama:11434`
+**Base URL to enter in Manage → Models:** `http://ollama:11434`
 
 **Docker Compose Example:**
 
@@ -157,7 +157,7 @@ volumes:
 
 When Ollama runs on a different machine in your network:
 
-**Base URL to enter in Settings → API Keys:** `http://192.168.1.100:11434` (replace with your Ollama server's IP)
+**Base URL to enter in Manage → Models:** `http://192.168.1.100:11434` (replace with your Ollama server's IP)
 
 **Security Note:** Only use this in trusted networks. Ollama doesn't have built-in authentication.
 
@@ -170,7 +170,7 @@ If you've configured Ollama to use a different port:
 OLLAMA_HOST=0.0.0.0:8080 ollama serve
 ```
 
-**Base URL to enter in Settings → API Keys:** `http://localhost:8080`
+**Base URL to enter in Manage → Models:** `http://localhost:8080`
 
 ## Model Recommendations
 
@@ -276,7 +276,7 @@ qwen3:32b                   030ee887880f    20 GB     9 days ago
 
 **Step 3: Configure in Open Notebook**
 
-1. Go to **Settings → Models**
+1. Go to **Manage → Models**
 2. Click **Add Model**
 3. Enter the **exact name** from `ollama list`
 4. Select provider: `ollama`
@@ -294,7 +294,7 @@ curl http://localhost:11434/api/tags
 ```
 
 **Verify credential is configured:**
-Check **Settings → API Keys** for an Ollama credential with the correct base URL.
+Check **Manage → Models** for an Ollama credential with the correct base URL.
 
 **⚠️ IMPORTANT: Enable external connections (most common fix):**
 ```bash
@@ -373,7 +373,7 @@ netstat -tulpn | grep 11434
 ```bash
 OLLAMA_HOST=0.0.0.0:8080 ollama serve
 ```
-Then update the base URL in **Settings → API Keys** to `http://localhost:8080`
+Then update the base URL in **Manage → Models** to `http://localhost:8080`
 
 **6. "Failed to send message" in Chat**
 
@@ -385,7 +385,7 @@ Error executing chat: Model is not a LanguageModel: None
 **Causes (in order of likelihood):**
 
 1. **Model name mismatch**: The model name in Open Notebook doesn't exactly match `ollama list`
-2. **No default model configured**: You haven't set a default chat model in Settings → Models
+2. **No default model configured**: You haven't set a default chat model in Manage → Models
 3. **Model was deleted**: You removed the model from Ollama but didn't update Open Notebook's defaults
 4. **Model record deleted**: The model was removed from Open Notebook but is still set as default
 
@@ -397,11 +397,11 @@ Error executing chat: Model is not a LanguageModel: None
 ollama list
 
 # Compare with what's configured in Open Notebook
-# Go to Settings → Models and verify the names match EXACTLY
+# Go to Manage → Models and verify the names match EXACTLY
 ```
 
 **Check 2: Verify default models are set**
-1. Go to **Settings → Models**
+1. Go to **Manage → Models**
 2. Scroll to **Default Models** section
 3. Ensure **Default Chat Model** has a value selected
 4. If empty, select an available language model
@@ -409,7 +409,7 @@ ollama list
 **Check 3: Refresh after changes**
 If you've added/removed models in Ollama:
 1. Refresh the Open Notebook page
-2. Go to Settings → Models
+2. Go to Manage → Models
 3. Re-add any missing models with exact names from `ollama list`
 4. Re-select default models if needed
 
@@ -436,7 +436,7 @@ services:
     # ... rest of your config
 ```
 
-Then in **Settings → API Keys**, use base URL: `http://host.docker.internal:11434`
+Then in **Manage → Models**, use base URL: `http://host.docker.internal:11434`
 
 This maps `host.docker.internal` to your host machine's IP. macOS/Windows Docker Desktop does this automatically, but Linux requires explicit configuration.
 
@@ -445,7 +445,7 @@ This maps `host.docker.internal` to your host machine's IP. macOS/Windows Docker
 # Use host networking if host.docker.internal doesn't work
 docker run --network host lfnovo/open_notebook:v1-latest  # for quick testing only
 ```
-Then in **Settings → API Keys**, use base URL: `http://localhost:11434`
+Then in **Manage → Models**, use base URL: `http://localhost:11434`
 
 **3. Custom bridge network:**
 ```yaml
@@ -464,7 +464,7 @@ services:
       - ollama_network
 ```
 
-Then in **Settings → API Keys**, use base URL: `http://ollama:11434`
+Then in **Manage → Models**, use base URL: `http://ollama:11434`
 
 **4. Firewall issues:**
 ```bash
@@ -542,7 +542,7 @@ export OLLAMA_MAX_QUEUE=512            # Request queue size
 export OLLAMA_NUM_PARALLEL=4           # Parallel request handling
 export OLLAMA_FLASH_ATTENTION=1        # Enable flash attention (if supported)
 
-# Open Notebook configuration (configure via Settings → API Keys instead)
+# Open Notebook configuration (configure via Manage → Models instead)
 # OLLAMA_API_BASE=http://localhost:11434  # Deprecated fallback — works today, no guarantee
 ```
 

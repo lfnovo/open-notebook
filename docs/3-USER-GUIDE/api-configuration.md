@@ -70,12 +70,12 @@ API keys stored in the database are encrypted using Fernet (AES-128-CBC + HMAC-S
 
 ## Accessing Credential Configuration
 
-1. Click **Settings** in the navigation bar
-2. Select **API Keys** tab
+1. In the sidebar, find the **Manage** section
+2. Click **Models**
 3. You'll see existing credentials and an **Add Credential** button
 
 ```
-Navigation: Settings → API Keys
+Navigation: Manage → Models
 ```
 
 ---
@@ -118,7 +118,7 @@ Navigation: Settings → API Keys
 
 ### Step 1: Add Credential
 
-1. Go to **Settings** → **API Keys**
+1. Go to **Manage** → **Models**
 2. Click **Add Credential**
 3. Select your provider
 4. Give it a descriptive name (e.g., "My OpenAI Key", "Work Anthropic")
@@ -257,7 +257,7 @@ Google Cloud's enterprise AI platform:
 
 If you have existing API keys in environment variables (from a previous version):
 
-1. Open **Settings → API Keys**
+1. Open **Manage → Models**
 2. A banner appears: "Environment variables detected"
 3. Click **Migrate to Database**
 4. Keys are copied to the database (encrypted)
@@ -292,7 +292,7 @@ If you're upgrading from an older version that used the ProviderConfig system:
 
 - The migration happens automatically on first startup
 - Your existing configurations are converted to credentials
-- Check **Settings → API Keys** to verify the migration succeeded
+- Check **Manage → Models** to verify the migration succeeded
 - If you see issues, check the API logs for migration messages
 
 ---
@@ -356,7 +356,7 @@ API keys stored in the database are encrypted using Fernet (AES-128-CBC + HMAC-S
 
 ### Provider Shows "Not Configured"
 
-1. Check if a credential exists for this provider (Settings → API Keys)
+1. Check if a credential exists for this provider (Manage → Models)
 2. Test the credential connection
 3. Verify key format matches provider requirements
 4. Re-discover and register models if needed

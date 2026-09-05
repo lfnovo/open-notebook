@@ -358,7 +358,7 @@ class ModelManager:
         if not model_id:
             logger.warning(
                 f"No default model configured for type '{model_type}'. "
-                f"Please go to Settings → Models and set a default model."
+                f"Please go to Manage → Models and set a default model."
             )
             return None
 
@@ -368,7 +368,7 @@ class ModelManager:
             logger.error(
                 f"Failed to load default model for type '{model_type}': {e}. "
                 f"The configured model_id '{model_id}' may have been deleted or misconfigured. "
-                f"Please go to Settings → Models and reconfigure the default model."
+                f"Please go to Manage → Models and reconfigure the default model."
             )
             return None
 

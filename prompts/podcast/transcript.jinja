@@ -80,7 +80,7 @@ Follow these format requirements strictly:
 
 Return exactly one JSON object with a single root key "transcript" whose value is a list of at least {{ turns }} entries. Each entry has exactly two keys, "speaker" and "dialogue", both strings.
 {% if not language %}
-The line below is a two-entry EXCERPT showing that structure with sample dialogue - keep the structure, write your own words for this segment, and return at least {{ turns }} entries rather than the two shown:
+The line below is a {% if speakers|length == 1 %}one-entry{% else %}two-entry{% endif %} EXCERPT showing that structure with sample dialogue - keep the structure, write your own words for this segment, and return at least {{ turns }} entries rather than the {% if speakers|length == 1 %}one{% else %}two{% endif %} shown:
 
 {% if speakers|length == 1 %}
 {"transcript": [{"speaker": {{ speaker_names[0]|tojson }}, "dialogue": "Let's pick up where we left off, because this is where the material really starts to come together."}]}

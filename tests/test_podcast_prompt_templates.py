@@ -166,6 +166,14 @@ class TestExampleCannotPassAsACompleteAnswer:
         assert "two-entry EXCERPT" in rendered
         assert "return at least 6 entries rather than the two shown" in rendered
 
+    def test_solo_excerpt_is_not_called_a_two_entry_one(self):
+        """A solo profile renders one entry; calling it a two-entry excerpt
+        contradicts the example directly above it."""
+        rendered = render_transcript(speakers=[SPEAKERS[0]], turns=3)
+        assert "one-entry EXCERPT" in rendered
+        assert "two-entry" not in rendered
+        assert "rather than the one shown" in rendered
+
     def test_outline_example_points_at_the_segment_count(self):
         rendered = render_outline(num_segments=6)
         assert "two-entry EXCERPT" in rendered
@@ -286,15 +294,27 @@ class TestNoDriftFromBundledTemplates:
     invisible here. The language block was lost exactly this way. Fail when a
     variable the bundled template uses is missing from the app's copy."""
 
-    @staticmethod
-    def _variables(path: Path) -> set:
+    # Operators and literals a condition can open with: `{% if not language %}`
+    # names no variable called "not".
+    JINJA_KEYWORDS = frozenset(
+        {"not", "and", "or", "is", "in", "if", "else", "true", "false", "none"}
+    )
+
+    @classmethod
+    def _variables(cls, path: Path) -> set:
         text = path.read_text()
         used = set(re.findall(r"\{\{-?\s*([a-zA-Z_][a-zA-Z0-9_]*)", text))
         used |= set(
             re.findall(r"\{%-?\s*(?:if|elif)\s+([a-zA-Z_][a-zA-Z0-9_]*)", text)
         )
         loop_locals = set(re.findall(r"\{%-?\s*for\s+([a-zA-Z_][a-zA-Z0-9_]*)", text))
-        return used - loop_locals
+        return used - loop_locals - cls.JINJA_KEYWORDS
+
+    def test_jinja_keywords_are_not_treated_as_variables(self):
+        """`{% if not language %}` names no variable called "not" - counting it
+        would fail the drift check the moment one template negates a test the
+        other doesn't."""
+        assert "not" not in self._variables(PROMPTS_DIR / "transcript.jinja")
 
     @pytest.mark.parametrize("template", ["transcript", "outline"])
     def test_app_template_uses_every_bundled_variable(self, template):

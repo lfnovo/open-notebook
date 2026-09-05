@@ -250,11 +250,39 @@ class ProviderDiscoverySpec:
     description: Optional[Callable[[dict], Optional[str]]] = None
 
 
+def _classify_openrouter(model: dict) -> str:
+    """Classify OpenRouter catalog entries using architecture metadata + name.
+
+    OpenRouter's /models payload is dominated by chat models, but embedding
+    (and some audio) ids are present. Blindly tagging everything as ``language``
+    made the discover UI show the same chat list after switching Model Type
+    (see #1274). Prefer ``architecture.output_modalities`` when present, then
+    fall back to id substrings, then language.
+    """
+    architecture = model.get("architecture") or {}
+    outputs = architecture.get("output_modalities") or []
+    if isinstance(outputs, (list, tuple, set)):
+        outs = {str(item).lower() for item in outputs}
+        if "embeddings" in outs or "embedding" in outs:
+            return "embedding"
+        if outs == {"audio"} or (outs & {"audio", "speech"} and "text" not in outs):
+            return "text_to_speech"
+
+    model_id = str(model.get("id") or "")
+    name_lower = model_id.lower()
+    if "embed" in name_lower:
+        return "embedding"
+    if "whisper" in name_lower:
+        return "speech_to_text"
+    if "tts" in name_lower or "/mai-voice" in name_lower or name_lower.endswith("-voice"):
+        return "text_to_speech"
+    return "language"
+
+
 # Per-provider quirk hooks that can't live in the (pure data) registry.
 _COMPAT_CLASSIFY: Dict[str, Callable[[dict], str]] = {
     "mistral": _classify_mistral,
-    # OpenRouter models are typically language models
-    "openrouter": lambda model: "language",
+    "openrouter": _classify_openrouter,
 }
 _COMPAT_DESCRIPTION: Dict[str, Callable[[dict], Optional[str]]] = {
     "openrouter": lambda model: model.get("name"),

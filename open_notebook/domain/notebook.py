@@ -797,9 +797,16 @@ async def resolve_notebook_scope(notebook_ids: List[str]) -> List[str]:
     if invalid:
         raise InvalidInputError(f"Invalid notebook id(s): {', '.join(invalid)}")
 
-    rows = await repo_query(
-        "SELECT id FROM notebook WHERE id IN $ids", {"ids": record_ids}
-    )
+    try:
+        rows = await repo_query(
+            "SELECT id FROM notebook WHERE id IN $ids", {"ids": record_ids}
+        )
+    except Exception as e:
+        # Same contract as text_search / vector_search: log the raw driver
+        # error here, surface a typed error to the API layer.
+        logger.error(f"Error resolving notebook scope: {str(e)}")
+        logger.exception(e)
+        raise DatabaseOperationError("Failed to resolve notebook scope")
     found = {row["id"] for row in rows}
     missing = [nb_id for nb_id in notebook_ids if nb_id not in found]
     if missing:

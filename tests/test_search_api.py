@@ -277,12 +277,14 @@ class TestNotebookScopedSearchApi:
     def test_database_failure_during_scope_check_is_not_a_404(
         self, mock_text_search, mock_query, client
     ):
-        mock_query.side_effect = RuntimeError("connection refused")
+        mock_query.side_effect = RuntimeError("connection refused ws://db:8000")
         response = client.post(
             "/api/search",
             json={"query": "x", "type": "text", "notebook_ids": ["notebook:a"]},
         )
         assert response.status_code == 500
+        # The raw driver error stays in the server log, not in the response.
+        assert "ws://db:8000" not in response.text
         mock_text_search.assert_not_awaited()
 
     @patch("open_notebook.domain.notebook.repo_query", new_callable=AsyncMock)

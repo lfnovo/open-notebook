@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { getApiErrorMessage } from '@/lib/utils/error-handler'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { sourceChatApi } from '@/lib/api/source-chat'
+import { selectMessageId } from '@/lib/utils/source-chat-message'
 import {
   SourceChatSession,
   SourceChatMessage,
@@ -22,6 +23,13 @@ export function useSourceChat(sourceId: string) {
   const [isStreaming, setIsStreaming] = useState(false)
   const [contextIndicators, setContextIndicators] = useState<SourceChatContextIndicator | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+
+  // Abort any in-flight stream when the component unmounts.
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort()
+    }
+  }, [])
 
   // Fetch sessions
   const { data: sessions = [], isLoading: loadingSessions, refetch: refetchSessions } = useQuery<SourceChatSession[]>({
@@ -103,6 +111,12 @@ export function useSourceChat(sourceId: string) {
 
   // Send message with streaming
   const sendMessage = useCallback(async (message: string, modelOverride?: string) => {
+    // Abort any previous in-flight request
+    abortControllerRef.current?.abort()
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+    const signal = controller.signal
+
     let sessionId = currentSessionId
 
     // Auto-create session if none exists
@@ -117,13 +131,30 @@ export function useSourceChat(sourceId: string) {
         const error = err as { response?: { data?: { detail?: string } }, message?: string };
         console.error('Failed to create chat session:', error)
         toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToCreateSession'))
+        // This early return happens before the try/finally below, so clear the
+        // streaming state ourselves. Without it, a pending first send (whose
+        // session is still being created) would see this call's controller in the
+        // ref, treat itself as "superseded", and never clear isStreaming — leaving
+        // the UI stuck in the Stop state.
+        if (abortControllerRef.current === controller) {
+          abortControllerRef.current = null
+          setIsStreaming(false)
+        }
         return
       }
     }
 
-    // Add user message optimistically
+    // Reuse the trailing unanswered human turn's id when this is a retry of the
+    // same content (so the backend dedups it) and generate a fresh identity
+    // otherwise — two distinct identical messages must both be kept.
+    const messageId = selectMessageId(messages, message)
+
+    // Add the user message optimistically, carrying the same id sent to the
+    // backend. The backend keys its `already_pending` check on that id, so the
+    // optimistic entry must match the persisted one — a `temp-` placeholder here
+    // would make a retry of this turn unable to dedup against the real uuid.
     const userMessage: SourceChatMessage = {
-      id: `temp-${Date.now()}`,
+      id: messageId,
       type: 'human',
       content: message,
       timestamp: new Date().toISOString()
@@ -134,8 +165,9 @@ export function useSourceChat(sourceId: string) {
     try {
       const response = await sourceChatApi.sendMessage(sourceId, sessionId, {
         message,
+        message_id: messageId,
         model_override: modelOverride
-      })
+      }, signal)
 
       if (!response) {
         throw new Error('No response body')
@@ -199,24 +231,33 @@ export function useSourceChat(sourceId: string) {
         }
       }
     } catch (err: unknown) {
+      // Cancelled by the user — the finally block still refetches persisted messages.
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return
+      }
       const error = err as { response?: { data?: { detail?: string } }, message?: string };
       console.error('Error sending message:', error)
       toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToSendMessage'))
-      // Remove optimistic messages on error
-      setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
     } finally {
-      setIsStreaming(false)
-      // Refetch session to get persisted messages
-      refetchCurrentSession()
+      // A superseded send (replaced by a newer one) must not clear the newer
+      // stream's loading state or refetch over its messages. A user-initiated
+      // cancel sets the ref to null (and clears isStreaming itself), so it still
+      // falls through to refetch the persisted user message.
+      const superseded =
+        abortControllerRef.current !== null && abortControllerRef.current !== controller
+      if (!superseded) {
+        setIsStreaming(false)
+        // Refetch session to get persisted messages
+        refetchCurrentSession()
+      }
     }
-  }, [sourceId, currentSessionId, refetchCurrentSession, queryClient, t])
+  }, [sourceId, currentSessionId, messages, refetchCurrentSession, queryClient, t])
 
   // Cancel streaming
   const cancelStreaming = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-      setIsStreaming(false)
-    }
+    abortControllerRef.current?.abort()
+    abortControllerRef.current = null
+    setIsStreaming(false)
   }, [])
 
   // Switch session

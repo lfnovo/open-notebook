@@ -2,7 +2,7 @@ import asyncio
 import json
 from typing import AsyncGenerator, List, Optional
 
-from fastapi import APIRouter, HTTPException, Path
+from fastapi import APIRouter, HTTPException, Path, Request
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
@@ -26,6 +26,49 @@ from open_notebook.graphs.source_chat import source_chat_graph as source_chat_gr
 from open_notebook.utils.graph_utils import get_session_message_count
 
 router = APIRouter()
+
+
+# Seconds between SSE keepalive comments while the LLM generates. Keeps the
+# connection from going idle so proxies (incl. the Next.js rewrite in front of
+# FastAPI) don't drop it mid-generation.
+KEEPALIVE_INTERVAL_SECONDS = 15.0
+
+# Per-session locks serialize the read-modify-write sequence (snapshot -> append
+# user message -> invoke) in `stream_source_chat_response`. Without them, two
+# concurrent requests for the same thread could both read the same trailing
+# message and each start a generation. Created lazily; refcounted so the entry is
+# evicted once the last holder releases — a long-lived process must not keep one
+# lock per session it has ever seen.
+class _SessionLock:
+    __slots__ = ("lock", "holders")
+
+    def __init__(self) -> None:
+        self.lock = asyncio.Lock()
+        self.holders = 0
+
+
+_session_locks: dict[str, _SessionLock] = {}
+
+
+def _get_session_lock(session_id: str) -> _SessionLock:
+    # No `await` between these dict ops, so on a single event loop the
+    # read/create/increment is atomic. Registering the caller as a holder before
+    # it awaits `acquire` keeps the entry alive until it releases.
+    entry = _session_locks.get(session_id)
+    if entry is None:
+        entry = _SessionLock()
+        _session_locks[session_id] = entry
+    entry.holders += 1
+    return entry
+
+
+def _release_session_lock(session_id: str, entry: _SessionLock) -> None:
+    entry.lock.release()
+    entry.holders -= 1
+    # The `is entry` guard is defensive: the entry is only evicted when this was
+    # the last holder, so `session_id` must still map to this same entry.
+    if entry.holders == 0 and _session_locks.get(session_id) is entry:
+        _session_locks.pop(session_id, None)
 
 
 # Request/Response models
@@ -76,6 +119,14 @@ class SourceChatSessionWithMessagesResponse(SourceChatSessionResponse):
 
 class SendMessageRequest(BaseModel):
     message: str = Field(..., description="User message content")
+    message_id: Optional[str] = Field(
+        None,
+        description=(
+            "Client-generated message identity, used to deduplicate a retry of "
+            "the same turn (same id) while still keeping distinct identical "
+            "messages (different ids)."
+        ),
+    )
     model_override: Optional[str] = Field(
         None, description="Optional model override for this message"
     )
@@ -330,47 +381,77 @@ async def delete_source_chat_session(
 
 
 async def stream_source_chat_response(
-    session_id: str, source_id: str, message: str, model_override: Optional[str] = None
+    request: Request,
+    session_id: str,
+    source_id: str,
+    message: str,
+    model_override: Optional[str] = None,
+    message_id: Optional[str] = None,
 ) -> AsyncGenerator[str, None]:
     """Stream the source chat response as Server-Sent Events."""
+    config = RunnableConfig(
+        configurable={"thread_id": session_id, "model_id": model_override}
+    )
+    invoke_task: Optional[asyncio.Task] = None
+    # Serialize snapshot -> append -> invoke per session. Two concurrent requests
+    # for the same thread would otherwise both read the same trailing message and
+    # each start a generation. Held for the whole stream; released in finally.
+    lock_entry = _get_session_lock(session_id)
+    await lock_entry.lock.acquire()
     try:
-        # Get current state
-        # Use sync get_state() in a thread since SqliteSaver doesn't support async
+        # Persist the user message to the checkpoint up front so it survives a
+        # mid-generation disconnect (the frontend refetches the checkpoint on
+        # cancel/complete and would otherwise drop the user's message). Skip the
+        # append when this turn is already the trailing (unanswered) one. The
+        # guard keys on the client message id, not content: a retry that reuses
+        # the same id is deduplicated, while two distinct identical messages get
+        # distinct ids and are both kept. A completed exchange always ends with an
+        # AI message, so a trailing human turn is necessarily still pending.
         current_state = await asyncio.to_thread(
-            source_chat_graph.get_state,
-            config=RunnableConfig(configurable={"thread_id": session_id}),
+            source_chat_graph.get_state, config=config
         )
-
-        # Prepare state for execution
-        state_values = current_state.values if current_state else {}
-        state_values["messages"] = state_values.get("messages", [])
-        state_values["source_id"] = source_id
-        state_values["model_override"] = model_override
-
-        # Add user message to state
-        user_message = HumanMessage(content=message)
-        state_values["messages"].append(user_message)
+        already_pending = False
+        if current_state and current_state.values and "messages" in current_state.values:
+            existing_messages = current_state.values["messages"]
+            last_message = existing_messages[-1] if existing_messages else None
+            already_pending = (
+                isinstance(last_message, HumanMessage)
+                and message_id is not None
+                and getattr(last_message, "id", None) == message_id
+            )
+        if not already_pending:
+            await source_chat_graph.aupdate_state(
+                config, {"messages": [HumanMessage(content=message, id=message_id)]}
+            )
 
         # Send user message event
         user_event = {"type": "user_message", "content": message, "timestamp": None}
         yield f"data: {json.dumps(user_event)}\n\n"
 
-        # Run the synchronous LangGraph invoke in a thread so it doesn't block the
-        # event loop. While blocked, even the already-yielded SSE events can't
-        # flush and every other request stalls until the LLM finishes. Mirrors the
-        # get_state() calls above.
-        # The lambda pins down which `invoke` overload is used; asyncio.to_thread
-        # can't resolve overloaded callables on its own. The ignore is a langgraph
+        # Run the async graph with ainvoke so generation is cancellable. Only the
+        # per-message config is passed as input; the messages (incl. the user
+        # message above) are read from the checkpoint. The ignore is a langgraph
         # typing limitation: it accepts a partial state dict at runtime, but the
         # signature requires the full state type.
-        result = await asyncio.to_thread(
-            lambda: source_chat_graph.invoke(
-                input=state_values,  # type: ignore[arg-type]
-                config=RunnableConfig(
-                    configurable={"thread_id": session_id, "model_id": model_override}
-                ),
+        invoke_task = asyncio.create_task(
+            source_chat_graph.ainvoke(
+                input={"source_id": source_id, "model_override": model_override},  # type: ignore[call-overload]
+                config=config,
             )
         )
+        while True:
+            done, _ = await asyncio.wait(
+                {invoke_task}, timeout=KEEPALIVE_INTERVAL_SECONDS
+            )
+            if done:
+                # Re-raises on graph error, caught by the outer try/except below.
+                result = invoke_task.result()
+                break
+            if await request.is_disconnected():
+                # Client went away — stop generating instead of burning tokens.
+                return
+            # SSE comment — ignored by clients, keeps the connection alive.
+            yield ": ping\n\n"
 
         # Stream the complete AI response
         if "messages" in result:
@@ -402,10 +483,18 @@ async def stream_source_chat_response(
         logger.error(f"Error in source chat streaming: {str(e)}")
         error_event = {"type": "error", "message": error_message}
         yield f"data: {json.dumps(error_event)}\n\n"
+    finally:
+        # Stop generation if the generator is torn down mid-flight (client
+        # disconnect or server cancellation) so the model doesn't keep running.
+        if invoke_task is not None and not invoke_task.done():
+            invoke_task.cancel()
+            await asyncio.gather(invoke_task, return_exceptions=True)
+        _release_session_lock(session_id, lock_entry)
 
 
 @router.post("/sources/{source_id}/chat/sessions/{session_id}/messages")
 async def send_message_to_source_chat(
+    http_request: Request,
     request: SendMessageRequest,
     source_id: str = Path(..., description="Source ID"),
     session_id: str = Path(..., description="Session ID"),
@@ -431,10 +520,12 @@ async def send_message_to_source_chat(
         # Return streaming response
         return StreamingResponse(
             stream_source_chat_response(
+                http_request,
                 session_id=full_session_id,
                 source_id=full_source_id,
                 message=request.message,
                 model_override=model_override,
+                message_id=request.message_id,
             ),
             media_type="text/event-stream",
             headers={

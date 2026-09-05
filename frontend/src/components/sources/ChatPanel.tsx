@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
+import { Bot, User, Send, Square, Loader2, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import {
   SourceChatMessage,
@@ -36,6 +36,7 @@ interface ChatPanelProps {
   isStreaming: boolean
   contextIndicators: SourceChatContextIndicator | null
   onSendMessage: (message: string, modelOverride?: string) => void
+  onCancel?: () => void
   modelOverride?: string
   onModelChange?: (model?: string) => void
   // Session management props
@@ -60,6 +61,7 @@ export function ChatPanel({
   isStreaming,
   contextIndicators,
   onSendMessage,
+  onCancel,
   modelOverride,
   onModelChange,
   sessions = [],
@@ -218,6 +220,7 @@ export function ChatPanel({
         {/* Input Area */}
         <ChatComposer
           onSendMessage={onSendMessage}
+          onCancel={onCancel}
           isStreaming={isStreaming}
           modelOverride={modelOverride}
           onModelChange={onModelChange}
@@ -233,6 +236,7 @@ export function ChatPanel({
 // re-render this small component instead of the whole message history.
 interface ChatComposerProps {
   onSendMessage: (message: string, modelOverride?: string) => void
+  onCancel?: () => void
   isStreaming: boolean
   modelOverride?: string
   onModelChange?: (model?: string) => void
@@ -240,6 +244,7 @@ interface ChatComposerProps {
 
 function ChatComposer({
   onSendMessage,
+  onCancel,
   isStreaming,
   modelOverride,
   onModelChange
@@ -297,18 +302,40 @@ function ChatComposer({
           className="flex-1 min-h-[40px] max-h-[100px] resize-none py-2 px-3 min-w-0"
           rows={1}
         />
-        <Button
-          onClick={handleSend}
-          disabled={!input.trim() || isStreaming}
-          size="icon"
-          className="h-[40px] w-[40px] flex-shrink-0"
-        >
-          {isStreaming ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+        {isStreaming ? (
+          onCancel ? (
+            <Button
+              onClick={onCancel}
+              size="icon"
+              variant="secondary"
+              aria-label={t('chat.stop')}
+              title={t('chat.stop')}
+              className="h-[40px] w-[40px] flex-shrink-0"
+            >
+              <Square className="h-4 w-4" />
+            </Button>
           ) : (
+            // No cancel callback (e.g. notebook chat, which is not streamed) —
+            // show a disabled spinner rather than a dead Stop button.
+            <Button
+              disabled
+              size="icon"
+              aria-label={t('common.saving')}
+              className="h-[40px] w-[40px] flex-shrink-0"
+            >
+              <Loader2 className="h-4 w-4 animate-spin" />
+            </Button>
+          )
+        ) : (
+          <Button
+            onClick={handleSend}
+            disabled={!input.trim()}
+            size="icon"
+            className="h-[40px] w-[40px] flex-shrink-0"
+          >
             <Send className="h-4 w-4" />
-          )}
-        </Button>
+          </Button>
+        )}
       </div>
     </div>
   )

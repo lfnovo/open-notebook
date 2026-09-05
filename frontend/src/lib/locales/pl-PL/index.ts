@@ -960,6 +960,7 @@ export const plPL = {
     configNameHint: "Opisowa nazwa tej konfiguracji (np. „Produkcja”, „Rozwój”)",
     baseUrl: "Bazowy adres URL",
     baseUrlOverrideHint: "Zmień to tylko wtedy, gdy musisz nadpisać domyślny punkt końcowy API dostawcy.",
+    openAICompatibleBaseUrlHint: "Uwzględnij ścieżkę wersji API wymaganą przez serwer. Dla LM Studio w Dockerze użyj http://host.docker.internal:1234/v1.",
     numCtx: "Okno kontekstu (num_ctx)",
     numCtxHint: "Maksymalne okno kontekstu dla modeli Ollama. Pozostaw puste, aby użyć wartości domyślnej (8192). Zwiększ tylko jeśli Twój sprzęt obsłuży większe okno.",
     deleteConfigConfirm: "Czy na pewno chcesz usunąć „{{name}}”? Tej operacji nie można cofnąć.",

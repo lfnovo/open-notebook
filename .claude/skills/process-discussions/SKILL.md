@@ -14,8 +14,10 @@ and reply is approved by him before posting. You prepare; he decides.
 
 This process was calibrated by hand on 2026-08-16 across 10 Ideas
 (#1210–#1265) and re-run on 2026-09-02 (6 follow-ups + 3 new ideas), which
-added the `incubating` status and the pull rule. The patterns below are
-ratified practice, not theory.
+added the `incubating` status and the pull rule, and again on 2026-09-05
+(4 follow-ups), which added the one-decision-at-a-time format and the
+close-when-graduated-work-lands rule. The patterns below are ratified
+practice, not theory.
 
 **Ground rules:**
 
@@ -123,6 +125,16 @@ and close the Discussion as resolved (`closeDiscussion(reason: RESOLVED)`);
 an open thread with a final answer clutters the queue. Anyone can reopen
 with a new argument.
 
+**Close when graduated work lands** (ratified 2026-09-05). A thread whose
+needs have all either shipped or been routed elsewhere is done the moment
+the last fix is merged to `main` — do not wait for a versioned release.
+Post a closing reply that names the merged PR(s), says the change ships
+with the next release, and points testers at the `v1-dev` Docker image
+(rebuilt on every push to `main`), then close as resolved. Precedents:
+#1236 (editor bugs), #1243 (Crawl4AI token). Detecting this state is part
+of Phase 0: for every graduated Issue linked from an open thread, check
+whether it closed since the last run.
+
 **Graduation rules** (for `accepted → graduated` and `bug`):
 - Issue gets: Context (with Discussion origin link), Expected outcome,
   Out of scope, Acceptance criteria, References. Label `ready` (+ `bug` when
@@ -178,8 +190,23 @@ compliments about the question itself.
 
 ## Phase 4 — Approval gate, then post
 
-Present to the owner: ficha (compact), proposed outcome, full draft reply,
-and any issues/renames/closures the package includes. After approval:
+**One decision at a time** (owner preference, 2026-09-05). After the
+Phase 0 ledger, present decisions sequentially — never a batch. Each one
+uses this fixed format, in the owner's language:
+
+1. **ID + title**
+2. **Resumo** — what the thread is, how it was decomposed, current status
+3. **Último movimento** — who did what, when; what changed since the last run
+   (a graduated Issue closing, an upstream release, a user answering)
+4. **Sugestão ou dúvida** — the proposed outcome, the full draft reply,
+   and every side action the package includes (Issues to open, renames,
+   closures); or the concrete question when the call is the owner's. When
+   offering options, label them (a)/(b)/(c) and say which one you recommend
+
+On approval, execute the whole package in the order below (side actions
+first, reply last), report the URLs, then present the next decision.
+Number them ("Decisão 2 de 4") so the owner knows the size of the session.
+After approval:
 
 - Write bodies to scratchpad files; post via GraphQL (`addDiscussionComment`,
   `updateDiscussion` for renames) with `-F body=@file` — avoids shell

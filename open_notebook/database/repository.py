@@ -217,28 +217,45 @@ async def repo_delete(record_id: Union[str, RecordID]):
 
 
 async def repo_insert(
-    table: str, data: List[Dict[str, Any]], ignore_duplicates: bool = False
+    table: str,
+    data: List[Dict[str, Any]],
+    ignore_duplicates: bool = False,
+    batch_size: int = 50,
 ) -> List[Dict[str, Any]]:
-    """Create a new record in the specified table"""
-    try:
-        async with db_connection() as connection:
-            result = parse_record_ids(await connection.insert(table, data))
-            # SurrealDB may return a string error message instead of the expected records
-            if isinstance(result, str):
-                raise RuntimeError(result)
-            return result
-    except RuntimeError as e:
-        if ignore_duplicates and "already contains" in str(e):
-            return []
-        # Log transaction conflicts at debug level (they are expected during concurrent operations)
-        error_str = str(e).lower()
-        if "transaction" in error_str or "conflict" in error_str:
-            logger.debug(str(e))
-        else:
-            logger.error(str(e))
-        raise
-    except Exception as e:
-        if ignore_duplicates and "already contains" in str(e):
-            return []
-        logger.exception(e)
-        raise RuntimeError("Failed to create record")
+    """Create a new record in the specified table in batches"""
+    if not data:
+        return []
+    if isinstance(data, dict):
+        data = [data]
+
+    results = []
+    if batch_size <= 0:
+        raise ValueError("batch_size must be greater than zero")
+    for i in range(0, len(data), batch_size):
+        chunk = data[i : i + batch_size]
+        try:
+            async with db_connection() as connection:
+                result = parse_record_ids(await connection.insert(table, chunk))
+                # SurrealDB may return a string error message instead of the expected records
+                if isinstance(result, str):
+                    raise RuntimeError(result)
+                if isinstance(result, list):
+                    results.extend(result)
+                elif result is not None:
+                    results.append(result)
+        except RuntimeError as e:
+            if ignore_duplicates and "already contains" in str(e):
+                continue
+            # Log transaction conflicts at debug level (they are expected during concurrent operations)
+            error_str = str(e).lower()
+            if "transaction" in error_str or "conflict" in error_str:
+                logger.debug(str(e))
+            else:
+                logger.error(str(e))
+            raise
+        except Exception as e:
+            if ignore_duplicates and "already contains" in str(e):
+                continue
+            logger.exception(e)
+            raise RuntimeError("Failed to create record")
+    return results

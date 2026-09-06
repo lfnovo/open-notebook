@@ -709,13 +709,15 @@ async def test_stream_source_chat_emits_due_keepalive_before_final_response():
     from api.routers import source_chat as source_chat_router
     from api.routers.source_chat import stream_source_chat_response
 
-    # The fake clock puts the (instant) completion far past the keepalive
-    # interval: initialization reads 0, the completion poll reads 100.
-    counter = 0
+    # The fake clock advances 100s per call: the initialization read is 0 and
+    # the completion poll is 100, so a due keepalive must precede the final
+    # response (the done-branch runs only after the keepalive check).
+    ticks = 0
     def fake_monotonic():
-        nonlocal counter
-        counter += 1
-        return 100.0 if counter > 1 else 0.0
+        nonlocal ticks
+        value = ticks * 100.0
+        ticks += 1
+        return value
     fake_time = SimpleNamespace(monotonic=fake_monotonic)
 
     with patch.object(

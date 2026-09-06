@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import type { SourceChatMessage } from '@/lib/types/api'
-import { selectMessageId } from './source-chat-message'
+import { createMessageId, selectMessageId } from './source-chat-message'
 
 const human = (id: string, content: string): SourceChatMessage => ({
   id,
@@ -39,5 +39,20 @@ describe('selectMessageId', () => {
     const generateId = vi.fn(() => 'fresh')
 
     expect(selectMessageId([], 'hello', generateId)).toBe('fresh')
+  })
+})
+
+describe('createMessageId', () => {
+  it('falls back when crypto.randomUUID is unavailable', () => {
+    const randomUUID = crypto.randomUUID
+    // @ts-expect-error — simulate non-secure HTTP context
+    crypto.randomUUID = undefined
+
+    const id = createMessageId()
+    expect(id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    )
+
+    crypto.randomUUID = randomUUID
   })
 })

@@ -162,6 +162,11 @@ export function useSourceChat(sourceId: string) {
       }
 
       if (isSuperseded()) {
+        // Session may already exist on the backend (e.g. user pressed Stop
+        // while auto-create was in flight) — adopt it so the next send does
+        // not spawn another empty session.
+        setCurrentSessionId((prev) => prev ?? sessionId)
+        queryClient.invalidateQueries({ queryKey: ['sourceChatSessions', sourceId] })
         clearOwnStreamingState()
         return
       }
@@ -179,6 +184,7 @@ export function useSourceChat(sourceId: string) {
     // same content (so the backend dedups it) and generate a fresh identity
     // otherwise — two distinct identical messages must both be kept.
     const messageId = selectMessageId(messages, message)
+    const messageAlreadyPresent = messages.some((m) => m.id === messageId)
 
     // Add the user message optimistically, carrying the same id sent to the
     // backend. The backend keys its `already_pending` check on that id, so the
@@ -268,9 +274,9 @@ export function useSourceChat(sourceId: string) {
       if (err instanceof DOMException && err.name === 'AbortError') {
         return
       }
-      // The turn may never have reached the backend — drop the optimistic entry
-      // immediately rather than waiting for a refetch that won't include it.
-      if (!isSuperseded()) {
+      // Drop only a bubble we added in this send — a retry reuses a persisted id
+      // that must stay visible until the refetch completes.
+      if (!isSuperseded() && !messageAlreadyPresent) {
         setMessages(prev => prev.filter(m => m.id !== messageId))
       }
       const error = err as { response?: { data?: { detail?: string } }, message?: string };

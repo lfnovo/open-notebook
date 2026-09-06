@@ -108,7 +108,7 @@ describe('ChatPanel composer', () => {
     expect(onSendMessage).not.toHaveBeenCalled()
   })
 
-  it('announces generating (not saving) for non-streaming notebook chat', () => {
+  it('announces generating (not saving) for notebook chat without stop support', () => {
     render(
       <ChatPanel
         messages={[]}

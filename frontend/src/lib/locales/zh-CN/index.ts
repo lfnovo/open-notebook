@@ -450,6 +450,7 @@ export const zhCN = {
     sessionUpdated: "会话已更新",
     sessionDeleted: "会话已删除",
     stop: "停止",
+    generating: "正在生成...",
   },
   searchPage: {
     askAndSearch: "提问与搜索",

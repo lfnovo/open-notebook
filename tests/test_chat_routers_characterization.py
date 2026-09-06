@@ -352,6 +352,8 @@ async def test_stream_source_chat_emits_keepalive_while_invoke_runs():
 
     with patch.object(
         source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01
+    ), patch.object(
+        source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01
     ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
         mock_graph.aupdate_state = AsyncMock()
         mock_graph.ainvoke.side_effect = controlled_ainvoke
@@ -397,6 +399,8 @@ async def test_stream_source_chat_cancels_invoke_on_disconnect():
 
     with patch.object(
         source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01
+    ), patch.object(
+        source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01
     ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
         mock_graph.aupdate_state = AsyncMock()
         mock_graph.ainvoke.side_effect = blocking_ainvoke
@@ -436,6 +440,8 @@ async def test_stream_source_chat_skips_duplicate_pending_user_message():
 
     with patch.object(
         source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01
+    ), patch.object(
+        source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01
     ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
         mock_graph.get_state.return_value = _graph_state(
             {"messages": [HumanMessage(content="hello", id="msg-1")]}
@@ -467,6 +473,8 @@ async def test_stream_source_chat_appends_user_message_when_not_pending():
 
     with patch.object(
         source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01
+    ), patch.object(
+        source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01
     ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
         mock_graph.get_state.return_value = _graph_state(
             {"messages": [_Msg("m1", "human", "hi"), _Msg("m2", "ai", "yo")]}
@@ -505,6 +513,8 @@ async def test_stream_source_chat_appends_distinct_identical_messages():
 
     with patch.object(
         source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01
+    ), patch.object(
+        source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01
     ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
         mock_graph.get_state.return_value = _graph_state(
             {"messages": [HumanMessage(content="hello", id="msg-1")]}
@@ -541,6 +551,8 @@ async def test_stream_source_chat_evicts_session_lock_after_stream():
 
     with patch.object(
         source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01
+    ), patch.object(
+        source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01
     ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
         mock_graph.get_state.return_value = _graph_state({"messages": []})
         mock_graph.aupdate_state = AsyncMock()
@@ -555,3 +567,75 @@ async def test_stream_source_chat_evicts_session_lock_after_stream():
             pass
 
     assert session_id not in source_chat_router._session_locks
+
+
+@pytest.mark.asyncio
+async def test_stream_source_chat_releases_holder_when_cancelled_during_acquire():
+    """If the stream is cancelled while waiting for the session lock, the
+    pre-acquire holder count registered in `_get_session_lock` is decremented
+    without calling `lock.release()` on an unheld lock."""
+    from api.routers import source_chat as source_chat_router
+    from api.routers.source_chat import (
+        _get_session_lock,
+        _release_session_lock,
+        stream_source_chat_response,
+    )
+
+    session_id = "chat_session:cancel-acquire"
+    holder = _get_session_lock(session_id)
+    await holder.lock.acquire()
+
+    request = MagicMock()
+    request.is_disconnected = AsyncMock(return_value=False)
+
+    gen = stream_source_chat_response(request, session_id, "source:xyz", "hello")
+    consume = asyncio.create_task(gen.__anext__())
+
+    await asyncio.sleep(0.01)
+    consume.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await consume
+
+    assert holder.holders == 1
+
+    _release_session_lock(session_id, holder)
+    assert session_id not in source_chat_router._session_locks
+
+
+@pytest.mark.asyncio
+async def test_stream_source_chat_disconnect_polls_faster_than_keepalive():
+    """Client disconnect is checked on the short poll interval, not only when a
+    keepalive comment is due."""
+    from api.routers import source_chat as source_chat_router
+    from api.routers.source_chat import stream_source_chat_response
+
+    cancelled = asyncio.Event()
+
+    async def blocking_ainvoke(*_args, **_kwargs):
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            cancelled.set()
+            raise
+
+    with patch.object(
+        source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 60.0
+    ), patch.object(
+        source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01
+    ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
+        mock_graph.aupdate_state = AsyncMock()
+        mock_graph.ainvoke.side_effect = blocking_ainvoke
+
+        request = MagicMock()
+        request.is_disconnected = AsyncMock(return_value=True)
+
+        chunks = []
+        async for chunk in stream_source_chat_response(
+            request, "chat_session:abc", "source:xyz", "hello"
+        ):
+            chunks.append(chunk)
+
+    assert chunks[0].startswith('data: {"type": "user_message"')
+    assert not any(c.startswith('data: {"type": "complete"') for c in chunks)
+    assert cancelled.is_set()
+    assert not any(c == ": ping\n\n" for c in chunks)

@@ -450,6 +450,7 @@ export const trTR = {
     sessionUpdated: "Oturum güncellendi",
     sessionDeleted: "Oturum silindi",
     stop: "Durdur",
+    generating: "Oluşturuluyor...",
   },
   searchPage: {
     askAndSearch: "Sor ve Ara",

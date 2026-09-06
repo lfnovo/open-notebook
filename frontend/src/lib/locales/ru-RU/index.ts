@@ -450,6 +450,7 @@ export const ruRU = {
     sessionUpdated: "Сессия обновлена",
     sessionDeleted: "Сессия удалена",
     stop: "Остановить",
+    generating: "Генерация...",
   },
   searchPage: {
     askAndSearch: "Запрос и поиск",

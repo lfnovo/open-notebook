@@ -107,4 +107,18 @@ describe('ChatPanel composer', () => {
 
     expect(onSendMessage).not.toHaveBeenCalled()
   })
+
+  it('announces generating (not saving) for non-streaming notebook chat', () => {
+    render(
+      <ChatPanel
+        messages={[]}
+        isStreaming={true}
+        contextIndicators={null}
+        onSendMessage={vi.fn()}
+      />
+    )
+
+    expect(screen.getByLabelText('chat.generating')).toBeInTheDocument()
+    expect(screen.queryByLabelText('common.saving')).not.toBeInTheDocument()
+  })
 })

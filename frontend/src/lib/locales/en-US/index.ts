@@ -448,6 +448,7 @@ export const enUS = {
     sessionUpdated: "Session updated",
     sessionDeleted: "Session deleted",
     stop: "Stop",
+    generating: "Generating...",
   },
   searchPage: {
     askAndSearch: "Ask and Search",

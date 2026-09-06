@@ -1,5 +1,6 @@
 import asyncio
 import json
+import time
 from typing import AsyncGenerator, List, Optional
 from uuid import uuid4
 
@@ -36,6 +37,9 @@ router = APIRouter()
 # connection from going idle so proxies (incl. the Next.js rewrite in front of
 # FastAPI) don't drop it mid-generation.
 KEEPALIVE_INTERVAL_SECONDS = 15.0
+# Poll client disconnect more often than keepalive so dropped connections stop
+# generation promptly instead of waiting for the next SSE comment interval.
+DISCONNECT_POLL_INTERVAL_SECONDS = 1.0
 
 # Per-session locks serialize the read-modify-write sequence (snapshot -> append
 # user message -> invoke) in `stream_source_chat_response`. Without them, two
@@ -416,8 +420,10 @@ async def stream_source_chat_response(
     # for the same thread would otherwise both read the same trailing message and
     # each start a generation. Held for the whole stream; released in finally.
     lock_entry = _get_session_lock(session_id)
-    await lock_entry.lock.acquire()
+    acquired = False
     try:
+        await lock_entry.lock.acquire()
+        acquired = True
         # Persist the user message to the checkpoint up front so it survives a
         # mid-generation disconnect (the frontend refetches the checkpoint on
         # cancel/complete and would otherwise drop the user's message). Skip the
@@ -458,9 +464,10 @@ async def stream_source_chat_response(
                 config=config,
             )
         )
+        last_keepalive = time.monotonic()
         while True:
             done, _ = await asyncio.wait(
-                {invoke_task}, timeout=KEEPALIVE_INTERVAL_SECONDS
+                {invoke_task}, timeout=DISCONNECT_POLL_INTERVAL_SECONDS
             )
             if done:
                 # Re-raises on graph error, caught by the outer try/except below.
@@ -469,8 +476,11 @@ async def stream_source_chat_response(
             if await request.is_disconnected():
                 # Client went away — stop generating instead of burning tokens.
                 return
-            # SSE comment — ignored by clients, keeps the connection alive.
-            yield ": ping\n\n"
+            now = time.monotonic()
+            if now - last_keepalive >= KEEPALIVE_INTERVAL_SECONDS:
+                # SSE comment — ignored by clients, keeps the connection alive.
+                yield ": ping\n\n"
+                last_keepalive = now
 
         # Stream this turn's AI response. result["messages"] is the full
         # checkpointed history, so only the last message is new.
@@ -514,7 +524,17 @@ async def stream_source_chat_response(
         if invoke_task is not None and not invoke_task.done():
             invoke_task.cancel()
             await asyncio.gather(invoke_task, return_exceptions=True)
-        _release_session_lock(session_id, lock_entry)
+        if acquired:
+            _release_session_lock(session_id, lock_entry)
+        else:
+            # Cancelled while waiting to acquire — decrement the holder count
+            # registered in `_get_session_lock` without releasing an unheld lock.
+            lock_entry.holders -= 1
+            if (
+                lock_entry.holders == 0
+                and _session_locks.get(session_id) is lock_entry
+            ):
+                _session_locks.pop(session_id, None)
 
 
 @router.post("/sources/{source_id}/chat/sessions/{session_id}/messages")

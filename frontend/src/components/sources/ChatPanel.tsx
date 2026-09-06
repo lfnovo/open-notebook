@@ -320,7 +320,7 @@ function ChatComposer({
             <Button
               disabled
               size="icon"
-              aria-label={t('common.saving')}
+              aria-label={t('chat.generating')}
               className="h-[40px] w-[40px] flex-shrink-0"
             >
               <Loader2 className="h-4 w-4 animate-spin" />

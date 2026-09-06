@@ -162,4 +162,77 @@ describe('useSourceChat sendMessage streaming', () => {
     expect(result.current.isStreaming).toBe(false)
     expect(sourceChatApi.sendMessage).not.toHaveBeenCalled()
   })
+
+  it('does not append a duplicate optimistic bubble when retrying a pending turn', async () => {
+    vi.mocked(sourceChatApi.listSessions).mockResolvedValue([session])
+    vi.mocked(sourceChatApi.getSession).mockResolvedValue({
+      ...session,
+      messages: [
+        { id: 'msg-persisted', type: 'human', content: 'hello', timestamp: '2026-01-01T00:00:00Z' },
+      ],
+    })
+    vi.mocked(sourceChatApi.sendMessage).mockResolvedValue(sseStream([{ type: 'complete' }]) as any)
+
+    const { result } = renderHook(() => useSourceChat('source:1'), { wrapper: makeWrapper() })
+
+    await waitFor(() => expect(result.current.messages).toHaveLength(1))
+
+    await act(async () => {
+      await result.current.sendMessage('hello')
+    })
+
+    expect(result.current.messages).toHaveLength(1)
+    expect(result.current.messages[0].id).toBe('msg-persisted')
+  })
+
+  it('removes the optimistic user message when send fails before persistence', async () => {
+    vi.mocked(sourceChatApi.listSessions).mockResolvedValue([session])
+    vi.mocked(sourceChatApi.getSession).mockResolvedValue({ ...session, messages: [] })
+    vi.mocked(sourceChatApi.sendMessage).mockRejectedValue(new Error('network'))
+
+    const { result } = renderHook(() => useSourceChat('source:1'), { wrapper: makeWrapper() })
+
+    await waitFor(() => expect(result.current.currentSessionId).toBe('session:1'))
+
+    await act(async () => {
+      await result.current.sendMessage('hello')
+    })
+
+    expect(result.current.messages).toEqual([])
+    expect(result.current.isStreaming).toBe(false)
+  })
+
+  it('serializes concurrent first sends into one session create', async () => {
+    vi.mocked(sourceChatApi.listSessions).mockResolvedValue([])
+    let resolveCreate!: (value: SourceChatSession) => void
+    vi.mocked(sourceChatApi.createSession).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveCreate = resolve
+        }),
+    )
+    vi.mocked(sourceChatApi.sendMessage).mockResolvedValue(sseStream([{ type: 'complete' }]) as any)
+
+    const { result } = renderHook(() => useSourceChat('source:1'), { wrapper: makeWrapper() })
+
+    await waitFor(() => expect(result.current.sessions).toEqual([]))
+
+    let firstSend!: Promise<void>
+    let secondSend!: Promise<void>
+    act(() => {
+      firstSend = result.current.sendMessage('first')
+      secondSend = result.current.sendMessage('second')
+    })
+
+    await waitFor(() => expect(result.current.isStreaming).toBe(true))
+    expect(sourceChatApi.createSession).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      resolveCreate({ ...session, id: 'session:new' })
+      await Promise.all([firstSend, secondSend])
+    })
+
+    expect(sourceChatApi.createSession).toHaveBeenCalledTimes(1)
+    expect(result.current.currentSessionId).toBe('session:new')
+  })
 })

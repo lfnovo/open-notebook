@@ -450,6 +450,7 @@ export const frFR = {
     sessionUpdated: "Session mise à jour",
     sessionDeleted: "Session supprimée",
     stop: "Arrêter",
+    generating: "Génération...",
   },
   searchPage: {
     askAndSearch: "Poser une question et Rechercher",

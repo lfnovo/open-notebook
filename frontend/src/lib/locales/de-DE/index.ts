@@ -453,6 +453,7 @@ export const deDE = {
     sessionUpdated: "Sitzung aktualisiert",
     sessionDeleted: "Sitzung gelöscht",
     stop: "Stoppen",
+    generating: "Wird erzeugt...",
   },
   searchPage: {
     askAndSearch: "Fragen und Suchen",

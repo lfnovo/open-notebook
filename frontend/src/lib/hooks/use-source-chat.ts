@@ -23,6 +23,9 @@ export function useSourceChat(sourceId: string) {
   const [isStreaming, setIsStreaming] = useState(false)
   const [contextIndicators, setContextIndicators] = useState<SourceChatContextIndicator | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+  // Serialize auto-create on the first send so concurrent submits share one
+  // in-flight create instead of racing separate sessions.
+  const sessionCreatePromiseRef = useRef<Promise<string> | null>(null)
 
   // Abort any in-flight stream when the component unmounts.
   useEffect(() => {
@@ -119,31 +122,57 @@ export function useSourceChat(sourceId: string) {
     abortControllerRef.current = controller
     const signal = controller.signal
 
+    const isSuperseded = () =>
+      signal.aborted ||
+      (abortControllerRef.current !== null && abortControllerRef.current !== controller)
+
+    const clearOwnStreamingState = () => {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null
+        setIsStreaming(false)
+      }
+    }
+
+    // Disable the composer for the whole send, including session auto-create.
+    setIsStreaming(true)
+
     let sessionId = currentSessionId
 
     // Auto-create session if none exists
     if (!sessionId) {
-      try {
+      if (!sessionCreatePromiseRef.current) {
         const defaultTitle = message.length > 30 ? `${message.substring(0, 30)}...` : message
-        const newSession = await sourceChatApi.createSession(sourceId, { title: defaultTitle })
-        sessionId = newSession.id
-        setCurrentSessionId(sessionId)
-        queryClient.invalidateQueries({ queryKey: ['sourceChatSessions', sourceId] })
+        sessionCreatePromiseRef.current = sourceChatApi
+          .createSession(sourceId, { title: defaultTitle })
+          .then((newSession) => newSession.id)
+      }
+      const createPromise = sessionCreatePromiseRef.current
+      try {
+        sessionId = await createPromise
       } catch (err: unknown) {
         const error = err as { response?: { data?: { detail?: string } }, message?: string };
         console.error('Failed to create chat session:', error)
         toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToCreateSession'))
-        // This early return happens before the try/finally below, so clear the
-        // streaming state ourselves. Without it, a pending first send (whose
-        // session is still being created) would see this call's controller in the
-        // ref, treat itself as "superseded", and never clear isStreaming — leaving
-        // the UI stuck in the Stop state.
-        if (abortControllerRef.current === controller) {
-          abortControllerRef.current = null
-          setIsStreaming(false)
+        clearOwnStreamingState()
+        return
+      } finally {
+        if (sessionCreatePromiseRef.current === createPromise) {
+          sessionCreatePromiseRef.current = null
         }
+      }
+
+      if (isSuperseded()) {
+        clearOwnStreamingState()
         return
       }
+
+      setCurrentSessionId(sessionId)
+      queryClient.invalidateQueries({ queryKey: ['sourceChatSessions', sourceId] })
+    }
+
+    if (isSuperseded()) {
+      clearOwnStreamingState()
+      return
     }
 
     // Reuse the trailing unanswered human turn's id when this is a retry of the
@@ -155,14 +184,16 @@ export function useSourceChat(sourceId: string) {
     // backend. The backend keys its `already_pending` check on that id, so the
     // optimistic entry must match the persisted one — a `temp-` placeholder here
     // would make a retry of this turn unable to dedup against the real uuid.
+    // On a retry of a still-pending turn the id already exists — don't duplicate.
     const userMessage: SourceChatMessage = {
       id: messageId,
       type: 'human',
       content: message,
       timestamp: new Date().toISOString()
     }
-    setMessages(prev => [...prev, userMessage])
-    setIsStreaming(true)
+    setMessages(prev =>
+      prev.some(m => m.id === messageId) ? prev : [...prev, userMessage]
+    )
 
     try {
       const response = await sourceChatApi.sendMessage(sourceId, sessionId, {
@@ -236,6 +267,11 @@ export function useSourceChat(sourceId: string) {
       // Cancelled by the user — the finally block still refetches persisted messages.
       if (err instanceof DOMException && err.name === 'AbortError') {
         return
+      }
+      // The turn may never have reached the backend — drop the optimistic entry
+      // immediately rather than waiting for a refetch that won't include it.
+      if (!isSuperseded()) {
+        setMessages(prev => prev.filter(m => m.id !== messageId))
       }
       const error = err as { response?: { data?: { detail?: string } }, message?: string };
       console.error('Error sending message:', error)

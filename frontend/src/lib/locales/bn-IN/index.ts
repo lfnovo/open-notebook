@@ -450,6 +450,7 @@ export const bnIN = {
     sessionUpdated: "সেশন আপডেট হয়েছে",
     sessionDeleted: "সেশন মুছে ফেলা হয়েছে",
     stop: "থামান",
+    generating: "তৈরি করা হচ্ছে...",
   },
   searchPage: {
     askAndSearch: "জিজ্ঞাসা ও অনুসন্ধান",

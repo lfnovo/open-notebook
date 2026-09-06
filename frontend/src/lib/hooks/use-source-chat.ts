@@ -9,6 +9,7 @@ import { sourceChatApi } from '@/lib/api/source-chat'
 import { selectMessageId } from '@/lib/utils/source-chat-message'
 import {
   SourceChatSession,
+  SourceChatSessionWithMessages,
   SourceChatMessage,
   SourceChatContextIndicator,
   CreateSourceChatSessionRequest,
@@ -249,7 +250,6 @@ export function useSourceChat(sourceId: string) {
 
     const streamSessionId = sessionId
     streamingSessionRef.current = streamSessionId
-    messagesSessionRef.current = streamSessionId
 
     // The turn belongs to the session it was composed in, so it is still sent
     // after the user navigates away — but the shared list then shows another
@@ -259,20 +259,45 @@ export function useSourceChat(sourceId: string) {
       currentSessionIdRef.current === streamSessionId &&
       messagesSessionRef.current === streamSessionId
 
+    // The shared list must actually represent this session before the send
+    // writes into it. A submit can land between `switchSession` (which changes
+    // the selected session) and the session-query effect (which swaps the list
+    // to that session's messages), so the list may still show the previous
+    // session's transcript here — claiming it without first applying this
+    // session's messages would append the turn and its streamed answer to the
+    // wrong transcript, and the cached-snapshot path below would never replace
+    // the list. Adopt this session's own state instead: a list that already
+    // represents the session keeps its content (it can be fresher than the
+    // cache — it carries optimistic turns), and a user who navigated away
+    // during hydration gets neither the claim nor the overwrite.
+    const adoptSessionList = (authoritative: SourceChatMessage[]): SourceChatMessage[] => {
+      if (currentSessionIdRef.current !== streamSessionId) return authoritative
+      if (messagesSessionRef.current === streamSessionId) return messagesRef.current
+      messagesSessionRef.current = streamSessionId
+      applyMessages(authoritative)
+      return messagesRef.current
+    }
+
     // `messages` only holds authoritative state once the session query has
     // resolved, and the composer is gated on `isStreaming` alone — a send can
     // land while that query is still in flight. Deriving the id from the empty
     // list would mint a fresh one for a turn the server still holds as pending,
     // and the backend would append a duplicate human turn.
     let knownMessages = messagesRef.current
-    if (!sessionJustCreated && !queryClient.getQueryData(['sourceChatSession', sourceId, streamSessionId])) {
+    const cachedSnapshot = sessionJustCreated
+      ? undefined
+      : queryClient.getQueryData<SourceChatSessionWithMessages>([
+          'sourceChatSession',
+          sourceId,
+          streamSessionId
+        ])
+    if (cachedSnapshot?.messages) {
+      knownMessages = adoptSessionList(cachedSnapshot.messages)
+    } else if (!sessionJustCreated) {
       try {
         const hydrated = await fetchSession(streamSessionId)
         if (hydrated?.messages) {
-          knownMessages = hydrated.messages
-          if (ownsMessages()) {
-            applyMessages(knownMessages)
-          }
+          knownMessages = adoptSessionList(hydrated.messages)
         }
       } catch (err) {
         console.error('Error loading chat session before send:', getLogSafeErrorMessage(err))

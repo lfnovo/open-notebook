@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useSourceChat } from './use-source-chat'
 import { sourceChatApi } from '@/lib/api/source-chat'
-import { SourceChatSession, SourceChatSessionWithMessages } from '@/lib/types/api'
+import { SourceChatSession, SourceChatSessionWithMessages, SourceChatMessage } from '@/lib/types/api'
 
 // useTranslation is mocked globally in setup.ts (t returns the key string).
 
@@ -451,19 +451,24 @@ describe('useSourceChat sendMessage streaming', () => {
     vi.mocked(sourceChatApi.sendMessage).mockRejectedValue(axiosError)
 
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const { result } = renderHook(() => useSourceChat('source:1'), { wrapper: makeWrapper() })
+    // A failing assertion must not leave the spy installed — it would silence
+    // console.error for every test that runs after this one.
+    try {
+      const { result } = renderHook(() => useSourceChat('source:1'), { wrapper: makeWrapper() })
 
-    await waitFor(() => expect(result.current.currentSessionId).toBe('session:1'))
+      await waitFor(() => expect(result.current.currentSessionId).toBe('session:1'))
 
-    await act(async () => {
-      await result.current.sendMessage('hello')
-    })
+      await act(async () => {
+        await result.current.sendMessage('hello')
+      })
 
-    expect(consoleError).toHaveBeenCalled()
-    const logged = JSON.stringify(consoleError.mock.calls)
-    expect(logged).not.toContain('secret-token')
-    expect(logged).not.toContain('Authorization')
-    consoleError.mockRestore()
+      expect(consoleError).toHaveBeenCalled()
+      const logged = JSON.stringify(consoleError.mock.calls)
+      expect(logged).not.toContain('secret-token')
+      expect(logged).not.toContain('Authorization')
+    } finally {
+      consoleError.mockRestore()
+    }
   })
 
   it('keeps a send on its own session when the user switches during pre-send hydration', async () => {
@@ -526,6 +531,68 @@ describe('useSourceChat sendMessage streaming', () => {
     // Nothing from the streamed session leaked into the selected session's view.
     expect(result.current.currentSessionId).toBe('session:2')
     expect(result.current.messages).toEqual(otherMessages)
+  })
+
+  it("adopts the switched-to session's cached messages before a submit claims the shared list", async () => {
+    const otherSession: SourceChatSession = { ...session, id: 'session:2', title: 'Other' }
+    const aMessages = [
+      { id: 'msg-a', type: 'ai' as const, content: 'answered in A', timestamp: '2026-01-01T00:00:00Z' },
+    ]
+    const pendingInB = [
+      { id: 'msg-b-pending', type: 'human' as const, content: 'hello', timestamp: '2026-01-01T00:00:00Z' },
+    ]
+    vi.mocked(sourceChatApi.listSessions).mockResolvedValue([session, otherSession])
+    // The backend persists the exchange, so the send's final refetch sees it.
+    let bMessages: SourceChatMessage[] = pendingInB
+    vi.mocked(sourceChatApi.getSession).mockImplementation(
+      (_sourceId, sessionId) =>
+        Promise.resolve(
+          sessionId === 'session:2'
+            ? { ...otherSession, messages: bMessages }
+            : { ...session, messages: aMessages },
+        ) as any
+    )
+    vi.mocked(sourceChatApi.sendMessage).mockImplementation(() => {
+      bMessages = [
+        ...pendingInB,
+        { id: 'ai-b', type: 'ai' as const, content: 'answer', timestamp: '2026-01-01T00:00:01Z' },
+      ]
+      return Promise.resolve(
+        sseStream([{ type: 'ai_message', content: 'answer' }, { type: 'complete' }]) as any
+      )
+    })
+
+    const { result } = renderHook(() => useSourceChat('source:1'), { wrapper: makeWrapper() })
+
+    // Visit session:2 so its query is cached, then return to session:1 — the
+    // shared list belongs to session:1 again.
+    act(() => {
+      result.current.switchSession('session:2')
+    })
+    await waitFor(() => expect(result.current.messages).toEqual(pendingInB))
+    act(() => {
+      result.current.switchSession('session:1')
+    })
+    await waitFor(() => expect(result.current.messages).toEqual(aMessages))
+
+    // Submit in the same tick as the switch, before the session-query effect
+    // can swap the list over — the send must bring session:2's transcript with
+    // it instead of writing into session:1's.
+    let sendPromise!: Promise<void>
+    act(() => {
+      result.current.switchSession('session:2')
+      sendPromise = result.current.sendMessage('hello')
+    })
+
+    await act(async () => {
+      await sendPromise
+    })
+
+    // The trailing turn is one session:2 already holds server-side — reusing
+    // its id lets the backend dedup instead of appending a duplicate human turn.
+    const [, , payload] = vi.mocked(sourceChatApi.sendMessage).mock.calls[0]
+    expect(payload.message_id).toBe('msg-b-pending')
+    expect(result.current.messages.map((m) => m.content)).toEqual(['hello', 'answer'])
   })
 
   it('rehydrates the streaming session when the user switches away and back', async () => {

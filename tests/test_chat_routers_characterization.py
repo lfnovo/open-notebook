@@ -544,6 +544,7 @@ async def test_stream_source_chat_appends_distinct_identical_messages():
 async def test_stream_source_chat_evicts_session_lock_after_stream():
     """The per-session lock entry is evicted once the stream finishes, so a
     long-lived process does not retain one lock per session it has ever seen."""
+    from api import source_chat_service
     from api.routers import source_chat as source_chat_router
     from api.routers.source_chat import stream_source_chat_response
 
@@ -566,40 +567,35 @@ async def test_stream_source_chat_evicts_session_lock_after_stream():
         ):
             pass
 
-    assert session_id not in source_chat_router._session_locks
+    assert session_id not in source_chat_service._session_locks
 
 
 @pytest.mark.asyncio
 async def test_stream_source_chat_releases_holder_when_cancelled_during_acquire():
     """If the stream is cancelled while waiting for the session lock, the
-    pre-acquire holder count registered in `_get_session_lock` is decremented
-    without calling `lock.release()` on an unheld lock."""
-    from api.routers import source_chat as source_chat_router
-    from api.routers.source_chat import (
-        _get_session_lock,
-        _release_session_lock,
-        stream_source_chat_response,
-    )
+    pre-acquire holder count is decremented without calling `lock.release()` on
+    an unheld lock."""
+    from api import source_chat_service
+    from api.routers.source_chat import stream_source_chat_response
 
     session_id = "chat_session:cancel-acquire"
-    holder = _get_session_lock(session_id)
-    await holder.lock.acquire()
 
     request = MagicMock()
     request.is_disconnected = AsyncMock(return_value=False)
 
-    gen = stream_source_chat_response(request, session_id, "source:xyz", "hello")
-    consume = asyncio.create_task(gen.__anext__())
+    async with source_chat_service.session_turn_lock(session_id):
+        gen = stream_source_chat_response(request, session_id, "source:xyz", "hello")
+        consume = asyncio.create_task(gen.__anext__())
 
-    await asyncio.sleep(0.01)
-    consume.cancel()
-    with pytest.raises(asyncio.CancelledError):
-        await consume
+        await asyncio.sleep(0.01)
+        consume.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await consume
 
-    assert holder.holders == 1
+        # Only the outer holder remains; the cancelled waiter dropped its own.
+        assert source_chat_service._session_locks[session_id].holders == 1
 
-    _release_session_lock(session_id, holder)
-    assert session_id not in source_chat_router._session_locks
+    assert session_id not in source_chat_service._session_locks
 
 
 @pytest.mark.asyncio

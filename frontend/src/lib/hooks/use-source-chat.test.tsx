@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useSourceChat } from './use-source-chat'
 import { sourceChatApi } from '@/lib/api/source-chat'
-import { SourceChatSession } from '@/lib/types/api'
+import { SourceChatSession, SourceChatSessionWithMessages } from '@/lib/types/api'
 
 // useTranslation is mocked globally in setup.ts (t returns the key string).
 
@@ -48,11 +48,28 @@ function sseStream(events: Array<Record<string, unknown>>) {
 
 // A fresh QueryClient per test, kept stable across renders (creating it inside
 // the wrapper body would reset cached queries on every hook re-render).
-function makeWrapper() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+function makeWrapper(
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+) {
   return function Wrapper({ children }: { children: ReactNode }) {
     return <QueryClientProvider client={client}>{children}</QueryClientProvider>
   }
+}
+
+// `fetch` rejects with an AbortError when its signal aborts — the mock has to do
+// the same or a cancelled send never reaches its catch/finally.
+function abortableSend() {
+  return (
+    _sourceId: string,
+    _sessionId: string,
+    _data: unknown,
+    signal?: AbortSignal
+  ) =>
+    new Promise<never>((_resolve, reject) => {
+      signal?.addEventListener('abort', () =>
+        reject(new DOMException('Aborted', 'AbortError'))
+      )
+    })
 }
 
 describe('useSourceChat sendMessage streaming', () => {
@@ -227,6 +244,7 @@ describe('useSourceChat sendMessage streaming', () => {
 
   it('adopts an auto-created session when stop is pressed before create finishes', async () => {
     vi.mocked(sourceChatApi.listSessions).mockResolvedValue([])
+    vi.mocked(sourceChatApi.getSession).mockResolvedValue({ ...session, id: 'session:new', messages: [] })
     let resolveCreate!: (value: SourceChatSession) => void
     vi.mocked(sourceChatApi.createSession).mockImplementation(
       () =>
@@ -265,8 +283,198 @@ describe('useSourceChat sendMessage streaming', () => {
     expect(sourceChatApi.createSession).toHaveBeenCalledTimes(1)
   })
 
+  it('resolves authoritative session state before choosing the message id', async () => {
+    const pendingTurn = {
+      id: 'msg-pending',
+      type: 'human' as const,
+      content: 'hello',
+      timestamp: '2026-01-01T00:00:00Z',
+    }
+    vi.mocked(sourceChatApi.listSessions).mockResolvedValue([session])
+    // The session query stays in flight until the send is already under way, so
+    // `messages` is still empty when the id has to be chosen.
+    let resolveSession!: () => void
+    vi.mocked(sourceChatApi.getSession)
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveSession = () => resolve({ ...session, messages: [pendingTurn] })
+          }),
+      )
+      .mockResolvedValue({ ...session, messages: [pendingTurn] })
+    vi.mocked(sourceChatApi.sendMessage).mockResolvedValue(sseStream([{ type: 'complete' }]) as any)
+
+    const { result } = renderHook(() => useSourceChat('source:1'), { wrapper: makeWrapper() })
+
+    await waitFor(() => expect(sourceChatApi.getSession).toHaveBeenCalledTimes(1))
+    expect(result.current.messages).toEqual([])
+
+    let sendPromise!: Promise<void>
+    act(() => {
+      sendPromise = result.current.sendMessage('hello')
+    })
+
+    await act(async () => {
+      resolveSession()
+      await sendPromise
+    })
+
+    // The server still holds this turn as pending — reusing its id lets the
+    // backend dedup instead of appending a duplicate human turn.
+    const [, , payload] = vi.mocked(sourceChatApi.sendMessage).mock.calls[0]
+    expect(payload.message_id).toBe('msg-pending')
+    expect(result.current.messages).toHaveLength(1)
+  })
+
+  it('does not let a cancelled send refetch over a newer send', async () => {
+    const persisted = [
+      { id: 'msg-old', type: 'human' as const, content: 'first', timestamp: '2026-01-01T00:00:00Z' },
+      { id: 'ai-old', type: 'ai' as const, content: 'answer', timestamp: '2026-01-01T00:00:01Z' },
+    ]
+    vi.mocked(sourceChatApi.listSessions).mockResolvedValue([session])
+    // Second call is the cancelled send's refetch — held so it lands after the
+    // next send has already added its optimistic turn.
+    let resolveCancelledRefetch!: () => void
+    vi.mocked(sourceChatApi.getSession)
+      .mockResolvedValueOnce({ ...session, messages: persisted })
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveCancelledRefetch = () =>
+              resolve({
+                ...session,
+                messages: [
+                  ...persisted,
+                  { id: 'msg-hello', type: 'human', content: 'hello', timestamp: '2026-01-01T00:00:02Z' },
+                ],
+              })
+          }),
+      )
+    vi.mocked(sourceChatApi.sendMessage).mockImplementation(abortableSend() as any)
+
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const { result } = renderHook(() => useSourceChat('source:1'), {
+      wrapper: makeWrapper(client),
+    })
+
+    await waitFor(() => expect(result.current.messages).toHaveLength(2))
+
+    let cancelled!: Promise<void>
+    act(() => {
+      cancelled = result.current.sendMessage('hello')
+    })
+    await waitFor(() => expect(result.current.messages).toHaveLength(3))
+
+    act(() => {
+      result.current.cancelStreaming()
+    })
+    await waitFor(() => expect(sourceChatApi.getSession).toHaveBeenCalledTimes(2))
+
+    let newer!: Promise<void>
+    act(() => {
+      newer = result.current.sendMessage('second')
+    })
+    await waitFor(() => expect(result.current.messages).toHaveLength(4))
+
+    act(() => {
+      resolveCancelledRefetch()
+    })
+    // Wait for the stale snapshot to reach the cache the sync effect reads.
+    await waitFor(() =>
+      expect(
+        client.getQueryData<SourceChatSessionWithMessages>([
+          'sourceChatSession',
+          'source:1',
+          'session:1',
+        ])?.messages,
+      ).toHaveLength(3),
+    )
+
+    expect(result.current.messages.map((m) => m.content)).toEqual([
+      'first',
+      'answer',
+      'hello',
+      'second',
+    ])
+
+    // Both sends stay pending on purpose — don't leak their rejections.
+    void cancelled.catch(() => {})
+    void newer.catch(() => {})
+  })
+
+  it('skips session adoption when the abort came from unmount instead of stop', async () => {
+    vi.mocked(sourceChatApi.listSessions).mockResolvedValue([])
+    vi.mocked(sourceChatApi.getSession).mockResolvedValue({ ...session, messages: [] })
+    let resolveCreate!: (value: SourceChatSession) => void
+    vi.mocked(sourceChatApi.createSession).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveCreate = resolve
+        }),
+    )
+
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const invalidateQueries = vi.spyOn(client, 'invalidateQueries')
+    const { result, unmount } = renderHook(() => useSourceChat('source:1'), {
+      wrapper: makeWrapper(client),
+    })
+
+    await waitFor(() => expect(result.current.sessions).toEqual([]))
+
+    let sendPromise!: Promise<void>
+    act(() => {
+      sendPromise = result.current.sendMessage('hello')
+    })
+    await waitFor(() => expect(result.current.isStreaming).toBe(true))
+
+    unmount()
+
+    await act(async () => {
+      resolveCreate({ ...session, id: 'session:new' })
+      await sendPromise
+    })
+
+    expect(invalidateQueries).not.toHaveBeenCalled()
+    expect(sourceChatApi.sendMessage).not.toHaveBeenCalled()
+  })
+
+  it('refetches persisted messages after a stream even when the cache is still fresh', async () => {
+    vi.mocked(sourceChatApi.listSessions).mockResolvedValue([session])
+    vi.mocked(sourceChatApi.getSession)
+      .mockResolvedValueOnce({ ...session, messages: [] })
+      .mockResolvedValue({
+        ...session,
+        messages: [
+          { id: 'msg-hello', type: 'human', content: 'hello', timestamp: '2026-01-01T00:00:00Z' },
+          { id: 'ai-1', type: 'ai', content: 'hi', timestamp: '2026-01-01T00:00:01Z' },
+        ],
+      })
+    vi.mocked(sourceChatApi.sendMessage).mockResolvedValue(
+      sseStream([{ type: 'ai_message', content: 'hi' }, { type: 'complete' }]) as any
+    )
+
+    // The real client sets staleTime to 5 minutes; a cached snapshot from before
+    // the turn must not be served in place of the post-stream refetch.
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: 5 * 60 * 1000 } },
+    })
+    const { result } = renderHook(() => useSourceChat('source:1'), {
+      wrapper: makeWrapper(client),
+    })
+
+    await waitFor(() => expect(sourceChatApi.getSession).toHaveBeenCalledTimes(1))
+
+    await act(async () => {
+      await result.current.sendMessage('hello')
+    })
+
+    expect(sourceChatApi.getSession).toHaveBeenCalledTimes(2)
+    expect(result.current.messages.map((m) => m.content)).toEqual(['hello', 'hi'])
+  })
+
   it('serializes concurrent first sends into one session create', async () => {
     vi.mocked(sourceChatApi.listSessions).mockResolvedValue([])
+    vi.mocked(sourceChatApi.getSession).mockResolvedValue({ ...session, id: 'session:new', messages: [] })
     let resolveCreate!: (value: SourceChatSession) => void
     vi.mocked(sourceChatApi.createSession).mockImplementation(
       () =>

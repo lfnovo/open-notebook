@@ -294,7 +294,9 @@ export function useSourceChat(sourceId: string) {
           sourceId,
           streamSessionId
         ])
-    if (cachedSnapshot?.messages) {
+    if (sessionJustCreated) {
+      knownMessages = adoptSessionList([])
+    } else if (cachedSnapshot?.messages) {
       knownMessages = adoptSessionList(cachedSnapshot.messages)
     } else if (!sessionJustCreated) {
       try {

@@ -287,37 +287,39 @@ export function useSourceChat(sourceId: string) {
     // list would mint a fresh one for a turn the server still holds as pending,
     // and the backend would append a duplicate human turn.
     let knownMessages = messagesRef.current
-    const cachedSnapshot = sessionJustCreated
-      ? undefined
-      : queryClient.getQueryData<SourceChatSessionWithMessages>([
-          'sourceChatSession',
-          sourceId,
-          streamSessionId
-        ])
     if (sessionJustCreated) {
+      // A fresh session has no checkpoint — claim the empty list so the
+      // optimistic turn and its streamed answer land in this session's view.
       knownMessages = adoptSessionList([])
-    } else if (cachedSnapshot?.messages) {
-      knownMessages = adoptSessionList(cachedSnapshot.messages)
-    } else if (!sessionJustCreated) {
-      try {
-        const hydrated = await fetchSession(streamSessionId)
-        if (hydrated?.messages) {
-          knownMessages = adoptSessionList(hydrated.messages)
+    } else {
+      const cachedSnapshot = queryClient.getQueryData<SourceChatSessionWithMessages>([
+        'sourceChatSession',
+        sourceId,
+        streamSessionId
+      ])
+      if (cachedSnapshot?.messages) {
+        knownMessages = adoptSessionList(cachedSnapshot.messages)
+      } else {
+        try {
+          const hydrated = await fetchSession(streamSessionId)
+          if (hydrated?.messages) {
+            knownMessages = adoptSessionList(hydrated.messages)
+          }
+        } catch (err) {
+          // The turn's id must come from authoritative state — minting one from
+          // an unverified list can duplicate a pending turn the checkpoint
+          // already holds (the backend dedups by id, and a blind id never
+          // matches). Fail the send instead of sending with an unverified id.
+          console.error('Error loading chat session before send:', getLogSafeErrorMessage(err))
+          const error = err as { response?: { data?: { detail?: string } }, message?: string };
+          toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToSendMessage'))
+          releaseSend()
+          return
         }
-      } catch (err) {
-        // The turn's id must come from authoritative state — minting one from
-        // an unverified list can duplicate a pending turn the checkpoint
-        // already holds (the backend dedups by id, and a blind id never
-        // matches). Fail the send instead of sending with an unverified id.
-        console.error('Error loading chat session before send:', getLogSafeErrorMessage(err))
-        const error = err as { response?: { data?: { detail?: string } }, message?: string };
-        toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToSendMessage'))
-        releaseSend()
-        return
-      }
-      if (isSuperseded()) {
-        releaseSend()
-        return
+        if (isSuperseded()) {
+          releaseSend()
+          return
+        }
       }
     }
 

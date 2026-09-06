@@ -253,18 +253,6 @@ describe('useSourceChat sendMessage streaming', () => {
     } finally {
       consoleError.mockRestore()
     }
-
-    try {
-      await act(async () => {
-        await result.current.sendMessage('hello')
-      })
-
-      expect(sourceChatApi.sendMessage).not.toHaveBeenCalled()
-      expect(result.current.isStreaming).toBe(false)
-      expect(toast.error).toHaveBeenCalled()
-    } finally {
-      consoleError.mockRestore()
-    }
   })
 
   it('a failed session auto-create leaves isStreaming false', async () => {

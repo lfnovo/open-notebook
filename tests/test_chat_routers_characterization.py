@@ -711,8 +711,12 @@ async def test_stream_source_chat_emits_due_keepalive_before_final_response():
 
     # The fake clock puts the (instant) completion far past the keepalive
     # interval: initialization reads 0, the completion poll reads 100.
-    clock = iter([0.0, 100.0])
-    fake_time = SimpleNamespace(monotonic=lambda: next(clock))
+    counter = 0
+    def fake_monotonic():
+        nonlocal counter
+        counter += 1
+        return 100.0 if counter > 1 else 0.0
+    fake_time = SimpleNamespace(monotonic=fake_monotonic)
 
     with patch.object(
         source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 60.0

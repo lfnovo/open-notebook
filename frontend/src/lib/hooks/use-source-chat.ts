@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { getApiErrorMessage } from '@/lib/utils/error-handler'
+import { getApiErrorMessage, getLogSafeErrorMessage } from '@/lib/utils/error-handler'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { sourceChatApi } from '@/lib/api/source-chat'
 import { selectMessageId } from '@/lib/utils/source-chat-message'
@@ -36,6 +36,10 @@ export function useSourceChat(sourceId: string) {
   // reads that must see the freshest value go through these refs.
   const messagesRef = useRef<SourceChatMessage[]>([])
   const currentSessionIdRef = useRef<string | null>(null)
+  // The session the local `messages` list currently represents. One list is
+  // shared by every session, so a send must stop writing into it as soon as the
+  // list belongs to a session other than the one being streamed.
+  const messagesSessionRef = useRef<string | null>(null)
   // An explicit Stop still has to adopt an auto-created session; an abort from
   // the unmount cleanup must not touch state or the shared cache.
   const unmountedRef = useRef(false)
@@ -97,8 +101,14 @@ export function useSourceChat(sourceId: string) {
   useEffect(() => {
     if (!currentSession?.messages) return
     // A send streaming into this session applies the authoritative state from
-    // its own final refetch — an earlier snapshot would drop newer turns.
-    if (streamingSessionRef.current === currentSession.id) return
+    // its own final refetch — an earlier snapshot would drop newer turns. That
+    // only holds while the list is still this session's: after a switch away
+    // and back, the list holds another session's messages and must be replaced.
+    if (
+      streamingSessionRef.current === currentSession.id &&
+      messagesSessionRef.current === currentSession.id
+    ) return
+    messagesSessionRef.current = currentSession.id
     applyMessages(currentSession.messages)
   }, [currentSession, applyMessages])
 
@@ -149,6 +159,7 @@ export function useSourceChat(sourceId: string) {
       queryClient.invalidateQueries({ queryKey: ['sourceChatSessions', sourceId] })
       if (currentSessionId === deletedId) {
         applySessionId(null)
+        messagesSessionRef.current = null
         applyMessages([])
       }
       toast.success(t('chat.sessionDeleted'))
@@ -203,7 +214,7 @@ export function useSourceChat(sourceId: string) {
         sessionId = await createPromise
       } catch (err: unknown) {
         const error = err as { response?: { data?: { detail?: string } }, message?: string };
-        console.error('Failed to create chat session:', error)
+        console.error('Failed to create chat session:', getLogSafeErrorMessage(err))
         toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToCreateSession'))
         releaseSend()
         return
@@ -238,6 +249,15 @@ export function useSourceChat(sourceId: string) {
 
     const streamSessionId = sessionId
     streamingSessionRef.current = streamSessionId
+    messagesSessionRef.current = streamSessionId
+
+    // The turn belongs to the session it was composed in, so it is still sent
+    // after the user navigates away — but the shared list then shows another
+    // session and must not receive this stream's messages. The backend persists
+    // the exchange, so switching back reloads it from the checkpoint.
+    const ownsMessages = () =>
+      currentSessionIdRef.current === streamSessionId &&
+      messagesSessionRef.current === streamSessionId
 
     // `messages` only holds authoritative state once the session query has
     // resolved, and the composer is gated on `isStreaming` alone — a send can
@@ -250,10 +270,12 @@ export function useSourceChat(sourceId: string) {
         const hydrated = await fetchSession(streamSessionId)
         if (hydrated?.messages) {
           knownMessages = hydrated.messages
-          applyMessages(knownMessages)
+          if (ownsMessages()) {
+            applyMessages(knownMessages)
+          }
         }
       } catch (err) {
-        console.error('Error loading chat session before send:', err)
+        console.error('Error loading chat session before send:', getLogSafeErrorMessage(err))
       }
       if (isSuperseded()) {
         releaseSend()
@@ -278,9 +300,11 @@ export function useSourceChat(sourceId: string) {
       content: message,
       timestamp: new Date().toISOString()
     }
-    applyMessages(prev =>
-      prev.some(m => m.id === messageId) ? prev : [...prev, userMessage]
-    )
+    if (ownsMessages()) {
+      applyMessages(prev =>
+        prev.some(m => m.id === messageId) ? prev : [...prev, userMessage]
+      )
+    }
 
     try {
       const response = await sourceChatApi.sendMessage(sourceId, streamSessionId, {
@@ -317,22 +341,25 @@ export function useSourceChat(sourceId: string) {
               const data = JSON.parse(jsonStr)
               
               if (data.type === 'ai_message') {
-                // Create AI message on first content chunk to avoid empty bubble
+                // Accumulate regardless of what is on screen, so a switch away
+                // and back re-attaches the full answer rather than a fragment.
                 if (!aiMessage) {
+                  // Created on the first content chunk to avoid an empty bubble.
                   aiMessage = {
                     id: `ai-${Date.now()}`,
                     type: 'ai',
                     content: data.content || '',
                     timestamp: new Date().toISOString()
                   }
-                  applyMessages(prev => [...prev, aiMessage!])
                 } else {
                   aiMessage.content += data.content || ''
+                }
+                if (ownsMessages()) {
+                  const streamed = { ...aiMessage }
                   applyMessages(prev =>
-                    prev.map(msg => msg.id === aiMessage!.id
-                      ? { ...msg, content: aiMessage!.content }
-                      : msg
-                    )
+                    prev.some(msg => msg.id === streamed.id)
+                      ? prev.map(msg => msg.id === streamed.id ? streamed : msg)
+                      : [...prev, streamed]
                   )
                 }
               } else if (data.type === 'context_indicators') {
@@ -357,11 +384,11 @@ export function useSourceChat(sourceId: string) {
       }
       // Drop only a bubble we added in this send — a retry reuses a persisted id
       // that must stay visible until the refetch completes.
-      if (!isSuperseded() && !messageAlreadyPresent) {
+      if (!isSuperseded() && !messageAlreadyPresent && ownsMessages()) {
         applyMessages(prev => prev.filter(m => m.id !== messageId))
       }
       const error = err as { response?: { data?: { detail?: string } }, message?: string };
-      console.error('Error sending message:', error)
+      console.error('Error sending message:', getLogSafeErrorMessage(err))
       toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToSendMessage'))
     } finally {
       // A send replaced by a newer one must not clear the newer stream's loading
@@ -377,15 +404,11 @@ export function useSourceChat(sourceId: string) {
           try {
             const persisted = await fetchSession(streamSessionId)
             // A newer send or a session switch owns the messages now.
-            if (
-              isLatestSend() &&
-              currentSessionIdRef.current === streamSessionId &&
-              persisted?.messages
-            ) {
+            if (isLatestSend() && ownsMessages() && persisted?.messages) {
               applyMessages(persisted.messages)
             }
           } catch (err) {
-            console.error('Error refreshing chat session:', err)
+            console.error('Error refreshing chat session:', getLogSafeErrorMessage(err))
           }
         }
         if (isLatestSend()) {

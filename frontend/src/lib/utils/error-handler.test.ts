@@ -1,24 +1,121 @@
-import { describe, expect, it } from 'vitest'
-import { getApiErrorMessage } from './error-handler'
+import { describe, it, expect } from 'vitest'
+import { AxiosError, AxiosHeaders, type InternalAxiosRequestConfig } from 'axios'
+import { getLogSafeErrorMessage } from './error-handler'
 
-const t = (key: string) => `t:${key}`
+const BEARER_TOKEN = 'Bearer secret-token'
 
-describe('getApiErrorMessage', () => {
-  // Insight generation on a source with no text (#1394): the API's 400 detail
-  // and the worker's failure message both map to one translated string.
-  it.each(['Source has no text content', 'There is no text content to transform'])(
-    'maps %j to the translated empty-source message',
-    (detail) => {
-      expect(getApiErrorMessage(detail, t, 'common.error')).toBe('t:apiErrors.sourceHasNoText')
-    }
+/** Mirrors what the request interceptor leaves on a rejected request config. */
+function axiosConfigWithAuth(): InternalAxiosRequestConfig {
+  return {
+    url: '/notebooks/nb:1/chat',
+    method: 'post',
+    baseURL: 'http://localhost:5055/api',
+    headers: new AxiosHeaders({
+      'Content-Type': 'application/json',
+      Authorization: BEARER_TOKEN,
+    }),
+  } as InternalAxiosRequestConfig
+}
+
+function realAxiosError(status: number, detail: unknown): AxiosError {
+  const config = axiosConfigWithAuth()
+  return new AxiosError(
+    `Request failed with status code ${status}`,
+    'ERR_BAD_RESPONSE',
+    config,
+    { headers: config.headers },
+    {
+      status,
+      statusText: 'Internal Server Error',
+      data: { detail },
+      headers: new AxiosHeaders(),
+      config,
+    },
   )
+}
 
-  it('falls back to the given key when there is no server detail', () => {
-    // SourceDetailContent passes '' for a network error with no response.
-    expect(getApiErrorMessage('', t, 'common.error')).toBe('t:common.error')
+describe('getLogSafeErrorMessage', () => {
+  it('never leaks the Authorization header of an axios error', () => {
+    const result = getLogSafeErrorMessage(realAxiosError(500, 'Chat generation failed'))
+
+    expect(result).not.toContain('secret-token')
+    expect(result).not.toContain('Bearer')
+    expect(result).not.toContain('Authorization')
+    expect(result).toBe('HTTP 500: Chat generation failed')
   })
 
-  it('returns an unmapped server detail as is', () => {
-    expect(getApiErrorMessage('Something specific', t, 'common.error')).toBe('Something specific')
+  it('never leaks the Authorization header of an axios-shaped error object', () => {
+    const error = {
+      isAxiosError: true,
+      message: 'Request failed with status code 401',
+      config: {
+        url: '/notebooks',
+        headers: { Authorization: BEARER_TOKEN },
+      },
+      response: { status: 401, data: { detail: 'Invalid password' } },
+    }
+
+    const result = getLogSafeErrorMessage(error)
+
+    expect(result).not.toContain('secret-token')
+    expect(result).not.toContain('Bearer')
+    expect(result).not.toContain('Authorization')
+    expect(result).toBe('HTTP 401: Invalid password')
+  })
+
+  it('prefixes the HTTP status when the axios error carries a response', () => {
+    expect(getLogSafeErrorMessage(realAxiosError(404, 'Source not found'))).toBe(
+      'HTTP 404: Source not found',
+    )
+  })
+
+  it('omits the prefix for network errors and non-axios errors', () => {
+    const networkError = new AxiosError('Network Error', 'ERR_NETWORK', axiosConfigWithAuth())
+
+    expect(getLogSafeErrorMessage(networkError)).toBe('Network Error')
+    expect(getLogSafeErrorMessage(new Error('boom'))).toBe('boom')
+  })
+
+  it('truncates to 200 characters by default, marking the cut', () => {
+    const result = getLogSafeErrorMessage(realAxiosError(500, 'x'.repeat(5000)))
+
+    expect(result).toHaveLength(200)
+    expect(result.endsWith('...')).toBe(true)
+    expect(result.startsWith('HTTP 500: xxx')).toBe(true)
+  })
+
+  it('truncates to a custom maxLength', () => {
+    expect(getLogSafeErrorMessage('y'.repeat(50), 10)).toBe('yyyyyyy...')
+    expect(getLogSafeErrorMessage('y'.repeat(50), 10)).toHaveLength(10)
+  })
+
+  it('leaves messages shorter than maxLength untouched', () => {
+    expect(getLogSafeErrorMessage('short message', 200)).toBe('short message')
+  })
+
+  it('stays within maxLength even when it cannot fit the ellipsis', () => {
+    expect(getLogSafeErrorMessage('y'.repeat(50), 2)).toHaveLength(2)
+    expect(getLogSafeErrorMessage('y'.repeat(50), 0)).toBe('')
+    expect(getLogSafeErrorMessage('y'.repeat(50), -5)).toBe('')
+  })
+
+  it('does not throw for any input shape', () => {
+    const fallback = 'An unexpected error occurred'
+
+    expect(getLogSafeErrorMessage(undefined)).toBe(fallback)
+    expect(getLogSafeErrorMessage(null)).toBe(fallback)
+    expect(getLogSafeErrorMessage({})).toBe(fallback)
+    expect(getLogSafeErrorMessage(42)).toBe(fallback)
+    expect(getLogSafeErrorMessage('plain string failure')).toBe('plain string failure')
+    expect(getLogSafeErrorMessage({ detail: 'plain object detail' })).toBe('plain object detail')
+  })
+
+  it('falls back to the generic message when detail is not a string', () => {
+    const fallback = 'An unexpected error occurred'
+
+    expect(getLogSafeErrorMessage({ detail: { loc: ['body'], msg: 'invalid' } })).toBe(fallback)
+    expect(getLogSafeErrorMessage(realAxiosError(422, [{ msg: 'invalid' }]))).toBe(
+      `HTTP 422: ${fallback}`,
+    )
   })
 })

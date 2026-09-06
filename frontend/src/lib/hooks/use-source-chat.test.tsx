@@ -438,6 +438,173 @@ describe('useSourceChat sendMessage streaming', () => {
     expect(sourceChatApi.sendMessage).not.toHaveBeenCalled()
   })
 
+  it('never logs the request config a failing send carries the auth token in', async () => {
+    // Axios attaches the whole request config to its rejections, and the client
+    // interceptor puts the bearer token in those headers.
+    const axiosError = Object.assign(new Error('Request failed with status code 500'), {
+      isAxiosError: true,
+      config: { headers: { Authorization: 'Bearer secret-token' } },
+      response: { status: 500, data: { detail: 'Internal error' } },
+    })
+    vi.mocked(sourceChatApi.listSessions).mockResolvedValue([session])
+    vi.mocked(sourceChatApi.getSession).mockResolvedValue({ ...session, messages: [] })
+    vi.mocked(sourceChatApi.sendMessage).mockRejectedValue(axiosError)
+
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { result } = renderHook(() => useSourceChat('source:1'), { wrapper: makeWrapper() })
+
+    await waitFor(() => expect(result.current.currentSessionId).toBe('session:1'))
+
+    await act(async () => {
+      await result.current.sendMessage('hello')
+    })
+
+    expect(consoleError).toHaveBeenCalled()
+    const logged = JSON.stringify(consoleError.mock.calls)
+    expect(logged).not.toContain('secret-token')
+    expect(logged).not.toContain('Authorization')
+    consoleError.mockRestore()
+  })
+
+  it('keeps a send on its own session when the user switches during pre-send hydration', async () => {
+    const otherSession: SourceChatSession = { ...session, id: 'session:2', title: 'Other' }
+    const pendingTurn = {
+      id: 'msg-pending',
+      type: 'human' as const,
+      content: 'hello',
+      timestamp: '2026-01-01T00:00:00Z',
+    }
+    const otherMessages = [
+      { id: 'msg-other', type: 'human' as const, content: 'other chat', timestamp: '2026-01-01T00:00:00Z' },
+    ]
+    vi.mocked(sourceChatApi.listSessions).mockResolvedValue([session, otherSession])
+    // The first read of session:1 stays in flight until the send is already
+    // past the point where it picks up authoritative state.
+    let resolveFirstRead!: () => void
+    let sessionOneReads = 0
+    vi.mocked(sourceChatApi.getSession).mockImplementation((_sourceId, sessionId) => {
+      if (sessionId === 'session:2') {
+        return Promise.resolve({ ...otherSession, messages: otherMessages })
+      }
+      sessionOneReads += 1
+      if (sessionOneReads === 1) {
+        return new Promise((resolve) => {
+          resolveFirstRead = () => resolve({ ...session, messages: [pendingTurn] })
+        })
+      }
+      return Promise.resolve({ ...session, messages: [pendingTurn] })
+    })
+    vi.mocked(sourceChatApi.sendMessage).mockResolvedValue(
+      sseStream([{ type: 'ai_message', content: 'hi' }, { type: 'complete' }]) as any
+    )
+
+    const { result } = renderHook(() => useSourceChat('source:1'), { wrapper: makeWrapper() })
+
+    await waitFor(() => expect(result.current.currentSessionId).toBe('session:1'))
+
+    let sendPromise!: Promise<void>
+    act(() => {
+      sendPromise = result.current.sendMessage('hello')
+    })
+
+    act(() => {
+      result.current.switchSession('session:2')
+    })
+    await waitFor(() => expect(result.current.messages).toEqual(otherMessages))
+
+    await act(async () => {
+      resolveFirstRead()
+      await sendPromise
+    })
+
+    // The turn belongs to the session it was composed in, and its id still comes
+    // from that session's pending turn rather than the newly selected session.
+    const [, sentSessionId, payload] = vi.mocked(sourceChatApi.sendMessage).mock.calls[0]
+    expect(sentSessionId).toBe('session:1')
+    expect(payload.message_id).toBe('msg-pending')
+
+    // Nothing from the streamed session leaked into the selected session's view.
+    expect(result.current.currentSessionId).toBe('session:2')
+    expect(result.current.messages).toEqual(otherMessages)
+  })
+
+  it('rehydrates the streaming session when the user switches away and back', async () => {
+    const otherSession: SourceChatSession = { ...session, id: 'session:2', title: 'Other' }
+    const persisted = [
+      { id: 'msg-earlier', type: 'human' as const, content: 'earlier', timestamp: '2026-01-01T00:00:00Z' },
+    ]
+    const otherMessages = [
+      { id: 'msg-other', type: 'human' as const, content: 'other chat', timestamp: '2026-01-01T00:00:00Z' },
+    ]
+    vi.mocked(sourceChatApi.listSessions).mockResolvedValue([session, otherSession])
+    vi.mocked(sourceChatApi.getSession).mockImplementation((_sourceId, sessionId) =>
+      Promise.resolve(
+        sessionId === 'session:2'
+          ? { ...otherSession, messages: otherMessages }
+          : { ...session, messages: persisted },
+      ) as any
+    )
+
+    // A stream held open so the session can be switched mid-generation.
+    const encoder = new TextEncoder()
+    let push!: (event: Record<string, unknown>) => void
+    let close!: () => void
+    vi.mocked(sourceChatApi.sendMessage).mockResolvedValue(
+      new ReadableStream<Uint8Array>({
+        start(controller) {
+          push = (event) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`))
+          close = () => controller.close()
+        },
+      }) as any
+    )
+
+    const { result } = renderHook(() => useSourceChat('source:1'), { wrapper: makeWrapper() })
+
+    await waitFor(() => expect(result.current.messages).toEqual(persisted))
+
+    let sendPromise!: Promise<void>
+    act(() => {
+      sendPromise = result.current.sendMessage('hello')
+    })
+    await waitFor(() => expect(result.current.messages).toHaveLength(2))
+
+    await act(async () => {
+      push({ type: 'ai_message', content: 'part one ' })
+    })
+    await waitFor(() => expect(result.current.messages).toHaveLength(3))
+
+    act(() => {
+      result.current.switchSession('session:2')
+    })
+    await waitFor(() => expect(result.current.messages).toEqual(otherMessages))
+
+    // Chunks that arrive while another session is on screen must not be shown
+    // there, but are still accumulated.
+    await act(async () => {
+      push({ type: 'ai_message', content: 'part two' })
+    })
+    expect(result.current.messages).toEqual(otherMessages)
+
+    // Switching back must show session:1 again, not the other session's list.
+    act(() => {
+      result.current.switchSession('session:1')
+    })
+    await waitFor(() => expect(result.current.messages).toEqual(persisted))
+
+    // The answer re-attaches in full, not just the chunk that arrived last.
+    await act(async () => {
+      push({ type: 'ai_message', content: '!' })
+    })
+    await waitFor(() =>
+      expect(result.current.messages.at(-1)?.content).toBe('part one part two!')
+    )
+
+    await act(async () => {
+      close()
+      await sendPromise
+    })
+  })
+
   it('refetches persisted messages after a stream even when the cache is still fresh', async () => {
     vi.mocked(sourceChatApi.listSessions).mockResolvedValue([session])
     vi.mocked(sourceChatApi.getSession)

@@ -238,9 +238,21 @@ describe('useSourceChat sendMessage streaming', () => {
     vi.mocked(sourceChatApi.getSession).mockRejectedValue(new Error('network down'))
 
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const { result } = renderHook(() => useSourceChat('source:1'), { wrapper: makeWrapper() })
+    try {
+      const { result } = renderHook(() => useSourceChat('source:1'), { wrapper: makeWrapper() })
 
-    await waitFor(() => expect(result.current.currentSessionId).toBe('session:1'))
+      await waitFor(() => expect(result.current.currentSessionId).toBe('session:1'))
+
+      await act(async () => {
+        await result.current.sendMessage('hello')
+      })
+
+      expect(sourceChatApi.sendMessage).not.toHaveBeenCalled()
+      expect(result.current.isStreaming).toBe(false)
+      expect(toast.error).toHaveBeenCalled()
+    } finally {
+      consoleError.mockRestore()
+    }
 
     try {
       await act(async () => {

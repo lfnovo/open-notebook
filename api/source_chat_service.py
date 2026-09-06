@@ -131,3 +131,55 @@ async def source_chat_turn(
     async with session_turn_lock(session_id):
         await persist_pending_human_turn(graph, config, message, message_id)
         yield
+
+
+class SessionTurnLease:
+    """A session-turn lock the caller acquires by polling instead of blocking.
+
+    An SSE stream that queues behind another turn for the same session produces
+    no events of its own, so it must emit keepalives and poll for client
+    disconnects while it waits — the streaming response cannot do either from
+    inside a blocking `lock.acquire()`. The holder is registered up front (same
+    refcounting as `session_turn_lock`) and `release()` must be awaited exactly
+    once, whether or not the lock was ever acquired.
+    """
+
+    def __init__(self, session_id: str) -> None:
+        self._session_id = session_id
+        self._entry = _register_holder(session_id)
+        self._acquire_task: Optional[asyncio.Task[bool]] = asyncio.create_task(
+            self._entry.lock.acquire()
+        )
+        self._acquired = False
+
+    async def wait_for_lock(self, timeout: float) -> bool:
+        """Wait up to `timeout` seconds for the lock. True once held."""
+        acquire_task = self._acquire_task
+        if acquire_task is None:
+            return True
+        done, _ = await asyncio.wait({acquire_task}, timeout=timeout)
+        if not done:
+            return False
+        self._acquire_task = None
+        acquire_task.result()  # Re-raise unexpected acquire failures.
+        self._acquired = True
+        return True
+
+    async def release(self) -> None:
+        """Release the lock, or stop queueing if it was never acquired."""
+        if self._acquired:
+            self._acquired = False
+            self._entry.lock.release()
+        else:
+            acquire_task = self._acquire_task
+            self._acquire_task = None
+            if acquire_task is not None:
+                acquire_task.cancel()
+                if acquire_task.done():
+                    # It completed just before the cancel landed — the lock is
+                    # held and must be released, not abandoned.
+                    acquire_task.result()
+                    self._entry.lock.release()
+                else:
+                    await asyncio.gather(acquire_task, return_exceptions=True)
+        _drop_holder(self._session_id, self._entry)

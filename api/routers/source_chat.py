@@ -17,7 +17,7 @@ from api.routers._chat_shared import (
     get_source_or_404,
     get_verified_source_session,
 )
-from api.source_chat_service import source_chat_turn
+from api.source_chat_service import SessionTurnLease, persist_pending_human_turn
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import ChatSession
 from open_notebook.exceptions import (
@@ -378,83 +378,106 @@ async def stream_source_chat_response(
     config = RunnableConfig(
         configurable={"thread_id": session_id, "model_id": model_override}
     )
+    # The turn lock is queued for by polling rather than blocking so the
+    # connection can emit keepalives and notice disconnects while another turn
+    # for this session is still generating — while queued the stream is silent,
+    # and an idle connection is dropped by the same idle-timeout proxies the
+    # generation loop's keepalive guards against.
+    lease = SessionTurnLease(session_id)
     try:
+        last_keepalive = time.monotonic()
+        while not await lease.wait_for_lock(DISCONNECT_POLL_INTERVAL_SECONDS):
+            if await request.is_disconnected():
+                # Client went away while queued — stop waiting instead of
+                # holding a queue slot.
+                return
+            now = time.monotonic()
+            if now - last_keepalive >= KEEPALIVE_INTERVAL_SECONDS:
+                # SSE comment — ignored by clients, keeps the connection alive.
+                yield ": ping\n\n"
+                last_keepalive = now
+
         # Serializes the turn for this session and persists the pending user
-        # message before generation starts. Held for the whole stream.
-        async with source_chat_turn(
+        # message before generation starts. The lock is held for the whole
+        # stream, so a concurrent request queues (with keepalives) instead of
+        # starting a second generation on the same thread.
+        await persist_pending_human_turn(
             graph=source_chat_graph,
-            session_id=session_id,
             config=config,
             message=message,
             message_id=message_id,
-        ):
-            # Send user message event
-            user_event = {"type": "user_message", "content": message, "timestamp": None}
-            yield f"data: {json.dumps(user_event)}\n\n"
+        )
 
-            # Run the async graph with ainvoke so generation is cancellable. Only
-            # the per-message config is passed as input; the messages (incl. the
-            # user message above) are read from the checkpoint. The ignore is a
-            # langgraph typing limitation: it accepts a partial state dict at
-            # runtime, but the signature requires the full state type.
-            invoke_task = asyncio.create_task(
-                source_chat_graph.ainvoke(
-                    input={"source_id": source_id, "model_override": model_override},  # type: ignore[call-overload]
-                    config=config,
-                )
+        # Send user message event
+        user_event = {"type": "user_message", "content": message, "timestamp": None}
+        yield f"data: {json.dumps(user_event)}\n\n"
+
+        # Run the async graph with ainvoke so generation is cancellable. Only
+        # the per-message config is passed as input; the messages (incl. the
+        # user message above) are read from the checkpoint. The ignore is a
+        # langgraph typing limitation: it accepts a partial state dict at
+        # runtime, but the signature requires the full state type.
+        invoke_task = asyncio.create_task(
+            source_chat_graph.ainvoke(
+                input={"source_id": source_id, "model_override": model_override},  # type: ignore[call-overload]
+                config=config,
             )
-            try:
-                last_keepalive = time.monotonic()
-                while True:
-                    done, _ = await asyncio.wait(
-                        {invoke_task}, timeout=DISCONNECT_POLL_INTERVAL_SECONDS
-                    )
-                    if done:
-                        # Re-raises on graph error, caught by the except below.
-                        result = invoke_task.result()
-                        break
-                    if await request.is_disconnected():
-                        # Client went away — stop generating instead of burning
-                        # tokens.
-                        return
-                    now = time.monotonic()
-                    if now - last_keepalive >= KEEPALIVE_INTERVAL_SECONDS:
-                        # SSE comment — ignored by clients, keeps the connection
-                        # alive.
-                        yield ": ping\n\n"
-                        last_keepalive = now
+        )
+        try:
+            while True:
+                done, _ = await asyncio.wait(
+                    {invoke_task}, timeout=DISCONNECT_POLL_INTERVAL_SECONDS
+                )
+                # A due keepalive is emitted even when the task just finished:
+                # the final response otherwise has to cover the whole gap since
+                # the last keepalive, which can exceed the proxy idle timeout
+                # when generation ends just past the interval.
+                now = time.monotonic()
+                if now - last_keepalive >= KEEPALIVE_INTERVAL_SECONDS:
+                    # SSE comment — ignored by clients, keeps the connection
+                    # alive.
+                    yield ": ping\n\n"
+                    last_keepalive = now
+                if done:
+                    # Re-raises on graph error, caught by the except below.
+                    result = invoke_task.result()
+                    break
+                if await request.is_disconnected():
+                    # Client went away — stop generating instead of burning
+                    # tokens.
+                    return
 
-                # Stream the complete AI response
-                if "messages" in result:
-                    for msg in result["messages"]:
-                        if hasattr(msg, "type") and msg.type == "ai":
-                            ai_event = {
-                                "type": "ai_message",
-                                "content": msg.content
-                                if hasattr(msg, "content")
-                                else str(msg),
-                                "timestamp": None,
-                            }
-                            yield f"data: {json.dumps(ai_event)}\n\n"
+            # Stream the complete AI response
+            if "messages" in result:
+                for msg in result["messages"]:
+                    if hasattr(msg, "type") and msg.type == "ai":
+                        ai_event = {
+                            "type": "ai_message",
+                            "content": msg.content
+                            if hasattr(msg, "content")
+                            else str(msg),
+                            "timestamp": None,
+                        }
+                        yield f"data: {json.dumps(ai_event)}\n\n"
 
-                # Stream context indicators
-                if "context_indicators" in result:
-                    context_event = {
-                        "type": "context_indicators",
-                        "data": result["context_indicators"],
-                    }
-                    yield f"data: {json.dumps(context_event)}\n\n"
+            # Stream context indicators
+            if "context_indicators" in result:
+                context_event = {
+                    "type": "context_indicators",
+                    "data": result["context_indicators"],
+                }
+                yield f"data: {json.dumps(context_event)}\n\n"
 
-                # Send completion signal
-                completion_event = {"type": "complete"}
-                yield f"data: {json.dumps(completion_event)}\n\n"
-            finally:
-                # Stop generation if the generator is torn down mid-flight
-                # (client disconnect or server cancellation) so the model doesn't
-                # keep running. Runs before the turn lock is released.
-                if not invoke_task.done():
-                    invoke_task.cancel()
-                    await asyncio.gather(invoke_task, return_exceptions=True)
+            # Send completion signal
+            completion_event = {"type": "complete"}
+            yield f"data: {json.dumps(completion_event)}\n\n"
+        finally:
+            # Stop generation if the generator is torn down mid-flight
+            # (client disconnect or server cancellation) so the model doesn't
+            # keep running. Runs before the turn lock is released.
+            if not invoke_task.done():
+                invoke_task.cancel()
+                await asyncio.gather(invoke_task, return_exceptions=True)
 
     except Exception as e:
         from open_notebook.utils.error_classifier import classify_error
@@ -468,6 +491,8 @@ async def stream_source_chat_response(
         logger.error(f"Error in source chat streaming: {str(e)}")
         error_event = {"type": "error", "message": error_message}
         yield f"data: {json.dumps(error_event)}\n\n"
+    finally:
+        await lease.release()
 
 
 @router.post("/sources/{source_id}/chat/sessions/{session_id}/messages")

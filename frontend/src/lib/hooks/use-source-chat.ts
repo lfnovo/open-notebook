@@ -254,8 +254,11 @@ export function useSourceChat(sourceId: string) {
     // The turn belongs to the session it was composed in, so it is still sent
     // after the user navigates away — but the shared list then shows another
     // session and must not receive this stream's messages. The backend persists
-    // the exchange, so switching back reloads it from the checkpoint.
+    // the exchange, so switching back reloads it from the checkpoint. Only the
+    // latest send may write: a superseded send's already-buffered events must
+    // never land in the shared state the newer send is driving.
     const ownsMessages = () =>
+      isLatestSend() &&
       currentSessionIdRef.current === streamSessionId &&
       messagesSessionRef.current === streamSessionId
 
@@ -300,7 +303,15 @@ export function useSourceChat(sourceId: string) {
           knownMessages = adoptSessionList(hydrated.messages)
         }
       } catch (err) {
+        // The turn's id must come from authoritative state — minting one from
+        // an unverified list can duplicate a pending turn the checkpoint
+        // already holds (the backend dedups by id, and a blind id never
+        // matches). Fail the send instead of sending with an unverified id.
         console.error('Error loading chat session before send:', getLogSafeErrorMessage(err))
+        const error = err as { response?: { data?: { detail?: string } }, message?: string };
+        toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToSendMessage'))
+        releaseSend()
+        return
       }
       if (isSuperseded()) {
         releaseSend()
@@ -388,7 +399,11 @@ export function useSourceChat(sourceId: string) {
                   )
                 }
               } else if (data.type === 'context_indicators') {
-                setContextIndicators(data.data)
+                // A superseded send's buffered event must not overwrite the
+                // indicators the current send is producing.
+                if (isLatestSend()) {
+                  setContextIndicators(data.data)
+                }
               } else if (data.type === 'error') {
                 throw new Error(data.message || 'Stream error')
               }

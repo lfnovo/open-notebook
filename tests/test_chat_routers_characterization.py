@@ -635,3 +635,109 @@ async def test_stream_source_chat_disconnect_polls_faster_than_keepalive():
     assert not any(c.startswith('data: {"type": "complete"') for c in chunks)
     assert cancelled.is_set()
     assert not any(c == ": ping\n\n" for c in chunks)
+
+
+@pytest.mark.asyncio
+async def test_stream_source_chat_keeps_alive_while_queued_on_the_turn_lock():
+    """While another turn holds the session lock, the queued stream still emits
+    keepalive comments instead of going silent — an idle connection here would
+    be dropped by the same idle-timeout proxies the generation keepalive guards
+    against."""
+    from api import source_chat_service
+    from api.routers import source_chat as source_chat_router
+    from api.routers.source_chat import stream_source_chat_response
+
+    with patch.object(
+        source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01
+    ), patch.object(
+        source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01
+    ), patch.object(source_chat_router, "source_chat_graph"):
+        request = MagicMock()
+        request.is_disconnected = AsyncMock(return_value=False)
+
+        gen = stream_source_chat_response(
+            request, "chat_session:queued", "source:xyz", "hello"
+        )
+        try:
+            async with source_chat_service.session_turn_lock("chat_session:queued"):
+                # Still queued: the first event is a keepalive comment, not the
+                # user message (which only flows once the turn starts).
+                first = await gen.__anext__()
+                assert first == ": ping\n\n"
+        finally:
+            await gen.aclose()
+
+    assert "chat_session:queued" not in source_chat_service._session_locks
+
+
+@pytest.mark.asyncio
+async def test_stream_source_chat_ends_when_client_disconnects_while_queued():
+    """A client that disconnects while queued stops waiting — the stream ends
+    without any turn events and the queue slot is dropped."""
+    from api import source_chat_service
+    from api.routers import source_chat as source_chat_router
+    from api.routers.source_chat import stream_source_chat_response
+
+    session_id = "chat_session:queued-gone"
+
+    with patch.object(
+        source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01
+    ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
+        mock_graph.aupdate_state = AsyncMock()
+        request = MagicMock()
+        request.is_disconnected = AsyncMock(return_value=True)
+
+        chunks = []
+        async with source_chat_service.session_turn_lock(session_id):
+            async for chunk in stream_source_chat_response(
+                request, session_id, "source:xyz", "hello"
+            ):
+                chunks.append(chunk)
+
+    assert chunks == []
+    # The queued request never reached the turn, so nothing was persisted.
+    mock_graph.aupdate_state.assert_not_awaited()
+    assert session_id not in source_chat_service._session_locks
+
+
+@pytest.mark.asyncio
+async def test_stream_source_chat_emits_due_keepalive_before_final_response():
+    """Generation ending just past the keepalive interval must not let the
+    final response cover the whole gap since the last keepalive — a due
+    keepalive is emitted before the result streams, or an idle-timeout proxy
+    can drop the connection right before the answer."""
+    from api.routers import source_chat as source_chat_router
+    from api.routers.source_chat import stream_source_chat_response
+
+    # The fake clock puts the (instant) completion far past the keepalive
+    # interval: initialization reads 0, the completion poll reads 100.
+    clock = iter([0.0, 100.0])
+    fake_time = SimpleNamespace(monotonic=lambda: next(clock))
+
+    with patch.object(
+        source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 60.0
+    ), patch.object(
+        source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01
+    ), patch.object(
+        source_chat_router, "time", fake_time
+    ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
+        mock_graph.get_state.return_value = _graph_state({"messages": []})
+        mock_graph.aupdate_state = AsyncMock()
+        mock_graph.ainvoke = AsyncMock(return_value={"messages": []})
+
+        request = MagicMock()
+        request.is_disconnected = AsyncMock(return_value=False)
+
+        chunks = [
+            chunk
+            async for chunk in stream_source_chat_response(
+                request, "chat_session:abc", "source:xyz", "hello"
+            )
+        ]
+
+    assert chunks[0].startswith('data: {"type": "user_message"')
+    assert ": ping\n\n" in chunks
+    assert chunks[-1].startswith('data: {"type": "complete"')
+    # The ping precedes the completion instead of being skipped by the
+    # done-branch.
+    assert chunks.index(": ping\n\n") < len(chunks) - 1

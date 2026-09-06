@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { toast } from 'sonner'
 import { useSourceChat } from './use-source-chat'
 import { sourceChatApi } from '@/lib/api/source-chat'
 import { SourceChatSession, SourceChatSessionWithMessages, SourceChatMessage } from '@/lib/types/api'
@@ -136,8 +137,9 @@ describe('useSourceChat sendMessage streaming', () => {
   it('cancels an in-flight stream, aborting its signal and clearing isStreaming', async () => {
     vi.mocked(sourceChatApi.listSessions).mockResolvedValue([session])
     vi.mocked(sourceChatApi.getSession).mockResolvedValue({ ...session, messages: [] })
-    // Never settles: the stream stays in-flight until the user cancels.
-    vi.mocked(sourceChatApi.sendMessage).mockImplementation(() => new Promise(() => {}))
+    // Stays in-flight until the abort rejects it, like a real fetch would —
+    // this is what lets the test observe the send's unwind.
+    vi.mocked(sourceChatApi.sendMessage).mockImplementation(abortableSend() as any)
 
     const { result } = renderHook(() => useSourceChat('source:1'), { wrapper: makeWrapper() })
 
@@ -152,6 +154,7 @@ describe('useSourceChat sendMessage streaming', () => {
 
     const signal = vi.mocked(sourceChatApi.sendMessage).mock.calls[0][3] as AbortSignal
     expect(signal.aborted).toBe(false)
+    const refetchesBefore = vi.mocked(sourceChatApi.getSession).mock.calls.length
 
     act(() => {
       result.current.cancelStreaming()
@@ -160,8 +163,96 @@ describe('useSourceChat sendMessage streaming', () => {
     expect(signal.aborted).toBe(true)
     expect(result.current.isStreaming).toBe(false)
 
-    // Clean up the dangling promise so the test doesn't leak a pending microtask.
-    void sendPromise
+    // Cancellation must actually unwind the send: the finally block refetches
+    // the persisted checkpoint so the pending turn survives the cancel.
+    await act(async () => {
+      await sendPromise
+    })
+    await waitFor(() =>
+      expect(vi.mocked(sourceChatApi.getSession).mock.calls.length).toBeGreaterThan(refetchesBefore)
+    )
+  })
+
+  it('reuses the pending turn id when retrying immediately after a stop', async () => {
+    // Stop frees the composer before the aborted send's reconciliation refetch
+    // completes. The retry must still dedup against the server's pending turn:
+    // the optimistic bubble carries the persisted id, so a same-content retry
+    // reuses it instead of minting a fresh one the backend would append again.
+    vi.mocked(sourceChatApi.listSessions).mockResolvedValue([session])
+    let checkpoint: SourceChatMessage[] = []
+    vi.mocked(sourceChatApi.getSession).mockImplementation(
+      () => Promise.resolve({ ...session, messages: checkpoint }) as any
+    )
+    const firstSendImpl = abortableSend()
+    vi.mocked(sourceChatApi.sendMessage).mockImplementation(((...args: any[]) => {
+      const payload = args[2] as { message_id: string }
+      if (vi.mocked(sourceChatApi.sendMessage).mock.calls.length === 1) {
+        // The backend persists the turn as soon as the send starts.
+        checkpoint = [
+          {
+            id: payload.message_id,
+            type: 'human' as const,
+            content: 'hello',
+            timestamp: '2026-01-01T00:00:00Z',
+          },
+        ]
+        return (firstSendImpl as (...a: any[]) => Promise<never>)(...args) as any
+      }
+      return Promise.resolve(sseStream([{ type: 'complete' }]) as any)
+    }) as any)
+
+    const { result } = renderHook(() => useSourceChat('source:1'), { wrapper: makeWrapper() })
+
+    await waitFor(() => expect(result.current.currentSessionId).toBe('session:1'))
+
+    let firstSend!: Promise<void>
+    act(() => {
+      firstSend = result.current.sendMessage('hello')
+    })
+    await waitFor(() => expect(result.current.isStreaming).toBe(true))
+    await waitFor(() => expect(result.current.messages).toHaveLength(1))
+
+    // Same tick as the stop: the reconciliation refetch has not run yet.
+    let retry!: Promise<void>
+    act(() => {
+      result.current.cancelStreaming()
+      retry = result.current.sendMessage('hello')
+    })
+    await act(async () => {
+      await retry
+    })
+    void firstSend
+
+    const calls = vi.mocked(sourceChatApi.sendMessage).mock.calls
+    expect(calls).toHaveLength(2)
+    expect(calls[1][2].message_id).toBe(calls[0][2].message_id)
+    expect(result.current.messages).toHaveLength(1)
+    expect(result.current.messages[0].id).toBe(calls[0][2].message_id)
+  })
+
+  it('fails the send when pre-send hydration errors instead of minting an unverified id', async () => {
+    // The checkpoint may hold a pending turn the client cannot see — deriving
+    // the id from an unverified list would mint a fresh one the backend keys
+    // no dedup against, so the send must not go out.
+    vi.mocked(sourceChatApi.listSessions).mockResolvedValue([session])
+    vi.mocked(sourceChatApi.getSession).mockRejectedValue(new Error('network down'))
+
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { result } = renderHook(() => useSourceChat('source:1'), { wrapper: makeWrapper() })
+
+    await waitFor(() => expect(result.current.currentSessionId).toBe('session:1'))
+
+    try {
+      await act(async () => {
+        await result.current.sendMessage('hello')
+      })
+
+      expect(sourceChatApi.sendMessage).not.toHaveBeenCalled()
+      expect(result.current.isStreaming).toBe(false)
+      expect(toast.error).toHaveBeenCalled()
+    } finally {
+      consoleError.mockRestore()
+    }
   })
 
   it('a failed session auto-create leaves isStreaming false', async () => {

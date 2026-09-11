@@ -25,7 +25,11 @@ The podcast will feature the following speakers:
   Personality: {{ speaker.personality }}
 {% endfor %}
 </speakers>
+{% if language %}
 
+IMPORTANT LANGUAGE INSTRUCTION: You MUST generate ALL content in {{ language }}. This includes segment names, descriptions, and all text in your response. Do not use English unless the content itself contains English terms. The entire output must be written in {{ language }}.
+
+{% endif %}
 Please create an outline based on this briefing. Your outline should consist of {{ num_segments }} main segments for the podcast episode, along with a description of each segment. Follow these guidelines:
 
 1. Read the briefing carefully and identify the main topics and themes.
@@ -37,30 +41,19 @@ Please create an outline based on this briefing. Your outline should consist of 
 7. This is a whole podcast so no need to reintroduce speakers or topics on each segment. Segments are just markers for us to know to change the topics, nothing else.
 8. Include an introduction segment at the beginning and a conclusion or wrap-up segment at the end.
 
-Format your outline using the following structure:
+Return exactly one JSON object with a single root key "segments" whose value is a list of exactly {{ num_segments }} entries. Each entry has exactly three keys: "name" and "description" (strings) and "size".
+{% if not language %}
+The line below is a two-entry EXCERPT showing that structure with sample values - keep the structure, write your own segments from the briefing, and return all {{ num_segments }} of them rather than the two shown:
 
-```json
-{
-    "segments": [
-        {
-            "name": "[Segment Name]",
-            "description": "[Description of the segment content]",
-            "size": "short"
-        },
-        {
-            "name": "[Segment Name]",
-            "description": "[Description of the segment content]",
-            "size": "medium"
-        },
-        {
-            "name": "[Segment Name]",
-            "description": "[Description of the segment content]",
-            "size": "long"
-        },
-    ...
-    ]
-}
-```
+{"segments": [{"name": "Setting the scene", "description": "Introduce the subject and the questions this episode sets out to answer.", "size": "short"}, {"name": "Working through the detail", "description": "Take the main points from the briefing in turn, with the specifics that matter most.", "size": "medium"}]}
+{% endif %}
+
+   - "size" must be exactly one of "short", "medium" or "long".
+{%- if not language %}
+   - The sample values above show the structure only - write segments drawn from the briefing instead of reusing them.
+{%- endif %}
+   - Never emit placeholder or elided content: no "..." or "…", no "[like this]", no "<like this>", no "TODO", no empty strings, no trailing commas.
+   - Write out all {{ num_segments }} segments in full; never shorten or truncate the list.
 
 Formatting instructions:
 {{ format_instructions}}
@@ -76,8 +69,6 @@ IMPORTANT OUTPUT FORMAT:
 - If you use extended thinking with <think> tags, put ALL your reasoning inside <think></think> tags
 - Put the final JSON output OUTSIDE and AFTER any <think> tags
 - Do NOT wrap the JSON in ```json code blocks - return the raw JSON object only
-- Example correct format:
-  <think>Let me analyze the briefing...</think>
-  {"segments": [...]}
+- Correct format: any reasoning inside <think></think> tags, then the JSON object described above, and nothing else
 
 Please provide your outline now, following the format and guidelines provided above.

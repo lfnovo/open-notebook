@@ -18,6 +18,16 @@ The legacy string fields (`tts_provider`, `outline_provider`, …) that predated
 
 `PodcastEpisode` stores `episode_profile` and `speaker_profile` as **dicts (snapshots)**, not references. Editing a profile never retroactively changes past episodes — that's intentional. Corollary: deleting a profile does not cascade to episodes.
 
+## Prompt templates shadow podcast-creator's
+
+`prompts/podcast/{outline,transcript}.jinja` are **not** just this app's copies of the library's prompts — they replace them. podcast-creator resolves templates as inline config → `prompts_dir` config → `Path.cwd()/prompts/podcast/<name>.jinja` → its own package resources, and this app configures only profiles, so the working directory wins and the bundled prompts are never read.
+
+Consequences to keep in mind when touching these files:
+
+- Library prompt improvements are invisible here. The `{{ language }}` block was lost exactly this way, which made `EpisodeProfile.language` silently do nothing (#1238). `tests/test_podcast_prompt_templates.py` fails when a variable the bundled template uses is missing from the app's copy.
+- The variables available are whatever `podcast_creator.nodes` passes: the transcript template gets `speaker_names`, the outline template does **not**.
+- Never show the model a fill-in skeleton it can return verbatim. Placeholders (`...`, `[like this]`, `<like this>`) are banned explicitly — a copied `"speaker": "..."` used to abort the whole episode on podcast-creator's speaker-name validation, discarding the segments already generated. The two examples differ: the **transcript** one carries the episode's real speaker names (serialized with `tojson`, so a name containing a quote can't break the example) plus fully written sample dialogue, while the **outline** one has fixed sample segment values — `speaker_names` isn't passed to that template and it has no dialogue. Both are labelled as two-entry excerpts and restate the required `turns` / `num_segments` count, so a copy is valid output without reading as a complete answer. **A sample can only be hard-coded English, so none is rendered at all when the episode profile sets a `language`** — the structure is stated in prose there, and the schema still reaches the model through `format_instructions`.
+
 ## Job lifecycle and the retry policy
 
 Generation runs as a `generate_podcast_command` job on the surreal-commands worker:

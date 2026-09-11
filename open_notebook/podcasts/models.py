@@ -1,3 +1,4 @@
+import os
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Union
 
 from loguru import logger
@@ -28,9 +29,37 @@ async def _resolve_model_config(
         from open_notebook.ai.key_provider import provision_provider_keys
 
         await provision_provider_keys(model.provider)
+    provider = model.provider
+    if provider == "anthropic_compatible":
+        from open_notebook.ai.connection_tester import (
+            normalize_anthropic_compatible_base_url,
+        )
+        from open_notebook.exceptions import ConfigurationError
+        from open_notebook.utils.url_validation import validate_url
+
+        # Match ModelManager: Esperanto uses the Anthropic client, but must
+        # never fall back to the official service for a compatible endpoint.
+        if not config:
+            config = {
+                "api_key": os.environ.get("ANTHROPIC_COMPATIBLE_API_KEY", ""),
+                "base_url": os.environ.get("ANTHROPIC_COMPATIBLE_BASE_URL", ""),
+            }
+        if (
+            not str(config.get("api_key", "")).strip()
+            or not str(config.get("base_url", "")).strip()
+        ):
+            raise ConfigurationError(
+                "Anthropic-compatible models require a base URL and API key"
+            )
+        try:
+            await validate_url(config["base_url"], provider)
+        except ValueError as exc:
+            raise ConfigurationError(str(exc)) from exc
+        config["base_url"] = normalize_anthropic_compatible_base_url(config["base_url"])
+        provider = "anthropic"
     if max_tokens is not None:
         config = {**config, "max_tokens": max_tokens}
-    return (model.provider, model.name, config)
+    return (provider, model.name, config)
 
 
 class EpisodeProfile(ObjectModel):

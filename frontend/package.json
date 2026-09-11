@@ -43,7 +43,7 @@
     "i18next-browser-languagedetector": "^8.2.0",
     "katex": "^0.16.47",
     "lucide-react": "^0.525.0",
-    "next": "^16.2.11",
+    "next": "^16.3.4",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-hook-form": "^7.60.0",

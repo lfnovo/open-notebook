@@ -142,6 +142,13 @@ async def generate_podcast_command(
             f"tts: {tts_provider}/{tts_model_name}"
         )
 
+        # Pre-flight the speaker voices against the resolved TTS model. Audio
+        # is generated last, so an unusable voice_id (migration 7 seeds OpenAI
+        # voice names) otherwise fails only after the full transcript has been
+        # generated and paid for, with a provider message that names the wrong
+        # cause: #1238.
+        await speaker_profile.validate_voices()
+
         # 4. Load all profiles and configure podcast-creator
         episode_profiles = await repo_query("SELECT * FROM episode_profile")
         speaker_profiles = await repo_query("SELECT * FROM speaker_profile")

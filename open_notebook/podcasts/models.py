@@ -183,6 +183,92 @@ class SpeakerProfile(ObjectModel):
             )
         return await _resolve_model_config(self.voice_model)
 
+    async def validate_voices(self) -> None:
+        """Reject voice_ids that plainly belong to another TTS provider.
+
+        validate_speakers() can only check that a `voice_id` key exists - it
+        never sees the model, and nothing else checks either. So a profile
+        seeded with OpenAI voices (migration 7) against a Gemini voice_model
+        fails only once the first audio clip is requested - after the whole
+        transcript has been generated and paid for - with a provider message
+        that names the wrong cause (#1238).
+
+        A blank voice always raises: no provider can speak it. Otherwise only
+        certain mismatches raise - a voice missing from the model's catalogue
+        but present in another provider's. A voice no catalogue knows about is
+        logged and allowed through, because esperanto's hard-coded lists go
+        stale (see open_notebook.podcasts.voices). Raises ValueError so the
+        podcast command treats it as permanent (no retry).
+        """
+        from open_notebook.podcasts.voices import (
+            VoiceCatalogueCache,
+            find_voice_mismatch,
+            format_voice_list,
+        )
+
+        profile_tts: Optional[Tuple[str, str, dict]] = None
+        cache = VoiceCatalogueCache()
+        for speaker in self.speakers:
+            override = speaker.get("voice_model")
+            if override:
+                provider, model_name, config = await _resolve_model_config(
+                    str(override)
+                )
+            else:
+                if profile_tts is None:
+                    profile_tts = await self.resolve_tts_config()
+                provider, model_name, config = profile_tts
+
+            # validate_speakers() accepts a present-but-empty voice_id, and an
+            # empty voice can't be attributed to any provider below, so it
+            # would otherwise slip through to audio generation. Padding is
+            # rejected rather than trimmed: podcast-creator passes the stored
+            # profile value to the provider, so checking a trimmed copy here
+            # would clear a voice the TTS call still fails on.
+            voice_id = str(speaker.get("voice_id") or "")
+            if not voice_id.strip():
+                raise ValueError(
+                    f"Speaker '{speaker.get('name')}' in speaker profile "
+                    f"'{self.name}' has no voice. Pick one of the voices "
+                    f"{provider}/{model_name} provides in Settings -> Speaker "
+                    "Profiles."
+                )
+            if voice_id != voice_id.strip():
+                raise ValueError(
+                    f"Speaker '{speaker.get('name')}' in speaker profile "
+                    f"'{self.name}' has voice '{voice_id}' stored with "
+                    "surrounding whitespace. It reaches the provider exactly "
+                    "as stored, which rejects it. Remove the spaces in "
+                    "Settings -> Speaker Profiles."
+                )
+
+            mismatch = await find_voice_mismatch(
+                provider, model_name, config, voice_id, cache=cache
+            )
+            if mismatch is None:
+                continue
+
+            valid_voices = format_voice_list(mismatch.known_voices)
+            if not mismatch.confident:
+                logger.warning(
+                    f"Speaker '{speaker.get('name')}' in speaker profile "
+                    f"'{self.name}' uses voice '{voice_id}', which is not in "
+                    f"{provider}/{model_name}'s known voice list "
+                    f"({valid_voices}). Generating anyway - the list may be "
+                    "out of date - but audio generation will fail if the "
+                    "provider rejects it."
+                )
+                continue
+
+            raise ValueError(
+                f"Speaker '{speaker.get('name')}' in speaker profile "
+                f"'{self.name}' uses voice '{voice_id}', which belongs to "
+                f"{', '.join(sorted(mismatch.other_providers))} and is not "
+                f"supported by {provider}/{model_name}. Valid voices: "
+                f"{valid_voices}. Update the voice in Settings -> Speaker "
+                "Profiles, or pick a voice model that provides this voice."
+            )
+
     @classmethod
     async def get_by_name(cls, name: str) -> Optional["SpeakerProfile"]:
         """Get speaker profile by name"""

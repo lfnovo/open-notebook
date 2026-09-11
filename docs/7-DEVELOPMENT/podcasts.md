@@ -18,6 +18,12 @@ The legacy string fields (`tts_provider`, `outline_provider`, …) that predated
 
 `PodcastEpisode` stores `episode_profile` and `speaker_profile` as **dicts (snapshots)**, not references. Editing a profile never retroactively changes past episodes — that's intentional. Corollary: deleting a profile does not cascade to episodes.
 
+## Voice pre-flight
+
+Audio is generated last, so a `voice_id` the TTS model doesn't accept fails only after the full transcript has been generated and paid for — and the provider message rarely names the voice (Gemini's 3.x TTS preview answers an unknown voice with `404 Requested entity was not found.`). `SpeakerProfile.validate_voices()` runs before generation and checks each speaker's voice (honoring per-speaker `voice_model` overrides) against esperanto's `available_voices` for the resolved model.
+
+A blank voice always fails (no provider can speak it). Otherwise it fails the run **only** for a voice another provider's catalogue claims — the case of the migration-7 profiles, seeded with OpenAI voices (`nova`, `echo`, `shimmer`, …), against a Gemini voice model. A voice no catalogue knows is logged and allowed through, because those catalogues go stale (esperanto's OpenAI list predates `ash`), and an unavailable catalogue never blocks generation. `VoiceCatalogueCache` memoizes each lookup for the duration of one pass — HTTP-backed providers (ElevenLabs, OpenRouter) otherwise pay a request per speaker, each able to run to the 10s timeout. The key is `(provider, model_name, digest of the credential config)`: speakers override `voice_model` individually, and two `model` records sharing a provider and name can still point at different accounts or endpoints, whose voice libraries differ. Only successful lookups are memoized — a failure and an absent catalogue are indistinguishable here, so caching the first failure would switch validation off for the rest of the profile after one flaky request — and a failing catalogue is retried at most `MAX_CATALOGUE_ATTEMPTS` times per pass, so a dead endpoint can't charge the 10s timeout once per speaker.
+
 ## Job lifecycle and the retry policy
 
 Generation runs as a `generate_podcast_command` job on the surreal-commands worker:

@@ -177,7 +177,7 @@ class RunTransformationOutput(CommandOutput):
         "wait_min": 1,
         "wait_max": 60,
         "stop_on": [ValueError, ConfigurationError, ContextLengthExceededError],  # Don't retry validation/config errors
-        "retry_log_level": "debug",
+        "retry_log_level": "warning",
     },
 )
 async def run_transformation_command(

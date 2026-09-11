@@ -8,7 +8,7 @@
 #   2. Change OPEN_NOTEBOOK_ENCRYPTION_KEY below
 #   3. Run: docker compose up -d
 #   4. Pull a model: docker exec open_notebook-ollama-1 ollama pull mistral
-#   5. Configure Ollama in UI: Settings → API Keys → Add Ollama (URL: http://ollama:11434)
+#   5. Configure Ollama in UI: Manage → Models → Add Ollama (URL: http://ollama:11434)
 
 services:
   surrealdb:

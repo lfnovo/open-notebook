@@ -53,7 +53,7 @@ async def test_compatible_podcast_model_reaches_its_endpoint(
         patch.object(Model, "get", AsyncMock(return_value=model)),
         patch.object(Model, "get_credential_obj", AsyncMock(return_value=credential)),
         patch("open_notebook.ai.key_provider.provision_provider_keys", AsyncMock()),
-        patch("open_notebook.utils.url_validation.validate_url", AsyncMock()),
+        patch("open_notebook.ai.models.validate_url", AsyncMock()),
     ):
         provider, name, config = await getattr(profile, resolver)()
 
@@ -95,7 +95,7 @@ async def test_incomplete_compatible_config_cannot_fall_back_to_anthropic(
         patch.object(Model, "get", AsyncMock(return_value=model)),
         patch.object(Model, "get_credential_obj", AsyncMock(return_value=credential)),
         patch("open_notebook.ai.key_provider.provision_provider_keys", AsyncMock()),
-        patch("open_notebook.utils.url_validation.validate_url", AsyncMock()),
+        patch("open_notebook.ai.models.validate_url", AsyncMock()),
         pytest.raises(ConfigurationError, match="require a base URL and API key"),
     ):
         await _resolve_model_config("model:incomplete")
@@ -126,3 +126,45 @@ async def test_other_podcast_providers_keep_existing_config(provider):
             "existing-model",
             credential.to_esperanto_config(),
         )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("path", ["chat", "podcast"])
+@pytest.mark.parametrize("invalid", ["missing_key", "missing_url", "rejected_url"])
+async def test_both_paths_reject_invalid_compatible_environment(
+    monkeypatch, path, invalid
+):
+    from open_notebook.ai.models import ModelManager
+
+    monkeypatch.setenv(
+        "ANTHROPIC_COMPATIBLE_API_KEY", "" if invalid == "missing_key" else "test-key"
+    )
+    monkeypatch.setenv(
+        "ANTHROPIC_COMPATIBLE_BASE_URL",
+        "" if invalid == "missing_url" else "https://rejected.example.invalid",
+    )
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "unrelated-official-key")
+    model = Model(
+        id="model:environment",
+        name="compatible-model",
+        provider="anthropic_compatible",
+        type="language",
+    )
+    validator = AsyncMock(
+        side_effect=ValueError("URL rejected") if invalid == "rejected_url" else None
+    )
+    with (
+        patch.object(Model, "get", AsyncMock(return_value=model)),
+        patch("open_notebook.ai.key_provider.provision_provider_keys", AsyncMock()),
+        patch("open_notebook.utils.url_validation.validate_url", validator),
+        patch("open_notebook.ai.models.validate_url", validator),
+        patch("open_notebook.ai.models.AIFactory.create_language") as factory,
+    ):
+        with pytest.raises(ConfigurationError):
+            if path == "chat":
+                await ModelManager().get_model("model:environment", max_tokens=2048)
+            else:
+                await _resolve_model_config("model:environment", max_tokens=2048)
+    factory.assert_not_called()
+    if invalid == "rejected_url":
+        validator.assert_awaited()

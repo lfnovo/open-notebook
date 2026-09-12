@@ -33,7 +33,7 @@ this file does not repeat them.
 ## Validate
 
 - Canonical validator and mandatory checks: `[commands.validator]`, `[commands.frontend]`,
-  `[release.gates].mandatory`. Run `uv sync --extra dev` first if mypy is missing locally;
+  `[release.gates].mandatory`. Run `uv sync --group dev` first if mypy is missing locally;
   `npm ci` in `frontend/` if dependencies changed (a stale `node_modules` fakes build failures).
 - Bucket A also runs the **smoke-e2e** skill against the local dev stack (database → api →
   worker → frontend; see `[smoke]`) and the **dev-DB leak check** (per-table counts before

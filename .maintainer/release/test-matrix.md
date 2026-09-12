@@ -6,6 +6,10 @@ canonical validator and mandatory checks, and adds the risk-selected probes. The
 planning is the **risk**, not the feature: for each change ask *what can this break, and for
 whom?* Use commands and selectors the repository supports; no secret values belong here.
 
+The rows are the release's **Bucket A** (agent-run, automated now) and **Bucket C** (the
+release owner, with real credentials); **Bucket B** (automatable with investment) follows the
+table.
+
 | Check | Change / risk | Real probe | Observable success | Prerequisites | Who / paid scope | Stage | Mandatory |
 |---|---|---|---|---|---|---|---|
 | Backend suite | any backend change | `[commands.validator]` | pytest, ruff and mypy exit 0 | `uv sync --extra dev`, `.env` | agent / free | pre-GO | yes |

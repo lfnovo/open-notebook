@@ -5,8 +5,10 @@ plugin for Claude Code and Codex. It holds what the maintenance workflows of thi
 need and cannot derive. It is not a list of people; see
 [docs/7-DEVELOPMENT/maintainer-guide.md](../docs/7-DEVELOPMENT/maintainer-guide.md).
 
-Each fact has one home: executable commands live in the `Makefile` or `AGENTS.md` and are
-referenced, never copied; `profile.toml` holds the fields the plugin reads; `release/runbook.md`
+Each fact has one home: executable commands are documented in the `Makefile` or `AGENTS.md`
+and `profile.toml` invokes them by their canonical form (the same invocations CI runs — a gate
+never mutates the tree, so the validator runs `ruff check .` without `--fix`) rather than
+re-implementing them; `profile.toml` holds the fields the plugin reads; `release/runbook.md`
 holds the release sequence and policy; `.github/RELEASE_PROCESS.md` holds the human release
 process and its known gotchas; `gotchas.md` holds the lessons outside the release. Other files
 link to those instead of repeating them.

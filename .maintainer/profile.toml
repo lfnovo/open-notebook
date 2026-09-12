@@ -9,7 +9,8 @@ repo = "lfnovo/open-notebook"
 artifact = "app-docker"
 commands_doc = "AGENTS.md"                  # canonical commands: AGENTS.md → Commands, Makefile
 
-# Backend validator: the three required CI gates, as AGENTS.md documents them.
+# Backend validator: the three required CI gates (AGENTS.md → Commands). `ruff check .` without
+# `--fix`, as .github/workflows/test.yml runs it: a gate never mutates the tree.
 [commands.validator]
 run = "uv run pytest tests/ && ruff check . && uv run python -m mypy ."
 cwd = "."

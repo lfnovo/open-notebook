@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Play, Loader2 } from 'lucide-react'
 import { Transformation } from '@/lib/types/transformations'
 import { useExecuteTransformation } from '@/lib/hooks/use-transformations'
+import { useToast } from '@/lib/hooks/use-toast'
 import { ModelSelector } from '@/components/common/ModelSelector'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import ReactMarkdown from 'react-markdown'
@@ -30,22 +31,48 @@ export function TransformationPlayground({ transformations, selectedTransformati
   const [output, setOutput] = useState('')
   
   const executeTransformation = useExecuteTransformation()
+  const { toast } = useToast()
 
   const handleExecute = async () => {
-    if (!selectedId || !modelId || !inputText.trim()) {
+    if (!selectedId) {
+      toast({
+        title: t('common.error'),
+        description: t('transformations.selectToStart'),
+        variant: 'destructive',
+      })
+      return
+    }
+    if (!modelId) {
+      toast({
+        title: t('common.error'),
+        description: t('transformations.selectModel'),
+        variant: 'destructive',
+      })
+      return
+    }
+    if (!inputText.trim()) {
+      toast({
+        title: t('common.error'),
+        description: t('transformations.inputPlaceholder'),
+        variant: 'destructive',
+      })
       return
     }
 
-    const result = await executeTransformation.mutateAsync({
-      transformation_id: selectedId,
-      input_text: inputText,
-      model_id: modelId
-    })
-
-    setOutput(result.output)
+    try {
+      const result = await executeTransformation.mutateAsync({
+        transformation_id: selectedId,
+        input_text: inputText,
+        model_id: modelId
+      })
+      setOutput(result.output)
+    } catch {
+      // useExecuteTransformation.onError already surfaces a toast for API failures
+      // (including HTTP 422 validation errors). Avoid an unhandled rejection.
+    }
   }
 
-  const canExecute = selectedId && modelId && inputText.trim() && !executeTransformation.isPending
+  const canExecute = Boolean(selectedId && modelId && inputText.trim()) && !executeTransformation.isPending
 
   return (
     <div className="space-y-6">

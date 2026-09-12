@@ -184,6 +184,7 @@ export interface UpdateSourceChatSessionRequest {
 
 export interface SendMessageRequest {
   message: string
+  message_id?: string
   model_override?: string
 }
 

@@ -461,6 +461,8 @@ export const caES = {
     sessionCreated: "S'ha creat la sessió de xat",
     sessionUpdated: "S'ha actualitzat la sessió",
     sessionDeleted: "S'ha suprimit la sessió",
+    stop: "Atura",
+    generating: "S'està generant...",
   },
   searchPage: {
     askAndSearch: "Pregunta i cerca",

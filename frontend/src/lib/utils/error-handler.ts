@@ -101,3 +101,31 @@ export function formatApiError(error: unknown): string {
   
   return "An unexpected error occurred";
 }
+
+const LOG_SAFE_MESSAGE_MAX_LENGTH = 200;
+const TRUNCATION_SUFFIX = "...";
+
+/**
+ * Builds a bounded, log-safe summary of an error for `console` output.
+ *
+ * Error objects themselves must never be logged: axios attaches the whole
+ * request config — including the `Authorization: Bearer <token>` header set by
+ * the client interceptor — to every rejection, so the session token would end
+ * up in the browser console, where session-replay tools, extensions and console
+ * dumps pasted into public issues can read it. Only the HTTP status and the
+ * extracted message are used, capped at `maxLength` characters so an oversized
+ * response body cannot flood the console.
+ */
+export function getLogSafeErrorMessage(
+  error: unknown,
+  maxLength: number = LOG_SAFE_MESSAGE_MAX_LENGTH
+): string {
+  const message = formatApiError(error);
+  const status = isAxiosError(error) ? error.response?.status : undefined;
+  const summary = status ? `HTTP ${status}: ${message}` : message;
+
+  if (summary.length <= maxLength) return summary;
+  if (maxLength <= TRUNCATION_SUFFIX.length) return summary.slice(0, Math.max(maxLength, 0));
+
+  return `${summary.slice(0, maxLength - TRUNCATION_SUFFIX.length)}${TRUNCATION_SUFFIX}`;
+}

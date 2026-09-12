@@ -57,6 +57,7 @@ export default function SourceDetailPage() {
             isStreaming={chat.isStreaming}
             contextIndicators={chat.contextIndicators}
             onSendMessage={(message, model) => chat.sendMessage(message, model)}
+            onCancel={chat.cancelStreaming}
             modelOverride={chat.currentSession?.model_override}
             onModelChange={(model) => {
               if (chat.currentSessionId) {

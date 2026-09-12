@@ -1,2 +1,5 @@
 # Ensure shell scripts always use LF so they run in Linux containers (e.g. Docker)
 *.sh text eol=lf
+
+# keep the maintainer profile out of published tarballs (does not affect git push)
+.maintainer/ export-ignore

@@ -156,7 +156,6 @@ async def test_both_paths_reject_invalid_compatible_environment(
     with (
         patch.object(Model, "get", AsyncMock(return_value=model)),
         patch("open_notebook.ai.key_provider.provision_provider_keys", AsyncMock()),
-        patch("open_notebook.utils.url_validation.validate_url", validator),
         patch("open_notebook.ai.models.validate_url", validator),
         patch("open_notebook.ai.models.AIFactory.create_language") as factory,
     ):
@@ -168,3 +167,27 @@ async def test_both_paths_reject_invalid_compatible_environment(
     factory.assert_not_called()
     if invalid == "rejected_url":
         validator.assert_awaited()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("field", ["api_key", "base_url"])
+@pytest.mark.parametrize("via_override", [False, True], ids=["config", "override"])
+async def test_compatible_config_rejects_explicit_none(field, via_override):
+    from open_notebook.ai.models import resolve_anthropic_compatible_config
+
+    config: dict[str, str | None] = {
+        "api_key": "test-compatible-key",
+        "base_url": "https://podcast.example.invalid",
+    }
+    overrides: dict[str, str | None] = {}
+    if via_override:
+        overrides[field] = None
+    else:
+        config[field] = None
+
+    with (
+        patch("open_notebook.ai.models.validate_url", AsyncMock()) as validator,
+        pytest.raises(ConfigurationError, match="require a base URL and API key"),
+    ):
+        await resolve_anthropic_compatible_config(config, **overrides)
+    validator.assert_not_awaited()

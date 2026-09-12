@@ -65,8 +65,8 @@ async def resolve_anthropic_compatible_config(
     # not suppress fallback for an unlinked model.
     config = {**config, **overrides}
     if (
-        not str(config.get("api_key", "")).strip()
-        or not str(config.get("base_url", "")).strip()
+        not str(config.get("api_key") or "").strip()
+        or not str(config.get("base_url") or "").strip()
     ):
         raise ConfigurationError(
             "Anthropic-compatible models require a base URL and API key"

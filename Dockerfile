@@ -5,7 +5,7 @@
 # npm retry logic, ...) apply to both variants at once.
 
 # Stage 1: Frontend builder
-FROM node:22-slim AS frontend-builder
+FROM node:26-slim AS frontend-builder
 WORKDIR /app/frontend
 
 # Copy dependency files first to leverage cache
@@ -63,7 +63,7 @@ RUN mkdir -p /app/tiktoken-cache && \
     .venv/bin/python -c "import tiktoken; tiktoken.get_encoding('o200k_base')"
 
 # Stage 3: SurrealDB binary (pinned to v2 to match docker-compose.yml; used by the single target only)
-FROM surrealdb/surrealdb:v2 AS surreal-binary
+FROM surrealdb/surrealdb:v3 AS surreal-binary
 
 # Stage 4: Shared runtime base (everything common to both variants)
 FROM python:3.12-slim-trixie AS runtime-base

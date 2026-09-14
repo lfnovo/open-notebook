@@ -222,7 +222,7 @@ async def repo_insert(
     ignore_duplicates: bool = False,
     batch_size: int = 50,
 ) -> List[Dict[str, Any]]:
-    """Create a new record in the specified table in batches"""
+    """Insert records in bounded batches using a single database connection."""
     if not data:
         return []
     if isinstance(data, dict):
@@ -231,10 +231,10 @@ async def repo_insert(
     results = []
     if batch_size <= 0:
         raise ValueError("batch_size must be greater than zero")
-    for i in range(0, len(data), batch_size):
-        chunk = data[i : i + batch_size]
-        try:
-            async with db_connection() as connection:
+    async with db_connection() as connection:
+        for i in range(0, len(data), batch_size):
+            chunk = data[i : i + batch_size]
+            try:
                 result = parse_record_ids(await connection.insert(table, chunk))
                 # SurrealDB may return a string error message instead of the expected records
                 if isinstance(result, str):
@@ -243,19 +243,19 @@ async def repo_insert(
                     results.extend(result)
                 elif result is not None:
                     results.append(result)
-        except RuntimeError as e:
-            if ignore_duplicates and "already contains" in str(e):
-                continue
-            # Log transaction conflicts at debug level (they are expected during concurrent operations)
-            error_str = str(e).lower()
-            if "transaction" in error_str or "conflict" in error_str:
-                logger.debug(str(e))
-            else:
-                logger.error(str(e))
-            raise
-        except Exception as e:
-            if ignore_duplicates and "already contains" in str(e):
-                continue
-            logger.exception(e)
-            raise RuntimeError("Failed to create record")
+            except RuntimeError as e:
+                if ignore_duplicates and "already contains" in str(e):
+                    continue
+                # Log transaction conflicts at debug level (they are expected during concurrent operations)
+                error_str = str(e).lower()
+                if "transaction" in error_str or "conflict" in error_str:
+                    logger.debug(str(e))
+                else:
+                    logger.error(str(e))
+                raise
+            except Exception as e:
+                if ignore_duplicates and "already contains" in str(e):
+                    continue
+                logger.exception(e)
+                raise RuntimeError("Failed to create record")
     return results

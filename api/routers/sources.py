@@ -308,6 +308,7 @@ async def get_sources(
             string::lowercase(title OR '') AS title_sort,
             ({SOURCE_TYPE_EXPRESSION}) AS type,
             (SELECT VALUE count() FROM source_insight WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS insights_count,
+            (SELECT VALUE count() FROM source_embedding WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS embedded_chunks,
             (SELECT VALUE id FROM source_embedding WHERE source = $parent.id LIMIT 1) != [] AS embedded
             FROM {from_clause}
             {order_clause}
@@ -360,7 +361,7 @@ async def get_sources(
                     if row.get("asset")
                     else None,
                     embedded=row.get("embedded", False),
-                    embedded_chunks=0,  # Not needed in list view
+                    embedded_chunks=row.get("embedded_chunks", 0),
                     insights_count=row.get("insights_count", 0),
                     created=str(row["created"]),
                     updated=str(row["updated"]),

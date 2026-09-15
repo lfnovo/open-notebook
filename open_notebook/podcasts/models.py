@@ -6,6 +6,21 @@ from surrealdb import RecordID
 
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel
+from open_notebook.exceptions import NotFoundError
+
+_GOOGLE_GEMINI_TTS_MODELS = frozenset(
+    {
+        "gemini-3.1-flash-tts-preview",
+        "gemini-2.5-flash-preview-tts",
+    }
+)
+# Snapshot of Esperanto 2.26.0's offline Google catalogue, the lockfile version.
+_GOOGLE_GEMINI_TTS_VOICES = frozenset(
+    "achernar achird algenib algieba alnilam aoede autonoe callirrhoe charon "
+    "despina enceladus erinome fenrir gacrux iapetus kore laomedeia leda orus "
+    "puck pulcherrima rasalgethi sadachbia sadaltager schedar sulafat umbriel "
+    "vindemiatrix zephyr zubenelgenubi".split()
+)
 
 
 async def _resolve_model_config(
@@ -185,6 +200,53 @@ class SpeakerProfile(ObjectModel):
                 "Please update the profile to select a voice model."
             )
         return await _resolve_model_config(self.voice_model)
+
+    async def validate_tts_voices(self, default_tts: Tuple[str, str, dict]) -> None:
+        """Reject voices incompatible with a trustworthy local catalogue.
+
+        Validation is deliberately limited to Google Gemini TTS models whose
+        complete voice lists ship with the locked Esperanto dependency. Other
+        providers and models remain permissive rather than risking a false
+        rejection or triggering a network-backed catalogue lookup.
+
+        Args:
+            default_tts: Resolved provider, model name, and configuration for
+                the speaker profile's default voice model.
+
+        Raises:
+            ValueError: If a scoped Gemini TTS model cannot use a speaker's
+                configured voice.
+        """
+        for speaker in self.speakers:
+            effective_tts = default_tts
+            if speaker.get("voice_model"):
+                try:
+                    effective_tts = await _resolve_model_config(
+                        str(speaker["voice_model"])
+                    )
+                except NotFoundError as e:
+                    logger.warning(
+                        f"Failed to resolve per-speaker TTS for "
+                        f"'{speaker.get('name')}', using speaker profile "
+                        f"default: {e}"
+                    )
+            provider, model_name, _ = effective_tts
+            if (
+                provider.casefold() != "google"
+                or model_name.casefold() not in _GOOGLE_GEMINI_TTS_MODELS
+            ):
+                continue
+
+            voice_id = str(speaker.get("voice_id") or "")
+            if voice_id.casefold() in _GOOGLE_GEMINI_TTS_VOICES:
+                continue
+
+            raise ValueError(
+                f"Speaker '{speaker.get('name')}' in speaker profile "
+                f"'{self.name}' uses voice '{voice_id}', which is not supported "
+                f"by {provider}/{model_name}. Choose a compatible voice in "
+                "Settings -> Speaker Profiles before generating the podcast."
+            )
 
     @classmethod
     async def get_by_name(cls, name: str) -> Optional["SpeakerProfile"]:

@@ -142,6 +142,14 @@ async def generate_podcast_command(
             f"tts: {tts_provider}/{tts_model_name}"
         )
 
+        # Audio is generated after the outline and transcript. Reject known
+        # Gemini voice mismatches before persisting an episode or starting any
+        # generative work so an impossible configuration has no attempted
+        # provider cost (#1238).
+        await speaker_profile.validate_tts_voices(
+            (tts_provider, tts_model_name, tts_config)
+        )
+
         # 4. Load all profiles and configure podcast-creator
         episode_profiles = await repo_query("SELECT * FROM episode_profile")
         speaker_profiles = await repo_query("SELECT * FROM speaker_profile")

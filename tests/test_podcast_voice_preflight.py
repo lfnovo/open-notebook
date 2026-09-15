@@ -8,6 +8,7 @@ from commands.podcast_commands import (
     PodcastGenerationInput,
     generate_podcast_command,
 )
+from open_notebook.exceptions import NotFoundError
 from open_notebook.podcasts.models import (
     _GOOGLE_GEMINI_TTS_VOICES,
     EpisodeProfile,
@@ -99,6 +100,31 @@ class TestGeminiVoiceValidation:
                 await profile.validate_tts_voices(
                     ("openai", "gpt-4o-mini-tts", {"api_key": "unused"})
                 )
+
+    @pytest.mark.asyncio
+    async def test_stale_override_uses_non_gemini_default(self) -> None:
+        """A missing optional override must not block another provider."""
+        profile = make_speaker_profile("echo", voice_model="model:stale")
+
+        with patch(
+            "open_notebook.ai.models.Model.get",
+            new=AsyncMock(side_effect=NotFoundError("model:stale not found")),
+        ):
+            await profile.validate_tts_voices(
+                ("openai", "gpt-4o-mini-tts", {"api_key": "unused"})
+            )
+
+    @pytest.mark.asyncio
+    async def test_stale_override_validates_gemini_default(self) -> None:
+        """A missing override must still validate the effective default."""
+        profile = make_speaker_profile("echo", voice_model="model:stale")
+
+        with patch(
+            "open_notebook.ai.models.Model.get",
+            new=AsyncMock(side_effect=NotFoundError("model:stale not found")),
+        ):
+            with pytest.raises(ValueError, match="echo"):
+                await profile.validate_tts_voices(GEMINI_TTS)
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(

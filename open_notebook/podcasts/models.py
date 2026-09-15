@@ -6,6 +6,7 @@ from surrealdb import RecordID
 
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel
+from open_notebook.exceptions import NotFoundError
 
 _GOOGLE_GEMINI_TTS_MODELS = frozenset(
     {
@@ -219,9 +220,16 @@ class SpeakerProfile(ObjectModel):
         for speaker in self.speakers:
             effective_tts = default_tts
             if speaker.get("voice_model"):
-                effective_tts = await _resolve_model_config(
-                    str(speaker["voice_model"])
-                )
+                try:
+                    effective_tts = await _resolve_model_config(
+                        str(speaker["voice_model"])
+                    )
+                except NotFoundError as e:
+                    logger.warning(
+                        f"Failed to resolve per-speaker TTS for "
+                        f"'{speaker.get('name')}', using speaker profile "
+                        f"default: {e}"
+                    )
             provider, model_name, _ = effective_tts
             if (
                 provider.casefold() != "google"

@@ -43,9 +43,9 @@ Think of it like a physical notebook: everything inside is about the same topic,
 
 ### Why This Matters
 
-**Isolation**: Each notebook is completely separate. Sources in Notebook A never appear in Notebook B. This lets you:
-- Keep different research topics completely isolated
-- Reuse source names across notebooks without conflicts
+**Organizational and Conversational Context**: A notebook groups the sources you've chosen to work with under one title, description, and chat context, plus the notes and chats produced there. A source is stored once and can be linked into multiple notebooks — the same file isn't re-uploaded — while notes and chats stay with the notebook that created them. This lets you:
+- Keep different research topics organized under their own titles and descriptions
+- Reuse the same evidence across projects without duplicating it
 - Control which AI context applies to which research
 
 **Shared Context**: All sources and notes in a notebook inherit the notebook's context. If your notebook is titled "AI Safety 2026" with description "Focusing on alignment and interpretability," that context applies to all AI interactions within that notebook.
@@ -107,7 +107,7 @@ A **source** is a *single piece of input material* — the raw content you bring
 
 **Indexed**: Sources are automatically indexed for search (both text and semantic).
 
-**Scoped**: A source belongs to exactly one notebook.
+**Reusable**: A source is stored once and can be linked to multiple notebooks. Each notebook uses the same source as part of its own research context.
 
 **Referenceable**: Other sources and notes can reference this source by citation.
 
@@ -204,12 +204,13 @@ YOU
 
 ## Key Design Decisions
 
-### 1. One Notebook Per Source
+### 1. Reusable Sources, Explicit Notebook Associations
 
-Each source belongs to exactly one notebook. This creates clear boundaries:
-- No ambiguity about which research project a source is in
-- Easy to isolate or export a complete project
-- Clean permissions model (if someone gets access to notebook, they get access to all its sources)
+A source is stored once and can be linked to several notebooks; each link is an explicit association, never a copy. Four consequences follow:
+- One source may be linked to several notebooks and reused across research projects.
+- The same source cannot be linked twice to the same notebook — one association at most.
+- Unlinking a source from a notebook only removes that association; the source and its other notebook links remain intact.
+- Deleting the source globally removes it from every notebook that used it.
 
 ### 2. Immutable Sources, Mutable Notes
 
@@ -255,8 +256,8 @@ Think of notes like your case brief:
 
 ## Common Questions
 
-### Can I move a source to a different notebook?
-Not directly. Each source is tied to one notebook. If you want it in multiple notebooks, add it again (uploads are fast if it's already processed).
+### Can I use the same source in a different notebook?
+Yes. A source is stored once and can be linked to multiple notebooks — add the existing source to the other notebook instead of re-uploading. Removing it from one notebook only removes that association; the source and any other links stay intact.
 
 ### Can a note reference sources from a different notebook?
 No. Notes stay within their notebook and reference sources within that notebook. This keeps boundaries clean.
@@ -265,7 +266,7 @@ No. Notes stay within their notebook and reference sources within that notebook.
 Use tags. You can tag sources ("primary research," "background," "methodology") and filter by tags.
 
 ### Can I merge two notebooks?
-Not built-in, but you can manually copy sources from one notebook to another by re-uploading them.
+Not built-in, but you can link the same sources into another notebook to bring them together — the underlying source records aren't duplicated.
 
 ---
 
@@ -274,7 +275,7 @@ Not built-in, but you can manually copy sources from one notebook to another by 
 | Concept | Purpose | Lifecycle | Scope |
 |---------|---------|-----------|-------|
 | **Notebook** | Container + context | Create once, configure | All its sources + notes |
-| **Source** | Raw material | Add → Process → Store | One notebook |
+| **Source** | Raw material | Add → Process → Store | Independent; reusable across notebooks |
 | **Note** | Processed output | Create/capture → Edit → Share | One notebook |
 
 This three-layer model gives you:

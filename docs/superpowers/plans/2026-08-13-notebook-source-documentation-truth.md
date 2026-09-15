@@ -29,7 +29,7 @@
 - Consumes: the authoritative source/notebook relationship and deletion semantics in `PRODUCT.md`.
 - Produces: one internally consistent core-concepts guide with no obsolete single-notebook or re-upload guidance.
 
-- [ ] **Step 1: Capture the stale statements before editing**
+- [x] **Step 1: Capture the stale statements before editing**
 
   Run:
 
@@ -39,7 +39,7 @@
 
   Expected before the edit: matches include the isolation paragraph, `Scoped` property, `One Notebook Per Source` decision, common-question answers, and summary table.
 
-- [ ] **Step 2: Replace the isolation and scope explanations**
+- [x] **Step 2: Replace the isolation and scope explanations**
 
   State that notebooks provide organizational and conversational context, while a source record can be reused across notebooks. Replace the `Scoped` property with this exact rule:
 
@@ -47,7 +47,7 @@
   **Reusable**: A source is stored once and can be linked to multiple notebooks. Each notebook uses the same source as part of its own research context.
   ```
 
-- [ ] **Step 3: Replace the obsolete design decision**
+- [x] **Step 3: Replace the obsolete design decision**
 
   Rename `One Notebook Per Source` to `Reusable Sources, Explicit Notebook Associations` and explain all four consequences:
 
@@ -56,11 +56,11 @@
   - unlinking affects only the selected notebook association;
   - global source deletion affects every notebook that uses it.
 
-- [ ] **Step 4: Correct the common questions and summary**
+- [x] **Step 4: Correct the common questions and summary**
 
   Replace instructions to re-upload or manually copy a source with instructions to add the existing source to another notebook. Change the source scope in the summary table from `One notebook` to `Independent; reusable across notebooks`. Preserve notebook-owned note semantics unless separately contradicted by verified implementation.
 
-- [ ] **Step 5: Verify no obsolete relationship claims remain**
+- [x] **Step 5: Verify no obsolete relationship claims remain**
 
   Run:
 

@@ -60,6 +60,7 @@ from api.models import (
     RegisterModelsResponse,
     UpdateCredentialRequest,
 )
+from api.subscription_model_discovery import discover_subscription_models
 from open_notebook.database.repository import ensure_record_id, repo_delete, repo_query
 from open_notebook.domain.credential import Credential
 from open_notebook.exceptions import NotFoundError
@@ -419,17 +420,18 @@ async def discover_models_for_credential(credential_id: str):
         cred = await Credential.get(credential_id)
         provider = cred.provider.lower()
 
-        # Subscription credentials don't have a discoverable provider API; return
-        # the gateway's curated per-kind model list directly.
         if cred.is_subscription:
-            from api.routers.subscription_gateway import CURATED_MODELS
-
-            curated = CURATED_MODELS.get(cred.subscription_kind, [])
+            subscription_models = await discover_subscription_models(cred)
             return DiscoverModelsResponse(
                 credential_id=cred.id or "",
                 provider=provider,
                 discovered=[
-                    DiscoveredModelResponse(name=m, provider=provider) for m in curated
+                    DiscoveredModelResponse(
+                        name=model["name"],
+                        provider=provider,
+                        description=model.get("description"),
+                    )
+                    for model in subscription_models
                 ],
             )
 

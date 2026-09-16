@@ -32,26 +32,11 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from loguru import logger
 
 from api import subscription_gateway_translate as tr
+from api.subscription_model_discovery import discover_subscription_models
 from open_notebook.ai.subscription_tokens import get_valid_access_token
 from open_notebook.domain.credential import Credential
 
 router = APIRouter(prefix="/subscription-gateway")
-
-# Curated, editable model lists surfaced via /v1/models so Esperanto discovery
-# and model registration work. Users can also register any model name manually.
-CURATED_MODELS = {
-    "claude": [
-        "claude-opus-4-8",
-        "claude-opus-4-20250514",
-        "claude-sonnet-4-20250514",
-        "claude-3-5-haiku-20241022",
-    ],
-    "chatgpt": [
-        "gpt-5.5",
-        "gpt-5.4",
-        "gpt-5.4-mini",
-    ],
-}
 
 UPSTREAM_TIMEOUT = httpx.Timeout(600.0, connect=30.0)
 
@@ -71,12 +56,19 @@ async def _load_subscription_credential(credential_id: str) -> Credential:
 
 @router.get("/{credential_id}/v1/models")
 async def list_models(credential_id: str):
-    """Return a curated OpenAI-style model list for this subscription."""
+    """Return the subscription client's current OpenAI-style model list."""
     cred = await _load_subscription_credential(credential_id)
-    models = CURATED_MODELS.get(cred.subscription_kind, [])
+    models = await discover_subscription_models(cred)
     return {
         "object": "list",
-        "data": [{"id": m, "object": "model", "owned_by": cred.subscription_kind} for m in models],
+        "data": [
+            {
+                "id": model["name"],
+                "object": "model",
+                "owned_by": cred.subscription_kind,
+            }
+            for model in models
+        ],
     }
 
 

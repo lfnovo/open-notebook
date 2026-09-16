@@ -118,3 +118,21 @@ def test_embeddings_returns_501(client):
         json={"input": "x"},
     )
     assert resp.status_code == 501
+
+
+def test_models_come_from_subscription_discovery(client, monkeypatch):
+    async def _discover(_credential):
+        return [
+            {"name": "claude-current"},
+            {"name": "claude-next", "description": "Current subscription model"},
+        ]
+
+    monkeypatch.setattr(gw, "discover_subscription_models", _discover)
+
+    resp = client.get("/api/subscription-gateway/credential:test/v1/models")
+
+    assert resp.status_code == 200
+    assert [model["id"] for model in resp.json()["data"]] == [
+        "claude-current",
+        "claude-next",
+    ]

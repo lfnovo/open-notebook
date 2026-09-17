@@ -1,7 +1,7 @@
 # ADR-009: PBKDF2 credential key derivation with versioned ciphertext
 
 - **Status**: Accepted
-- **Date**: 2026-09-17
+- **Date**: 2026-09
 - **Related**: #1317 (supersedes stale #1020), [security.md](../security.md), [content-processing.md](../content-processing.md)
 
 ## Context
@@ -10,7 +10,7 @@ Stored provider API keys were encrypted under a Fernet key derived with a single
 
 ## Decision
 
-**Derive with PBKDF2-HMAC-SHA256 (600k iterations, fixed application salt) and mark new ciphertext with a `pbkdf2v1:` prefix, keeping a legacy decrypt path for unmarked values.** The salt is shared by all deployments by design: the threat model assumes a high-entropy key, so the salt provides domain separation and brute-force slowdown, not per-install uniqueness. A per-install random salt would complicate the done-marker and the downgrade story for no modeled gain. Lazy re-encrypt-on-save was rejected as the migration mechanism because API keys are set once and would never upgrade — a one-shot `POST /credentials/migrate-encryption` pass (idempotent, fail-closed per record) does the upgrade instead.
+**Derive with PBKDF2-HMAC-SHA256 (600k iterations, fixed application salt) and mark new ciphertext with a `pbkdf2v1:` prefix, keeping a legacy decrypt path for unmarked values.** The salt is shared by all deployments by design: the threat model assumes a high-entropy key, so the salt provides domain separation and brute-force slowdown, not per-install uniqueness. A per-install random salt would complicate the done-marker and the downgrade story for no modeled gain. Lazy re-encrypt-on-save was rejected as the migration mechanism because API keys are set once and would never upgrade — a one-shot `POST /api/credentials/migrate-encryption` pass (idempotent, fail-closed per record) does the upgrade instead.
 
 ## Alternatives considered
 

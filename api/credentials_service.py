@@ -1078,9 +1078,13 @@ def _migrate_provider_config_entries(
     pending: List[str] = []
     for provider, entries in creds.items():
         if not isinstance(entries, list):
+            errors.append(f"provider_configs/{provider}: unexpected-group-type")
             continue
         for index, entry in enumerate(entries):
             if not isinstance(entry, dict):
+                errors.append(
+                    f"provider_configs/{provider}/{index}: unexpected-entry-type"
+                )
                 continue
             label = f"provider_configs/{provider}/{entry.get('name', index)}"
             try:

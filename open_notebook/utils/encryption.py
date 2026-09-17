@@ -199,8 +199,11 @@ def encrypt_value(value: str) -> str:
     """
     Encrypt a string value using Fernet symmetric encryption (PBKDF2 scheme).
 
-    The stored form carries the version marker. Already-marked input is
-    returned unchanged so a decrypt/save round trip can never double-wrap.
+    The stored form carries the version marker. Input that is already valid
+    marked ciphertext is returned unchanged so a decrypt/save round trip can
+    never double-wrap; anything else (including marker-like plaintext) is
+    encrypted normally, so no input can be stored in a form that will never
+    decrypt.
 
     Args:
         value: The plain text string to encrypt.
@@ -212,8 +215,13 @@ def encrypt_value(value: str) -> str:
         ValueError: If encryption is not configured.
     """
     if value.startswith(PBKDF2_MARKER):
-        logger.debug("encrypt_value received an already-marked value; leaving as-is")
-        return value
+        try:
+            decrypt_value(value)
+        except ValueError:
+            pass
+        else:
+            logger.debug("encrypt_value received valid marked input; leaving as-is")
+            return value
     fernet = get_fernet()
     return PBKDF2_MARKER + fernet.encrypt(value.encode()).decode()
 
@@ -269,7 +277,7 @@ def decrypt_value(value: str) -> str:
             ) from e
         except Exception as e:
             logger.error(f"Decryption failed: {e}")
-            raise ValueError(f"Decryption failed: {str(e)}") from e
+            raise ValueError("Decryption failed: unable to decrypt value.") from e
 
     try:
         return _get_legacy_fernet().decrypt(value.encode()).decode()
@@ -284,4 +292,4 @@ def decrypt_value(value: str) -> str:
         return value
     except Exception as e:
         logger.error(f"Decryption failed: {e}")
-        raise ValueError(f"Decryption failed: {str(e)}")
+        raise ValueError("Decryption failed: unable to decrypt value.")

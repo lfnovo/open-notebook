@@ -99,10 +99,19 @@ def test_corrupt_marked_value_raises(fast_kdf):
         decrypt_value(enc.PBKDF2_MARKER + "aGk=")
 
 
-def test_marker_like_plaintext_is_not_leaked(fast_kdf):
-    """Plaintext starting with the marker is treated as marked, never a key."""
-    with pytest.raises(ValueError):
-        decrypt_value(enc.PBKDF2_MARKER + "looks-like-a-key")
+def test_marker_like_plaintext_is_encrypted(fast_kdf):
+    """Marker-like plaintext encrypts normally and round-trips losslessly."""
+    plaintext = enc.PBKDF2_MARKER + "looks-like-a-key"
+    stored = encrypt_value(plaintext)
+    assert stored.startswith(enc.PBKDF2_MARKER)
+    assert decrypt_value(stored) == plaintext
+
+
+def test_corrupt_marked_input_is_not_passed_through(fast_kdf):
+    """Corrupt marked input encrypts to a decryptable value, never passthrough."""
+    corrupt = enc.PBKDF2_MARKER + "aGk="
+    stored = encrypt_value(corrupt)
+    assert decrypt_value(stored) == corrupt
 
 
 def test_double_encrypt_guard(fast_kdf):
@@ -282,6 +291,7 @@ async def test_pass_requires_encryption_key(patch_repo, monkeypatch):
     from api.credentials_service import migrate_encryption_scheme
 
     monkeypatch.delenv("OPEN_NOTEBOOK_ENCRYPTION_KEY", raising=False)
+    monkeypatch.delenv("OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE", raising=False)
     monkeypatch.setattr(enc, "_ENCRYPTION_KEY", None)
     monkeypatch.setattr(enc, "_FERNET", None)
     monkeypatch.setattr(enc, "_FERNET_LEGACY", None)
@@ -356,6 +366,38 @@ def test_reencrypt_rejects_non_string_values():
 
 
 @pytest.mark.asyncio
+async def test_pass_reports_malformed_singleton_entries(patch_repo, fast_kdf):
+    """Non-list groups and non-dict entries are errors, never silent skips."""
+    from api.credentials_service import migrate_encryption_scheme
+
+    fake = patch_repo(
+        _FakeDB(
+            [],
+            _singleton(
+                {
+                    "openai": "corrupt-group",
+                    "anthropic": [
+                        None,
+                        {
+                            "name": "Ok",
+                            "api_key": _legacy_token("sk-ok"),
+                        },
+                    ],
+                }
+            ),
+        )
+    )
+    result = await migrate_encryption_scheme()
+
+    assert result["migrated"] == ["provider_configs/anthropic/Ok"]
+    assert result["errors"] == [
+        "provider_configs/openai: unexpected-group-type",
+        "provider_configs/anthropic/0: unexpected-entry-type",
+    ]
+    assert len(fake.upserts) == 1
+
+
+@pytest.mark.asyncio
 async def test_pass_reports_write_failures(patch_repo, fast_kdf, monkeypatch):
     """Failed writes are errors, the pass continues, counts stay truthful."""
     import open_notebook.database.repository as repo
@@ -389,7 +431,7 @@ async def test_pass_reports_write_failures(patch_repo, fast_kdf, monkeypatch):
 
 
 def test_migrate_endpoint_returns_summary(client):
-    """POST /credentials/migrate-encryption surfaces the service summary."""
+    """POST /api/credentials/migrate-encryption surfaces the service summary."""
     from unittest.mock import AsyncMock, patch
 
     summary = {"message": "done", "migrated": ["a"], "skipped": [], "errors": []}

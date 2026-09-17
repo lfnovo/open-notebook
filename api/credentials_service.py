@@ -8,7 +8,7 @@ All functions raise ValueError for business errors (router converts to HTTPExcep
 """
 
 import os
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Literal
 
 import httpx
 from loguru import logger
@@ -989,8 +989,11 @@ async def migrate_from_env() -> dict:
 # it is a marker of a previous failure, not a secret.
 _UNDECRYPTABLE_PLACEHOLDER = "UNDECRYPTABLE"
 
+# Closed set of per-record outcomes for the encryption-scheme pass.
+ReencryptStatus = Literal["migrated", "skipped", "error"]
 
-def _reencrypt_stored_value(stored: object) -> tuple[str, Optional[str]]:
+
+def _reencrypt_stored_value(stored: object) -> tuple[ReencryptStatus, str]:
     """
     Decide the fate of one stored api_key value.
 
@@ -1002,8 +1005,7 @@ def _reencrypt_stored_value(stored: object) -> tuple[str, Optional[str]]:
         stored: The raw api_key value read from the database.
 
     Returns:
-        Tuple of status string and payload string (payload may be None only
-        for migrated rows that carry no new value, which never happens).
+        Tuple of status and payload.
     """
     if stored is None or stored == "":
         return ("skipped", "empty")
@@ -1022,6 +1024,77 @@ def _reencrypt_stored_value(stored: object) -> tuple[str, Optional[str]]:
     except ValueError:
         return ("error", "undecryptable-legacy")
     return ("migrated", encrypt_value(secret))
+
+
+def _record_settled_outcome(
+    status: ReencryptStatus,
+    payload: str,
+    label: str,
+    skipped: List[str],
+    errors: List[str],
+) -> None:
+    """
+    Record a skipped/error outcome plus its log line.
+
+    Only called for settled (non-migrated) outcomes; migrated rows take
+    their own write path. Reasons carry record context only, never key
+    material.
+
+    Args:
+        status: Settled outcome (skipped or error).
+        payload: Skip reason or error reason.
+        label: Record label for logs and summaries.
+        skipped: Summary list to append skip entries to.
+        errors: Summary list to append error entries to.
+    """
+    if status == "skipped":
+        skipped.append(f"{label}: {payload}")
+    else:
+        logger.warning(f"[{label}] Left untouched: {payload}")
+        errors.append(f"{label}: {payload}")
+
+
+def _migrate_provider_config_entries(
+    creds: Dict[str, Any],
+    skipped: List[str],
+    errors: List[str],
+) -> List[str]:
+    """
+    Re-encrypt nested provider_configs entries in memory.
+
+    Mutates entries with successfully decrypted values; undecryptable
+    entries are left untouched and reported. Never writes to the database:
+    the caller persists the map and owns the migrated labels, so a failed
+    rewrite is never reported as migrated.
+
+    Args:
+        creds: The raw credentials map from the singleton record.
+        skipped: Summary list to append skip entries to.
+        errors: Summary list to append error entries to.
+
+    Returns:
+        Labels re-encrypted in memory, pending persistence.
+    """
+    pending: List[str] = []
+    for provider, entries in creds.items():
+        if not isinstance(entries, list):
+            continue
+        for index, entry in enumerate(entries):
+            if not isinstance(entry, dict):
+                continue
+            label = f"provider_configs/{provider}/{entry.get('name', index)}"
+            try:
+                status, payload = _reencrypt_stored_value(entry.get("api_key"))
+            except Exception as e:
+                logger.error(f"[{label}] Re-encryption FAILED: {type(e).__name__}")
+                errors.append(f"{label}: unexpected-failure")
+                continue
+            if status == "migrated":
+                entry["api_key"] = payload
+                pending.append(label)
+            else:
+                _record_settled_outcome(status, payload, label, skipped, errors)
+    return pending
 
 
 async def migrate_encryption_scheme() -> dict:
@@ -1052,9 +1125,9 @@ async def migrate_encryption_scheme() -> dict:
     require_encryption_key()
     logger.info("Encryption key verified")
 
-    migrated = []
-    skipped = []
-    errors = []
+    migrated: List[str] = []
+    skipped: List[str] = []
+    errors: List[str] = []
 
     rows = await repo_query("SELECT id, api_key FROM credential")
     for row in rows:
@@ -1065,7 +1138,7 @@ async def migrate_encryption_scheme() -> dict:
             logger.error(f"[{record_id}] Re-encryption FAILED: {type(e).__name__}")
             errors.append(f"{record_id}: unexpected-failure")
             continue
-        if status == "migrated" and payload is not None:
+        if status == "migrated":
             try:
                 await repo_update("credential", record_id, {"api_key": payload})
             except Exception as e:
@@ -1074,11 +1147,8 @@ async def migrate_encryption_scheme() -> dict:
                 continue
             logger.info(f"[{record_id}] Re-encrypted to versioned format")
             migrated.append(record_id)
-        elif status == "skipped":
-            skipped.append(f"{record_id}: {payload}")
         else:
-            logger.warning(f"[{record_id}] Left untouched: {payload}")
-            errors.append(f"{record_id}: {payload}")
+            _record_settled_outcome(status, payload, record_id, skipped, errors)
 
     singleton_rows = await repo_query(
         "SELECT * FROM ONLY $record_id",
@@ -1088,32 +1158,8 @@ async def migrate_encryption_scheme() -> dict:
         data = singleton_rows[0] if isinstance(singleton_rows, list) else singleton_rows
         creds = data.get("credentials") if isinstance(data, dict) else None
         if isinstance(creds, dict):
-            dirty = False
-            for provider, entries in creds.items():
-                if not isinstance(entries, list):
-                    continue
-                for index, entry in enumerate(entries):
-                    if not isinstance(entry, dict):
-                        continue
-                    label = f"provider_configs/{provider}/{entry.get('name', index)}"
-                    try:
-                        status, payload = _reencrypt_stored_value(entry.get("api_key"))
-                    except Exception as e:
-                        logger.error(
-                            f"[{label}] Re-encryption FAILED: {type(e).__name__}"
-                        )
-                        errors.append(f"{label}: unexpected-failure")
-                        continue
-                    if status == "migrated" and payload is not None:
-                        entry["api_key"] = payload
-                        migrated.append(label)
-                        dirty = True
-                    elif status == "skipped":
-                        skipped.append(f"{label}: {payload}")
-                    else:
-                        logger.warning(f"[{label}] Left untouched: {payload}")
-                        errors.append(f"{label}: {payload}")
-            if dirty:
+            pending = _migrate_provider_config_entries(creds, skipped, errors)
+            if pending:
                 try:
                     await repo_upsert(
                         "open_notebook",
@@ -1122,7 +1168,9 @@ async def migrate_encryption_scheme() -> dict:
                     )
                 except Exception as e:
                     logger.error(f"Singleton rewrite FAILED: {type(e).__name__}")
-                    errors.append("provider_configs: write-failed")
+                    errors.extend(f"{label}: write-failed" for label in pending)
+                    pending = []
+                migrated.extend(pending)
 
     logger.info(
         "=== Encryption-scheme migration complete === "

@@ -303,7 +303,92 @@ def client():
 
 
 @pytest.mark.asyncio
-async def test_migrate_endpoint_returns_summary(client):
+async def test_pass_reports_placeholder_rows(patch_repo, fast_kdf):
+    """UNDECRYPTABLE markers are reported, never re-encrypted into keys."""
+    from api.credentials_service import migrate_encryption_scheme
+
+    fake = patch_repo(
+        _FakeDB(
+            [{"id": "credential:one", "api_key": "UNDECRYPTABLE"}],
+            _singleton({"openai": [{"name": "Default", "api_key": "UNDECRYPTABLE"}]}),
+        )
+    )
+    result = await migrate_encryption_scheme()
+
+    assert result["migrated"] == []
+    assert result["errors"] == [
+        "credential:one: decrypt-placeholder",
+        "provider_configs/openai/Default: decrypt-placeholder",
+    ]
+    assert fake.credentials[0]["api_key"] == "UNDECRYPTABLE"
+    assert fake.updates == [] and fake.upserts == []
+
+
+@pytest.mark.asyncio
+async def test_pass_reports_wrong_key_legacy_row(patch_repo, fast_kdf):
+    """A legacy row encrypted under another key fails closed; others migrate."""
+    from api.credentials_service import migrate_encryption_scheme
+
+    foreign = _legacy_token("sk-foreign", passphrase="another-passphrase")
+    fake = patch_repo(
+        _FakeDB(
+            [
+                {"id": "credential:bad", "api_key": foreign},
+                {"id": "credential:good", "api_key": _legacy_token("sk-ok")},
+            ],
+            _singleton({}),
+        )
+    )
+    result = await migrate_encryption_scheme()
+
+    assert result["migrated"] == ["credential:good"]
+    assert result["errors"] == ["credential:bad: undecryptable-legacy"]
+    untouched = next(r for r in fake.credentials if r["id"] == "credential:bad")
+    assert untouched["api_key"] == foreign
+
+
+def test_reencrypt_rejects_non_string_values():
+    """Non-string stored values are errors, never migrated."""
+    from api.credentials_service import _reencrypt_stored_value
+
+    assert _reencrypt_stored_value(12345) == ("error", "unexpected-type")
+    assert _reencrypt_stored_value(["sk-list"]) == ("error", "unexpected-type")
+
+
+@pytest.mark.asyncio
+async def test_pass_reports_write_failures(patch_repo, fast_kdf, monkeypatch):
+    """Failed writes are errors, the pass continues, counts stay truthful."""
+    import open_notebook.database.repository as repo
+    from api.credentials_service import migrate_encryption_scheme
+
+    patch_repo(
+        _FakeDB(
+            [{"id": "credential:one", "api_key": _legacy_token("sk-legacy")}],
+            _singleton(
+                {"openai": [{"name": "Default", "api_key": _legacy_token("sk-n")}]}
+            ),
+        )
+    )
+
+    async def boom_update(table, record_id, data):
+        raise RuntimeError("db down")
+
+    async def boom_upsert(table, record_id, data):
+        raise RuntimeError("db down")
+
+    monkeypatch.setattr(repo, "repo_update", boom_update)
+    monkeypatch.setattr(repo, "repo_upsert", boom_upsert)
+
+    result = await migrate_encryption_scheme()
+
+    assert result["migrated"] == []
+    assert result["errors"] == [
+        "credential:one: write-failed",
+        "provider_configs/openai/Default: write-failed",
+    ]
+
+
+def test_migrate_endpoint_returns_summary(client):
     """POST /credentials/migrate-encryption surfaces the service summary."""
     from unittest.mock import AsyncMock, patch
 
@@ -318,8 +403,7 @@ async def test_migrate_endpoint_returns_summary(client):
     assert response.json() == summary
 
 
-@pytest.mark.asyncio
-async def test_migrate_endpoint_missing_key_is_bad_request(client):
+def test_migrate_endpoint_missing_key_is_bad_request(client):
     """A missing encryption key surfaces as 400, not 500."""
     from unittest.mock import AsyncMock, patch
 

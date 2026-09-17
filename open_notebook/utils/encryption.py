@@ -5,8 +5,10 @@ This module provides encryption/decryption for API keys stored in the database.
 Fernet uses AES-128-CBC with HMAC-SHA256 for authenticated encryption.
 
 OPEN_NOTEBOOK_ENCRYPTION_KEY accepts **any string**. A Fernet key is derived
-from it via SHA-256, so users can set a simple passphrase like
-``OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret`` and it will work.
+from it via PBKDF2-HMAC-SHA256, so users can set a simple passphrase like
+``OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret`` and it will work. Values written
+by versions predating the PBKDF2 derivation (bare SHA-256, unmarked) still
+decrypt through the legacy path.
 
 Usage:
     # Encrypt before storing
@@ -101,20 +103,67 @@ def _get_encryption_key() -> str:
     return _ENCRYPTION_KEY
 
 
-def _ensure_fernet_key(key: str) -> str:
-    """
-    Derive a valid Fernet key from an arbitrary string via SHA-256.
+# Version marker prefixed to every value written by the PBKDF2 derivation.
+# Unmarked values are legacy (bare SHA-256 derivation) or plaintext.
+PBKDF2_MARKER: str = "pbkdf2v1:"
 
-    Any string is accepted as input. The key is derived by hashing it with
-    SHA-256 and encoding the result as URL-safe base64.
+# PBKDF2 cost parameter (OWASP guidance for HMAC-SHA256). Kept as a module
+# constant so tests can monkeypatch it low; production must keep 600k.
+PBKDF2_ITERATIONS: int = 600_000
+
+# Fixed application salt (domain separation). Shared by all deployments by
+# design: the threat model assumes a high-entropy OPEN_NOTEBOOK_ENCRYPTION_KEY
+# (see docs/7-DEVELOPMENT/security.md), so the salt slows brute force without
+# acting as a per-install secret. Recorded in ADR-009.
+PBKDF2_SALT: bytes = b"open-notebook-credential-v1"
+
+
+def derive_fernet_key(passphrase: str) -> str:
     """
-    derived = hashlib.sha256(key.encode()).digest()
+    Derive a valid Fernet key from an arbitrary passphrase via PBKDF2.
+
+    Uses PBKDF2-HMAC-SHA256 with the fixed application salt. Deliberately
+    expensive so offline brute force of a weak passphrase is costly.
+
+    Args:
+        passphrase: The configured encryption key string.
+
+    Returns:
+        URL-safe base64-encoded 32-byte derived key.
+    """
+    derived = hashlib.pbkdf2_hmac(
+        "sha256", passphrase.encode(), PBKDF2_SALT, PBKDF2_ITERATIONS
+    )
     return base64.urlsafe_b64encode(derived).decode()
+
+
+def _derive_legacy_fernet_key(passphrase: str) -> str:
+    """
+    Derive the pre-#1317 Fernet key (bare unsalted SHA-256).
+
+    Kept so values written before the PBKDF2 migration still decrypt.
+    Must never be used for new writes.
+
+    Args:
+        passphrase: The configured encryption key string.
+
+    Returns:
+        URL-safe base64-encoded derived key.
+    """
+    derived = hashlib.sha256(passphrase.encode()).digest()
+    return base64.urlsafe_b64encode(derived).decode()
+
+
+# Cached Fernet instances, one per derivation scheme, initialized lazily on
+# first use alongside _ENCRYPTION_KEY. Caching matters because PBKDF2 at the
+# production iteration count is deliberately expensive (~50ms+).
+_FERNET: Optional[Fernet] = None
+_FERNET_LEGACY: Optional[Fernet] = None
 
 
 def get_fernet() -> Fernet:
     """
-    Get Fernet instance with the configured encryption key.
+    Get Fernet instance with the configured encryption key (PBKDF2 scheme).
 
     Returns:
         Fernet instance.
@@ -122,24 +171,51 @@ def get_fernet() -> Fernet:
     Raises:
         ValueError: If encryption key is not configured.
     """
-    return Fernet(_ensure_fernet_key(_get_encryption_key()).encode())
+    global _FERNET
+    if _FERNET is None:
+        _FERNET = Fernet(derive_fernet_key(_get_encryption_key()).encode())
+    return _FERNET
+
+
+def _get_legacy_fernet() -> Fernet:
+    """
+    Get Fernet instance under the pre-#1317 derivation (decrypt-only).
+
+    Returns:
+        Fernet instance.
+
+    Raises:
+        ValueError: If encryption key is not configured.
+    """
+    global _FERNET_LEGACY
+    if _FERNET_LEGACY is None:
+        _FERNET_LEGACY = Fernet(
+            _derive_legacy_fernet_key(_get_encryption_key()).encode()
+        )
+    return _FERNET_LEGACY
 
 
 def encrypt_value(value: str) -> str:
     """
-    Encrypt a string value using Fernet symmetric encryption.
+    Encrypt a string value using Fernet symmetric encryption (PBKDF2 scheme).
+
+    The stored form carries the version marker. Already-marked input is
+    returned unchanged so a decrypt/save round trip can never double-wrap.
 
     Args:
         value: The plain text string to encrypt.
 
     Returns:
-        Base64-encoded encrypted string.
+        Version-marked encrypted string.
 
     Raises:
         ValueError: If encryption is not configured.
     """
+    if value.startswith(PBKDF2_MARKER):
+        logger.debug("encrypt_value received an already-marked value; leaving as-is")
+        return value
     fernet = get_fernet()
-    return fernet.encrypt(value.encode()).decode()
+    return PBKDF2_MARKER + fernet.encrypt(value.encode()).decode()
 
 
 def looks_like_fernet_token(s: str) -> bool:
@@ -168,7 +244,9 @@ def decrypt_value(value: str) -> str:
     """
     Decrypt a Fernet-encrypted string value.
 
-    Handles graceful fallback for legacy unencrypted data.
+    Version-marked values decrypt under PBKDF2 only; any failure raises and
+    the input is never returned as if it were a usable key. Unmarked values
+    take the legacy path (old derivation, then plaintext fallback).
 
     Args:
         value: The encrypted string (or plain text for legacy data).
@@ -177,13 +255,24 @@ def decrypt_value(value: str) -> str:
         Decrypted plain text string, or original value if not encrypted.
 
     Raises:
-        ValueError: If encryption is not configured or if decryption fails
-            for what appears to be encrypted data (wrong key).
+        ValueError: If encryption is not configured, if a marked value
+            fails to decrypt, or if unmarked data looks encrypted but the
+            key is incorrect.
     """
-    fernet = get_fernet()
+    if value.startswith(PBKDF2_MARKER):
+        try:
+            return get_fernet().decrypt(value[len(PBKDF2_MARKER) :].encode()).decode()
+        except InvalidToken as e:
+            raise ValueError(
+                "Decryption failed: versioned value could not be decrypted. "
+                "Check OPEN_NOTEBOOK_ENCRYPTION_KEY configuration."
+            ) from e
+        except Exception as e:
+            logger.error(f"Decryption failed: {e}")
+            raise ValueError(f"Decryption failed: {str(e)}") from e
 
     try:
-        return fernet.decrypt(value.encode()).decode()
+        return _get_legacy_fernet().decrypt(value.encode()).decode()
     except InvalidToken:
         if looks_like_fernet_token(value):
             # Looks like encrypted data but failed to decrypt - likely wrong key

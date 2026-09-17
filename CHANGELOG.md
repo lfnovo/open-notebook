@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Search page explains what each mode covers: text search matches source titles and full text, insights, and note titles and content, while vector search matches embedded source chunks, insights and note content only. Documented in `docs/3-FEATURES/search.md` and shown as a mode-aware hint under the search box, translated across all 14 locales (#1295, #1267)
 - README star-history chart points at a working renderer; the previous endpoint had been returning a "GitHub restricted access to star data" placeholder (#1262)
+- **Credential encryption now uses PBKDF2-HMAC-SHA256 (600k iterations) with versioned `pbkdf2v1:` ciphertext.** New keys are written in the new format; legacy values keep decrypting, and a one-shot `POST /credentials/migrate-encryption` pass upgrades stored keys (idempotent, fail-closed per record). Downgrade warning: versions predating this change cannot read the new format — back up the database before migrating (#1317)
 
 ## [1.14.0] - 2026-07-20
 

@@ -160,9 +160,10 @@ The default CORS configuration allows all origins (`allow_origins=["*"]`). `allo
 
 `OPEN_NOTEBOOK_ENCRYPTION_KEY` is used to encrypt API keys stored in SurrealDB. In production:
 
-- Set a strong, unique key (do not use the default)
+- Set a strong, unique, high-entropy key (do not use the default, a short word, or a reused password). The key is stretched with PBKDF2-HMAC-SHA256 (600k iterations), which slows brute force but cannot save a guessable passphrase — entropy is the actual security.
 - Use Docker secrets via `OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE` when possible
 - Never log or expose this value
+- After upgrading, run the one-shot `POST /credentials/migrate-encryption` pass to rewrite pre-existing keys into the versioned format. Back up the database first: the new format is forward-breaking — versions predating the migration cannot read it (see CHANGELOG).
 
 ### Environment variables
 

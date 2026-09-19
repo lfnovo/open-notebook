@@ -13,6 +13,7 @@ from open_notebook.exceptions import (
     ContextLengthExceededError,
     IncompleteGenerationError,
     InvalidInputError,
+    NotFoundError,
 )
 
 try:
@@ -83,7 +84,18 @@ async def process_source_command(
         logger.info(f"Loaded {len(transformations)} transformations")
 
         # 2. Get existing source record to update its command field
-        source = await Source.get(input_data.source_id)
+        try:
+            source = await Source.get(input_data.source_id)
+        except NotFoundError as e:
+            # The source was removed after this job was queued (e.g. a sync tool
+            # deleted it, or the record was cleaned up). The job can never
+            # succeed: raise a permanent error (ValueError is in `stop_on`) so
+            # surreal-commands marks it failed instead of spending 15 retries
+            # with exponential backoff, which starves every job behind it.
+            raise ValueError(
+                f"Source '{input_data.source_id}' no longer exists "
+                f"(deleted before processing?): {e}"
+            ) from e
         if not source:
             raise ValueError(f"Source '{input_data.source_id}' not found")
 

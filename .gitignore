@@ -154,3 +154,6 @@ docker-compose.override.yml
 # Local QA/debug artifacts
 screenshot-*.png
 history.txt
+
+# local operator memory (never shipped)
+.agent/

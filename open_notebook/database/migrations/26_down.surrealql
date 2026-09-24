@@ -1,0 +1,3 @@
+-- Migration 26 rollback: drop practice exams and their attempts.
+REMOVE TABLE IF EXISTS exam_attempt;
+REMOVE TABLE IF EXISTS exam;

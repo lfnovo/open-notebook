@@ -35,4 +35,7 @@ export const QUERY_KEYS = {
   episodeProfiles: ['podcasts', 'episode-profiles'] as const,
   speakerProfiles: ['podcasts', 'speaker-profiles'] as const,
   languages: ['languages'] as const,
+  exams: (notebookId?: string) => ['exams', 'list', notebookId] as const,
+  exam: (id: string, includeAnswers: boolean) => ['exams', id, { includeAnswers }] as const,
+  examAttempts: (examId: string) => ['exam-attempts', examId] as const,
 }

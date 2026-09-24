@@ -31,6 +31,7 @@ from api.routers import (
     embedding,
     embedding_rebuild,
     episode_profiles,
+    exams,
     insights,
     languages,
     models,
@@ -404,6 +405,7 @@ app.include_router(credentials.router, prefix="/api", tags=["credentials"])
 app.include_router(providers.router, prefix="/api", tags=["providers"])
 app.include_router(capabilities.router, prefix="/api", tags=["capabilities"])
 app.include_router(languages.router, prefix="/api", tags=["languages"])
+app.include_router(exams.router, prefix="/api", tags=["exams"])
 
 
 @app.get("/")

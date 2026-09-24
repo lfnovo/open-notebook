@@ -47,7 +47,7 @@ function StepIndicator({ currentStep, steps, onStepClick }: {
               >
                 {isCompleted ? "✓" : step.number}
               </div>
-              <div className="ml-3 min-w-0">
+              <div className="ms-3 min-w-0">
                 <p className={cn(
                   'text-sm font-medium',
                   isCurrent ? 'text-foreground' : 'text-muted-foreground'

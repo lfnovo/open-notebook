@@ -104,7 +104,7 @@ export function SpeakerProfilesPanel({
                         </CardTitle>
                         {unconfigured ? (
                           <Badge variant="outline" className="text-warn border-warn/30 text-xs">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            <AlertTriangle className="h-3 w-3 me-1" />
                             {t('podcasts.setupRequired')}
                           </Badge>
                         ) : null}
@@ -172,7 +172,7 @@ export function SpeakerProfilesPanel({
                       size="sm"
                       onClick={() => setEditProfile(profile)}
                     >
-                      <Edit3 className="mr-2 h-4 w-4" /> {t('podcasts.edit')}
+                      <Edit3 className="me-2 h-4 w-4" /> {t('podcasts.edit')}
                     </Button>
                     <AlertDialog>
                       <DropdownMenu>
@@ -195,7 +195,7 @@ export function SpeakerProfilesPanel({
                             onClick={() => duplicateProfile.mutate(profile.id)}
                             disabled={duplicateProfile.isPending}
                           >
-                            <Copy className="h-4 w-4 mr-2" />
+                            <Copy className="h-4 w-4 me-2" />
                             {t('podcasts.duplicate')}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
@@ -204,7 +204,7 @@ export function SpeakerProfilesPanel({
                               className="text-destructive focus:text-destructive"
                               disabled={deleteDisabled}
                             >
-                              <Trash2 className="h-4 w-4 mr-2" />
+                              <Trash2 className="h-4 w-4 me-2" />
                               {t('podcasts.delete')}
                             </DropdownMenuItem>
                           </AlertDialogTrigger>

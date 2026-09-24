@@ -43,7 +43,7 @@ const getSTATUS_ORDER = (t: TFunction): Array<{
 function SummaryBadge({ label, value }: { label: string; value: number }) {
   return (
     <Badge variant="outline" className="font-medium">
-      <span className="text-muted-foreground mr-1.5">{label}</span>
+      <span className="text-muted-foreground me-1.5">{label}</span>
       <span className="font-mono text-foreground">{value}</span>
     </Badge>
   )
@@ -100,9 +100,9 @@ export function EpisodesTab() {
             disabled={isFetching}
           >
             {isFetching ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="me-2 h-4 w-4 animate-spin" />
             ) : (
-              <RefreshCcw className="mr-2 h-4 w-4" />
+              <RefreshCcw className="me-2 h-4 w-4" />
             )}
             {t('common.refresh')}
           </Button>

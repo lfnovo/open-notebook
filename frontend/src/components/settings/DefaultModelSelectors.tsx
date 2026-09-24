@@ -67,7 +67,7 @@ function DefaultModelSelect({
     <div className="space-y-1">
       <Label htmlFor={config.id} className="text-xs">
         {config.label}
-        {config.required && <span className="text-destructive ml-0.5">*</span>}
+        {config.required && <span className="text-destructive ms-0.5">*</span>}
       </Label>
       <div className="flex gap-1">
         <Select
@@ -96,7 +96,7 @@ function DefaultModelSelect({
               <SelectItem key={model.id} value={model.id}>
                 <div className="flex items-center justify-between w-full">
                   <span>{model.name}</span>
-                  <span className="text-xs text-muted-foreground ml-2">{model.provider}</span>
+                  <span className="text-xs text-muted-foreground ms-2">{model.provider}</span>
                 </div>
               </SelectItem>
             ))}

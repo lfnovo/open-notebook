@@ -76,12 +76,12 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
                   <DropdownMenuItem onClick={handleArchiveToggle}>
                     {notebook.archived ? (
                       <>
-                        <ArchiveRestore className="h-4 w-4 mr-2" />
+                        <ArchiveRestore className="h-4 w-4 me-2" />
                         {t('notebooks.unarchive')}
                       </>
                     ) : (
                       <>
-                        <Archive className="h-4 w-4 mr-2" />
+                        <Archive className="h-4 w-4 me-2" />
                         {t('notebooks.archive')}
                       </>
                     )}
@@ -93,7 +93,7 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
                     }}
                     className="text-destructive"
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <Trash2 className="h-4 w-4 me-2" />
                     {t('common.delete')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>

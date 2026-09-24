@@ -84,7 +84,7 @@ export function NotebookRow({ notebook }: NotebookRowProps) {
           </span>
         </div>
 
-        <div className="hidden sm:block w-40 shrink-0 text-right text-xs text-muted-foreground">
+        <div className="hidden sm:block w-40 shrink-0 text-end text-xs text-muted-foreground">
           {t('common.updated', { time: formatDistanceToNow(new Date(notebook.updated), {
             addSuffix: true,
             locale: getDateLocale(language)
@@ -107,12 +107,12 @@ export function NotebookRow({ notebook }: NotebookRowProps) {
             <DropdownMenuItem onClick={handleArchiveToggle}>
               {notebook.archived ? (
                 <>
-                  <ArchiveRestore className="h-4 w-4 mr-2" />
+                  <ArchiveRestore className="h-4 w-4 me-2" />
                   {t('notebooks.unarchive')}
                 </>
               ) : (
                 <>
-                  <Archive className="h-4 w-4 mr-2" />
+                  <Archive className="h-4 w-4 me-2" />
                   {t('notebooks.archive')}
                 </>
               )}
@@ -124,7 +124,7 @@ export function NotebookRow({ notebook }: NotebookRowProps) {
               }}
               className="text-destructive"
             >
-              <Trash2 className="h-4 w-4 mr-2" />
+              <Trash2 className="h-4 w-4 me-2" />
               {t('common.delete')}
             </DropdownMenuItem>
           </DropdownMenuContent>

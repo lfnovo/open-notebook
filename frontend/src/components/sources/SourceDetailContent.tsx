@@ -410,7 +410,7 @@ function SourceDetailContentInner({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="pb-5 pr-10">
+      <div className="pb-5 pe-10">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <InlineEdit
@@ -434,7 +434,7 @@ function SourceDetailContentInner({
             {/* Chat with source button - only in modal */}
             {showChatButton && onChatClick && (
               <Button variant="outline" size="sm" onClick={onChatClick}>
-                <MessageSquare className="h-4 w-4 mr-2" />
+                <MessageSquare className="h-4 w-4 me-2" />
                 {t('chat.chatWith', { name: t('navigation.sources') })}
               </Button>
             )}
@@ -452,7 +452,7 @@ function SourceDetailContentInner({
                       onClick={handleDownloadFile}
                       disabled={isDownloadingFile || fileAvailable === false}
                     >
-                      <Download className="mr-2 h-4 w-4" />
+                      <Download className="me-2 h-4 w-4" />
                       {fileAvailable === false
                         ? t('sources.fileUnavailable')
                         : isDownloadingFile
@@ -466,7 +466,7 @@ function SourceDetailContentInner({
                   onClick={handleEmbedContent}
                   disabled={isEmbedding || source.embedded}
                 >
-                  <Database className="mr-2 h-4 w-4" />
+                  <Database className="me-2 h-4 w-4" />
                   {isEmbedding ? t('sources.embedding') : source.embedded ? t('sources.alreadyEmbedded') : t('sources.embedContent')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -474,7 +474,7 @@ function SourceDetailContentInner({
                   className="text-destructive"
                   onClick={handleDelete}
                 >
-                  <Trash2 className="mr-2 h-4 w-4" />
+                  <Trash2 className="me-2 h-4 w-4" />
                   {t('sources.deleteSource')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -588,12 +588,12 @@ function SourceDetailContentInner({
                   >
                     {creatingInsight ? (
                       <>
-                        <LoadingSpinner className="mr-2 h-3 w-3" />
+                        <LoadingSpinner className="me-2 h-3 w-3" />
                         {t('common.creating')}
                       </>
                     ) : (
                       <>
-                        <Plus className="mr-2 h-4 w-4" />
+                        <Plus className="me-2 h-4 w-4" />
                         {t('common.create')}
                       </>
                     )}
@@ -664,7 +664,7 @@ function SourceDetailContentInner({
                           disabled={isEmbedding}
                           size="sm"
                         >
-                          <Database className="mr-2 h-4 w-4" />
+                          <Database className="me-2 h-4 w-4" />
                           {isEmbedding ? t('sources.embedding') : t('sources.embedContent')}
                         </Button>
                       </div>
@@ -717,7 +717,7 @@ function SourceDetailContentInner({
                           onClick={handleDownloadFile}
                           disabled={isDownloadingFile || fileAvailable === false}
                         >
-                          <Download className="mr-2 h-4 w-4" />
+                          <Download className="me-2 h-4 w-4" />
                           {fileAvailable === false
                             ? t('sources.fileUnavailable')
                             : isDownloadingFile

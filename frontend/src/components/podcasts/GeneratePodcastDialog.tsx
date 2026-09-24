@@ -585,7 +585,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                 disabled={isSubmitting}
                 className="w-full"
               >
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
                 {isSubmitting ? t('podcasts.generating') : t('podcasts.generate')}
               </Button>
               <Button

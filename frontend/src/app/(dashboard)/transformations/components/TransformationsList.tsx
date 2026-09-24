@@ -57,7 +57,7 @@ export function TransformationsList({ transformations, isLoading, onPlayground }
           description={t('transformations.createOne')}
           action={
             <Button onClick={() => handleOpenEditor()}>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 me-2" />
               {t('transformations.createNew')}
             </Button>
           }
@@ -73,7 +73,7 @@ export function TransformationsList({ transformations, isLoading, onPlayground }
         <div className="flex justify-between items-center">
           <h2 className="font-display text-lg font-semibold tracking-tight">{t('transformations.listTitle')}</h2>
           <Button onClick={() => handleOpenEditor()}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 me-2" />
             {t('transformations.createNew')}
           </Button>
         </div>

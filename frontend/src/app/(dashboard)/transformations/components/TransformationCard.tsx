@@ -35,7 +35,7 @@ export function TransformationCard({ transformation, onPlayground, onEdit }: Tra
         <Card>
           <CardHeader>
             <div className="flex items-start justify-between gap-4">
-              <CollapsibleTrigger className="flex-1 text-left">
+              <CollapsibleTrigger className="flex-1 text-start">
                 <div className={cn('flex items-center gap-3', isExpanded ? 'mb-2' : '')}>
                   {isExpanded ? (
                     <ChevronDown className="h-5 w-5" />
@@ -57,13 +57,13 @@ export function TransformationCard({ transformation, onPlayground, onEdit }: Tra
               <div className="flex items-center gap-2">
                 {onPlayground && (
                   <Button variant="outline" size="sm" onClick={onPlayground}>
-                    <Wand2 className="h-4 w-4 mr-2" />
+                    <Wand2 className="h-4 w-4 me-2" />
                     {t('transformations.playground')}
                   </Button>
                 )}
                 {onEdit && (
                   <Button variant="outline" size="sm" onClick={onEdit}>
-                    <Edit className="h-4 w-4 mr-2" />
+                    <Edit className="h-4 w-4 me-2" />
                     {t('common.edit')}
                   </Button>
                 )}

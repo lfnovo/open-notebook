@@ -34,7 +34,7 @@ export default function SourceDetailPage() {
           onClick={handleBack}
           className="mb-4"
         >
-          <ArrowLeft className="mr-2 h-4 w-4" />
+          <ArrowLeft className="me-2 h-4 w-4" />
           {navigation.getReturnLabel()}
         </Button>
       </div>

@@ -53,7 +53,7 @@ export function ConfirmDialog({
           >
             {isLoading ? (
               <>
-                <LoadingSpinner size="sm" className="mr-2" />
+                <LoadingSpinner size="sm" className="me-2" />
                 {finalConfirmText}
               </>
             ) : (

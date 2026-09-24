@@ -36,7 +36,7 @@ export function DefaultPromptEditor() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Settings className="h-5 w-5" />
-                <div className="text-left">
+                <div className="text-start">
                   <CardTitle className="text-lg">{t('transformations.defaultPrompt')}</CardTitle>
                   <CardDescription>
                     {t('transformations.defaultPromptDesc')}

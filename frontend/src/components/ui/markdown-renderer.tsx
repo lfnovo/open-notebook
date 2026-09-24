@@ -83,7 +83,7 @@ export function MarkdownRenderer({ children, components = {}}: { children: React
             thead: ({ children }) => <thead className="bg-muted">{children}</thead>,
             tbody: ({ children }) => <tbody>{children}</tbody>,
             tr: ({ children }) => <tr className="border-b border-border">{children}</tr>,
-            th: ({ children }) => <th className="border border-border px-3 py-2 text-left font-semibold">{children}</th>,
+            th: ({ children }) => <th className="border border-border px-3 py-2 text-start font-semibold">{children}</th>,
             td: ({ children }) => <td className="border border-border px-3 py-2">{children}</td>,
             code: ({ children, className }) => {
               const match = /language-(\w+)/.exec(className || '')

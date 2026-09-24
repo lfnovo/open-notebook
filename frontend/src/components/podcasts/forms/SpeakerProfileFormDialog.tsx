@@ -231,7 +231,7 @@ export function SpeakerProfileFormDialog({
                 onClick={() => append({ ...EMPTY_SPEAKER })}
                 disabled={fields.length >= 4}
               >
-                <Plus className="mr-2 h-4 w-4" /> {t('podcasts.addSpeaker')}
+                <Plus className="me-2 h-4 w-4" /> {t('podcasts.addSpeaker')}
               </Button>
             </div>
             <Separator />
@@ -250,7 +250,7 @@ export function SpeakerProfileFormDialog({
                     disabled={fields.length <= 1}
                     className="text-destructive"
                   >
-                    <Trash2 className="mr-2 h-4 w-4" /> {t('common.remove')}
+                    <Trash2 className="me-2 h-4 w-4" /> {t('common.remove')}
                   </Button>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">

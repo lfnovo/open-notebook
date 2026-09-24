@@ -235,7 +235,7 @@ export function SessionManager({
                           </Badge>
                         )}
                         {session.model_override && (
-                          <Badge variant="outline" className="mt-2 ml-2 text-xs">
+                          <Badge variant="outline" className="mt-2 ms-2 text-xs">
                             {getModelName(session.model_override)}
                           </Badge>
                         )}

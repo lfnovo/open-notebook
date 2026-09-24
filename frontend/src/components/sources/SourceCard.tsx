@@ -257,7 +257,7 @@ function SourceCardImpl({
             {/* Title */}
             <div className={cn('mb-1.5', !isCompleted && 'mb-1')}>
               <h4
-                className="text-sm font-medium leading-tight line-clamp-2 break-all pr-6"
+                className="text-sm font-medium leading-tight line-clamp-2 break-all pe-6"
                 title={title}
               >
                 {title}
@@ -313,7 +313,7 @@ function SourceCardImpl({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="absolute top-1.5 right-1.5 h-7 w-7 p-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-1.5 inset-inline-end-1.5 h-7 w-7 p-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <MoreVertical className="h-4 w-4" />
@@ -329,7 +329,7 @@ function SourceCardImpl({
                     }}
                     disabled={!onRemoveFromNotebook}
                   >
-                    <Unlink className="h-4 w-4 mr-2" />
+                    <Unlink className="h-4 w-4 me-2" />
                     {t('sources.removeFromNotebook')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -345,7 +345,7 @@ function SourceCardImpl({
                     }}
                     disabled={!onRetry}
                   >
-                    <RefreshCw className="h-4 w-4 mr-2" />
+                    <RefreshCw className="h-4 w-4 me-2" />
                     {t('sources.retryProcessing')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -360,7 +360,7 @@ function SourceCardImpl({
                       handleRefreshContent()
                     }}
                   >
-                    <RefreshCw className="h-4 w-4 mr-2" />
+                    <RefreshCw className="h-4 w-4 me-2" />
                     {t('sources.refreshContent')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -375,7 +375,7 @@ function SourceCardImpl({
                 disabled={!onDelete}
                 className="text-destructive focus:text-destructive"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
+                <Trash2 className="h-4 w-4 me-2" />
                 {t('sources.deleteSource')}
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -396,7 +396,7 @@ function SourceCardImpl({
               disabled={!onRetry}
               className="h-7 text-xs"
             >
-              <RefreshCw className="h-3 w-3 mr-1" />
+              <RefreshCw className="h-3 w-3 me-1" />
               {t('sources.retryProcessing')}
             </Button>
           </div>

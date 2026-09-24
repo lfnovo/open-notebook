@@ -74,7 +74,7 @@ export function EmbeddingModelChangeDialog({
 
               <div className="space-y-2 text-sm">
                 <p className="font-medium text-foreground">{t('models.whatHappensNext')}</p>
-                <ul className="list-disc list-inside space-y-1 ml-2">
+                <ul className="list-disc list-inside space-y-1 ms-2">
                   <li>{t('models.step1')}</li>
                   <li>{t('models.step2')}</li>
                   <li>{t('models.step3')}</li>
@@ -104,7 +104,7 @@ export function EmbeddingModelChangeDialog({
             disabled={isConfirming}
             className="bg-primary"
           >
-            <ExternalLink className="mr-2 h-4 w-4" />
+            <ExternalLink className="me-2 h-4 w-4" />
             {t('models.changeAndRebuild')}
           </AlertDialogAction>
         </AlertDialogFooter>

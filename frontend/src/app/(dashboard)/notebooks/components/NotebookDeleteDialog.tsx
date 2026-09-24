@@ -153,7 +153,7 @@ export function NotebookDeleteDialog({
           >
             {isDeleting ? (
               <>
-                <LoadingSpinner size="sm" className="mr-2" />
+                <LoadingSpinner size="sm" className="me-2" />
                 {t('common.deleting')}
               </>
             ) : (

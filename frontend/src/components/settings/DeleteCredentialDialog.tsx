@@ -101,7 +101,7 @@ export function DeleteCredentialDialog({
           </Button>
           {credential.model_count > 0 && migrateToId && (
             <Button onClick={handleMigrate} disabled={deleteCredential.isPending}>
-              {deleteCredential.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {deleteCredential.isPending && <Loader2 className="h-4 w-4 animate-spin me-2" />}
               Migrate & Delete
             </Button>
           )}
@@ -110,7 +110,7 @@ export function DeleteCredentialDialog({
             onClick={credential.model_count > 0 ? handleDeleteWithModels : handleDeleteOnly}
             disabled={deleteCredential.isPending}
           >
-            {deleteCredential.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+            {deleteCredential.isPending && <Loader2 className="h-4 w-4 animate-spin me-2" />}
             {credential.model_count > 0 ? 'Delete with Models' : t('common.delete')}
           </Button>
         </DialogFooter>

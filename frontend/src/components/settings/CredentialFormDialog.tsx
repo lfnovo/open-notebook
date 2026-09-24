@@ -182,7 +182,7 @@ export function CredentialFormDialog({
               <div className="space-y-2">
                 <Label htmlFor="vertex-creds">
                   {t('apiKeys.vertexCredentials')}
-                  <span className="text-muted-foreground font-normal ml-1">({t('common.optional')})</span>
+                  <span className="text-muted-foreground font-normal ms-1">({t('common.optional')})</span>
                 </Label>
                 <input
                   id="vertex-creds"
@@ -199,13 +199,13 @@ export function CredentialFormDialog({
             <div className="space-y-2">
               <Label htmlFor="api-key">
                 {t('models.apiKey')}
-                {!requiresApiKey && <span className="text-muted-foreground font-normal ml-1">({t('common.optional')})</span>}
+                {!requiresApiKey && <span className="text-muted-foreground font-normal ms-1">({t('common.optional')})</span>}
               </Label>
               <div className="relative">
                 <input
                   id="api-key"
                   type={showApiKey ? 'text' : 'password'}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm pr-10"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm pe-10"
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   placeholder={isEditing ? '••••••••••••' : 'sk-...'}
@@ -215,7 +215,7 @@ export function CredentialFormDialog({
                 <button
                   type="button"
                   onClick={() => setShowApiKey(!showApiKey)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+                  className="absolute inset-inline-end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
                   tabIndex={-1}
                 >
                   {showApiKey ? 'Hide' : 'Show'}
@@ -264,7 +264,7 @@ export function CredentialFormDialog({
             <div className="space-y-2">
               <Label htmlFor="num-ctx" className="text-muted-foreground">
                 {t('apiKeys.numCtx')}
-                <span className="text-muted-foreground font-normal ml-1">({t('common.optional')})</span>
+                <span className="text-muted-foreground font-normal ms-1">({t('common.optional')})</span>
               </Label>
               <input
                 id="num-ctx"
@@ -286,7 +286,7 @@ export function CredentialFormDialog({
               {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={!isValid || isSubmitting}>
-              {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {isSubmitting && <Loader2 className="h-4 w-4 animate-spin me-2" />}
               {isEditing ? t('common.save') : t('apiKeys.addConfig')}
             </Button>
           </div>

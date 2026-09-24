@@ -54,7 +54,7 @@ export function ModelSelector({
               <SelectItem key={model.id} value={model.id}>
                 <div className="flex items-center justify-between w-full">
                   <span>{model.name}</span>
-                  <span className="text-xs text-muted-foreground ml-2">{model.provider}</span>
+                  <span className="text-xs text-muted-foreground ms-2">{model.provider}</span>
                 </div>
               </SelectItem>
             ))

@@ -40,21 +40,21 @@ export function ThemeToggle({ iconOnly = false }: ThemeToggleProps) {
           onClick={() => setTheme('light')}
           className={theme === 'light' ? 'bg-accent' : ''}
         >
-          <Sun className="mr-2 h-4 w-4" />
+          <Sun className="me-2 h-4 w-4" />
           <span>{t('common.light')}</span>
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={() => setTheme('dark')}
           className={theme === 'dark' ? 'bg-accent' : ''}
         >
-          <Moon className="mr-2 h-4 w-4" />
+          <Moon className="me-2 h-4 w-4" />
           <span>{t('common.dark')}</span>
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={() => setTheme('system')}
           className={theme === 'system' ? 'bg-accent' : ''}
         >
-          <Monitor className="mr-2 h-4 w-4" />
+          <Monitor className="me-2 h-4 w-4" />
           <span>{t('common.system')}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>

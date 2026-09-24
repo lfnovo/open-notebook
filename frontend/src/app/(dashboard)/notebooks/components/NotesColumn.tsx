@@ -102,7 +102,7 @@ export function NotesColumn({
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm" className="text-muted-foreground" title={t('sources.bulkContext')}>
                         <ListChecks className="h-4 w-4" />
-                        <ChevronDown className="h-4 w-4 ml-1" />
+                        <ChevronDown className="h-4 w-4 ms-1" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -116,7 +116,7 @@ export function NotesColumn({
                   </DropdownMenu>
                 )}
                 <Button size="sm" onClick={() => handleOpenEditor()}>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 me-2" />
                   {t('common.writeNote')}
                 </Button>
                 {collapseButton}
@@ -194,7 +194,7 @@ export function NotesColumn({
                               }}
                               className="text-destructive focus:text-destructive"
                             >
-                              <Trash2 className="h-4 w-4 mr-2" />
+                              <Trash2 className="h-4 w-4 me-2" />
                               {t('notebooks.deleteNote')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>

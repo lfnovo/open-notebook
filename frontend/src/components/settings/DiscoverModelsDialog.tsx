@@ -270,7 +270,7 @@ export function DiscoverModelsDialog({
             onClick={handleRegister}
             disabled={totalSelected === 0 || registerModels.isPending}
           >
-            {registerModels.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+            {registerModels.isPending && <Loader2 className="h-4 w-4 animate-spin me-2" />}
             {t('common.add')} ({totalSelected})
           </Button>
         </DialogFooter>

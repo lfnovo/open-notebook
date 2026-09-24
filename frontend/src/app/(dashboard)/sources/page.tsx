@@ -236,7 +236,7 @@ export default function SourcesPage() {
       >
         {label}
         <SortIcon className={cn(
-          "ml-2 h-3 w-3",
+          "ms-2 h-3 w-3",
           active ? 'opacity-100' : 'opacity-30'
         )} />
       </Button>
@@ -307,7 +307,7 @@ export default function SourcesPage() {
           description={t('sources.allSourcesDescShort')}
           action={
             <Button onClick={() => setSourceDialogOpen(true)} variant="outline" className="mt-4">
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 me-2" />
               {t('sources.newSource')}
             </Button>
           }
@@ -341,16 +341,16 @@ export default function SourcesPage() {
             </colgroup>
             <thead className="sticky top-0 bg-background z-10">
               <tr className="border-b">
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                <th className="h-12 px-4 text-start align-middle font-medium text-muted-foreground">
                   {renderSortableHeader('type', t('common.type'))}
                 </th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                <th className="h-12 px-4 text-start align-middle font-medium text-muted-foreground">
                   {renderSortableHeader('title', t('common.title'))}
                 </th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground hidden sm:table-cell">
+                <th className="h-12 px-4 text-start align-middle font-medium text-muted-foreground hidden sm:table-cell">
                   {renderSortableHeader('created', t('common.created_label'))}
                 </th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground hidden sm:table-cell">
+                <th className="h-12 px-4 text-start align-middle font-medium text-muted-foreground hidden sm:table-cell">
                   {renderSortableHeader('updated', t('common.updated_label'))}
                 </th>
                 <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground hidden md:table-cell">
@@ -359,7 +359,7 @@ export default function SourcesPage() {
                 <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground hidden lg:table-cell">
                   {renderSortableHeader('embedded', t('sources.embedded'), 'center')}
                 </th>
-                <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">
+                <th className="h-12 px-4 text-end align-middle font-medium text-muted-foreground">
                   {t('common.actions')}
                 </th>
               </tr>
@@ -427,7 +427,7 @@ export default function SourcesPage() {
                       {source.embedded ? t('sources.yes') : t('sources.no')}
                     </span>
                   </td>
-                  <td className="h-12 px-4 text-right">
+                  <td className="h-12 px-4 text-end">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -444,7 +444,7 @@ export default function SourcesPage() {
                   <td colSpan={7} className="h-16 text-center">
                     <div className="flex items-center justify-center">
                       <LoadingSpinner />
-                      <span className="ml-2 text-muted-foreground">{t('sources.loadingMore')}</span>
+                      <span className="ms-2 text-muted-foreground">{t('sources.loadingMore')}</span>
                     </div>
                   </td>
                 </tr>

@@ -95,6 +95,7 @@ export function InlineEdit({
           e.stopPropagation()
           setIsEditing(true)
         }}
+        dir="auto"
       >
         {value || <span className="text-muted-foreground">{defaultEmptyText}</span>}
       </button>

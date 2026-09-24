@@ -259,6 +259,7 @@ function SourceCardImpl({
               <h4
                 className="text-sm font-medium leading-tight line-clamp-2 break-all pe-6"
                 title={title}
+                dir="auto"
               >
                 {title}
               </h4>

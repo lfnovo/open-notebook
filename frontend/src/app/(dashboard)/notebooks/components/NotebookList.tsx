@@ -6,7 +6,8 @@ import { NotebookRow } from './NotebookRow'
 import { useNotebookViewStore } from '@/lib/stores/notebook-view-store'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
-import { Book, ChevronDown, ChevronRight, Plus } from 'lucide-react'
+import { Book, ChevronDown, Plus } from 'lucide-react'
+import { ChevronEnd } from '@/components/ui/directional-icons'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -72,7 +73,7 @@ export function NotebookList({
             {isExpanded ? (
               <ChevronDown className="h-4 w-4" />
             ) : (
-              <ChevronRight className="h-4 w-4" />
+              <ChevronEnd className="h-4 w-4" />
             )}
           </Button>
         )}

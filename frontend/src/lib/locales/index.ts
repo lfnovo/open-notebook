@@ -60,3 +60,21 @@ export const languages: Language[] = [
 ];
 
 export { arYE, zhCN, enUS, zhTW, ptBR, jaJP, itIT, frFR, ruRU, bnIN, caES, esES, deDE, plPL, trTR };
+
+/**
+ * Text direction for a given locale.
+ * RTL locales: Arabic (ar, ar-*), Hebrew (he, he-*), Persian (fa, fa-*), Urdu (ur, ur-*).
+ * All other supported locales are LTR.
+ */
+export type TextDirection = 'ltr' | 'rtl';
+
+const RTL_LANGUAGE_PREFIXES = ['ar', 'he', 'fa', 'ur'] as const;
+
+export function getDirection(locale: string): TextDirection {
+  const lang = locale.split('-')[0].toLowerCase()
+  return (RTL_LANGUAGE_PREFIXES as readonly string[]).includes(lang) ? 'rtl' : 'ltr'
+}
+
+export function isRTLLocale(locale: string): boolean {
+  return getDirection(locale) === 'rtl'
+}

@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { Badge } from '@/components/ui/badge'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { ChevronDown, ChevronRight, Trash2, Wand2, Edit } from 'lucide-react'
+import { ChevronDown, Trash2, Wand2, Edit } from 'lucide-react'
+import { ChevronEnd } from '@/components/ui/directional-icons'
 import { Transformation } from '@/lib/types/transformations'
 import { useDeleteTransformation } from '@/lib/hooks/use-transformations'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -40,7 +41,7 @@ export function TransformationCard({ transformation, onPlayground, onEdit }: Tra
                   {isExpanded ? (
                     <ChevronDown className="h-5 w-5" />
                   ) : (
-                    <ChevronRight className="h-5 w-5" />
+                    <ChevronEnd className="h-5 w-5" />
                   )}
                   <div className="flex flex-col">
                     <span className="font-semibold">{transformation.name}</span>

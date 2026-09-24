@@ -125,13 +125,13 @@ export function NotebookDeleteDialog({
                     onValueChange={(value) => setSourceAction(value as 'keep' | 'delete')}
                     disabled={isDeleting}
                   >
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center gap-3">
                       <RadioGroupItem value="delete" id="delete-sources" />
                       <Label htmlFor="delete-sources" className="text-sm cursor-pointer">
                         {t('notebooks.deleteExclusiveSourcesLabel')}
                       </Label>
                     </div>
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center gap-3">
                       <RadioGroupItem value="keep" id="keep-sources" />
                       <Label htmlFor="keep-sources" className="text-sm cursor-pointer">
                         {t('notebooks.keepExclusiveSourcesLabel')}

@@ -1,9 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { usePathname } from 'next/navigation'
 import { AppSidebar } from './AppSidebar'
+import { I18nProvider } from '@/components/providers/I18nProvider'
 import { useSidebarStore } from '@/lib/stores/sidebar-store'
+import * as i18nModule from '@/lib/i18n'
 
 // Mock Tooltip components to avoid Radix UI async issues in tests
 vi.mock('@/components/ui/tooltip', () => ({
@@ -13,9 +15,37 @@ vi.mock('@/components/ui/tooltip', () => ({
   TooltipContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
 
+// Reset document.dir/lang before each test
+beforeEach(() => {
+  document.documentElement.dir = 'ltr'
+  document.documentElement.lang = 'en-US'
+  vi.clearAllMocks()
+  vi.mocked(usePathname).mockReturnValue('/')
+})
+
+afterEach(() => {
+  document.documentElement.dir = 'ltr'
+  document.documentElement.lang = 'en-US'
+  vi.mocked(usePathname).mockReturnValue('/')
+})
+
+function getI18n() {
+  return i18nModule.default
+}
+
+const renderSidebar = async (locale = 'en-US', props = {}) => {
+  const i18n = getI18n()
+  await i18n.changeLanguage(locale)
+  return render(
+    <I18nProvider>
+      <AppSidebar {...props} />
+    </I18nProvider>
+  )
+}
+
 describe('AppSidebar', () => {
   afterEach(() => {
-    vi.mocked(usePathname).mockReturnValue('')
+    vi.mocked(usePathname).mockReturnValue('/')
   })
 
   it('highlights only Models (not Settings) on the Models page', () => {
@@ -81,5 +111,79 @@ describe('AppSidebar', () => {
 
     // In collapsed mode, app name shouldn't be visible (as text)
     expect(screen.queryByText('common.appName')).toBeNull()
+  })
+
+  describe('RTL Support', () => {
+    it('renders with dir=ltr for English locale', async () => {
+      await renderSidebar('en-US')
+      expect(document.documentElement.dir).toBe('ltr')
+    })
+
+    it('renders with dir=rtl for Arabic locale', async () => {
+      await renderSidebar('ar-YE')
+      expect(document.documentElement.dir).toBe('rtl')
+    })
+
+    it('renders with dir=rtl for Hebrew locale', async () => {
+      await renderSidebar('he-IL')
+      expect(document.documentElement.dir).toBe('rtl')
+    })
+
+    it('updates direction when language changes from LTR to RTL', async () => {
+      const { rerender } = await renderSidebar('en-US')
+      expect(document.documentElement.dir).toBe('ltr')
+
+      const i18n = getI18n()
+      await act(async () => {
+        await i18n.changeLanguage('ar-YE')
+      })
+      rerender(
+        <I18nProvider>
+          <AppSidebar />
+        </I18nProvider>
+      )
+      await waitFor(() => expect(document.documentElement.dir).toBe('rtl'))
+    })
+
+    it('updates direction when language changes from RTL to LTR', async () => {
+      const { rerender } = await renderSidebar('ar-YE')
+      expect(document.documentElement.dir).toBe('rtl')
+
+      const i18n = getI18n()
+      await act(async () => {
+        await i18n.changeLanguage('en-US')
+      })
+      rerender(
+        <I18nProvider>
+          <AppSidebar />
+        </I18nProvider>
+      )
+      await waitFor(() => expect(document.documentElement.dir).toBe('ltr'))
+    })
+
+    it('collapse button uses ChevronStart in both LTR and RTL', async () => {
+      // Test with expanded sidebar
+      vi.mocked(useSidebarStore).mockReturnValue({
+        isCollapsed: false,
+        toggleCollapse: vi.fn(),
+      } as any)
+
+      const { rerender } = await renderSidebar('en-US')
+      const collapseButtonLTR = screen.getByTestId('sidebar-toggle')
+      expect(collapseButtonLTR).toBeInTheDocument()
+
+      const i18n = getI18n()
+      await act(async () => {
+        await i18n.changeLanguage('ar-YE')
+      })
+      rerender(
+        <I18nProvider>
+          <AppSidebar />
+        </I18nProvider>
+      )
+      await waitFor(() => expect(document.documentElement.dir).toBe('rtl'))
+      const collapseButtonRTL = screen.getByTestId('sidebar-toggle')
+      expect(collapseButtonRTL).toBeInTheDocument()
+    })
   })
 })

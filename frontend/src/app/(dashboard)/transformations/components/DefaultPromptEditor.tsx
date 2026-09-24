@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { ChevronDown, ChevronRight, Settings } from 'lucide-react'
+import { ChevronDown, Settings } from 'lucide-react'
+import { ChevronEnd } from '@/components/ui/directional-icons'
 import { useDefaultPrompt, useUpdateDefaultPrompt } from '@/lib/hooks/use-transformations'
 import { useTranslation } from '@/lib/hooks/use-translation'
 
@@ -46,7 +47,7 @@ export function DefaultPromptEditor() {
               {isOpen ? (
                 <ChevronDown className="h-5 w-5" />
               ) : (
-                <ChevronRight className="h-5 w-5" />
+                <ChevronEnd className="h-5 w-5" />
               )}
             </div>
           </CardHeader>

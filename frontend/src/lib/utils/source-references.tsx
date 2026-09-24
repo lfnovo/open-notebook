@@ -307,14 +307,15 @@ export function createReferenceLinkComponent(
           type="button"
         >
           <IconComponent className="h-3 w-3 inline me-1" aria-hidden="true" />
-          {children}
+          <bdi>{children}</bdi>
         </button>
       )
     }
 
     // Regular link - open in new tab
+    // Force LTR for URLs/emails to prevent RTL corruption
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer" {...props} className="text-primary hover:underline">
+      <a href={href} target="_blank" rel="noopener noreferrer" {...props} className="text-primary hover:underline" dir="ltr">
         {children}
       </a>
     )
@@ -465,14 +466,15 @@ export function createCompactReferenceLinkComponent(
           className="text-primary hover:underline cursor-pointer inline font-medium"
           type="button"
         >
-          {children}
+          <bdi>{children}</bdi>
         </button>
       )
     }
 
     // Regular link - open in new tab
+    // Force LTR for URLs/emails to prevent RTL corruption
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer" {...props} className="text-primary hover:underline">
+      <a href={href} target="_blank" rel="noopener noreferrer" {...props} className="text-primary hover:underline" dir="ltr">
         {children}
       </a>
     )

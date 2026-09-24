@@ -247,7 +247,7 @@ export function AddExistingSourceDialog({
                           <div className="shrink-0 mt-0.5">
                             {getSourceIcon(source)}
                           </div>
-                          <h4 className="font-medium text-sm break-words line-clamp-2 flex-1 min-w-0">
+                          <h4 className="font-medium text-sm break-words line-clamp-2 flex-1 min-w-0" dir="auto">
                             {source.title}
                           </h4>
                           {isAlreadyLinked && (

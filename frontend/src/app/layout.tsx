@@ -11,7 +11,7 @@ import { QueryProvider } from "@/components/providers/QueryProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { ConnectionGuard } from "@/components/common/ConnectionGuard";
-import { themeScript } from "@/lib/theme-script";
+import { themeScript, directionScript } from "@/lib/theme-script";
 import { I18nProvider } from "@/components/providers/I18nProvider";
 
 const instrumentSans = Instrument_Sans({
@@ -41,9 +41,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: directionScript }} />
       </head>
       <body
         className={`${instrumentSans.variable} ${bricolageGrotesque.variable} ${splineSansMono.variable} font-sans`}

@@ -393,13 +393,13 @@ export default function SearchPage() {
                       onValueChange={(value: 'text' | 'vector') => setSearchType(value)}
                       disabled={modelsLoading || searchMutation.isPending}
                     >
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center gap-2">
                         <RadioGroupItem value="text" id="text" />
                         <Label htmlFor="text" className="font-normal cursor-pointer">
                           {t('searchPage.textSearch')}
                         </Label>
                       </div>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center gap-2">
                         <RadioGroupItem
                           value="vector"
                           id="vector"
@@ -419,7 +419,7 @@ export default function SearchPage() {
                   <div className="space-y-2" role="group" aria-labelledby="search-in-label">
                     <span id="search-in-label" className="text-sm font-medium leading-none">{t('searchPage.searchIn')}</span>
                     <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center gap-2">
                         <Checkbox
                           id="sources"
                           name="sources"
@@ -431,7 +431,7 @@ export default function SearchPage() {
                           {t('searchPage.searchSources')}
                         </Label>
                       </div>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center gap-2">
                         <Checkbox
                           id="notes"
                           name="notes"
@@ -477,6 +477,7 @@ export default function SearchPage() {
                                   <button
                                     onClick={() => openModal(modalType, id)}
                                     className="text-primary hover:underline font-medium"
+                                    dir="auto"
                                   >
                                     {result.title}
                                   </button>
@@ -494,7 +495,7 @@ export default function SearchPage() {
                                   </CollapsibleTrigger>
                                   <CollapsibleContent className="mt-2 space-y-1">
                                     {result.matches.map((match, i) => (
-                                      <div key={i} className="text-sm ps-6 py-1 bs-2 border-muted">
+                                      <div key={i} className="text-sm ps-6 py-1 bs-2 border-muted" dir="auto">
                                         {match}
                                       </div>
                                     ))}

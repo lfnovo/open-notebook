@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import '@/lib/i18n'
 import { LanguageLoadingOverlay } from '@/components/common/LanguageLoadingOverlay'
+import { DirectionProvider } from './DirectionProvider'
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false)
@@ -19,7 +20,9 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   return (
     <>
       <LanguageLoadingOverlay />
-      {children}
+      <DirectionProvider>
+        {children}
+      </DirectionProvider>
     </>
   )
 }

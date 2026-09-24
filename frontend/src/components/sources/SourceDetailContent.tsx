@@ -44,10 +44,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { AlignStart } from '@/components/ui/directional-icons'
 import {
   Link as LinkIcon,
   Upload,
-  AlignLeft,
   ExternalLink,
   Download,
   Copy,
@@ -320,7 +320,7 @@ function SourceDetailContentInner({
     if (!source) return null
     if (source.asset?.url) return <LinkIcon className="h-5 w-5" />
     if (source.asset?.file_path) return <Upload className="h-5 w-5" />
-    return <AlignLeft className="h-5 w-5" />
+    return <AlignStart className="h-5 w-5" />
   }
 
   const getSourceType = () => {
@@ -622,7 +622,7 @@ function SourceDetailContentInner({
                           {insight.insight_type}
                         </span>
                       </div>
-                      <p className="mt-2 text-sm text-muted-foreground">
+                      <p className="mt-2 text-sm text-muted-foreground" dir="auto">
                         {insight.content.slice(0, 180)}{insight.content.length > 180 ? '…' : ''}
                       </p>
                       <div className="mt-3 flex justify-end gap-2">
@@ -678,7 +678,7 @@ function SourceDetailContentInner({
                     <div>
                       <h3 className="mb-2 text-sm font-medium">{t('common.url')}</h3>
                       <div className="flex items-center gap-2">
-                        <code className="flex-1 rounded bg-muted px-2 py-1 text-sm">
+                        <code className="flex-1 rounded bg-muted px-2 py-1 text-sm" dir="ltr">
                           {source.asset.url}
                         </code>
                         <Button
@@ -708,7 +708,7 @@ function SourceDetailContentInner({
                     <div className="space-y-2">
                       <h3 className="text-sm font-medium">{t('sources.uploadedFile')}</h3>
                       <div className="flex flex-wrap items-center gap-2">
-                        <code className="rounded bg-muted px-2 py-1 text-sm">
+                        <code className="rounded bg-muted px-2 py-1 text-sm" dir="ltr">
                           {source.asset.file_path}
                         </code>
                         <Button
@@ -738,7 +738,7 @@ function SourceDetailContentInner({
                       <h3 className="mb-2 text-sm font-medium">{t('sources.topics')}</h3>
                       <div className="flex flex-wrap gap-2">
                         {source.topics.map((topic, idx) => (
-                          <Badge key={idx} variant="outline">
+                          <Badge key={idx} variant="outline" dir="auto">
                             {topic}
                           </Badge>
                         ))}

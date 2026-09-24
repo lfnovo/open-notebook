@@ -34,13 +34,13 @@ import {
   Shuffle,
   Settings,
   LogOut,
-  ChevronLeft,
   Menu,
   FileText,
   Plus,
   Wrench,
   Command,
 } from 'lucide-react'
+import { ChevronStart, useDirection } from '@/components/ui/directional-icons'
 
 const getNavigation = (t: TFunction) => [
   {
@@ -105,6 +105,7 @@ export function AppSidebar() {
 
   const [createMenuOpen, setCreateMenuOpen] = useState(false)
   const [isMac, setIsMac] = useState(true) // Default to Mac for SSR
+  const dir = useDirection()
 
   // Detect platform for keyboard shortcut display
   useEffect(() => {
@@ -124,7 +125,7 @@ export function AppSidebar() {
   }
 
   // Detect RTL for tooltip/dropdown positioning
-  const isRTL = typeof document !== 'undefined' ? document.documentElement.dir === 'rtl' : false
+  const isRTL = dir === 'rtl'
   const tooltipSide = isRTL ? 'left' : 'right'
   const dropdownSide = isCollapsed ? (isRTL ? 'left' : 'right') : 'bottom'
   const dropdownAlign = isCollapsed ? (isRTL ? 'start' : 'end') : 'start'
@@ -170,7 +171,7 @@ export function AppSidebar() {
                 className="text-sidebar-foreground hover:bg-sidebar-accent"
                 data-testid="sidebar-toggle"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronStart className="h-4 w-4" />
               </Button>
             </>
           )}

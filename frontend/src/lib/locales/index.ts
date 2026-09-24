@@ -1,3 +1,4 @@
+import { arYE } from './ar-YE';
 import { zhCN } from './zh-CN';
 import { enUS } from './en-US';
 import { zhTW } from './zh-TW';
@@ -14,6 +15,7 @@ import { plPL } from './pl-PL';
 import { trTR } from './tr-TR';
 
 export const resources = {
+  'ar-YE': { translation: arYE },
   'zh-CN': { translation: zhCN },
   'en-US': { translation: enUS },
   'zh-TW': { translation: zhTW },
@@ -40,6 +42,7 @@ export type Language = {
 };
 
 export const languages: Language[] = [
+  { code: 'ar-YE', label: 'العربية' },
   { code: 'en-US', label: 'English' },
   { code: 'tr-TR', label: 'Türkçe' },
   { code: 'ca-ES', label: 'Català' },
@@ -56,4 +59,4 @@ export const languages: Language[] = [
   { code: 'pl-PL', label: 'Polski' },
 ];
 
-export { zhCN, enUS, zhTW, ptBR, jaJP, itIT, frFR, ruRU, bnIN, caES, esES, deDE, plPL, trTR };
+export { arYE, zhCN, enUS, zhTW, ptBR, jaJP, itIT, frFR, ruRU, bnIN, caES, esES, deDE, plPL, trTR };

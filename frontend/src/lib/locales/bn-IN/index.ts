@@ -22,6 +22,7 @@ export const bnIN = {
     newNotebook: "নতুন নোটবুক",
     newPodcast: "নতুন পডকাস্ট",
     language: "ভাষা",
+    arabic: "العربية",
     english: "English",
     chinese: "简体中文",
     japanese: "日本語",

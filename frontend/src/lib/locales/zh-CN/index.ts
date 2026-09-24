@@ -22,6 +22,7 @@ export const zhCN = {
     newNotebook: "新建笔记本",
     newPodcast: "新建播客",
     language: "语言",
+    arabic: "العربية",
     english: "English",
     chinese: "简体中文",
     japanese: "日本語",

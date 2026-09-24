@@ -22,6 +22,7 @@ export const itIT = {
     newNotebook: "Nuovo quaderno",
     newPodcast: "Nuovo podcast",
     language: "Lingua",
+    arabic: "العربية",
     english: "English",
     chinese: "简体中文",
     japanese: "日本語",

@@ -25,6 +25,7 @@ export const deDE = {
     newNotebook: "Neues Notebook",
     newPodcast: "Neuer Podcast",
     language: "Sprache",
+    arabic: "العربية",
     english: "Englisch",
     chinese: "简体中文",
     japanese: "日本語",

@@ -22,6 +22,7 @@ export const ptBR = {
     newNotebook: "Novo Caderno",
     newPodcast: "Novo Podcast",
     language: "Idioma",
+    arabic: "العربية",
     english: "English",
     chinese: "简体中文",
     japanese: "日本語",

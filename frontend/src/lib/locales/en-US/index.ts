@@ -20,6 +20,7 @@ export const enUS = {
     newNotebook: "New Notebook",
     newPodcast: "New Podcast",
     language: "Language",
+    arabic: "العربية",
     english: "English",
     chinese: "简体中文",
     japanese: "日本語",

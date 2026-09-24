@@ -1,10 +1,11 @@
-import { zhCN, enUS, zhTW, ptBR, ja, fr, ru, bn, ca, es, de, pl, tr, Locale } from 'date-fns/locale'
+import { ar, zhCN, enUS, zhTW, ptBR, ja, fr, ru, bn, ca, es, de, pl, tr, Locale } from 'date-fns/locale'
 
 /**
  * Mapping of language codes to date-fns locales.
  * Add new languages here as needed.
  */
 const LOCALE_MAP: Record<string, Locale> = {
+  'ar-YE': ar,
   'zh-CN': zhCN,
   'zh-TW': zhTW,
   'en-US': enUS,

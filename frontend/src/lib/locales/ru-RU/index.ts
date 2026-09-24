@@ -22,6 +22,7 @@ export const ruRU = {
     newNotebook: "Новый блокнот",
     newPodcast: "Новый подкаст",
     language: "Язык",
+    arabic: "العربية",
     english: "English",
     chinese: "简体中文",
     japanese: "日本語",

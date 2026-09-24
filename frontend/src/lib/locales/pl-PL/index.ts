@@ -22,6 +22,7 @@ export const plPL = {
     newNotebook: "Nowy notatnik",
     newPodcast: "Nowy podcast",
     language: "Język",
+    arabic: "العربية",
     english: "Angielski",
     chinese: "Chiński (uproszczony)",
     japanese: "Japoński",

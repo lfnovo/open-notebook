@@ -22,6 +22,7 @@ export const trTR = {
     newNotebook: "Yeni Defter",
     newPodcast: "Yeni Podcast",
     language: "Dil",
+    arabic: "العربية",
     english: "English",
     chinese: "简体中文",
     japanese: "日本語",

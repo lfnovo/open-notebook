@@ -22,6 +22,7 @@ export const frFR = {
     newNotebook: "Nouveau Carnet",
     newPodcast: "Nouveau Podcast",
     language: "Langue",
+    arabic: "العربية",
     english: "English",
     chinese: "简体中文",
     japanese: "日本語",

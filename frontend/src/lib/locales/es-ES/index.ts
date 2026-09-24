@@ -22,6 +22,7 @@ export const esES = {
     newNotebook: "Nuevo cuaderno",
     newPodcast: "Nuevo podcast",
     language: "Idioma",
+    arabic: "العربية",
     english: "English",
     chinese: "简体中文",
     japanese: "日本語",

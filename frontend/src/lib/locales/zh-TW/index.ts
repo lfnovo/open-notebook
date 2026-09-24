@@ -22,6 +22,7 @@ export const zhTW = {
     newNotebook: "新增筆記本",
     newPodcast: "新增播客",
     language: "語言",
+    arabic: "العربية",
     english: "English",
     chinese: "簡體中文",
     japanese: "日本語",

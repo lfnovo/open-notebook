@@ -22,6 +22,7 @@ export const jaJP = {
     newNotebook: "新規ノートブック",
     newPodcast: "新規ポッドキャスト",
     language: "言語",
+    arabic: "العربية",
     english: "English",
     chinese: "简体中文",
     japanese: "日本語",

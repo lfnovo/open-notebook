@@ -281,11 +281,14 @@ move to a native install **without re-importing anything**: the compose file
 bind-mounts `./surreal_data` and `./notebook_data`, so the database and uploads
 already live on your Windows disk.
 
+Run the `docker compose` commands below from the folder that contains your
+`docker-compose.yml`, so they work whatever your container names are.
+
 1. **Match the SurrealDB version.** A native `surreal` of the same version can
    open the existing RocksDB files directly. Check the container's version:
 
    ```batch
-   docker exec open-notebook-surrealdb-1 /surreal version
+   docker compose exec surrealdb /surreal version
    ```
 
    and download the matching Windows binary from the
@@ -298,14 +301,15 @@ already live on your Windows disk.
      --namespace open_notebook --database open_notebook backup.surql
    ```
 
-3. **Stop the containers and disable their restart policy.** The stock compose
-   file uses `restart: always`, so Docker Desktop would otherwise start them
-   again on its next launch and they would fight the native services over ports
-   8000 and 5055:
+3. **Remove the containers.** Stopping is not enough: the stock compose file
+   uses `restart: always`, so Docker Desktop would start them again on its next
+   launch and they would fight the native services over ports 8000 and 5055.
+   `down` removes the containers but keeps the bind-mounted `surreal_data` and
+   `notebook_data` folders (do **not** add `-v`); `docker compose up -d` brings
+   the Docker setup back if you need to roll back:
 
    ```batch
-   docker update --restart=no open-notebook-open_notebook-1 open-notebook-surrealdb-1
-   docker stop open-notebook-open_notebook-1 open-notebook-surrealdb-1
+   docker compose down
    ```
 
 4. **Start SurrealDB on the existing data** (path from the compose file's

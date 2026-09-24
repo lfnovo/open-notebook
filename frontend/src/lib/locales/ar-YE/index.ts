@@ -133,8 +133,8 @@ export const arYE = {
     errorDetails: "تفاصيل الخطأ",
     editTransformation: "تعديل التحويل",
     retry: "إعادة المحاولة",
-    traditionalChinese: "الصينية التقليدية",
-    portuguese: "البرتغالية",
+    traditionalChinese: "繁體中文",
+    portuguese: "Português",
     completed: "مكتمل",
     saveSuccess: "تم الحفظ بنجاح",
     contextModes: {

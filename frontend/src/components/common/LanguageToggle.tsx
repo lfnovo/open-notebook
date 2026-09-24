@@ -46,6 +46,12 @@ export function LanguageToggle({ iconOnly = false }: LanguageToggleProps) {
         >
           <span>{t('common.catalan')}</span>
         </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => setLanguage('ar-YE')}
+          className={currentLang === 'ar-YE' || currentLang.startsWith('ar') ? 'bg-accent' : ''}
+        >
+          <span>{t('common.arabic')}</span>
+        </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={() => setLanguage('zh-CN')}
           className={currentLang === 'zh-CN' || currentLang.startsWith('zh-Hans') || currentLang === 'zh' ? 'bg-accent' : ''}

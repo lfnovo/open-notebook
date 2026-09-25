@@ -22,8 +22,8 @@ export function CollapsibleColumn({
   collapsedLabel,
   children,
 }: CollapsibleColumnProps) {
-  const isRTL = useDirection() === 'rtl';
-  const tooltipSide = isRTL ? 'left' : 'right';
+  const isRTL = useDirection() === 'rtl'
+  const tooltipSide = isRTL ? 'left' : 'right'
 
   if (isCollapsed) {
     return (

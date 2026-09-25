@@ -20,7 +20,7 @@ function getDirection(): 'ltr' | 'rtl' {
  * so we listen to the i18n event target directly.
  */
 export function useDirection(): 'ltr' | 'rtl' {
-  const [dir, setDir] = useState<'ltr' | 'rtl'>('ltr')
+  const [dir, setDir] = useState<'ltr' | 'rtl'>(getDirection)
 
   useEffect(() => {
     const updateDir = () => setDir(getDirection())

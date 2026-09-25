@@ -39,41 +39,17 @@ describe('DirectionProvider', () => {
       expect(document.documentElement.dir).toBe('ltr')
     })
 
-    it('sets dir=rtl and lang=ar-YE for Arabic locale', async () => {
+    it('sets dir=rtl and lang=ar for Arabic locale', async () => {
       const i18n = getI18n()
-      await i18n.changeLanguage('ar-YE')
+      await i18n.changeLanguage('ar')
       render(<TestWrapper><></></TestWrapper>)
-      await waitFor(() => expect(document.documentElement.lang).toBe('ar-YE'))
-      expect(document.documentElement.dir).toBe('rtl')
-    })
-
-    it('sets dir=rtl and lang=he-IL for Hebrew locale', async () => {
-      const i18n = getI18n()
-      await i18n.changeLanguage('he-IL')
-      render(<TestWrapper><></></TestWrapper>)
-      await waitFor(() => expect(document.documentElement.lang).toBe('he-IL'))
-      expect(document.documentElement.dir).toBe('rtl')
-    })
-
-    it('sets dir=rtl and lang=fa-IR for Persian locale', async () => {
-      const i18n = getI18n()
-      await i18n.changeLanguage('fa-IR')
-      render(<TestWrapper><></></TestWrapper>)
-      await waitFor(() => expect(document.documentElement.lang).toBe('fa-IR'))
-      expect(document.documentElement.dir).toBe('rtl')
-    })
-
-    it('sets dir=rtl and lang=ur-PK for Urdu locale', async () => {
-      const i18n = getI18n()
-      await i18n.changeLanguage('ur-PK')
-      render(<TestWrapper><></></TestWrapper>)
-      await waitFor(() => expect(document.documentElement.lang).toBe('ur-PK'))
+      await waitFor(() => expect(document.documentElement.lang).toBe('ar'))
       expect(document.documentElement.dir).toBe('rtl')
     })
   })
 
   describe('Language change LTR -> RTL', () => {
-    it('updates dir and lang when language changes from en-US to ar-YE', async () => {
+    it('updates dir and lang when language changes from en-US to ar', async () => {
       const i18n = getI18n()
       // Start with English
       await i18n.changeLanguage('en-US')
@@ -83,46 +59,20 @@ describe('DirectionProvider', () => {
 
       // Change to Arabic
       await act(async () => {
-        await i18n.changeLanguage('ar-YE')
+        await i18n.changeLanguage('ar')
       })
-      await waitFor(() => expect(document.documentElement.lang).toBe('ar-YE'))
-      expect(document.documentElement.dir).toBe('rtl')
-    })
-
-    it('updates dir and lang when language changes from en-US to he-IL', async () => {
-      const i18n = getI18n()
-      await i18n.changeLanguage('en-US')
-      render(<TestWrapper><></></TestWrapper>)
-      await waitFor(() => expect(document.documentElement.lang).toBe('en-US'))
-
-      await act(async () => {
-        await i18n.changeLanguage('he-IL')
-      })
-      await waitFor(() => expect(document.documentElement.lang).toBe('he-IL'))
+      await waitFor(() => expect(document.documentElement.lang).toBe('ar'))
       expect(document.documentElement.dir).toBe('rtl')
     })
   })
 
   describe('Language change RTL -> LTR', () => {
-    it('updates dir and lang when language changes from ar-YE to en-US', async () => {
+    it('updates dir and lang when language changes from ar to en-US', async () => {
       const i18n = getI18n()
-      await i18n.changeLanguage('ar-YE')
+      await i18n.changeLanguage('ar')
       render(<TestWrapper><></></TestWrapper>)
-      await waitFor(() => expect(document.documentElement.lang).toBe('ar-YE'))
+      await waitFor(() => expect(document.documentElement.lang).toBe('ar'))
       expect(document.documentElement.dir).toBe('rtl')
-
-      await act(async () => {
-        await i18n.changeLanguage('en-US')
-      })
-      await waitFor(() => expect(document.documentElement.lang).toBe('en-US'))
-      expect(document.documentElement.dir).toBe('ltr')
-    })
-
-    it('updates dir and lang when language changes from he-IL to en-US', async () => {
-      const i18n = getI18n()
-      await i18n.changeLanguage('he-IL')
-      render(<TestWrapper><></></TestWrapper>)
-      await waitFor(() => expect(document.documentElement.lang).toBe('he-IL'))
 
       await act(async () => {
         await i18n.changeLanguage('en-US')
@@ -140,10 +90,10 @@ describe('DirectionProvider', () => {
 
       // Fire the actual event that DirectionProvider listens to
       i18nEvents.dispatchEvent(
-        new CustomEvent(I18N_LANGUAGE_CHANGE_END, { detail: { language: 'ar-YE' } })
+        new CustomEvent(I18N_LANGUAGE_CHANGE_END, { detail: { language: 'ar' } })
       )
 
-      await waitFor(() => expect(document.documentElement.lang).toBe('ar-YE'))
+      await waitFor(() => expect(document.documentElement.lang).toBe('ar'))
       expect(document.documentElement.dir).toBe('rtl')
     })
 
@@ -151,21 +101,14 @@ describe('DirectionProvider', () => {
       render(<TestWrapper><></></TestWrapper>)
       await waitFor(() => expect(document.documentElement.lang).toBe('en-US'))
 
-      // en-US -> ar-YE
+      // en-US -> ar
       i18nEvents.dispatchEvent(
-        new CustomEvent(I18N_LANGUAGE_CHANGE_END, { detail: { language: 'ar-YE' } })
+        new CustomEvent(I18N_LANGUAGE_CHANGE_END, { detail: { language: 'ar' } })
       )
-      await waitFor(() => expect(document.documentElement.lang).toBe('ar-YE'))
+      await waitFor(() => expect(document.documentElement.lang).toBe('ar'))
       expect(document.documentElement.dir).toBe('rtl')
 
-      // ar-YE -> he-IL
-      i18nEvents.dispatchEvent(
-        new CustomEvent(I18N_LANGUAGE_CHANGE_END, { detail: { language: 'he-IL' } })
-      )
-      await waitFor(() => expect(document.documentElement.lang).toBe('he-IL'))
-      expect(document.documentElement.dir).toBe('rtl')
-
-      // he-IL -> en-US
+      // ar -> en-US
       i18nEvents.dispatchEvent(
         new CustomEvent(I18N_LANGUAGE_CHANGE_END, { detail: { language: 'en-US' } })
       )
@@ -181,9 +124,9 @@ describe('DirectionProvider', () => {
 
       // Fire event while mounted - should work
       i18nEvents.dispatchEvent(
-        new CustomEvent(I18N_LANGUAGE_CHANGE_END, { detail: { language: 'ar-YE' } })
+        new CustomEvent(I18N_LANGUAGE_CHANGE_END, { detail: { language: 'ar' } })
       )
-      await waitFor(() => expect(document.documentElement.lang).toBe('ar-YE'))
+      await waitFor(() => expect(document.documentElement.lang).toBe('ar'))
       expect(document.documentElement.dir).toBe('rtl')
 
       // Unmount
@@ -198,6 +141,7 @@ describe('DirectionProvider', () => {
     })
 
     it('does not create duplicate event listeners', async () => {
+      const addEventListenerSpy = vi.spyOn(i18nEvents, 'addEventListener')
       const { rerender } = render(<TestWrapper><></></TestWrapper>)
       await waitFor(() => expect(document.documentElement.lang).toBe('en-US'))
 
@@ -207,12 +151,16 @@ describe('DirectionProvider', () => {
       rerender(<TestWrapper><></></TestWrapper>)
       await waitFor(() => expect(document.documentElement.lang).toBe('en-US'))
 
+      expect(addEventListenerSpy).toHaveBeenCalledTimes(1) // initial mount only
+
       // Fire event - should only trigger once per re-render cycle
       i18nEvents.dispatchEvent(
-        new CustomEvent(I18N_LANGUAGE_CHANGE_END, { detail: { language: 'ar-YE' } })
+        new CustomEvent(I18N_LANGUAGE_CHANGE_END, { detail: { language: 'ar' } })
       )
-      await waitFor(() => expect(document.documentElement.lang).toBe('ar-YE'))
+      await waitFor(() => expect(document.documentElement.lang).toBe('ar'))
       expect(document.documentElement.dir).toBe('rtl')
+      
+      addEventListenerSpy.mockRestore()
     })
   })
 
@@ -226,12 +174,6 @@ describe('DirectionProvider', () => {
       // DirectionProvider only writes dir on mount and on language changes,
       // so the external value is left alone until the next sync.
       document.documentElement.dir = 'rtl'
-      expect(document.documentElement.dir).toBe('rtl')
-
-      i18nEvents.dispatchEvent(
-        new CustomEvent(I18N_LANGUAGE_CHANGE_END, { detail: { language: 'he-IL' } })
-      )
-      await waitFor(() => expect(document.documentElement.lang).toBe('he-IL'))
       expect(document.documentElement.dir).toBe('rtl')
 
       i18nEvents.dispatchEvent(

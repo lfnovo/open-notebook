@@ -126,6 +126,7 @@ export function InlineEdit({
         id={id}
         name={name}
         autoComplete={autocomplete}
+        dir="auto"
       />
     )
   }
@@ -152,6 +153,7 @@ export function InlineEdit({
       id={id}
       name={name}
       autoComplete={autocomplete}
+      dir="auto"
     />
   )
 }

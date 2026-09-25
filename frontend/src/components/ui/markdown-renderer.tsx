@@ -101,13 +101,13 @@ export function MarkdownRenderer({ children, components = {}}: { children: React
                 <code className="bg-border rounded px-1 py-0.5" dir="ltr">{children}</code>
               )
             },
-            a: ({ href, children, ...props }) => (
+            a: ({ node, href, children, ...props }) => (
               <a href={href} {...props} className="text-primary hover:underline break-all" dir="ltr">
                 {children}
               </a>
             ),
             pre: ({ children }) => (
-              <div dir="ltr">{children}</div>
+              <pre dir="ltr">{children}</pre>
             ),
           }, ...components}}
         >

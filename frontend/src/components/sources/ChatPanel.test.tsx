@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ChatPanel } from './ChatPanel'
+import { SourceChatMessage } from "@/lib/types/api"
 
 // useTranslation is mocked globally in setup.ts (t returns the key string)
 

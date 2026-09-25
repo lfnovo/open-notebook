@@ -355,7 +355,7 @@ const ChatMessage = memo(function ChatMessage({
               onReferenceClick={onReferenceClick}
             />
           ) : (
-            <p className="text-sm break-all" dir="auto">{message.content}</p>
+            <p className="text-sm break-words" dir="auto">{message.content}</p>
           )}
         </div>
         {message.type === 'ai' && (

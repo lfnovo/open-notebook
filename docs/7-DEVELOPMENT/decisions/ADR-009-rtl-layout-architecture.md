@@ -1,9 +1,7 @@
-# ADR 009: RTL Layout & Internationalization Architecture
+# ADR-009: RTL Layout & Internationalization Architecture
 
-**Date:** 2026-09-25
-
-## Status
-Accepted
+- **Status**: Accepted
+- **Date**: 2026-09-25
 
 ## Context
 With the introduction of Arabic (`ar-YE`) as a supported localization in Open Notebook, the frontend architecture required a holistic upgrade to natively support Right-to-Left (RTL) reading directions. Supporting RTL dynamically without requiring hard page reloads or duplicating CSS layouts requires strict adherence to logical layout principles across Tailwind CSS, Radix UI primitives, React state, and iconography.
@@ -26,6 +24,11 @@ To establish a robust, maintainable RTL-aware architecture, we have adopted the 
    - Uses `AlignStart` (swapping between `AlignLeft` and `AlignRight`) for text alignment representation.
    - Uses `SendDirectional` (mirroring the `Send` icon for RTL) to correctly reflect visual progression semantics.
 5. **Editor Direction Awareness**: Third-party components like `MarkdownEditor` (`@uiw/react-md-editor`) are explicitly wrapped in DOM nodes carrying `dir={dir}` derived from `useDirection()` to ensure their internal flex layouts (e.g., side-by-side split panes) and CodeMirror cursors receive explicit bidirectional hinting.
+
+## Alternatives considered
+
+- **Duplicate Layouts**: Maintaining separate LTR and RTL component trees. Rejected due to maintenance overhead and drift.
+- **Page Reload on Language Swap**: Forcing a hard reload to apply `dir="rtl"` to `<html>`. Rejected because it breaks SPA experience and disrupts active chat sessions.
 
 ## Consequences
 - **Positive:** Open Notebook now supports fluid, dynamic switching between LTR and RTL languages (like Arabic) without a page reload.

@@ -171,19 +171,22 @@ describe('AppSidebar', () => {
       const { rerender } = await renderSidebar('en-US')
       const collapseButtonLTR = screen.getByTestId('sidebar-toggle')
       expect(collapseButtonLTR).toBeInTheDocument()
+      expect(collapseButtonLTR.querySelector('.lucide-chevron-left')).toBeInTheDocument()
 
       const i18n = getI18n()
       await act(async () => {
-        await i18n.changeLanguage('ar-YE')
+        await i18n.changeLanguage('ar')
+        window.dispatchEvent(new CustomEvent('I18N_LANGUAGE_CHANGE_END'))
       })
       rerender(
         <I18nProvider>
           <AppSidebar />
         </I18nProvider>
       )
-      await waitFor(() => expect(document.documentElement.dir).toBe('rtl'))
+      
       const collapseButtonRTL = screen.getByTestId('sidebar-toggle')
       expect(collapseButtonRTL).toBeInTheDocument()
+      expect(collapseButtonRTL.querySelector('.lucide-chevron-right')).toBeInTheDocument()
     })
   })
 })

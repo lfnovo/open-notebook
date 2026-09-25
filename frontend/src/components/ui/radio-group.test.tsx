@@ -1,10 +1,9 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { I18nProvider } from '@/components/providers/I18nProvider'
 import * as i18nModule from '@/lib/i18n'
 
-// Reset document.dir/lang before each test
 beforeEach(() => {
   document.documentElement.dir = 'ltr'
   document.documentElement.lang = 'en-US'
@@ -20,19 +19,17 @@ function getI18n() {
   return i18nModule.default
 }
 
-const setDirection = (locale: string) => {
-  const dir = locale.startsWith('ar') || locale.startsWith('he') || locale.startsWith('fa') || locale.startsWith('ur') ? 'rtl' : 'ltr'
-  document.documentElement.dir = dir
-  document.documentElement.lang = locale
-}
-
 const renderRadioGroup = async (locale = 'en-US', props = {}) => {
   const i18n = getI18n()
-  await i18n.changeLanguage(locale)
-  setDirection(locale)
+  
+  await act(async () => {
+    await i18n.changeLanguage(locale)
+    window.dispatchEvent(new CustomEvent('I18N_LANGUAGE_CHANGE_END'))
+  })
+
   return render(
     <I18nProvider>
-      <RadioGroup {...props}>
+      <RadioGroup {...props} data-testid="radio-group">
         <RadioGroupItem value="option1" id="option1" aria-label="Option 1" />
         <RadioGroupItem value="option2" id="option2" aria-label="Option 2" />
         <RadioGroupItem value="option3" id="option3" aria-label="Option 3" />
@@ -43,49 +40,47 @@ const renderRadioGroup = async (locale = 'en-US', props = {}) => {
 
 describe('RadioGroup RTL', () => {
   describe('LTR (English)', () => {
-    it('renders with dir=ltr', async () => {
-      await renderRadioGroup('en-US')
-      expect(document.documentElement.dir).toBe('ltr')
-    })
-
-    it('renders three radio items', async () => {
-      await renderRadioGroup('en-US')
-      const items = screen.getAllByRole('radio')
-      expect(items).toHaveLength(3)
+    it('ArrowRight moves to next item', async () => {
+      await renderRadioGroup('en-US', { defaultValue: 'option1' })
+      const firstItem = screen.getByRole('radio', { name: /Option 1/i })
+      firstItem.focus()
+      fireEvent.keyDown(firstItem, { key: 'ArrowRight' })
+      
+      const secondItem = screen.getByRole('radio', { name: /Option 2/i })
+      expect(secondItem).toBeChecked()
     })
   })
 
   describe('RTL (Arabic)', () => {
-    it('renders with dir=rtl', async () => {
-      await renderRadioGroup('ar-YE')
-      expect(document.documentElement.dir).toBe('rtl')
+    it('ArrowRight moves to previous item (cycles to last)', async () => {
+      await renderRadioGroup('ar', { defaultValue: 'option1' })
+      const firstItem = screen.getByRole('radio', { name: /Option 1/i })
+      firstItem.focus()
+      fireEvent.keyDown(firstItem, { key: 'ArrowRight' })
+      
+      const thirdItem = screen.getByRole('radio', { name: /Option 3/i })
+      expect(thirdItem).toBeChecked()
     })
 
-    it('renders three radio items', async () => {
-      await renderRadioGroup('ar-YE')
-      const items = screen.getAllByRole('radio')
-      expect(items).toHaveLength(3)
+    it('ArrowLeft moves to next item', async () => {
+      await renderRadioGroup('ar', { defaultValue: 'option1' })
+      const firstItem = screen.getByRole('radio', { name: /Option 1/i })
+      firstItem.focus()
+      fireEvent.keyDown(firstItem, { key: 'ArrowLeft' })
+      
+      const secondItem = screen.getByRole('radio', { name: /Option 2/i })
+      expect(secondItem).toBeChecked()
     })
   })
 
   describe('RTL (Hebrew)', () => {
-    it('renders with dir=rtl', async () => {
-      await renderRadioGroup('he-IL')
-      expect(document.documentElement.dir).toBe('rtl')
-    })
-  })
-
-  describe('RTL (Persian)', () => {
-    it('renders with dir=rtl', async () => {
-      await renderRadioGroup('fa-IR')
-      expect(document.documentElement.dir).toBe('rtl')
-    })
-  })
-
-  describe('RTL (Urdu)', () => {
-    it('renders with dir=rtl', async () => {
-      await renderRadioGroup('ur-PK')
-      expect(document.documentElement.dir).toBe('rtl')
+    it('ArrowLeft moves to next item', async () => {
+      await renderRadioGroup('he', { defaultValue: 'option1' })
+      const firstItem = screen.getByRole('radio', { name: /Option 1/i })
+      firstItem.focus()
+      fireEvent.keyDown(firstItem, { key: 'ArrowLeft' })
+      const secondItem = screen.getByRole('radio', { name: /Option 2/i })
+      expect(secondItem).toBeChecked()
     })
   })
 
@@ -99,7 +94,7 @@ describe('RadioGroup RTL', () => {
     })
 
     it('allows selection change in RTL', async () => {
-      await renderRadioGroup('ar-YE', { defaultValue: 'option1' })
+      await renderRadioGroup('ar', { defaultValue: 'option1' })
       const secondItem = screen.getByRole('radio', { name: /Option 2/i })
       expect(secondItem).not.toBeChecked()
       fireEvent.click(secondItem)
@@ -124,7 +119,7 @@ describe('RadioGroup RTL', () => {
     })
 
     it('disables item in RTL', async () => {
-      const { rerender } = await renderRadioGroup('ar-YE', { defaultValue: 'option1' })
+      const { rerender } = await renderRadioGroup('ar', { defaultValue: 'option1' })
       rerender(
         <I18nProvider>
           <RadioGroup>

@@ -255,9 +255,9 @@ function SourceCardImpl({
             )}
 
             {/* Title */}
-            <div className={cn('mb-1.5', !isCompleted && 'mb-1')}>
+            <div className={cn('mb-1.5 pe-6', !isCompleted && 'mb-1')}>
               <h4
-                className="text-sm font-medium leading-tight line-clamp-2 break-all pe-6"
+                className="text-sm font-medium leading-tight line-clamp-2 break-all"
                 title={title}
                 dir="auto"
               >

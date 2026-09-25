@@ -472,10 +472,10 @@ export function createCompactReferenceLinkComponent(
     }
 
     // Regular link - open in new tab
-    // Force LTR for URLs/emails to prevent RTL corruption
+    // Use bdi to isolate URL/email strings without forcing LTR on Arabic labels
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer" {...props} className="text-primary hover:underline" dir="ltr">
-        {children}
+      <a href={href} target="_blank" rel="noopener noreferrer" {...props} className="text-primary hover:underline">
+        <bdi>{children}</bdi>
       </a>
     )
   }

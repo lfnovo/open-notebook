@@ -13,11 +13,15 @@ function Progress({
 }: React.ComponentProps<typeof ProgressPrimitive.Root>) {
   const isRTL = useDirection() === 'rtl'
 
+  const max = props.max || 100
+  const clampedValue = Math.min(Math.max(value || 0, 0), max)
+  const percentage = (clampedValue / max) * 100
+
   // In LTR: fill left-to-right (translateX from -100% to 0%)
   // In RTL: fill right-to-left (translateX from +100% to 0%)
   const transform = isRTL
-    ? `translateX(${100 - (value || 0)}%)`
-    : `translateX(-${100 - (value || 0)}%)`
+    ? `translateX(${100 - percentage}%)`
+    : `translateX(-${100 - percentage}%)`
 
   return (
     <ProgressPrimitive.Root

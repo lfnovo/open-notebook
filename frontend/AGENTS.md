@@ -11,7 +11,7 @@ Normative rules for working on the Next.js frontend. Architecture and flow walkt
 
 ## Hard rules
 
-- **i18n is mandatory**: every UI string goes through `t('section.key')` and the key must exist in **all locales** under `src/lib/locales/` (currently 14; en-US is the reference). Missing keys fall back to en-US silently — keep locales in sync. Each non-en-US locale ends with `satisfies TranslationShape` (type derived from en-US), so a missing/extra key fails `tsc`; the parity test (`src/lib/locales/index.test.ts`) checks the same at runtime.
+- **i18n is mandatory**: every UI string goes through `t('section.key')` and the key must exist in **all locales** under `src/lib/locales/` (currently 15; en-US is the reference). Missing keys fall back to en-US silently — keep locales in sync. Each non-en-US locale ends with `satisfies TranslationShape` (type derived from en-US), so a missing/extra key fails `tsc`; the parity test (`src/lib/locales/index.test.ts`) checks the same at runtime.
 - All requests go through `apiClient` (`src/lib/api/client.ts`); never create a second axios instance. Auth token is auto-added from localStorage key `auth-storage`.
 - Data fetching uses TanStack Query hooks in `src/lib/hooks/` with `QUERY_KEYS`; mutations invalidate caches and show toasts (sonner). Follow the existing hook shape.
 - FormData requests: nested objects/arrays must be `JSON.stringify`-ed before appending; the interceptor strips Content-Type so the browser sets the multipart boundary — don't re-add it.
@@ -20,6 +20,7 @@ Normative rules for working on the Next.js frontend. Architecture and flow walkt
 ## Gotchas
 
 - Zustand stores with `persist`: check `hasHydrated` before rendering persisted state (SSR hydration mismatch), and keep each store's `name` key unique (localStorage collision).
+- **RTL / Layout Direction**: Use Tailwind's logical properties (`ms-`, `pe-`, `border-inline-start`, `start-`, `end-`) instead of physical directions (`left`/`right`, `ml-`/`mr-`). Radix primitives inherit direction from the root `<DirectionProvider>`. If you must read direction in JS, use the `useDirection()` hook from `directional-icons.tsx` rather than synchronously reading `document.documentElement.dir` to avoid stale state bugs on language swap.
 - `NEXT_PUBLIC_API_TIMEOUT_MS`: default 600000 (10 min) for slow LLM calls; `0` disables the timeout.
 - SSE (`useAsk`): incomplete lines stay in the buffer between reads; incomplete JSON is silently skipped — don't "simplify" the buffer handling.
 - `useSourceStatus` polls every 2s while status is `running`/`queued`/`new`.

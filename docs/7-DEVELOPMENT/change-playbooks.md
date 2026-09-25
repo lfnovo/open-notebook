@@ -26,7 +26,7 @@ Step-by-step guides for common types of changes in the Open Notebook codebase. E
 | 3 | `api/models.py` | Add field to `*Create`, `*Update` (Optional), and `*Response` schemas. |
 | 4 | `frontend/src/lib/types/api.ts` | Add field to the corresponding TypeScript interface (`*Response`, `Create*Request`, `Update*Request`). |
 | 5 | Frontend component (if user-facing) | Display or edit the field in the relevant component. |
-| 6 | `frontend/src/lib/locales/*/` | Add i18n strings if the field has a user-visible label. All 7 locales. |
+| 6 | `frontend/src/lib/locales/*/` | Add i18n strings if the field has a user-visible label. All 15 locales. |
 | 7 | Tests | Add/update tests covering the new field — at minimum, API test for create/read. |
 
 **Verify:** Restart API (migration auto-runs), check logs for migration success, test via `/docs`.
@@ -172,10 +172,10 @@ Step-by-step guides for common types of changes in the Open Notebook codebase. E
 | Step | File(s) | What to Do |
 |------|---------|------------|
 | 1 | `frontend/src/lib/locales/en-US/index.ts` | Add English strings first. Group by feature. |
-| 2 | All other locale files | Add the same keys to: `pt-BR`, `zh-CN`, `zh-TW`, `ja-JP`, `ru-RU`, `bn-IN`. Use English as placeholder if translation unavailable. |
+| 2 | All other locale files | Add the same keys to all other locales (e.g. `ar-YE`, `pt-BR`, `es-ES`, etc.). Use English as placeholder if translation unavailable. |
 | 3 | Component | Use `const { t } = useTranslation()` and access via `t('section.key')`. |
 
-**7 locales total.** Don't forget any.
+**15 locales total.** Don't forget any.
 
 ### Adding a whole new language
 

@@ -107,16 +107,13 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
   }, [notebooks, notesQueries])
 
   // Stable key for fetching state - only changes when actual fetching states change
-  const fetchingKey = useMemo(
-    () => sourcesQueries.map((q) => q.isFetching ? '1' : '0').join(''),
-    [sourcesQueries]
-  )
+  const fetchingKey = sourcesQueries.map((q) => q.isFetching ? '1' : '0').join('')
 
   // Stable set of notebook IDs that are currently fetching sources
   const fetchingNotebookIds = useMemo(() => {
     const ids = new Set<string>()
     notebooks.forEach((notebook, index) => {
-      if (sourcesQueries[index]?.isFetching) {
+      if (fetchingKey[index] === '1') {
         ids.add(notebook.id)
       }
     })

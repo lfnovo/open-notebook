@@ -986,4 +986,6 @@ export const frFR = {
     goToSettings: "Aller aux paramètres",
     viewDocs: "Voir la documentation",
   },
-} satisfies TranslationShape;
+} satisfies Omit<TranslationShape, 'podcasts'> & {
+  podcasts: Omit<TranslationShape['podcasts'], 'usedByCount_zero' | 'usedByCount_two' | 'usedByCount_few' | 'usedByCount_many'>;
+};

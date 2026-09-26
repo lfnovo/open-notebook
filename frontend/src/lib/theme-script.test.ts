@@ -26,7 +26,6 @@ afterEach(() => {
 })
 
 function runScript() {
-  // eslint-disable-next-line no-eval
   eval(directionScript)
 }
 

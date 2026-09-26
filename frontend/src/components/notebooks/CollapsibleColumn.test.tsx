@@ -1,9 +1,17 @@
 import { render, screen, waitFor, act, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vitest'
 import { CollapsibleColumn } from './CollapsibleColumn'
 import { I18nProvider } from '@/components/providers/I18nProvider'
 import * as i18nModule from '@/lib/i18n'
 import { ChevronLeft } from 'lucide-react'
+
+beforeAll(() => {
+  global.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver
+})
 
 // Reset document.dir/lang before each test
 beforeEach(() => {
@@ -21,25 +29,31 @@ function getI18n() {
   return i18nModule.default
 }
 
+import { TooltipProvider } from '@/components/ui/tooltip'
+
+import { i18nEvents, I18N_LANGUAGE_CHANGE_END } from '@/lib/i18n-events'
+
 const renderColumn = async (locale = 'en-US', props = {}) => {
   const i18n = getI18n()
   
   await act(async () => {
     await i18n.changeLanguage(locale)
-    window.dispatchEvent(new CustomEvent('I18N_LANGUAGE_CHANGE_END'))
+    i18nEvents.dispatchEvent(new CustomEvent(I18N_LANGUAGE_CHANGE_END, { detail: { language: locale } }))
   })
 
   return render(
     <I18nProvider>
-      <CollapsibleColumn
-        isCollapsed={false}
-        onToggle={vi.fn()}
-        collapsedIcon={ChevronLeft}
-        collapsedLabel="Test Column"
-        {...props}
-      >
-        <div data-testid="content">Column Content</div>
-      </CollapsibleColumn>
+      <TooltipProvider delayDuration={0}>
+        <CollapsibleColumn
+          isCollapsed={false}
+          onToggle={vi.fn()}
+          collapsedIcon={ChevronLeft}
+          collapsedLabel="Test Column"
+          {...props}
+        >
+          <div data-testid="content">Column Content</div>
+        </CollapsibleColumn>
+      </TooltipProvider>
     </I18nProvider>
   )
 }
@@ -70,19 +84,25 @@ describe('CollapsibleColumn RTL', () => {
       await renderColumn('en-US', { isCollapsed: true, collapsedLabel: 'Test Tooltip' })
       const button = screen.getByRole('button', { name: /Expand Test Tooltip/i })
       
-      fireEvent.mouseEnter(button)
-      const tooltipContent = await screen.findByText('Expand Test Tooltip')
+      fireEvent.focus(button)
+      await waitFor(() => expect(screen.getAllByText(/Expand Test Tooltip/i).length).toBeGreaterThan(0))
+      const tooltipContent = screen.getAllByText(/Expand Test Tooltip/i)[0]
       // @radix-ui/react-tooltip injects data-side on the closest tooltip content element
-      expect(tooltipContent.closest('[data-side]')).toHaveAttribute('data-side', 'right')
+      await waitFor(() => {
+        expect(tooltipContent.closest('[data-side]')).toHaveAttribute('data-side', 'right')
+      })
     })
 
     it('shows tooltip on left in RTL', async () => {
       await renderColumn('ar', { isCollapsed: true, collapsedLabel: 'Test Tooltip' })
       const button = screen.getByRole('button', { name: /Expand Test Tooltip/i })
       
-      fireEvent.mouseEnter(button)
-      const tooltipContent = await screen.findByText('Expand Test Tooltip')
-      expect(tooltipContent.closest('[data-side]')).toHaveAttribute('data-side', 'left')
+      fireEvent.focus(button)
+      await waitFor(() => expect(screen.getAllByText(/Expand Test Tooltip/i).length).toBeGreaterThan(0))
+      const tooltipContent = screen.getAllByText(/Expand Test Tooltip/i)[0]
+      await waitFor(() => {
+        expect(tooltipContent.closest('[data-side]')).toHaveAttribute('data-side', 'left')
+      })
     })
   })
 })

@@ -1,6 +1,5 @@
 import { render, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { DirectionProvider } from '@/components/providers/DirectionProvider'
 import { I18nProvider } from '@/components/providers/I18nProvider'
 import { i18nEvents, I18N_LANGUAGE_CHANGE_END } from '@/lib/i18n-events'
 import * as i18nModule from '@/lib/i18n'
@@ -143,13 +142,15 @@ describe('DirectionProvider', () => {
       const { rerender } = render(<TestWrapper><></></TestWrapper>)
       await waitFor(() => expect(document.documentElement.lang).toBe('en-US'))
 
+      addEventListenerSpy.mockClear()
+
       // Re-render multiple times
       rerender(<TestWrapper><></></TestWrapper>)
       rerender(<TestWrapper><></></TestWrapper>)
       rerender(<TestWrapper><></></TestWrapper>)
       await waitFor(() => expect(document.documentElement.lang).toBe('en-US'))
 
-      expect(addEventListenerSpy).toHaveBeenCalledTimes(1) // initial mount only
+      expect(addEventListenerSpy).not.toHaveBeenCalled()
 
       // Fire event - should only trigger once per re-render cycle
       i18nEvents.dispatchEvent(

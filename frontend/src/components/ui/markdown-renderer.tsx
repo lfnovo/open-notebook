@@ -101,13 +101,16 @@ export function MarkdownRenderer({ children, components = {}}: { children: React
                 <code className="bg-border rounded px-1 py-0.5" dir="ltr">{children}</code>
               )
             },
-            a: ({ node, href, children, ...props }) => (
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            a: ({ node: _node, href, children, ...props }) => (
               <a href={href} {...props} className="text-primary hover:underline break-all" dir="ltr">
                 {children}
               </a>
             ),
             pre: ({ children }) => (
-              <pre dir="ltr">{children}</pre>
+              <div dir="ltr">
+                <pre>{children}</pre>
+              </div>
             ),
           }, ...components}}
         >

@@ -68,7 +68,7 @@ export function ModelSelector({
       return defaultModel.name
     }
     return t('common.default')
-  }, [currentModel, languageModels, defaultModel, t('common.default')])
+  }, [currentModel, languageModels, defaultModel, t])
 
   const handleSave = () => {
     onModelChange(selectedModel === 'default' ? undefined : selectedModel)

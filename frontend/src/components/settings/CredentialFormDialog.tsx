@@ -86,7 +86,7 @@ export function CredentialFormDialog({
     // providerInfo keeps a stable reference for a given provider (react-query
     // caches the list for the whole session), so this only re-runs when the
     // dialog target or the fetched registry actually changes.
-  }, [credential, provider, providerInfo])
+  }, [credential, provider, providerInfo, isOmlx])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

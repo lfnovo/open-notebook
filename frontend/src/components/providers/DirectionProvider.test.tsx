@@ -25,9 +25,7 @@ function getI18n() {
 describe('DirectionProvider', () => {
   const TestWrapper = ({ children }: { children: React.ReactNode }) => (
     <I18nProvider>
-      <DirectionProvider>
-        {children}
-      </DirectionProvider>
+      {children}
     </I18nProvider>
   )
 

@@ -32,6 +32,11 @@ describe('i18next interpolation', () => {
     expect(i18n.t('podcasts.usedByCount', { count: 3 })).toBe('Used by 3 episodes')
   })
 
+  it('resolves complex plural forms in Arabic', () => {
+    expect(i18n.t('podcasts.usedByCount', { count: 2, lng: 'ar-YE' })).toBe('تُستخدم في حلقتين (2)')
+    expect(i18n.t('podcasts.usedByCount', { count: 11, lng: 'ar-YE' })).toBe('تُستخدم في 11 حلقة')
+  })
+
   it('does not escape interpolated values (React escapes at render)', () => {
     expect(i18n.t('notebooks.deleteNotebookDesc', { name: 'Research & Notes' })).toBe(
       'Are you sure you want to delete "Research & Notes"? This action cannot be undone.',

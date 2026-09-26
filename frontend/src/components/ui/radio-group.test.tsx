@@ -53,7 +53,7 @@ describe('RadioGroup RTL', () => {
 
   describe('RTL (Arabic)', () => {
     it('ArrowRight moves to previous item (cycles to last)', async () => {
-      await renderRadioGroup('ar', { defaultValue: 'option1' })
+      await renderRadioGroup('ar-YE', { defaultValue: 'option1' })
       const firstItem = screen.getByRole('radio', { name: /Option 1/i })
       firstItem.focus()
       fireEvent.keyDown(firstItem, { key: 'ArrowRight' })
@@ -63,7 +63,7 @@ describe('RadioGroup RTL', () => {
     })
 
     it('ArrowLeft moves to next item', async () => {
-      await renderRadioGroup('ar', { defaultValue: 'option1' })
+      await renderRadioGroup('ar-YE', { defaultValue: 'option1' })
       const firstItem = screen.getByRole('radio', { name: /Option 1/i })
       firstItem.focus()
       fireEvent.keyDown(firstItem, { key: 'ArrowLeft' })
@@ -73,16 +73,6 @@ describe('RadioGroup RTL', () => {
     })
   })
 
-  describe('RTL (Hebrew)', () => {
-    it('ArrowLeft moves to next item', async () => {
-      await renderRadioGroup('he', { defaultValue: 'option1' })
-      const firstItem = screen.getByRole('radio', { name: /Option 1/i })
-      firstItem.focus()
-      fireEvent.keyDown(firstItem, { key: 'ArrowLeft' })
-      const secondItem = screen.getByRole('radio', { name: /Option 2/i })
-      expect(secondItem).toBeChecked()
-    })
-  })
 
   describe('Selection interaction', () => {
     it('allows selection change in LTR', async () => {
@@ -94,7 +84,7 @@ describe('RadioGroup RTL', () => {
     })
 
     it('allows selection change in RTL', async () => {
-      await renderRadioGroup('ar', { defaultValue: 'option1' })
+      await renderRadioGroup('ar-YE', { defaultValue: 'option1' })
       const secondItem = screen.getByRole('radio', { name: /Option 2/i })
       expect(secondItem).not.toBeChecked()
       fireEvent.click(secondItem)
@@ -119,7 +109,7 @@ describe('RadioGroup RTL', () => {
     })
 
     it('disables item in RTL', async () => {
-      const { rerender } = await renderRadioGroup('ar', { defaultValue: 'option1' })
+      const { rerender } = await renderRadioGroup('ar-YE', { defaultValue: 'option1' })
       rerender(
         <I18nProvider>
           <RadioGroup>

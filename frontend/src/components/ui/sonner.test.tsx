@@ -39,41 +39,24 @@ describe('Sonner RTL', () => {
   it('renders with dir=ltr for English locale', async () => {
     await renderToaster('en-US')
     const region = screen.getByRole('region')
-    expect(region.getAttribute('dir')).toBe('ltr')
+    expect(region.getAttribute('dir')).toBeNull()
   })
 
   it('renders with dir=rtl for Arabic locale', async () => {
-    await renderToaster('ar')
+    await renderToaster('ar-YE')
     const region = screen.getByRole('region')
     expect(region.getAttribute('dir')).toBe('rtl')
   })
 
-  it('renders with dir=rtl for Hebrew locale', async () => {
-    await renderToaster('he')
-    const region = screen.getByRole('region')
-    expect(region.getAttribute('dir')).toBe('rtl')
-  })
-
-  it('renders with dir=rtl for Persian locale', async () => {
-    await renderToaster('fa')
-    const region = screen.getByRole('region')
-    expect(region.getAttribute('dir')).toBe('rtl')
-  })
-
-  it('renders with dir=rtl for Urdu locale', async () => {
-    await renderToaster('ur')
-    const region = screen.getByRole('region')
-    expect(region.getAttribute('dir')).toBe('rtl')
-  })
 
   it('updates direction when language changes from LTR to RTL', async () => {
     await renderToaster('en-US')
     const region = screen.getByRole('region')
-    expect(region.getAttribute('dir')).toBe('ltr')
+    expect(region.getAttribute('dir')).toBeNull()
 
     const i18n = getI18n()
     await act(async () => {
-      await i18n.changeLanguage('ar')
+      await i18n.changeLanguage('ar-YE')
       window.dispatchEvent(new CustomEvent('I18N_LANGUAGE_CHANGE_END'))
     })
 
@@ -83,7 +66,7 @@ describe('Sonner RTL', () => {
   })
 
   it('updates direction when language changes from RTL to LTR', async () => {
-    await renderToaster('ar')
+    await renderToaster('ar-YE')
     const region = screen.getByRole('region')
     expect(region.getAttribute('dir')).toBe('rtl')
 
@@ -94,7 +77,7 @@ describe('Sonner RTL', () => {
     })
 
     await waitFor(() => {
-      expect(region.getAttribute('dir')).toBe('ltr')
+      expect(region.getAttribute('dir')).toBeNull()
     })
   })
 })

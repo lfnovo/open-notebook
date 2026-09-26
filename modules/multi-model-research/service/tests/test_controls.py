@@ -5,6 +5,38 @@ from engine import ServiceError
 from test_workflow import engine, settle, create, add
 from workflow import STAGES
 
+
+@pytest.mark.asyncio
+async def test_maintenance_resume_preserves_attention_then_retries_only_selected_stage(engine, monkeypatch):
+    import httpx, server
+    run = await create(engine, False); rid = run['id']
+    for sid, _, rnd, _ in STAGES:
+        if rnd <= 2: await add(engine, rid, sid)
+    await settle(engine)
+    run = await engine.get(rid)
+    run['paused'] = True
+    engine.stage(run, 'synthesis_chatgpt').update(status='integrity_error', error='Unprovided URL')
+    engine.stage(run, 'synthesis_claude').update(status='research_unavailable', error='Provider refusal', attempts=4)
+    from workflow import refresh_status
+    refresh_status(run); await engine.store.save(run)
+    run = await engine.get(rid)
+    monkeypatch.setattr(server, 'ENGINE', engine)
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=server.app), base_url='http://test',
+                                headers={'Authorization': 'Bearer ' + server.KEY}) as client:
+        result = await client.post(f'/runs/{rid}/resume', json={
+            'expected_state': engine.control_snapshot(run), 'retry_attention': False})
+        assert result.status_code == 200
+    await settle(engine)
+    run = await engine.get(rid)
+    assert not run['paused'] and not engine.provider.calls
+    claude = dict(engine.stage(run, 'synthesis_claude'))
+    assert claude['status'] == 'research_unavailable' and claude['error'] == 'Provider refusal'
+    await engine.retry_stage(rid, 'synthesis_chatgpt', engine.stage_snapshot(run, engine.stage(run, 'synthesis_chatgpt')))
+    await settle(engine)
+    run = await engine.get(rid)
+    assert engine.stage(run, 'synthesis_claude') == claude
+    assert [c[0] for c in engine.provider.calls] == ['synthesis_chatgpt']
+
 async def active(engine):
     engine.provider.gates['synthesis_claude']=asyncio.Event()
     run=await create(engine)

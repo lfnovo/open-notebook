@@ -197,6 +197,8 @@ async def import_report(run_id:str,stage_id:str,text:str=Form(''),origin_url:str
 
 class ControlRequest(BaseModel):
     expected_state: dict | None = None
+    # Maintenance can release a global pause without retrying unrelated failures.
+    retry_attention: bool = True
 
 @app.post('/runs/{run_id}/stages/{stage_id}/retry')
 async def retry_stage(run_id:str,stage_id:str,body:ControlRequest | None=None):
@@ -212,7 +214,8 @@ async def stage_action(run_id:str,stage_id:str,action:str,body:ControlRequest):
 async def action(run_id:str,action:str,body:ControlRequest | None=None):
     if action=='sync':return await ENGINE.sync(run_id)
     if action=='automate' and not BROWSER:raise ServiceError('Chrome araştırma bağlantısı yapılandırılmadı.',503)
-    return await ENGINE.action(run_id,action,body.expected_state if body else None)
+    return await ENGINE.action(run_id,action,body.expected_state if body else None,
+                              retry_attention=body.retry_attention if body else True)
 
 @app.get('/runs/{run_id}/export')
 async def export(run_id:str):

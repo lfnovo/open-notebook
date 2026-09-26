@@ -741,7 +741,7 @@ class Engine(StageControls):
             refresh_status(run);await self.store.save(run)
         self.schedule_sync(run_id)
 
-    async def action(self,run_id,action,expected_state=None):
+    async def action(self,run_id,action,expected_state=None,*,retry_attention=True):
         async with self.lock:
             run=await self.get(run_id)
             self.check_control_snapshot(run,expected_state)
@@ -771,7 +771,7 @@ class Engine(StageControls):
                 if any(s['status']=='running' for s in run['stages']):raise ServiceError('Çalışan aşamalar bitmeden yeniden başlatılamaz.',409)
                 run.update(paused=False,auto_synthesize=True,control_state=None,control_error=None)
                 for stage in run['stages']:
-                    if not stage.get('control_state') and stage['mode'] in ('account','browser') and stage['status'] in ATTENTION:
+                    if retry_attention and not stage.get('control_state') and stage['mode'] in ('account','browser') and stage['status'] in ATTENTION:
                         stage.update(status='ready',error=None,retry_index=0,next_retry_at=None)
             else:raise ServiceError('Bilinmeyen işlem.')
             refresh_status(run);await self.store.save(run)

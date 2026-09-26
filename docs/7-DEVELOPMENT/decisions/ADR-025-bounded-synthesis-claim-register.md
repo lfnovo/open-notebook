@@ -157,3 +157,10 @@ this regeneration; passing structural checks is not proof of semantic equivalenc
 or factual accuracy. Regression tests cover one-shot recovery, source invention,
 missing coverage, invalid JSON, refusal, lost connections, altered provenance,
 missing receipts, pause and budget/call-limit enforcement.
+
+Maintenance releases a global pause with `retry_attention: false`, preserving
+all attention states and refusal errors. A separate stage retry with a fresh
+control snapshot selects only the artifact being recovered. Ordinary resume
+retains its existing behavior; maintenance must never implicitly retry a sibling
+provider refusal. An API regression test checks that only the selected stage
+dispatches and that the sibling state remains exactly unchanged.

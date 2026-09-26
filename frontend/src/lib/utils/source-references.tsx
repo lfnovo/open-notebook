@@ -474,7 +474,7 @@ export function createCompactReferenceLinkComponent(
     // Regular link - open in new tab
     // Force LTR on URLs/emails and use bdi to prevent bidi corruption in RTL contexts
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer" {...props} className="text-primary hover:underline break-all" dir="ltr">
+<a href={href} target="_blank" rel="noopener noreferrer" {...props} className="text-primary hover:underline break-words" dir="ltr">
         <bdi>{children}</bdi>
       </a>
     )

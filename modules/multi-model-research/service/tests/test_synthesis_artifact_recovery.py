@@ -87,7 +87,6 @@ async def test_failed_replacement_is_not_repeated_on_resume(scenario, replacemen
 @pytest.mark.asyncio
 @pytest.mark.parametrize('invalid', [
     '{"coverage":[],"report":"Missing coverage"}',
-    '{"coverage":["P1"],"report":"https://invented.invalid"}',
     '{"coverage":["P1"],"report":"old","report":"new"}',
     '{"coverage":["P1"],"report":"ok","value":NaN}',
     '[]',

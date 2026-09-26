@@ -7,6 +7,10 @@ import re
 from context_preparation import PreparationError, digest, validate_plan
 
 
+class UnprovidedSourceError(PreparationError):
+    """Valid output syntax containing an address absent from frozen evidence."""
+
+
 def boundary_references(plan, original, allowed):
     validate_plan(plan, original)
     result={};position=0
@@ -34,7 +38,7 @@ def render_references(report, fragments, allowed):
     extra=set(citations(report))-allowed
     if not extra:return report,None
     if extra-set(fragments):
-        raise PreparationError('Intermediate output introduced a source URL absent from its evidence.')
+        raise UnprovidedSourceError('Intermediate output introduced a source URL absent from its evidence.')
     rendered=report;references=[]
     for fragment in sorted(extra):
         marker='[split-source-'+digest(fragment)[:16]+']'

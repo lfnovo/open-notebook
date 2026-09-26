@@ -122,7 +122,7 @@ async def execute(engine, run, stage, prompt):
     usages=[]
     from workflow import citations
     allowed_urls=set(citations(body))
-    from synthesis_boundaries import boundary_references, render_references
+    from synthesis_boundaries import UnprovidedSourceError, boundary_references, render_references
     boundaries=boundary_references(plan,body,allowed_urls)
     async def validated_report(response,ids,claim_ids=(),key=None):
         report=parse_result(response,ids)
@@ -203,6 +203,47 @@ async def execute(engine, run, stage, prompt):
         await persist();usages.append(usage)
         return response
 
+    async def regenerate_source_report(key,request,response,ids,claim_ids):
+        # This is a new, bounded artifact generation, not URL normalization or
+        # acceptance of the invalid report. Frozen evidence and raw output stay intact.
+        retry_key=key+'-source-retry-1'
+        replacement_request=request+(
+            '\n\nSOURCE-VALIDATION RETRY: The previous artifact failed the exact source-address check. '
+            'Regenerate the requested report using only the unchanged evidence above. '
+            'Copy source URLs exactly as supplied. Do not infer version suffixes, change trailing '
+            'slashes, complete partial addresses, or invent links from a title or version label. '
+            'If an exact version URL is absent, say that its address was not supplied; retain the '
+            'original uncertainty, conditions, conflicting findings and evidence limitations. '
+            'Do not remove substantive findings merely to avoid citations. Keep the required JSON '
+            'schema and all coverage and claim identifiers. This instruction supplies no new evidence.\n')
+        records=state.setdefault('source_regenerations',{})
+        record={'kind':'unprovided-source-regeneration-v1','original_job':key,
+                'original_response_sha256':digest(response),'original_input_sha256':digest(request),
+                'replacement_job':retry_key,'replacement_input_sha256':digest(replacement_request)}
+        if key in records:
+            if any(records[key].get(k)!=v for k,v in record.items()):
+                raise PreparationError('The saved source regeneration provenance changed.')
+            record=records[key]
+        else:
+            recover=getattr(engine.provider,'recover',None)
+            if not callable(recover):
+                raise PreparationError('Source regeneration requires a confirmed durable receipt.')
+            job=state['jobs'][key]
+            child=dict(stage,request_id=job['request_id'])
+            recovered,_=await recover(child,request)
+            if digest(recovered)!=digest(response):
+                raise PreparationError('The completed source artifact receipt changed.')
+            records[key]=record
+            await persist()
+        replacement=await raw_call(retry_key,replacement_request,ids,regeneration=True)
+        replacement_sha=digest(replacement)
+        if record.get('replacement_response_sha256',replacement_sha)!=replacement_sha:
+            raise PreparationError('The saved source regeneration response changed.')
+        record['replacement_response_sha256']=replacement_sha
+        await persist()
+        # No recursive regeneration, JSON fallback, source relaxation or refusal retry.
+        return await validated_report(replacement,ids,claim_ids,retry_key)
+
     async def call(key, data, ids, final=False,claim_ids=()):
         from review_execution import retain_recovered_artifact, retained_artifact
         request=request_text(data,ids,final,claim_ids)
@@ -214,6 +255,8 @@ async def execute(engine, run, stage, prompt):
             return await validated_report(response,ids,claim_ids,key)
         try:
             return await validated_report(response,ids,claim_ids,key)
+        except UnprovidedSourceError:
+            return await regenerate_source_report(key,request,response,ids,claim_ids)
         except PreparationError as exc:
             if stage.get('provider')!='Claude' or not isinstance(exc.__cause__,json.JSONDecodeError):
                 raise
@@ -282,6 +325,9 @@ async def execute(engine, run, stage, prompt):
                 if state.get('artifact_regenerations'):
                     usage['artifact_regenerations']=list(state['artifact_regenerations'].values())
                     result+='\n\n## Provider artifact note / Sağlayıcı çıktı notu\n\nOne or more intermediate artifacts were regenerated once from their exact frozen inputs after invalid provider JSON. This is not reconstruction of lost output or a claim of semantic equivalence. Original and replacement responses remain saved and the same coverage and source checks apply. Geçersiz ara çıktılar aynı özgün girdiden bir kez yeniden üretildi; eski ve yeni yanıtlar korundu.\n'
+                if state.get('source_regenerations'):
+                    usage['source_regenerations']=list(state['source_regenerations'].values())
+                    result+='\n\n## Source-validation recovery / Kaynak doğrulama kurtarması\n\nAn intermediate artifact was regenerated once after introducing an address absent from the frozen evidence. The evidence was unchanged; the replacement received an explicit exact-address instruction and passed the same checks. Both responses remain saved. This is not proof of semantic equivalence or factual accuracy. Kaynak adresi denetiminden geçmeyen ara çıktı bir kez yeniden üretildi; özgün kanıt ve iki yanıt korundu.\n'
                 if plan.get('register_mode'):
                     usage.update(register_claim_ids=claim_ids,register_sha256=registry.catalog(plan['protected_register'])['full_register_sha256'])
                     result+='\n\n## Claim-register scope / İddia kaydının kapsamı\n\n'+registry.parent_register(plan)['notice']+'\n\nTam iddia kayıtları ayrı gruplarda incelendi. Özgün kayıtlar ve ara yanıtlar saklanır; son anlatım tüm ham kayıtları tek seferde görmedi. Kapsam kontrolü anlamsal eksiksizlik veya doğruluk garantisi değildir.\n'

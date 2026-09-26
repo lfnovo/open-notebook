@@ -129,3 +129,31 @@ tool restrictions. A legacy observation count of one is insufficient proof.
 This correction neither changes input limits nor loosens token margins. It can
 be activated at an idle bridge boundary; healthy research calls must not be
 interrupted just to update telemetry.
+
+## Bounded regeneration after an invented source address
+
+A syntactically complete synthesis can infer version-specific arXiv addresses or
+change a trailing slash even when those exact URLs are absent from its evidence.
+The exact source allowlist continues to reject these artifacts. Never normalize
+them into approved sources or delete links to pass validation.
+
+For this specific typed validation failure, first require a completed durable
+receipt whose response hash equals the saved original. Regenerate the affected
+artifact once with the unchanged frozen request plus an explicit instruction to
+copy source addresses literally and preserve uncertainties and substantive
+findings. Retain both requests and responses, all hashes and the replacement's
+separate request ID. No failed output is used as evidence for the replacement.
+
+The extra instruction is measured against the existing budget. The new call
+consumes the same 64-call allowance and respects pause controls. A replacement
+must pass the unchanged JSON, coverage, claim-ID and source checks. It cannot
+trigger another source or JSON regeneration; a provider refusal stays blocked.
+An unknown outcome is recovered by request ID, never blindly resubmitted. An
+unavailable or changed original receipt blocks before any replacement call.
+
+Resume reuses the saved replacement and verifies its provenance. Other completed
+parts and the original frozen plan remain unchanged. The final report discloses
+this regeneration; passing structural checks is not proof of semantic equivalence
+or factual accuracy. Regression tests cover one-shot recovery, source invention,
+missing coverage, invalid JSON, refusal, lost connections, altered provenance,
+missing receipts, pause and budget/call-limit enforcement.

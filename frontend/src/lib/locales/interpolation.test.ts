@@ -33,8 +33,12 @@ describe('i18next interpolation', () => {
   })
 
   it('resolves complex plural forms in Arabic', () => {
+    expect(i18n.t('podcasts.usedByCount', { count: 0, lng: 'ar-YE' })).toBe('لا تُستخدم في أي حلقة')
+    expect(i18n.t('podcasts.usedByCount', { count: 1, lng: 'ar-YE' })).toBe('تُستخدم في حلقة واحدة')
     expect(i18n.t('podcasts.usedByCount', { count: 2, lng: 'ar-YE' })).toBe('تُستخدم في حلقتين')
+    expect(i18n.t('podcasts.usedByCount', { count: 3, lng: 'ar-YE' })).toBe('تُستخدم في 3 حلقات')
     expect(i18n.t('podcasts.usedByCount', { count: 11, lng: 'ar-YE' })).toBe('تُستخدم في 11 حلقة')
+    expect(i18n.t('podcasts.usedByCount', { count: 100, lng: 'ar-YE' })).toBe('تُستخدم في 100 حلقة')
   })
 
   it('does not escape interpolated values (React escapes at render)', () => {

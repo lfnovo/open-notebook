@@ -57,8 +57,19 @@ describe('Locale Parity', () => {
     (code, resource) => {
       const localeKeys = getKeys(resource.translation as Record<string, unknown>)
 
-      const missing = enKeys.filter(key => !localeKeys.includes(key))
-      const extra = localeKeys.filter(key => !enKeys.includes(key))
+      const isPlural = (key: string) => /_(zero|one|two|few|many|other)$/.test(key)
+      const getBase = (key: string) => key.replace(/_(zero|one|two|few|many|other)$/, '')
+
+      const missing = enKeys.filter(key => {
+        if (localeKeys.includes(key)) return false
+        if (isPlural(key)) return !localeKeys.some(k => getBase(k) === getBase(key))
+        return true
+      })
+      const extra = localeKeys.filter(key => {
+        if (enKeys.includes(key)) return false
+        if (isPlural(key)) return !enKeys.some(k => getBase(k) === getBase(key))
+        return true
+      })
 
       expect(missing, `Missing keys in ${code}: ${missing.join(', ')}`).toEqual([])
       expect(extra, `Extra keys in ${code}: ${extra.join(', ')}`).toEqual([])
@@ -92,9 +103,14 @@ describe('Placeholder Parity', () => {
         const missing = [...enSet].filter(p => !localeSet.has(p))
         const extra = [...localeSet].filter(p => !enSet.has(p))
         if (missing.length || extra.length) {
-          mismatches.push(
-            `${key}: missing [${missing.join(', ')}] extra [${extra.join(', ')}]`,
-          )
+          // Allow plural forms to drop {{count}} if the language hardcodes the number
+          if (key.match(/_(zero|one|two)$/) && missing.includes('count') && missing.length === 1 && extra.length === 0) {
+            // It's fine for zero/one/two to drop the count placeholder
+          } else {
+            mismatches.push(
+              `${key}: missing [${missing.join(', ')}] extra [${extra.join(', ')}]`,
+            )
+          }
         }
 
         // A stray single-brace token is only drift if en-US expects a

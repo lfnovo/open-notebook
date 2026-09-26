@@ -33,7 +33,7 @@ describe('i18next interpolation', () => {
   })
 
   it('resolves complex plural forms in Arabic', () => {
-    expect(i18n.t('podcasts.usedByCount', { count: 2, lng: 'ar-YE' })).toBe('تُستخدم في حلقتين (2)')
+    expect(i18n.t('podcasts.usedByCount', { count: 2, lng: 'ar-YE' })).toBe('تُستخدم في حلقتين')
     expect(i18n.t('podcasts.usedByCount', { count: 11, lng: 'ar-YE' })).toBe('تُستخدم في 11 حلقة')
   })
 

@@ -4,6 +4,8 @@ import { CollapsibleColumn } from './CollapsibleColumn'
 import { I18nProvider } from '@/components/providers/I18nProvider'
 import * as i18nModule from '@/lib/i18n'
 import { ChevronLeft } from 'lucide-react'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { i18nEvents, I18N_LANGUAGE_CHANGE_END } from '@/lib/i18n-events'
 
 beforeAll(() => {
   global.ResizeObserver = class {
@@ -28,10 +30,6 @@ afterEach(() => {
 function getI18n() {
   return i18nModule.default
 }
-
-import { TooltipProvider } from '@/components/ui/tooltip'
-
-import { i18nEvents, I18N_LANGUAGE_CHANGE_END } from '@/lib/i18n-events'
 
 const renderColumn = async (locale = 'en-US', props = {}) => {
   const i18n = getI18n()

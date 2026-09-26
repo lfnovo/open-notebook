@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { I18nProvider } from '@/components/providers/I18nProvider'
 import * as i18nModule from '@/lib/i18n'
+import { i18nEvents, I18N_LANGUAGE_CHANGE_END } from '@/lib/i18n-events'
 
 beforeEach(() => {
   document.documentElement.dir = 'ltr'
@@ -18,8 +19,6 @@ afterEach(() => {
 function getI18n() {
   return i18nModule.default
 }
-
-import { i18nEvents, I18N_LANGUAGE_CHANGE_END } from '@/lib/i18n-events'
 
 const renderRadioGroup = async (locale = 'en-US', props = {}) => {
   const i18n = getI18n()

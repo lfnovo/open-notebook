@@ -10,6 +10,7 @@ from context_preparation import (VERSION, PreparationError, digest, envelope, pa
                                  plan_segments, render_segment, result_instructions, validate_plan)
 from packet_markdown import evidence_body
 import synthesis_register as registry
+import synthesis_parent_transport as parent_transport
 
 
 def task_prefix(prompt):
@@ -301,25 +302,51 @@ async def execute(engine, run, stage, prompt):
         for batch in plan.get('register_parts',[]):
             result=await call('register-'+batch['id'],registry.render_batch(batch),[batch['id']],claim_ids=batch['claim_ids'])
             nodes.append({'ids':[batch['id']],'report':result,'claim_ids':batch['claim_ids']})
+        # Preserve previously sent parents. Only unsent work can adopt another
+        # reversible transport; the evidence plan and admission margins stay fixed.
+        packed_mode = bool(state.get('parent_transport'))
+        if not packed_mode and not any(k.startswith('final-') or
+                (k.startswith('reduce-') and not k.startswith('reduce-0-')) for k in state['jobs']):
+            ids=[i for n in nodes for i in n['ids']]; claims=registry.node_claim_ids(nodes)
+            raw=parent_transport.legacy(parent_transport.payload(plan,nodes))
+            original_budget=engine.measure_input(request_text(raw,ids,stage['round']==4,claims),stage)
+            if original_budget['utilization']>.95:
+                packed=parent_transport.packed(parent_transport.payload(plan,nodes))
+                packed_mode=engine.measure_input(request_text(packed,ids,stage['round']==4,claims),stage)['utilization'] < original_budget['utilization']
+        if packed_mode:
+            nodes=await parent_transport.adopt_legacy(state,plan,nodes,call)
+            seed={'version':parent_transport.VERSION,'nodes_sha256':digest(registry.encoded(nodes)),
+                  'legacy_keys':[k for k in state['jobs'] if k.startswith('reduce-0-') and k[9:].isdigit()]}
+            if state.get('parent_transport',seed)!=seed:
+                raise PreparationError('Saved parent transport seed changed.')
+            state['parent_transport']=seed
+            await persist()
         for depth in range(4):
             ids=[ident for n in nodes for ident in n['ids']]
             claim_ids=registry.node_claim_ids(nodes)
-            def data(group):
-                return envelope(json.dumps({'source_sha256':plan['source_sha256'],
-                    'notice':'Intermediate findings from exhaustive source parts; these are not the original full evidence.',
-                    'evidence_register':registry.parent_register(plan),
-                    'source_inventory':plan.get('source_inventory',[]),'findings':group},ensure_ascii=False,separators=(',',':')))
+            def data(group,partial=False):
+                value=parent_transport.payload(plan,group,partial=packed_mode and partial)
+                return parent_transport.packed(value) if packed_mode else parent_transport.legacy(value)
             merged=data(nodes)
             if engine.measure_input(request_text(merged,ids,stage['round']==4,claim_ids),stage)['utilization']<=.95:
                 if plan.get('register_mode') and set(claim_ids)!={c['id'] for c in plan['protected_register']['claims']}:
                     raise PreparationError('Final synthesis omitted a complete claim-record batch.')
-                result=await call('final-'+str(depth),merged,ids,final=stage['round']==4,claim_ids=claim_ids)
+                key=('packed-final-' if packed_mode else 'final-')+str(depth)
+                if packed_mode:
+                    parent_transport.pin_level(state,depth,nodes,[nodes],[request_text(merged,ids,stage['round']==4,claim_ids)])
+                    parent_transport.reserve_calls(state,[key],final=True)
+                    await persist()
+                result=await call(key,merged,ids,final=stage['round']==4,claim_ids=claim_ids)
                 async with engine.lock:
                     latest=await engine.get(run['id']);current=engine.stage(latest,stage['id'])
                     current['preparation']=dict(summary(plan),status='completed',completed_calls=len(state['jobs']))
                     await engine.store.save(latest)
                 usage={'segmented':True,'calls':len(usages),'measurements':usages,
                        'coverage':ids,'source_sha256':plan['source_sha256']}
+                if packed_mode:
+                    usage['parent_transport']=state['parent_transport']
+                    usage['parent_transport_levels']=state['parent_transport_levels']
+                    result+='\n\n## Parent transport / Birleştirme taşıması\n\nRepeated metadata was encoded reversibly with an in-band dictionary. Each decoded parent payload was checked against its complete original before submission. This proves byte-preserving reconstruction of the structured payload, not model comprehension or factual accuracy. All original reports and request receipts remain saved.\n'
                 if state.get('boundary_renderings'):
                     usage['boundary_renderings']=state['boundary_renderings']
                 if state.get('artifact_regenerations'):
@@ -335,15 +362,23 @@ async def execute(engine, run, stage, prompt):
             groups=[];group=[]
             for node in nodes:
                 trial=group+[node];covered=[i for n in trial for i in n['ids']]
-                if group and engine.measure_input(request_text(data(trial),covered,claim_ids=registry.node_claim_ids(trial)),stage)['utilization']>.7:
+                if group and engine.measure_input(request_text(data(trial,partial=True),covered,claim_ids=registry.node_claim_ids(trial)),stage)['utilization']>.7:
                     groups.append(group);group=[]
                 group.append(node)
             if group:groups.append(group)
+            if packed_mode:
+                requests=[request_text(data(g,partial=True),[i for n in g for i in n['ids']],claim_ids=registry.node_claim_ids(g)) for g in groups]
+                if any(engine.measure_input(text,stage)['utilization']>.7 for text in requests):
+                    raise PreparationError('An indivisible parent exceeds reduction headroom; nothing was removed.')
+                parent_transport.pin_level(state,depth,nodes,groups,requests)
+                parent_transport.reserve_calls(state,[f'packed-reduce-{depth}-{i}' for i in range(len(groups))])
+                await persist()
             next_nodes=[]
             for index,group in enumerate(groups):
                 ids=[i for n in group for i in n['ids']]
                 claim_ids=registry.node_claim_ids(group)
-                result=await call(f'reduce-{depth}-{index}',data(group),ids,claim_ids=claim_ids)
+                key=f'packed-reduce-{depth}-{index}' if packed_mode else f'reduce-{depth}-{index}'
+                result=await call(key,data(group,partial=True),ids,claim_ids=claim_ids)
                 node={'ids':ids,'report':result}
                 if claim_ids:node['claim_ids']=claim_ids
                 next_nodes.append(node)

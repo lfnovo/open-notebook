@@ -103,11 +103,12 @@ function DefaultModelSelect({
           </SelectContent>
         </Select>
         {!config.required && currentValue && (
-          <Button variant="ghost" size="icon" onClick={() => onChange(config.key, "")} className="h-8 w-8 shrink-0">
+          <Button variant="ghost" size="icon" onClick={() => onChange(config.key, "")} aria-label={t('models.assignmentClear', { model: config.label })} className="h-8 w-8 shrink-0">
             <X className="h-3 w-3" />
           </Button>
         )}
       </div>
+      {currentValue && !isValid && <p className="text-xs text-destructive">{t('models.assignmentUnavailable')}</p>}
       {emptyOptionalHint && (
         <p className="text-[10px] text-muted-foreground leading-tight italic">{emptyOptionalHint}</p>
       )}
@@ -249,6 +250,9 @@ export function DefaultModelSelectors({
               ))}
             </div>
         </div>
+        <p role="status" aria-live="polite" className="text-xs text-muted-foreground">
+          {updateDefaults.isPending || autoAssign.isPending ? t('common.saving') : updateDefaults.isError || autoAssign.isError ? t('models.assignmentSaveFailed') : t('models.assignmentAutoSave')}
+        </p>
       </CardContent>
 
       <EmbeddingModelChangeDialog

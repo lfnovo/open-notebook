@@ -1,0 +1,9 @@
+{
+  "root": "/Users/USERNAME/Documents",
+  "exclude": [],
+  "embedding_model": "embeddinggemma:300m-qat-q8_0",
+  "ollama_url": "http://127.0.0.1:11434",
+  "scan_interval": 600,
+  "max_content_bytes": 268435456,
+  "document_timeout_seconds": 240
+}

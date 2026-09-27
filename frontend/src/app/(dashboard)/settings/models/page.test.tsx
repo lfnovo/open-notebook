@@ -7,7 +7,7 @@ import { Credential } from '@/lib/api/credentials'
 // useTranslation is mocked globally in setup.ts (t returns the key string)
 
 vi.mock('@/components/layout/AppShell', () => ({
-  AppShell: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  ResponsiveAppShell: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
 
 vi.mock('@/components/settings', () => ({

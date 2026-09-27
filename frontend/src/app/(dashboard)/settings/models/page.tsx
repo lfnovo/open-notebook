@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { AppShell } from '@/components/layout/AppShell'
+import { ResponsiveAppShell as AppShell } from '@/components/layout/AppShell'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Key, ShieldAlert, AlertCircle } from 'lucide-react'

@@ -1,0 +1,274 @@
+[
+  {
+    "target": "frontend/src/app/layout.tsx",
+    "sha256_before": "8ce99a0dbc2990b73a4ad80b8d9361dc1bab91733c414e2ad03cf285e5727c64"
+  },
+  {
+    "target": "frontend/src/app/globals.css",
+    "sha256_before": "d525dafddd426893e8e407cd2c64b8c51b78589eee64b2d23f50b77ac1d4ec02"
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/advanced/page.tsx",
+    "sha256_before": "17395fd3ad08baa3101e99437f1313f43741ebbd130ada247bc890b4e79bb68d"
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/advanced/components/SystemInfo.tsx",
+    "sha256_before": "ef2ac132f5c32044017ef2b4a36ed66e722de8206f8bab49eb891db8f75208c0"
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/advanced/components/RebuildEmbeddings.tsx",
+    "sha256_before": "d1567345f9451b58ab19e68fd50920d890a3490f539c5d37bc29b4337234c6a8"
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/settings/api-keys/page.tsx",
+    "sha256_before": null
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/transformations/page.tsx",
+    "sha256_before": "cd995ab621bbf8b3a762cae1142bfbe4a11a7bbe12658fc4aa87bbd7a2d4c13e"
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/transformations/components/TransformationCard.tsx",
+    "sha256_before": "f8658abbf6ae0a2a5012c4c6e4fbfc33d1b9c00f50af477e5a1103a9b9f518a9"
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/transformations/components/TransformationEditorDialog.tsx",
+    "sha256_before": "695dde49468821a3aade7e322e8ae207cecdf5b52e78d2e24c8f2c3e2d828422"
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/transformations/components/TransformationsList.tsx",
+    "sha256_before": "60241aedd9dbf6f5936769151ff89500599ddd90e54d7447b0323ae9a88158ee"
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/podcasts/page.tsx",
+    "sha256_before": "a31c5a3d429bd5e4ba0f1f2f3c5ef8290189adfbd1415b4a6a4712755cd8db9f"
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/notebooks/page.tsx",
+    "sha256_before": "3c3c2c1dfb8257a5f58cdd7ca301660255cf6c343ae9961ef8bb576ae7aefc60"
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/notebooks/components/NotesColumn.tsx",
+    "sha256_before": "2114d2b61114864cfd412321ce872d771d8b6092459aa53708f39fdb90d3769d"
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/notebooks/components/NotebookHeader.tsx",
+    "sha256_before": "b53bca2bc1ebecff48d868d341ad73c30d57d96bb24fa2aa414975e0d2160c8b"
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/notebooks/components/NotebookList.tsx",
+    "sha256_before": "5a7f0032609c70a14ee55ddafe96a045b5d939d9e02975b9f3cddd43f65b54a2"
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/notebooks/components/SourcesColumn.tsx",
+    "sha256_before": "f28923f3bc11680587ca7e12e940a77dc08d8a4db894a13137ce2af5a8ea7359"
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/notebooks/components/NotebookRow.tsx",
+    "sha256_before": "3fb58dbddd9264b86921810270d3a930bf6d38ddb9ee2528680ec9e5afac818f"
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/notebooks/components/NotebookCard.tsx",
+    "sha256_before": "24074491755d4ab5d27f38d56273ec1d0a58f495a5e5d7c745bb3ce64c051bca"
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/notebooks/components/NoteEditorDialog.tsx",
+    "sha256_before": "70e5a98af81cb0ce51e54c7216be44f7ed7c09e5cb8387df68f44ccb50f88e07"
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/notebooks/components/RecentlyViewed.tsx",
+    "sha256_before": "c7ce2d6f10cddc14c22f676e0249771b0dba88a3a119f790add209682658b45f"
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/notebooks/components/NotebookDeleteDialog.tsx",
+    "sha256_before": "4e4bdc713c0e0ae82b63a4636da4028eb57cac976b2dd91a8ebabee9d6fb418b"
+  },
+  {
+    "target": "frontend/src/components/ui/alert-dialog.tsx",
+    "sha256_before": "8dfbf3605f520424e8ba442ccc509f4da89bad35b6223d1bcc00c290170b900d"
+  },
+  {
+    "target": "frontend/src/components/ui/tabs.tsx",
+    "sha256_before": "c7aa9ee312ba6158bf61a75f2cf261c3fbfb5b9ee94ccaf667f9632c9892179a"
+  },
+  {
+    "target": "frontend/src/components/ui/card.tsx",
+    "sha256_before": "038742671edc270b1556132f554a2e9861cb49de5b207e84da093ac3a84856e9"
+  },
+  {
+    "target": "frontend/src/components/ui/popover.tsx",
+    "sha256_before": "491c5c1ab9973edb9d149c2171d7cccb775a7832f2b159b6370d721c1996f4e9"
+  },
+  {
+    "target": "frontend/src/components/ui/markdown-renderer.tsx",
+    "sha256_before": "5ab9f2e44b39d80aee79e9675a3682827090e97ea135a2d6cb680f6970e6d888"
+  },
+  {
+    "target": "frontend/src/components/ui/tooltip.tsx",
+    "sha256_before": "cbc12f4086448f8a307ed5fbb160f79467c84a44c48ca0dbd2c62e39a2db6f5d"
+  },
+  {
+    "target": "frontend/src/components/ui/dialog.tsx",
+    "sha256_before": "9b1b26b6c431675e61e257745542da23f41d0946e0d77b48e9422122ffa9f5d7"
+  },
+  {
+    "target": "frontend/src/components/ui/badge.tsx",
+    "sha256_before": "5038a257a6286aad4ac7e0fa7ac7f115ff000184419b52629eb928490f0dd21e"
+  },
+  {
+    "target": "frontend/src/components/ui/button.tsx",
+    "sha256_before": "3c823a0031e96e0308db255549eb649eceee2ba57d9a2fbf48fe3c6614d76592"
+  },
+  {
+    "target": "frontend/src/components/ui/dropdown-menu.tsx",
+    "sha256_before": "aa816280c7dafcfafd301cad6db270f9c5e94389523160822a430f50161a2764"
+  },
+  {
+    "target": "frontend/src/components/ui/select.tsx",
+    "sha256_before": "05a20dd03339f58ea6f91037e734f414c4e91c861f49d6b9a255a54b943da57d"
+  },
+  {
+    "target": "frontend/src/components/ui/textarea.tsx",
+    "sha256_before": "1d2ae936f0f643c6537be972df36787caf83f653acde0b0428fd42d0798467b2"
+  },
+  {
+    "target": "frontend/src/components/ui/input.tsx",
+    "sha256_before": "2da309982d1db9aa50c13ace70cd42bfb86efc92beb8dd04315977beb24cb171"
+  },
+  {
+    "target": "frontend/src/components/settings/MigrationBanner.tsx",
+    "sha256_before": "d2f76cfe6e47eecdb1dd98a99bf1496086975353c25b4181a81a1f11aca0d756"
+  },
+  {
+    "target": "frontend/src/components/settings/CredentialItem.tsx",
+    "sha256_before": "3a96fbd34c10521d01e7ed0c16b4d8d83b49d532d977ff9edc4e006a3f0e2ba9"
+  },
+  {
+    "target": "frontend/src/components/settings/ModelTestResultDialog.tsx",
+    "sha256_before": "e9ed62dbbff222ebb74d3d9d1b4247c6a74a222f3c9adcb1e88593fe03275962"
+  },
+  {
+    "target": "frontend/src/components/settings/EmbeddingModelChangeDialog.tsx",
+    "sha256_before": "f5e416ebbf2073f2d5e1165b1270481b315082e8893f9d0d6714004b57fd8c1d"
+  },
+  {
+    "target": "frontend/src/components/settings/ProviderSection.tsx",
+    "sha256_before": "97c30b8b34a87a4a33d06f3c8df7ef6262ada6aff9ef691710ff4b6e24156d42"
+  },
+  {
+    "target": "frontend/src/components/auth/LoginForm.tsx",
+    "sha256_before": "4d15b876feb15f37e275c88cb6bf5057fc3f13d495a8bd331f659a0209b4ee04"
+  },
+  {
+    "target": "frontend/src/components/layout/SetupBanner.tsx",
+    "sha256_before": "18e20ed86787e6c0d2b9311e2b90b6c9c8ec9218e1659b03b0f8a7f46714d297"
+  },
+  {
+    "target": "frontend/src/components/layout/AppSidebar.tsx",
+    "sha256_before": "63697b258f9774671b1dcc4e22744cf54bf31830d55ae6cb2b49f19593bf9d4c"
+  },
+  {
+    "target": "frontend/src/components/podcasts/TemplatesTab.tsx",
+    "sha256_before": "095219c713024a8809acf0139e0c363843957e4c154556b8530c2335f4ca742e"
+  },
+  {
+    "target": "frontend/src/components/podcasts/EpisodeProfilesPanel.tsx",
+    "sha256_before": "1b0bbe61de5683da04840537c489b1ab2fb5acf241408494ee85f7c9298d170a"
+  },
+  {
+    "target": "frontend/src/components/podcasts/EpisodeCard.tsx",
+    "sha256_before": "237fd592332d3a930f381e9e9916810fcf6ab665e10617f9b95df8ad9bf52c98"
+  },
+  {
+    "target": "frontend/src/components/podcasts/SpeakerProfilesPanel.tsx",
+    "sha256_before": "a54a3f85c3f11dedba04c9224f81a7d53fc3a60af9d5eb6b49d641a38530c2ef"
+  },
+  {
+    "target": "frontend/src/components/podcasts/EpisodesTab.tsx",
+    "sha256_before": "363cabb6d440123a31739cfe03681472939768f83520ac9bff5d44ecddedfc78"
+  },
+  {
+    "target": "frontend/src/components/podcasts/forms/EpisodeProfileFormDialog.tsx",
+    "sha256_before": "182d33f7652faadb8179f99d1fe6477060a9febbe29708c41a406c8bc1b73157"
+  },
+  {
+    "target": "frontend/src/components/podcasts/forms/SpeakerProfileFormDialog.tsx",
+    "sha256_before": "9aa7067e1dbd7c0c49eec12ae73e3166479e62b083b9731c290c190f470d6966"
+  },
+  {
+    "target": "frontend/src/components/search/StreamingResponse.tsx",
+    "sha256_before": "c051ebc29cc3fd3753d1054154646d39dd411400a0e3a805b9053cd1ea93bce0"
+  },
+  {
+    "target": "frontend/src/components/common/ConfirmDialog.tsx",
+    "sha256_before": "4be5a34602a12e74446abc46cc751e3f2a93932a6274f25688188fdc8b0d9fa2"
+  },
+  {
+    "target": "frontend/src/components/common/ContextIndicator.tsx",
+    "sha256_before": "4de3db9b43b5676ac8c77a35243ca3bf780d21a02920dc5d39c361fd4b9875d8"
+  },
+  {
+    "target": "frontend/src/components/common/ContextToggle.tsx",
+    "sha256_before": "93280591f5a6ab23ad06f9f2e115ee9b561bc6c527d15318f64f632e7154e9e2"
+  },
+  {
+    "target": "frontend/src/components/common/CommandPalette.tsx",
+    "sha256_before": "b527c8887de778383e4abb9d507edb94365aac07e9efeaa36544e8bc27d64455"
+  },
+  {
+    "target": "frontend/src/components/common/ErrorBoundary.tsx",
+    "sha256_before": "1082c03ec92484c30ead3ecf2dd55fb013a5b9351a3472e7782a73025ec0c2f8"
+  },
+  {
+    "target": "frontend/src/components/sources/MessageActions.tsx",
+    "sha256_before": "945b010a43d5d4330bcd21c52cff0f919df17ee67906e3704cec7fd0dce33f63"
+  },
+  {
+    "target": "frontend/src/components/sources/AddSourceDialog.tsx",
+    "sha256_before": "c6172e96e6615d3ca89a89f8812af09eb0a24c5407b90b69ead12176f2f12fca"
+  },
+  {
+    "target": "frontend/src/components/sources/SourceDialog.tsx",
+    "sha256_before": "c259226e0380423428d117f76ff0a80af9c5b9ff77f82cab9b410e59270674fc"
+  },
+  {
+    "target": "frontend/src/components/sources/SourceDetailContent.tsx",
+    "sha256_before": "1e09ebbb16ac3c2af847db9a3c5d4baf66a31dd78d52df73d571fad7f86084e0"
+  },
+  {
+    "target": "frontend/src/components/sources/ChatPanel.tsx",
+    "sha256_before": "cb9b0b9b70bdef02a0deea6edc01cdcb98fcbeff050306283784f0d3f05d3227"
+  },
+  {
+    "target": "frontend/src/components/sources/NotebookAssociations.tsx",
+    "sha256_before": "c2e90c267ab93a6e600214be9a1678ded14a4bc6b0a37eb928d5adf1a43db7cb"
+  },
+  {
+    "target": "frontend/src/components/sources/SourceCard.tsx",
+    "sha256_before": "19ea4854f20a5125c78cc50068bd657800ce48b4a5081a9c21e94761a3630024"
+  },
+  {
+    "target": "frontend/src/components/sources/SourceInsightDialog.tsx",
+    "sha256_before": "e52edd92137ff4ee4cc4d1d26658219bf22eca9c6b0b9807cbc9e9d1c7ff7d7b"
+  },
+  {
+    "target": "frontend/src/components/sources/steps/ProcessingStep.tsx",
+    "sha256_before": "ee22d0a0d8aa2da2499acf9f3c14a65905aab50de145cdad99e3de57ea7e4c67"
+  },
+  {
+    "target": "frontend/src/components/sources/steps/SourceTypeStep.tsx",
+    "sha256_before": "c57bfccb85c36788444420cd377cf583bab823f2e176e8ad2ba4e1c8a39d9523"
+  },
+  {
+    "target": "frontend/src/lib/providers.tsx",
+    "sha256_before": "c2575ae8b9b7a6d16a6bb4b377757e861e29bcdc8264a830ff292355f64d186d"
+  },
+  {
+    "target": "frontend/src/components/settings/DefaultModelSelectors.tsx",
+    "sha256_before": "079f769b14069b611d9730f8704d1e5241c2c7508a5b9ecb94147226804728e3"
+  },
+  {
+    "target": "frontend/src/components/settings/DefaultModelSelectors.test.tsx",
+    "sha256_before": null
+  }
+]

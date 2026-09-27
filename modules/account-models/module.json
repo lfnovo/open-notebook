@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "id": "account-models",
+  "name": "Account models",
+  "description": "Local authenticated CLI adapters for ChatGPT, Claude and Gemini.",
+  "version": "0.1.0",
+  "author": "karacaismail",
+  "activation": "external",
+  "dependencies": [],
+  "settings": [
+    {
+      "key": "timeout_seconds",
+      "kind": "integer",
+      "default": 3900,
+      "label_key": "modules.fields.timeout",
+      "help_key": "modules.fields.timeoutHelp",
+      "minimum": 30,
+      "maximum": 7200
+    }
+  ],
+  "model_policies": [
+    {
+      "provider": "openai_compatible",
+      "model_type": "language",
+      "names": [
+        "chatgpt-account",
+        "claude-account",
+        "gemini-account"
+      ],
+      "config": {
+        "timeout": "timeout_seconds"
+      }
+    }
+  ]
+}

@@ -52,3 +52,15 @@ What this makes easier, what it makes harder, what to watch. (bullets)
 | [ADR-008](ADR-008-notebook-scoped-search.md) | Notebook scope is an optional filter on the existing search functions | Accepted |
 | [PDR-001](PDR-001-single-user-first.md) | Single-user first; don't preclude multi-user | Accepted |
 | [PDR-002](PDR-002-provider-agnostic-core.md) | Provider-agnostic core by default | Accepted |
+
+- [ADR-009: Module contracts and settings](ADR-009-module-contracts-and-settings.md) — module lifecycle, public ports, MVVM and migration boundaries.
+- [ADR-010: Lossless research packets](ADR-010-lossless-research-packets.md) — full evidence, explicit account transport and input-budget forecasts.
+
+- [ADR-011: Research ECA rules and measured token accounting](ADR-011-research-eca-rules.md)
+- [ADR-012: Optional local hybrid search](ADR-012-hybrid-search.md)
+- [ADR-013: Verified evidence preparation](ADR-013-evidence-preparation.md) — reversible references, exhaustive input partitions and durable account synthesis.
+
+- [ADR-014: Account-based re-research](ADR-014-account-research-again.md) — shared evidence parts, fresh source checks and durable reconciliation.
+- [ADR-015: Research brief files](ADR-015-research-brief-files.md) — complete text and validated multiple-document input.
+- [ADR-016: Explicit research skip](ADR-016-explicit-research-skip.md) — optional contributions, preserved evidence and quota-aware continuation.
+- [ADR-027: Bounded index publication](ADR-027-bounded-index-publication.md) — staged passage writes and complete-document retrieval.

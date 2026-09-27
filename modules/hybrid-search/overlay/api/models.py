@@ -1,0 +1,825 @@
+from typing import Any, Dict, List, Literal, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+
+# Notebook models
+class NotebookCreate(BaseModel):
+    name: str = Field(..., description="Name of the notebook")
+    description: str = Field(default="", description="Description of the notebook")
+
+
+class NotebookUpdate(BaseModel):
+    name: Optional[str] = Field(None, description="Name of the notebook")
+    description: Optional[str] = Field(None, description="Description of the notebook")
+    archived: Optional[bool] = Field(
+        None, description="Whether the notebook is archived"
+    )
+
+
+class NotebookResponse(BaseModel):
+    id: str
+    name: str
+    description: str
+    archived: bool
+    created: str
+    updated: str
+    source_count: int
+    note_count: int
+
+
+class RecentlyViewedResponse(BaseModel):
+    type: Literal["notebook", "source"]
+    id: str
+    title: str
+    last_viewed_at: str
+
+
+# Search models
+class NotebookScopeMixin(BaseModel):
+    """Optional notebook scope shared by Search and Ask requests (#574, #87).
+
+    Both `notebook_id` (single, the shape #574 proposed and existing clients
+    already send) and `notebook_ids` (several) are accepted; `scope_notebook_ids`
+    merges them. An empty scope means the whole knowledge base.
+    """
+
+    notebook_id: Optional[str] = Field(
+        None, description="Restrict results to a single notebook"
+    )
+    notebook_ids: Optional[List[str]] = Field(
+        None,
+        max_length=50,
+        description="Restrict results to these notebooks (omit or empty for all)",
+    )
+
+    @property
+    def scope_notebook_ids(self) -> List[str]:
+        # Keep empty strings so validation rejects them instead of silently
+        # widening the scope to the whole knowledge base.
+        merged: List[str] = []
+        for nb_id in [self.notebook_id, *(self.notebook_ids or [])]:
+            if nb_id is not None and nb_id not in merged:
+                merged.append(nb_id)
+        return merged
+
+
+class SearchRequest(NotebookScopeMixin):
+    query: str = Field(..., min_length=1, max_length=4000, description="Search query")
+    type: Literal["text", "vector", "hybrid"] = Field("text", description="Search type")
+    limit: int = Field(100, description="Maximum number of results", ge=1, le=1000)
+    search_sources: bool = Field(True, description="Include sources in search")
+    search_notes: bool = Field(True, description="Include notes in search")
+    minimum_score: float = Field(
+        0.2, description="Minimum score for vector search", ge=0, le=1
+    )
+
+
+class SearchResponse(BaseModel):
+    results: List[Dict[str, Any]] = Field(..., description="Search results")
+    total_count: int = Field(..., description="Total number of results")
+    search_type: str = Field(..., description="Type of search performed")
+    diagnostics: Optional[Dict[str, Any]] = None
+
+
+class AskRequest(NotebookScopeMixin):
+    question: str = Field(..., description="Question to ask the knowledge base")
+    strategy_model: str = Field(..., description="Model ID for query strategy")
+    answer_model: str = Field(..., description="Model ID for individual answers")
+    final_answer_model: str = Field(..., description="Model ID for final answer")
+
+
+class AskResponse(BaseModel):
+    answer: str = Field(..., description="Final answer from the knowledge base")
+    question: str = Field(..., description="Original question")
+
+
+# Models API models
+class ModelCreate(BaseModel):
+    name: str = Field(..., description="Model name (e.g., gpt-5-mini, claude, gemini)")
+    provider: str = Field(
+        ..., description="Provider name (e.g., openai, anthropic, gemini)"
+    )
+    type: str = Field(
+        ...,
+        description="Model type (language, embedding, text_to_speech, speech_to_text)",
+    )
+    credential: Optional[str] = Field(
+        None, description="Credential ID to link this model to"
+    )
+
+
+class ModelResponse(BaseModel):
+    id: str
+    name: str
+    provider: str
+    type: str
+    credential: Optional[str] = None
+    created: str
+    updated: str
+
+
+class DefaultModelsResponse(BaseModel):
+    default_chat_model: Optional[str] = None
+    default_transformation_model: Optional[str] = None
+    large_context_model: Optional[str] = None
+    default_text_to_speech_model: Optional[str] = None
+    default_speech_to_text_model: Optional[str] = None
+    default_embedding_model: Optional[str] = None
+    default_tools_model: Optional[str] = None
+
+
+class ProviderAvailabilityResponse(BaseModel):
+    available: List[str] = Field(..., description="List of available providers")
+    unavailable: List[str] = Field(..., description="List of unavailable providers")
+    supported_types: Dict[str, List[str]] = Field(
+        ..., description="Provider to supported model types mapping"
+    )
+
+
+# Transformations API models
+class TransformationCreate(BaseModel):
+    name: str = Field(..., description="Transformation name")
+    title: str = Field(..., description="Display title for the transformation")
+    description: str = Field(
+        ..., description="Description of what this transformation does"
+    )
+    prompt: str = Field(..., description="The transformation prompt")
+    apply_default: bool = Field(
+        False, description="Whether to apply this transformation by default"
+    )
+    model_id: Optional[str] = Field(
+        None, description="Model ID to use by default for this transformation"
+    )
+
+
+class TransformationUpdate(BaseModel):
+    name: Optional[str] = Field(None, description="Transformation name")
+    title: Optional[str] = Field(
+        None, description="Display title for the transformation"
+    )
+    description: Optional[str] = Field(
+        None, description="Description of what this transformation does"
+    )
+    prompt: Optional[str] = Field(None, description="The transformation prompt")
+    apply_default: Optional[bool] = Field(
+        None, description="Whether to apply this transformation by default"
+    )
+    model_id: Optional[str] = Field(
+        None, description="Model ID to use by default for this transformation"
+    )
+
+
+class TransformationResponse(BaseModel):
+    id: str
+    name: str
+    title: str
+    description: str
+    prompt: str
+    apply_default: bool
+    model_id: Optional[str] = None
+    created: str
+    updated: str
+
+
+class TransformationExecuteRequest(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
+    transformation_id: str = Field(
+        ..., description="ID of the transformation to execute"
+    )
+    input_text: str = Field(..., description="Text to transform")
+    model_id: Optional[str] = Field(
+        None, description="Model ID to use for this transformation run"
+    )
+
+
+class TransformationExecuteResponse(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
+    output: str = Field(..., description="Transformed text")
+    transformation_id: str = Field(..., description="ID of the transformation used")
+    model_id: Optional[str] = Field(None, description="Model ID used")
+
+
+# Default Prompt API models
+class DefaultPromptResponse(BaseModel):
+    transformation_instructions: str = Field(
+        ..., description="Default transformation instructions"
+    )
+
+
+class DefaultPromptUpdate(BaseModel):
+    transformation_instructions: str = Field(
+        ..., description="Default transformation instructions"
+    )
+
+
+# Notes API models
+class NoteCreate(BaseModel):
+    title: Optional[str] = Field(None, description="Note title")
+    content: str = Field(..., description="Note content")
+    note_type: Optional[str] = Field("human", description="Type of note (human, ai)")
+    notebook_id: Optional[str] = Field(
+        None, description="Notebook ID to add the note to"
+    )
+
+
+class NoteUpdate(BaseModel):
+    title: Optional[str] = Field(None, description="Note title")
+    content: Optional[str] = Field(None, description="Note content")
+    note_type: Optional[str] = Field(None, description="Type of note (human, ai)")
+
+
+class NoteResponse(BaseModel):
+    id: str
+    title: Optional[str]
+    content: Optional[str]
+    note_type: Optional[str]
+    created: str
+    updated: str
+    command_id: Optional[str] = None
+
+
+# Embedding API models
+class EmbedRequest(BaseModel):
+    item_id: str = Field(..., description="ID of the item to embed")
+    item_type: str = Field(..., description="Type of item (source, note)")
+    async_processing: bool = Field(
+        False, description="Process asynchronously in background"
+    )
+
+
+class EmbedResponse(BaseModel):
+    success: bool = Field(..., description="Whether embedding was successful")
+    message: str = Field(..., description="Result message")
+    item_id: str = Field(..., description="ID of the item that was embedded")
+    item_type: str = Field(..., description="Type of item that was embedded")
+    command_id: Optional[str] = Field(
+        None, description="Command ID for async processing"
+    )
+
+
+# Rebuild request/response models
+class RebuildRequest(BaseModel):
+    mode: Literal["existing", "all"] = Field(
+        ...,
+        description="Rebuild mode: 'existing' only re-embeds items with embeddings, 'all' embeds everything",
+    )
+    include_sources: bool = Field(True, description="Include sources in rebuild")
+    include_notes: bool = Field(True, description="Include notes in rebuild")
+    include_insights: bool = Field(True, description="Include insights in rebuild")
+
+
+class RebuildResponse(BaseModel):
+    command_id: str = Field(..., description="Command ID to track progress")
+    total_items: int = Field(..., description="Estimated number of items to process")
+    message: str = Field(..., description="Status message")
+
+
+class RebuildProgress(BaseModel):
+    processed: int = Field(..., description="Number of items processed")
+    total: int = Field(..., description="Total items to process")
+    percentage: float = Field(..., description="Progress percentage")
+
+
+class RebuildStats(BaseModel):
+    sources: int = Field(0, description="Sources processed")
+    notes: int = Field(0, description="Notes processed")
+    insights: int = Field(0, description="Insights processed")
+    failed: int = Field(0, description="Failed items")
+
+
+class RebuildStatusResponse(BaseModel):
+    command_id: str = Field(..., description="Command ID")
+    status: str = Field(..., description="Status: queued, running, completed, failed")
+    progress: Optional[RebuildProgress] = None
+    stats: Optional[RebuildStats] = None
+    started_at: Optional[str] = None
+    completed_at: Optional[str] = None
+    error_message: Optional[str] = None
+
+
+# Settings API models
+class SettingsResponse(BaseModel):
+    default_content_processing_engine_doc: Optional[str] = None
+    default_content_processing_engine_url: Optional[str] = None
+    default_embedding_option: Optional[str] = None
+    auto_delete_files: Optional[str] = None
+    docling_ocr: Optional[bool] = None
+    docling_formulas: Optional[bool] = None
+    docling_vision: Optional[bool] = None
+    youtube_preferred_languages: Optional[List[str]] = None
+
+
+class SettingsUpdate(BaseModel):
+    default_content_processing_engine_doc: Optional[str] = None
+    default_content_processing_engine_url: Optional[str] = None
+    default_embedding_option: Optional[str] = None
+    auto_delete_files: Optional[str] = None
+    docling_ocr: Optional[bool] = None
+    docling_formulas: Optional[bool] = None
+    docling_vision: Optional[bool] = None
+    youtube_preferred_languages: Optional[List[str]] = None
+
+
+# Sources API models
+class AssetModel(BaseModel):
+    file_path: Optional[str] = None
+    url: Optional[str] = None
+
+
+class SourceCreate(BaseModel):
+    # Backward compatibility: support old single notebook_id
+    notebook_id: Optional[str] = Field(
+        None, description="Notebook ID to add the source to (deprecated, use notebooks)"
+    )
+    # New multi-notebook support
+    notebooks: Optional[List[str]] = Field(
+        None,
+        max_length=50,
+        description="List of notebook IDs to add the source to (max 50)",
+    )
+    # Required fields
+    type: str = Field(..., description="Source type: link, upload, or text")
+    url: Optional[str] = Field(None, description="URL for link type")
+    file_path: Optional[str] = Field(None, description="File path for upload type")
+    content: Optional[str] = Field(None, description="Text content for text type")
+    title: Optional[str] = Field(None, description="Source title")
+    transformations: Optional[List[str]] = Field(
+        default_factory=list,
+        max_length=50,
+        description="Transformation IDs to apply (max 50)",
+    )
+    embed: bool = Field(False, description="Whether to embed content for vector search")
+    delete_source: bool = Field(
+        False, description="Whether to delete uploaded file after processing"
+    )
+    # New async processing support
+    async_processing: bool = Field(
+        False, description="Whether to process source asynchronously"
+    )
+
+    @model_validator(mode="after")
+    def validate_notebook_fields(self):
+        # Ensure only one of notebook_id or notebooks is provided
+        if self.notebook_id is not None and self.notebooks is not None:
+            raise ValueError(
+                "Cannot specify both 'notebook_id' and 'notebooks'. Use 'notebooks' for multi-notebook support."
+            )
+
+        # Convert single notebook_id to notebooks array for internal processing
+        if self.notebook_id is not None:
+            self.notebooks = [self.notebook_id]
+            # Keep notebook_id for backward compatibility in response
+
+        # Set empty array if no notebooks specified (allow sources without notebooks)
+        if self.notebooks is None:
+            self.notebooks = []
+
+        return self
+
+
+class SourceUpdate(BaseModel):
+    title: Optional[str] = Field(None, description="Source title")
+    topics: Optional[List[str]] = Field(None, description="Source topics")
+
+
+class SourceResponse(BaseModel):
+    id: str
+    title: Optional[str]
+    topics: Optional[List[str]]
+    asset: Optional[AssetModel]
+    full_text: Optional[str]
+    embedded: bool
+    embedded_chunks: int
+    file_available: Optional[bool] = None
+    created: str
+    updated: str
+    # New fields for async processing
+    command_id: Optional[str] = None
+    status: Optional[str] = None
+    processing_info: Optional[Dict] = None
+    # Notebook associations
+    notebooks: Optional[List[str]] = None
+
+
+class SourceListResponse(BaseModel):
+    id: str
+    title: Optional[str]
+    topics: Optional[List[str]]
+    asset: Optional[AssetModel]
+    embedded: bool  # Boolean flag indicating if source has embeddings
+    embedded_chunks: int  # Number of embedded chunks
+    insights_count: int
+    created: str
+    updated: str
+    file_available: Optional[bool] = None
+    # Status fields for async processing
+    command_id: Optional[str] = None
+    status: Optional[str] = None
+    processing_info: Optional[Dict[str, Any]] = None
+
+
+# Insights API models
+class SourceInsightResponse(BaseModel):
+    id: str
+    source_id: str
+    insight_type: str
+    content: str
+    # Optional: insights created before migration 19 have no timestamps,
+    # and the API must return null for them (never the string "None").
+    created: Optional[str] = None
+    updated: Optional[str] = None
+
+
+class InsightCreationResponse(BaseModel):
+    """Response for async insight creation."""
+
+    status: Literal["pending"] = "pending"
+    message: str = "Insight generation started"
+    source_id: str
+    transformation_id: str
+    command_id: Optional[str] = None
+
+
+class SaveAsNoteRequest(BaseModel):
+    notebook_id: Optional[str] = Field(None, description="Notebook ID to add note to")
+
+
+class CreateSourceInsightRequest(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
+    transformation_id: str = Field(..., description="ID of transformation to apply")
+    model_id: Optional[str] = Field(
+        None, description="Model ID (uses default if not provided)"
+    )
+
+
+# Source status response
+class SourceStatusResponse(BaseModel):
+    status: Optional[str] = Field(None, description="Processing status")
+    message: str = Field(..., description="Descriptive message about the status")
+    processing_info: Optional[Dict[str, Any]] = Field(
+        None, description="Detailed processing information"
+    )
+    command_id: Optional[str] = Field(None, description="Command ID if available")
+
+
+# Error response
+class ErrorResponse(BaseModel):
+    error: str
+    message: str
+
+
+# API Key Configuration models
+class SetApiKeyRequest(BaseModel):
+    """Request to set an API key for a provider."""
+
+    api_key: Optional[str] = Field(None, description="API key for the provider")
+    base_url: Optional[str] = Field(
+        None, description="Base URL for URL-based providers (Ollama, OpenAI-compatible)"
+    )
+    endpoint: Optional[str] = Field(None, description="Endpoint URL for Azure OpenAI")
+    api_version: Optional[str] = Field(None, description="API version for Azure OpenAI")
+    endpoint_llm: Optional[str] = Field(
+        None, description="Service-specific endpoint for LLM (Azure)"
+    )
+    endpoint_embedding: Optional[str] = Field(
+        None, description="Service-specific endpoint for embedding (Azure)"
+    )
+    endpoint_stt: Optional[str] = Field(
+        None, description="Service-specific endpoint for STT (Azure)"
+    )
+    endpoint_tts: Optional[str] = Field(
+        None, description="Service-specific endpoint for TTS (Azure)"
+    )
+    service_type: Optional[Literal["llm", "embedding", "stt", "tts"]] = Field(
+        None,
+        description="Service type for OpenAI-compatible providers (llm, embedding, stt, tts)",
+    )
+    # Vertex AI specific fields
+    vertex_project: Optional[str] = Field(
+        None, description="Google Cloud Project ID for Vertex AI"
+    )
+    vertex_location: Optional[str] = Field(
+        None, description="Google Cloud Region for Vertex AI (e.g., us-central1)"
+    )
+    vertex_credentials_path: Optional[str] = Field(
+        None, description="Path to Google Cloud service account JSON file"
+    )
+
+    @field_validator(
+        "api_key",
+        "base_url",
+        "endpoint",
+        "api_version",
+        "endpoint_llm",
+        "endpoint_embedding",
+        "endpoint_stt",
+        "endpoint_tts",
+        "vertex_project",
+        "vertex_location",
+        "vertex_credentials_path",
+        mode="before",
+    )
+    @classmethod
+    def validate_not_empty_string(cls, v: Optional[str]) -> Optional[str]:
+        """Reject empty strings - convert to None or raise error."""
+        if v is not None:
+            stripped = v.strip()
+            if not stripped:
+                return None  # Treat empty/whitespace-only as None
+            return stripped
+        return v
+
+
+class ApiKeyStatusResponse(BaseModel):
+    """Response showing which providers are configured and their source."""
+
+    configured: Dict[str, bool] = Field(
+        ..., description="Map of provider name to whether it is configured"
+    )
+    source: Dict[str, Literal["database", "environment", "none"]] = Field(
+        ...,
+        description="Map of provider name to configuration source (database, environment, or none)",
+    )
+    encryption_configured: bool = Field(
+        ...,
+        description="Whether OPEN_NOTEBOOK_ENCRYPTION_KEY is set (required to store keys in database)",
+    )
+
+
+class TestConnectionResponse(BaseModel):
+    """Response from testing a provider connection."""
+
+    provider: str = Field(..., description="Provider name that was tested")
+    success: bool = Field(..., description="Whether connection test succeeded")
+    message: str = Field(..., description="Result message with details")
+
+
+class MigrateFromEnvRequest(BaseModel):
+    """Request to migrate API keys from environment variables to database."""
+
+    force: bool = Field(
+        False, description="Force overwrite existing database configurations"
+    )
+
+
+class MigrationResult(BaseModel):
+    """Response from migrating API keys from environment to database."""
+
+    message: str = Field(..., description="Summary message")
+    migrated: List[str] = Field(
+        default_factory=list, description="Providers successfully migrated"
+    )
+    skipped: List[str] = Field(
+        default_factory=list, description="Providers skipped (already in DB)"
+    )
+    errors: List[str] = Field(
+        default_factory=list, description="Migration errors by provider"
+    )
+
+
+# Notebook delete cascade models
+# Credential models
+
+# Kept in sync with the provider registry
+# (open_notebook/ai/provider_registry.py PROVIDERS — the backend source of
+# truth). A Literal can't be built at runtime, so this is the one remaining
+# manual copy; tests/test_credential_provider_validation.py enforces the sync.
+# The frontend consumes GET /api/providers at runtime and needs no edit.
+SupportedProvider = Literal[
+    "openai",
+    "anthropic",
+    "google",
+    "groq",
+    "mistral",
+    "deepseek",
+    "xai",
+    "openrouter",
+    "dashscope",
+    "minimax",
+    "novita",
+    "ppq",
+    "cohere",
+    "voyage",
+    "elevenlabs",
+    "deepgram",
+    "ollama",
+    "omlx",
+    "azure",
+    "vertex",
+    "openai_compatible",
+    "anthropic_compatible",
+]
+
+
+class ProviderInfoResponse(BaseModel):
+    """Provider metadata from the provider registry."""
+
+    name: str = Field(..., description="Provider identifier (e.g. openai)")
+    display_name: str = Field(..., description="Human-friendly provider name")
+    modalities: List[str] = Field(
+        ..., description="Default modalities supported by the provider"
+    )
+    docs_url: Optional[str] = Field(
+        None, description="Where to get an API key / set the provider up"
+    )
+    env_configured: bool = Field(
+        ..., description="Whether the provider is configured via environment variables"
+    )
+
+
+class CapabilitiesResponse(BaseModel):
+    """Runtime availability of the opt-in heavy extraction engines.
+
+    Reflects what is actually importable/reachable in this container — not merely
+    what the OPEN_NOTEBOOK_ENABLE_* flags request — so the UI can gate engine
+    options honestly (e.g. still show "unavailable" while a first-boot install
+    is in progress). See docs/7-DEVELOPMENT/decisions/ADR-007-optin-runtimes.md.
+    """
+
+    docling_available: bool = Field(
+        ...,
+        description="Docling is installed: the docling document engine, OCR toggle and image sources work.",
+    )
+    crawl4ai_available: bool = Field(
+        ...,
+        description="Crawl4AI is usable: the local package is installed OR a remote server is configured.",
+    )
+    crawl4ai_remote_configured: bool = Field(
+        ...,
+        description="A remote Crawl4AI endpoint is configured via CRAWL4AI_API_URL (no local install needed).",
+    )
+
+
+def validate_url_key_provider_required_fields(
+    provider: Optional[str],
+    base_url: Optional[str],
+    api_key: Optional[str],
+) -> None:
+    """Shared required-field rule for providers that need BOTH a base URL and an
+    API key (currently anthropic_compatible).
+
+    Called from both the create path (CreateCredentialRequest validator, which sees
+    the full request payload) and the update path
+    (credentials_service.ensure_provider_required_fields, which runs against the
+    merged credential). Raises ValueError when a required field is missing.
+    """
+    if (provider or "").lower() == "anthropic_compatible":
+        if not base_url or not str(base_url).strip():
+            raise ValueError("Anthropic-compatible credentials require a base URL")
+        if not api_key or not str(api_key).strip():
+            raise ValueError("Anthropic-compatible credentials require an API key")
+
+
+class CreateCredentialRequest(BaseModel):
+    """Request to create a new credential."""
+
+    name: str = Field(..., description="Credential name")
+    provider: SupportedProvider = Field(
+        ..., description="Provider name (openai, anthropic, etc.)"
+    )
+    modalities: List[str] = Field(
+        default_factory=list,
+        description="Supported modalities (language, embedding, text_to_speech, speech_to_text)",
+    )
+    api_key: Optional[str] = Field(None, description="API key (stored encrypted)")
+    base_url: Optional[str] = Field(None, description="Base URL")
+    endpoint: Optional[str] = Field(None, description="Endpoint URL (Azure)")
+    api_version: Optional[str] = Field(None, description="API version (Azure)")
+    endpoint_llm: Optional[str] = Field(None, description="LLM endpoint")
+    endpoint_embedding: Optional[str] = Field(None, description="Embedding endpoint")
+    endpoint_stt: Optional[str] = Field(None, description="STT endpoint")
+    endpoint_tts: Optional[str] = Field(None, description="TTS endpoint")
+    project: Optional[str] = Field(None, description="Project ID (Vertex)")
+    location: Optional[str] = Field(None, description="Location (Vertex)")
+    credentials_path: Optional[str] = Field(
+        None, description="Credentials file path (Vertex)"
+    )
+    num_ctx: Optional[int] = Field(
+        None, description="Context window size (Ollama only; defaults to 8192)"
+    )
+
+    @model_validator(mode="after")
+    def _validate_provider_required_fields(self):
+        validate_url_key_provider_required_fields(
+            self.provider, self.base_url, self.api_key
+        )
+        return self
+
+
+class UpdateCredentialRequest(BaseModel):
+    """Request to update an existing credential."""
+
+    name: Optional[str] = Field(None, description="Credential name")
+    modalities: Optional[List[str]] = Field(None, description="Supported modalities")
+    api_key: Optional[str] = Field(None, description="API key (stored encrypted)")
+    base_url: Optional[str] = Field(None, description="Base URL")
+    endpoint: Optional[str] = Field(None, description="Endpoint URL")
+    api_version: Optional[str] = Field(None, description="API version")
+    endpoint_llm: Optional[str] = Field(None, description="LLM endpoint")
+    endpoint_embedding: Optional[str] = Field(None, description="Embedding endpoint")
+    endpoint_stt: Optional[str] = Field(None, description="STT endpoint")
+    endpoint_tts: Optional[str] = Field(None, description="TTS endpoint")
+    project: Optional[str] = Field(None, description="Project ID")
+    location: Optional[str] = Field(None, description="Location")
+    credentials_path: Optional[str] = Field(None, description="Credentials path")
+    num_ctx: Optional[int] = Field(
+        None, description="Context window size (Ollama only; defaults to 8192)"
+    )
+
+
+class CredentialResponse(BaseModel):
+    """Response for a credential (never includes api_key)."""
+
+    id: str
+    name: str
+    provider: str
+    modalities: List[str]
+    base_url: Optional[str] = None
+    endpoint: Optional[str] = None
+    api_version: Optional[str] = None
+    endpoint_llm: Optional[str] = None
+    endpoint_embedding: Optional[str] = None
+    endpoint_stt: Optional[str] = None
+    endpoint_tts: Optional[str] = None
+    project: Optional[str] = None
+    location: Optional[str] = None
+    credentials_path: Optional[str] = None
+    num_ctx: Optional[int] = None
+    has_api_key: bool = False
+    created: str
+    updated: str
+    model_count: int = 0
+    decryption_error: Optional[str] = None
+
+
+class CredentialDeleteResponse(BaseModel):
+    """Response for credential deletion."""
+
+    message: str
+    deleted_models: int = 0
+
+
+class DiscoveredModelResponse(BaseModel):
+    """A model discovered from a provider."""
+
+    name: str
+    provider: str
+    model_type: Optional[str] = None
+    description: Optional[str] = None
+
+
+class DiscoverModelsResponse(BaseModel):
+    """Response from model discovery."""
+
+    credential_id: str
+    provider: str
+    discovered: List[DiscoveredModelResponse]
+
+
+class RegisterModelData(BaseModel):
+    """A model to register with user-specified type."""
+
+    name: str
+    provider: str
+    model_type: str  # Required: user specifies the type
+
+
+class RegisterModelsRequest(BaseModel):
+    """Request to register discovered models."""
+
+    models: List[RegisterModelData]
+
+
+class RegisterModelsResponse(BaseModel):
+    """Response from model registration."""
+
+    created: int
+    existing: int
+
+
+class NotebookDeletePreview(BaseModel):
+    notebook_id: str = Field(..., description="ID of the notebook")
+    notebook_name: str = Field(..., description="Name of the notebook")
+    note_count: int = Field(..., description="Number of notes that will be deleted")
+    exclusive_source_count: int = Field(
+        ..., description="Number of sources only in this notebook"
+    )
+    shared_source_count: int = Field(
+        ..., description="Number of sources shared with other notebooks"
+    )
+
+
+class NotebookDeleteResponse(BaseModel):
+    message: str = Field(..., description="Success message")
+    deleted_notes: int = Field(..., description="Number of notes deleted")
+    deleted_sources: int = Field(..., description="Number of exclusive sources deleted")
+    unlinked_sources: int = Field(
+        ..., description="Number of sources unlinked from notebook"
+    )
+    deleted_chat_sessions: int = Field(
+        ..., description="Number of chat sessions deleted"
+    )

@@ -1,0 +1,945 @@
+{
+  "upstream": "3127f14",
+  "files": [
+    {
+      "source": "research/store.py",
+      "module_file": "modules/multi-model-research/service/store.py",
+      "sha256": "3df4773e93421de07cf46e38c2d68a428857276485ef37f6bedc5e73837a8840",
+      "disposition": "module source"
+    },
+    {
+      "source": "research/extension_bridge.py",
+      "module_file": "modules/multi-model-research/service/extension_bridge.py",
+      "sha256": "c1e44eaca3b95278d1b39ba131dbdff514251d6ad3f625f8dbc04aca496c92f8",
+      "disposition": "module source"
+    },
+    {
+      "source": "research/server.py",
+      "module_file": "modules/multi-model-research/service/server.py",
+      "sha256": "3269acfd10e33ed725ad5bb3b8f8b78b8d54a6513527f9f4cc6cc55431507a94",
+      "disposition": "module source"
+    },
+    {
+      "source": "research/evidence_protocol.py",
+      "module_file": "modules/multi-model-research/service/evidence_protocol.py",
+      "sha256": "48c2fcd8314f347145013693c2808aa2912988b7e969c6477573bf4396feb368",
+      "disposition": "module source"
+    },
+    {
+      "source": "research/browser_research.py",
+      "module_file": "modules/multi-model-research/service/browser_research.py",
+      "sha256": "5f6219d0578da8672be34ed0af5c123d67265fb7951f38c74a030cb985829a4c",
+      "disposition": "module source"
+    },
+    {
+      "source": "research/verify_login.py",
+      "module_file": "modules/multi-model-research/service/verify_login.py",
+      "sha256": "9c4bd61b42dafce6aab99ed5e3eb1ffca1cbd919b0a86da677ea91aa100b95c1",
+      "disposition": "module source"
+    },
+    {
+      "source": "research/install_extension_host.py",
+      "module_file": "modules/multi-model-research/service/install_extension_host.py",
+      "sha256": "a8c789cab5687166797265063e1e123f5c92a1d9ac5a3f16ebdbb56667d74481",
+      "disposition": "module source"
+    },
+    {
+      "source": "research/browser_runtime.py",
+      "module_file": "modules/multi-model-research/service/browser_runtime.py",
+      "sha256": "d8defb5d2cd4a4eb13272f36bc196fcb1daa285e8d3c721fcb1a79f42b31bd17",
+      "disposition": "module source"
+    },
+    {
+      "source": "research/extension_research.py",
+      "module_file": "modules/multi-model-research/service/extension_research.py",
+      "sha256": "4259bc9cf18b3ebcc3642c280d4eee7ad50281b94ab96ed8b368cc743fdd0a63",
+      "disposition": "module source"
+    },
+    {
+      "source": "research/importers.py",
+      "module_file": "modules/multi-model-research/service/importers.py",
+      "sha256": "4c7e483adf861d6b6942c56193cb7f0f59683194aa605a252cba9b5517768707",
+      "disposition": "module source"
+    },
+    {
+      "source": "research/engine.py",
+      "module_file": "modules/multi-model-research/service/engine.py",
+      "sha256": "d60bfc4bf501481b7ef518c9e1cb5cc5cc3aa7625652a31d8e52bfd892d791ba",
+      "disposition": "module source"
+    },
+    {
+      "source": "research/workflow.py",
+      "module_file": "modules/multi-model-research/service/workflow.py",
+      "sha256": "9b99757711445840d32d53a5c73427cf9b64b0b2d822d33315fda90e6278e667",
+      "disposition": "module source"
+    },
+    {
+      "source": "research/tests/test_retry.py",
+      "module_file": "modules/multi-model-research/service/tests/test_retry.py",
+      "sha256": "2cdd64a2620bb42fcf760e9af7fabd8b2b7dadbf2624d04af342cc99da8f163e",
+      "disposition": "module source"
+    },
+    {
+      "source": "research/tests/test_extension.py",
+      "module_file": "modules/multi-model-research/service/tests/test_extension.py",
+      "sha256": "4bf394145feadad62f14751f54b90e5535a4b756055d84ee5b464175175aa0c0",
+      "disposition": "module source"
+    },
+    {
+      "source": "research/tests/extension_worker.test.cjs",
+      "module_file": "modules/multi-model-research/service/tests/extension_worker.test.cjs",
+      "sha256": "20109e7ab871e9bea6eab544721aa23c4350d809fcc7c5148676486ddd55dd78",
+      "disposition": "module source"
+    },
+    {
+      "source": "research/tests/test_workflow.py",
+      "module_file": "modules/multi-model-research/service/tests/test_workflow.py",
+      "sha256": "45ca01ac5972937ea3b6c8bdedf6c28067aec004e0b8964b5f2218b8b6933451",
+      "disposition": "module source"
+    },
+    {
+      "source": "research/tests/test_verify_login.py",
+      "module_file": "modules/multi-model-research/service/tests/test_verify_login.py",
+      "sha256": "c61607feab35a44703596d7743a548c331ebc4833a699a4af743e1514341c23d",
+      "disposition": "module source"
+    },
+    {
+      "source": "research/tests/test_browser.py",
+      "module_file": "modules/multi-model-research/service/tests/test_browser.py",
+      "sha256": "8b09c18145007ac9965ecf996d623eb88511121879a008dfce0f54bfbea4d25b",
+      "disposition": "module source"
+    },
+    {
+      "source": "research/tests/test_dom.py",
+      "module_file": "modules/multi-model-research/service/tests/test_dom.py",
+      "sha256": "b84ad356ecf5460d31d4516398af86015de90f394787928c2086e6433eccd874",
+      "disposition": "module source"
+    },
+    {
+      "source": "research/tests/fakes.py",
+      "module_file": "modules/multi-model-research/service/tests/fakes.py",
+      "sha256": "5328d6206daaed4731b5f06a55806bb3dc1de3de73b5bfa0b0b0964fc4bf744a",
+      "disposition": "module source"
+    },
+    {
+      "source": "research/tests/test_evidence_protocol.py",
+      "module_file": "modules/multi-model-research/service/tests/test_evidence_protocol.py",
+      "sha256": "777cd5735ea6accfb1e33ee14a01fdd39e19d8a03c942eded030bc4a93f46643",
+      "disposition": "module source"
+    },
+    {
+      "source": "research/tests/test_api.py",
+      "module_file": "modules/multi-model-research/service/tests/test_api.py",
+      "sha256": "d04fbe5db2ba9141e23b6966a204357d352135e7be285ef6b82d7016c5e562bc",
+      "disposition": "module source"
+    },
+    {
+      "source": "research/requirements.lock",
+      "module_file": "modules/multi-model-research/service/requirements.lock",
+      "sha256": "4766c3df0d612a8775aba5786fe6abce39e20aa917222ffe7dcfe0d5096b4461",
+      "disposition": "module source"
+    },
+    {
+      "source": "account-bridge/server.py",
+      "module_file": "modules/account-models/service/server.py",
+      "sha256": "3a8e3d71926ab028afede0c2c5be628319ae2ccae0a33ad6139dbb998e193fac",
+      "disposition": "module source"
+    },
+    {
+      "source": "account-bridge/test_server.py",
+      "module_file": "modules/account-models/service/test_server.py",
+      "sha256": "5718f25a6a0aa45c9adf07d77e7e0770ed143fe72d86af647a80c78c8772038d",
+      "disposition": "module source"
+    },
+    {
+      "source": "audio/server.py",
+      "module_file": "modules/local-audio/service/server.py",
+      "sha256": "4169ea7fa09a69259bbc3796b6b8c16a16ecdf5e76db408465e74d2524491877",
+      "disposition": "module source"
+    },
+    {
+      "source": "audio/requirements.lock",
+      "module_file": "modules/local-audio/service/requirements.lock",
+      "sha256": "b6b34d647e1f38979cdbfa6677e90b5dd9b827859d411153584f5766433ce585",
+      "disposition": "module source"
+    },
+    {
+      "source": "natural-voice/server.py",
+      "module_file": "modules/natural-voice/service/server.py",
+      "sha256": "2950b0395e7445c572a0dcda6b79effa56b4cf009d48d79bec58ef6d4191b713",
+      "disposition": "module source"
+    },
+    {
+      "source": "natural-voice/requirements.lock",
+      "module_file": "modules/natural-voice/service/requirements.lock",
+      "sha256": "156f1f7ed8e4283beeaa702f4a8689b98a0f00774944dab1c22be0421217a17e",
+      "disposition": "module source"
+    },
+    {
+      "source": "natural-voice/voices.json",
+      "module_file": "modules/natural-voice/service/voices.json",
+      "sha256": "279637aee9a43963dcf8c6874126f4d354d31869c12c1f9f3a96b7e83fab6a19",
+      "disposition": "module source"
+    },
+    {
+      "source": "browser-access-probe/dom-driver.js",
+      "module_file": "modules/multi-model-research/browser-extension/dom-driver.js",
+      "sha256": "5c8042826dcd531f46cccea75fbe8aa537206a4ab04eee0abceff13ca1187708",
+      "disposition": "module source"
+    },
+    {
+      "source": "browser-access-probe/popup.js",
+      "module_file": "modules/multi-model-research/browser-extension/popup.js",
+      "sha256": "f13b853afe87382570687ab9105c15b56bb511453d069dca6156fab7ab0aa551",
+      "disposition": "module source"
+    },
+    {
+      "source": "browser-access-probe/popup.html",
+      "module_file": "modules/multi-model-research/browser-extension/popup.html",
+      "sha256": "1e79abea93b53a7dc4d2aa90756ec6c169161f7df410aaa233890aa2c755ebef",
+      "disposition": "module source"
+    },
+    {
+      "source": "browser-access-probe/worker.js",
+      "module_file": "modules/multi-model-research/browser-extension/worker.js",
+      "sha256": "65294df868bbc43e09edf7ece5975ad6c69887900b1a990f812877fd2d925db3",
+      "disposition": "module source"
+    },
+    {
+      "source": "browser-access-probe/inspect-page.js",
+      "module_file": "modules/multi-model-research/browser-extension/inspect-page.js",
+      "sha256": "09c2133903cb2b837607f4a43844c11bddf26fbe1cd7776d4e80e740d0c62358",
+      "disposition": "module source"
+    },
+    {
+      "source": "browser-access-probe/research-frame.js",
+      "module_file": "modules/multi-model-research/browser-extension/research-frame.js",
+      "sha256": "0d2ef8974441414959f09169af6e2db4e706f346e2fd16309e0213183756df8e",
+      "disposition": "module source"
+    },
+    {
+      "source": "browser-access-probe/manifest.json",
+      "module_file": "modules/multi-model-research/browser-extension/manifest.json",
+      "sha256": "d2797791a37122c2a9e4d809f9c4967b522abb20b7398f808a4773a2ed4ae5b6",
+      "disposition": "module source"
+    },
+    {
+      "source": "browser-access-probe/popup.css",
+      "module_file": "modules/multi-model-research/browser-extension/popup.css",
+      "sha256": "0f89a0c953c46e88a5cc7d3e9d2d76fd8288002f3bb9b3bdce5b071bebd7a597",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/research/page.tsx",
+      "module_file": "modules/multi-model-research/frontend/page.tsx",
+      "sha256": "4076a54a3912389e99e1fc212950725301f840c1fc8249df5536e5f351e51a57",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/api/research.ts",
+      "module_file": "modules/multi-model-research/frontend/api.ts",
+      "sha256": "a83ed3694a35290e669ca6db0939c0d2717eddbf9e5d406e054d4e6ab39fc75d",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/hooks/use-research.ts",
+      "module_file": "modules/multi-model-research/frontend/hooks.ts",
+      "sha256": "6b5b4982d1c7f91d5dd078751c1b9a905eb1d5416066ea1867de704fd4d89c59",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/locales/research.ts",
+      "module_file": "modules/multi-model-research/frontend/locales.ts",
+      "sha256": "05550a427e74bc7327e39409b7be840c15a20955e1fb0684b9caf47a96bfa698",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/research/ResearchRetryPanel.tsx",
+      "module_file": "modules/multi-model-research/frontend/components/ResearchRetryPanel.tsx",
+      "sha256": "b9edf0233a33a99ea5535ad745764250d6e5eb4fa64c135ed8df2fb983c5fae0",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/research/research-ui.test.tsx",
+      "module_file": "modules/multi-model-research/frontend/components/research-ui.test.tsx",
+      "sha256": "e57bd09ed003d29e8763f1b27be9a83e10acb1669f551641bc28f81af69f0233",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/research/ResearchShell.tsx",
+      "module_file": "modules/multi-model-research/frontend/components/ResearchShell.tsx",
+      "sha256": "c589fa88fa51b3de9f4ce6e87a2cc0fe7f0f58c2fb7a4ab4187dfc3e6caad880",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/research/research-state.tsx",
+      "module_file": "modules/multi-model-research/frontend/components/research-state.tsx",
+      "sha256": "4d0ba71f219bcfb2a2ecb3bce867cc745c32ec3ec9098c14c85a55e5856ebdfc",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/research/ResearchWorkflow.tsx",
+      "module_file": "modules/multi-model-research/frontend/components/ResearchWorkflow.tsx",
+      "sha256": "fab02f13b4930147e3dfd5473bfc939e2a55d695e335b19976fd43e675ac14fa",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/research/ResearchControls.tsx",
+      "module_file": "modules/multi-model-research/frontend/components/ResearchControls.tsx",
+      "sha256": "24a1bb18b46f001c37f9fe3c9ebc6718480214149348a95dec72b665bfe6c1c3",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/research/ResearchQuestionCard.tsx",
+      "module_file": "modules/multi-model-research/frontend/components/ResearchQuestionCard.tsx",
+      "sha256": "82dbb098d38437cbbd6907059baa021b0dae61d35548c76825a6cc45895d5dc2",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/package-lock.json",
+      "module_file": "modules/local-workspace/overlay/frontend/package-lock.json",
+      "sha256": "c8009f937a3619c9478b1cbba6cecd8aabe67113490c582f1587c3f8e684ec76",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/package.json",
+      "module_file": "modules/local-workspace/overlay/frontend/package.json",
+      "sha256": "58da65cb800294ce65fdf707eeed855370bfbca09d19e903bac6539a7d1fa473",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/next.config.ts",
+      "module_file": "modules/local-workspace/overlay/frontend/next.config.ts",
+      "sha256": "97ca2fc605177b914f79a19b0dbcaa41454693eb079098646dfd6901b9fb841e",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/app/layout.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/layout.tsx",
+      "sha256": "b09616a51fdea3db0933210f68348294e7d337d0cf5dfbf58ec4bc73787f0938",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/app/globals.css",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/globals.css",
+      "sha256": "a13b1bd3aaabe8fde4a0a9f0deb0b842044b5670b50f90007e2c49f2696730fb",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/advanced/page.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/(dashboard)/advanced/page.tsx",
+      "sha256": "2256e1d6e5d4371e87e4875b491ab7e8465a82683f151439dbaae0e80c23d33a",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/advanced/components/SystemInfo.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/(dashboard)/advanced/components/SystemInfo.tsx",
+      "sha256": "214aea7c53cd6343340be8ab0d7ad5b1607750947a719a44a1f974975d5fec35",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/advanced/components/RebuildEmbeddings.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/(dashboard)/advanced/components/RebuildEmbeddings.tsx",
+      "sha256": "b6bc8e28c0b4d6cdbb303790e9d372b8f8451478fcbf7b2671fe7030779e8304",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/settings/page.tsx",
+      "module_file": "frontend/src/components/settings/SettingsWorkspace.tsx",
+      "sha256": "d748744ab4cdc63d00fd84965e1f4a502d694558bde5836ae98be00e4fe35f33",
+      "disposition": "Retired legacy overlay; generic module host settings workspace"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/settings/api-keys/page.test.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/(dashboard)/settings/api-keys/page.test.tsx",
+      "sha256": "10aaa561cdc3d73bea11a8c60d27da699906e15b5d46677d15ec85913dd49b60",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/settings/api-keys/page.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/(dashboard)/settings/api-keys/page.tsx",
+      "sha256": "cdc1dacae8f8ecfe2726421518ec7e9914b13ed4bcd11924f3a8ba3cb36547a2",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/transformations/page.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/(dashboard)/transformations/page.tsx",
+      "sha256": "a0365a57d2ac15af20486c258a2450a0731b61f0b0d425487a017441541bf067",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/transformations/components/TransformationCard.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/(dashboard)/transformations/components/TransformationCard.tsx",
+      "sha256": "7f7687bb6e025c00b2b66f6ac5c98beccb2fbc938608613dfabd3be6641be0a3",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/transformations/components/TransformationEditorDialog.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/(dashboard)/transformations/components/TransformationEditorDialog.tsx",
+      "sha256": "7eb44e0b363f90291b8ba072ba1587cf522de6992dce1ef567f542272b4054d6",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/transformations/components/TransformationsList.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/(dashboard)/transformations/components/TransformationsList.tsx",
+      "sha256": "6fed157a8e99497ecbee0d1c643a3fca29fd489f6877c8d4daeac594114bea6b",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/podcasts/page.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/(dashboard)/podcasts/page.tsx",
+      "sha256": "a1d1d9c6cdf4c920a5f2289592e501b02ef6db35fd9fe04d0b7dc0412e191cd7",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/search/page.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/(dashboard)/search/page.tsx",
+      "sha256": "03a6c3a7418c50e43942a1625cf9e6ad47fd08dd953e71ac260c85de565b014e",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/sources/page.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/(dashboard)/sources/page.tsx",
+      "sha256": "3164fcdec8aa5040fa4a4c53142adb74b5b5f8e8b7bc970ddc31220014656a6a",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/notebooks/page.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/(dashboard)/notebooks/page.tsx",
+      "sha256": "f9760111cc805a560cf6bc7507215f86c8fa0dff0fb86b38f74fe9f23b1ba7fd",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/notebooks/components/NotesColumn.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/(dashboard)/notebooks/components/NotesColumn.tsx",
+      "sha256": "f57e0d3f631212cea4702f799a57c52319522d9147021d49e7a3de9d6143309a",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/notebooks/components/NotebookHeader.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/(dashboard)/notebooks/components/NotebookHeader.tsx",
+      "sha256": "b0ab2e29ff7abe1ab2da482d9bec13ae8f7652a9559653910bc7dfadb2e9bc12",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/notebooks/components/NotebookList.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/(dashboard)/notebooks/components/NotebookList.tsx",
+      "sha256": "984d36ef4b3fda8aa9cc87d3584dabb1b5fff20d8bfa9c084c6bd25fdfd85217",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/notebooks/components/SourcesColumn.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/(dashboard)/notebooks/components/SourcesColumn.tsx",
+      "sha256": "fdfe85f1ccaa2db7ca1eb03f4a2b1a728c7f16ea2199d2aa3473a0c1994264c7",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/notebooks/components/NotebookRow.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/(dashboard)/notebooks/components/NotebookRow.tsx",
+      "sha256": "48751b1457861b2001b16fc56f00d542d77b27cd6d5a1774ee50f93a09221542",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/notebooks/components/NotebookCard.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/(dashboard)/notebooks/components/NotebookCard.tsx",
+      "sha256": "ee8f38177f489f35cde04a79a24b258e2f0352cf0e8fddc32b28db84721985f1",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/notebooks/components/NoteEditorDialog.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/(dashboard)/notebooks/components/NoteEditorDialog.tsx",
+      "sha256": "854a3cd0ebe3aad7593d646e7b76f62a01f7c8498f56efacd60eda3c6251ef37",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/notebooks/components/RecentlyViewed.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/(dashboard)/notebooks/components/RecentlyViewed.tsx",
+      "sha256": "89643cf4a79e26cb0b20f4b911588878e32e8bdcf96081818886a90efdaf1275",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/app/(dashboard)/notebooks/components/NotebookDeleteDialog.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/app/(dashboard)/notebooks/components/NotebookDeleteDialog.tsx",
+      "sha256": "7436e465f48d447c08711a0c6cc52fae7c1d5f60d2343e5539be5d4392bf108c",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/test/setup.ts",
+      "module_file": "modules/local-workspace/overlay/frontend/src/test/setup.ts",
+      "sha256": "b0ecd06c07e90864ccc09b557d54b45d57b67545b3bc6ec3588bb90192544407",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/components/ui/markdown-editor.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/ui/markdown-editor.tsx",
+      "sha256": "f1db8b9e0d23df2387e74d9b291d046f3dccb6826203ecc7845e1d183186c80a",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/components/ui/alert-dialog.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/ui/alert-dialog.tsx",
+      "sha256": "59967c334f56dd44100e49b1fc18db428e7f15f5a28b9c2c4f9a3b7dcb4db4b7",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/ui/tabs.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/ui/tabs.tsx",
+      "sha256": "d53bc92b5eda88d4438e712127da79bdae8a5b62310d134ce18d9e180153ca57",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/ui/card.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/ui/card.tsx",
+      "sha256": "78cdb63dff3ec7ef074ada630ff20a5d8004768b6cbe24ed134a8bfba12bafbb",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/ui/popover.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/ui/popover.tsx",
+      "sha256": "29a217781737bbf5c430859b3de46097a44ada81c4143c2d05543d2167de0ee1",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/ui/markdown-renderer.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/ui/markdown-renderer.tsx",
+      "sha256": "67194e46aaa206d0e62f9881bb8a74e7c9797df61ea488ca21ddaf6004049102",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/ui/tooltip.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/ui/tooltip.tsx",
+      "sha256": "8d8a3645f547334b759341daf94a20b12a8ba17e8de4ad6e4e1c64b38842c1e3",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/ui/dialog.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/ui/dialog.tsx",
+      "sha256": "19efbf89b397dc1e9d2fcbaf39a9cb4e20eaaffd5544ebf6bde4611c46202b24",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/ui/badge.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/ui/badge.tsx",
+      "sha256": "f41c11fc13e9a1f1b849349cb51b137ddd27de0a17c5339675c789d58f556cc4",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/ui/button.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/ui/button.tsx",
+      "sha256": "82403231e33fd3d45b111e5e819df194cdfa7cef9a726770185724a60bd20932",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/ui/dropdown-menu.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/ui/dropdown-menu.tsx",
+      "sha256": "9b346378821ba06f9501e4571fd7678cd8819d6833f833daff72bec699565c06",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/ui/markdown-editor.test.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/ui/markdown-editor.test.tsx",
+      "sha256": "b6a9e6c29dbd51c03df914a85acc135373788277d746d56bef637f1723aabd95",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/components/ui/select.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/ui/select.tsx",
+      "sha256": "8795c9fac7c48d565ff6c47cbf4cca8bfefe25d8cb3d7e7aeba36855739a76ab",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/ui/textarea.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/ui/textarea.tsx",
+      "sha256": "befa7b4b36cca86574cc11ca2a239794627fde27b7a31d22b27cbee1b37380b5",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/ui/input.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/ui/input.tsx",
+      "sha256": "6628e8fde207857b9ba08910d386eeea8213d7d745b4e0ae8b95332b52730db9",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/settings/MigrationBanner.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/settings/MigrationBanner.tsx",
+      "sha256": "c0d75866f18cf581cbfa480c316d032375e6f2154cf79d9fbdaf5962dc310e9b",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/settings/CredentialItem.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/settings/CredentialItem.tsx",
+      "sha256": "0cdae16713ed5b5861247089f5151620785f2c07d528dcc95c8b935a2e873661",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/settings/ModelTestResultDialog.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/settings/ModelTestResultDialog.tsx",
+      "sha256": "fcfbec10c1776674b34078028c4f72afc36a382af338849ce823679f56f9f95e",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/settings/EmbeddingModelChangeDialog.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/settings/EmbeddingModelChangeDialog.tsx",
+      "sha256": "370f6c6b4848a750347062f504161bdcede74d6c73f55c0f4c02b85baba82242",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/settings/ProviderSection.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/settings/ProviderSection.tsx",
+      "sha256": "154de9e01741f77fb1d12c8358c869f2aee961ee1904d05e8888a76916c50d3b",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/settings/CredentialFormDialog.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/settings/CredentialFormDialog.tsx",
+      "sha256": "eee964c3a1b7b9b0ae9636de5c506b0072f22bef46cb0d5adf43221c6c0ae94f",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/components/auth/LoginForm.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/auth/LoginForm.tsx",
+      "sha256": "a2e5d60398ba48562591f3e6a8d567a2b4664586e1161b851d16d6813eac3687",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/layout/SetupBanner.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/layout/SetupBanner.tsx",
+      "sha256": "3bc61edbf26b8db2863b47aa8129548f1ed47cfd14d83b462a3d428fc3b83d5b",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/layout/AppSidebar.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/layout/AppSidebar.tsx",
+      "sha256": "4a1bdb2cc6ca0c668f1b89b5cf4e75769496c394fb3a42ef5d1279ece425b374",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/layout/AppSidebar.test.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/layout/AppSidebar.test.tsx",
+      "sha256": "944d7bd7c5a7252c3114357035d32e13352ce58799975af4f16c8551de9a4d4d",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/components/podcasts/TemplatesTab.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/podcasts/TemplatesTab.tsx",
+      "sha256": "86531ce58367fd969b19c4f1265fd94b58b54caa1475472b604e33855711feef",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/podcasts/EpisodeProfilesPanel.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/podcasts/EpisodeProfilesPanel.tsx",
+      "sha256": "4df02ae4679b452b96dc9ebbae1dc7fa362529e3979482e1dd07fbe9950c2cdb",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/podcasts/EpisodeCard.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/podcasts/EpisodeCard.tsx",
+      "sha256": "376915fab08d4702733badfbdf721cee06e53269c3d49f3c208d14d9c28dff7c",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/podcasts/SpeakerProfilesPanel.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/podcasts/SpeakerProfilesPanel.tsx",
+      "sha256": "b9c140aabac0b4ba87f9260fd01478d3f4c91814bf778762570173939a807d72",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/podcasts/EpisodesTab.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/podcasts/EpisodesTab.tsx",
+      "sha256": "a097e21eab7c2417d436ea6f510d13d6f2a852fc6fdcdc7e475226c18aa72236",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/podcasts/forms/EpisodeProfileFormDialog.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/podcasts/forms/EpisodeProfileFormDialog.tsx",
+      "sha256": "7477e090eaa3e3297a74ca293c769c3dd7087c1e63de5c021c16c9a44c74592b",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/podcasts/forms/SpeakerProfileFormDialog.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/podcasts/forms/SpeakerProfileFormDialog.tsx",
+      "sha256": "4247d34791d19e0e7ee28d36a4588ec5609f76a011b2d9b53fb3cfa8421dd945",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/search/StreamingResponse.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/search/StreamingResponse.tsx",
+      "sha256": "0523a5a3fdc2959b36c938ad85a342720b83924dfebbc88c73d7f4c3306216c5",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/common/ConfirmDialog.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/common/ConfirmDialog.tsx",
+      "sha256": "372dd7eb95963ac714f8a803729db612c887095737c2bd4a15ab299386b1cd96",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/common/ContextIndicator.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/common/ContextIndicator.tsx",
+      "sha256": "4ef011db606f51b5735b2496a41956098ca34a36d11f3d9405d7f7fcd343a2a7",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/common/ContextToggle.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/common/ContextToggle.tsx",
+      "sha256": "6bdc83ded1973d24cc51bfb67e20d2a64be1b9f5b6f62c3aab3fa6962ece0e46",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/common/CommandPalette.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/common/CommandPalette.tsx",
+      "sha256": "3e9d5254d704d03ac0e69fc5beede46e18c47863feeba2ca3e7add46f3862414",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/common/ThemeToggle.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/common/ThemeToggle.tsx",
+      "sha256": "5b85395d79566c559b48e5e28ac181fa1ae7a693e0ff327fe812d50ea6aeebc9",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/components/common/ErrorBoundary.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/common/ErrorBoundary.tsx",
+      "sha256": "e9a5351f0c05106dab28e6212c16314afe282dacf1244c16562c43830d152ce8",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/sources/MessageActions.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/sources/MessageActions.tsx",
+      "sha256": "1f41febaeea289d9be456807e472ace90fc0aa089121b4f23811de86a14b9862",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/sources/AddSourceDialog.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/sources/AddSourceDialog.tsx",
+      "sha256": "8141dc0f3ee427b7ba7050ac5cb702a76a8360752a7d4d5b7676e42215f8e7e6",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/sources/AddExistingSourceDialog.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/sources/AddExistingSourceDialog.tsx",
+      "sha256": "04982aaca7ae79ac68b02c672260ae09c1d0dc2596334df39e334417faaab873",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/components/sources/SourceDialog.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/sources/SourceDialog.tsx",
+      "sha256": "2d0bc70244bd3282b17873c599c66ff63db919e0189f241197e5eee361b3887f",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/sources/SourceDetailContent.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/sources/SourceDetailContent.tsx",
+      "sha256": "aa59582ebdff3378a557a317c35fa59b95496991a0f077f10ff42b8d268fe97a",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/sources/ChatPanel.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/sources/ChatPanel.tsx",
+      "sha256": "b94b610c4cf641f641a60159048c1105d81a4a8b5167fe892e953d79ed49a1f4",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/sources/NotebookAssociations.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/sources/NotebookAssociations.tsx",
+      "sha256": "30ce129aa92c2c2bef810dca921540d14bad1fbe78bc842a716d4b5614ecc877",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/sources/SourceCard.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/sources/SourceCard.tsx",
+      "sha256": "ba557fd9f1a42392afd9ebef94e4365af027326bf082d6efd2b95ea042c6d22c",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/sources/SourceInsightDialog.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/sources/SourceInsightDialog.tsx",
+      "sha256": "b6265b26f1f9fb06262c6ccb0e30d15be284f6b19bc2e71ad568d68ae001f84c",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/sources/steps/ProcessingStep.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/sources/steps/ProcessingStep.tsx",
+      "sha256": "d3275232a72459ea1ccd13985edd8b558cc445542468f981c5ce098e7dc362fe",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/components/sources/steps/SourceTypeStep.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/sources/steps/SourceTypeStep.tsx",
+      "sha256": "0a02a6a01246aad0f6c1071c303a951c91cfcd807924cfe675bdbb00eed81903",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/providers.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/lib/providers.tsx",
+      "sha256": "9282b06355554f969a9766525329bc294118161b9d6788fb5f362a6f2f27bd77",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/types/search.ts",
+      "module_file": "modules/local-workspace/overlay/frontend/src/lib/types/search.ts",
+      "sha256": "95af622a0adcf19e30c10b181740aa39dee5b1aac105dd2c30cf39fb3bd70559",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/locales/tr-TR/index.ts",
+      "module_file": "modules/local-workspace/overlay/frontend/src/lib/locales/tr-TR/index.ts",
+      "sha256": "8c87ab86c4bf464c015e650aa1c273b840c8a24fc5685c8d51bbac60801b396c",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/locales/fr-FR/index.ts",
+      "module_file": "modules/local-workspace/overlay/frontend/src/lib/locales/fr-FR/index.ts",
+      "sha256": "f9e15fa40bd9d4e7fb821eef90bb0fa3873fc6440e03c59ff4a552613f0286c8",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/locales/de-DE/index.ts",
+      "module_file": "modules/local-workspace/overlay/frontend/src/lib/locales/de-DE/index.ts",
+      "sha256": "80efa73b89ba5ddf67421ab7085cc9aff13335628f9a2bf2532e59a5f9b66dd4",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/locales/pl-PL/index.ts",
+      "module_file": "modules/local-workspace/overlay/frontend/src/lib/locales/pl-PL/index.ts",
+      "sha256": "d3b143054ff39ff22b542a32bcb52a733025b3bfc6f08d911e90fcb5b5d14bfc",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/locales/es-ES/index.ts",
+      "module_file": "modules/local-workspace/overlay/frontend/src/lib/locales/es-ES/index.ts",
+      "sha256": "97a0ded5bf805fbbcd9b2711dc27acfa4663beb8fa41beed252b8e9818518522",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/locales/ru-RU/index.ts",
+      "module_file": "modules/local-workspace/overlay/frontend/src/lib/locales/ru-RU/index.ts",
+      "sha256": "63577dc135feff46b5683d4ba9440a2b0e72f29d9e779dc4934dda53159a1ad8",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/locales/ca-ES/index.ts",
+      "module_file": "modules/local-workspace/overlay/frontend/src/lib/locales/ca-ES/index.ts",
+      "sha256": "d0d17a638964edbe893c274bfa57da80a7f95dc77515c2d1968b82ffdaea6b68",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/locales/ja-JP/index.ts",
+      "module_file": "modules/local-workspace/overlay/frontend/src/lib/locales/ja-JP/index.ts",
+      "sha256": "6b089954b8001fe5766b442340040e0e5a22b42818bf718432aba1720b77590f",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/locales/zh-CN/index.ts",
+      "module_file": "modules/local-workspace/overlay/frontend/src/lib/locales/zh-CN/index.ts",
+      "sha256": "472209f981ec872259dbadde4f93c810c30faa046db00c403572e8ea1cb65ee6",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/locales/bn-IN/index.ts",
+      "module_file": "modules/local-workspace/overlay/frontend/src/lib/locales/bn-IN/index.ts",
+      "sha256": "e777b34d8d456467007ce9ffd76a01eb03692eddeed5224f8def2c9bdce256e5",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/locales/zh-TW/index.ts",
+      "module_file": "modules/local-workspace/overlay/frontend/src/lib/locales/zh-TW/index.ts",
+      "sha256": "d8d25a04ff91a3ef7f1ebb7607654edb8bdfd143c5ed3dbc59e6a21a168164c2",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/locales/pt-BR/index.ts",
+      "module_file": "modules/local-workspace/overlay/frontend/src/lib/locales/pt-BR/index.ts",
+      "sha256": "c89cacbd1db285a9f87d82c381bd253cc73910a84fcdc2605e76405663ba77ea",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/locales/it-IT/index.ts",
+      "module_file": "modules/local-workspace/overlay/frontend/src/lib/locales/it-IT/index.ts",
+      "sha256": "bca6bf2435481e076b9bdf72a32bf90ad858f2ba2e5aa487f77659237a336f2c",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/locales/en-US/index.ts",
+      "module_file": "modules/local-workspace/overlay/frontend/src/lib/locales/en-US/index.ts",
+      "sha256": "4aa25dd785c478f19b9741930fef6c687126fbdfd252d7a52949eb3c20b30091",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/stores/theme-store.ts",
+      "module_file": "modules/local-workspace/overlay/frontend/src/lib/stores/theme-store.ts",
+      "sha256": "aa37deff43e367155069df4bd16485a775b9223423e9b7cb3e73611ba1d3b2d0",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/hooks/use-source-chat.ts",
+      "module_file": "modules/local-workspace/overlay/frontend/src/lib/hooks/use-source-chat.ts",
+      "sha256": "a6cf50510469206eba9459e663d61544766cd6f64aab59a785a16331ac37c6e5",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/hooks/use-ask.ts",
+      "module_file": "modules/local-workspace/overlay/frontend/src/lib/hooks/use-ask.ts",
+      "sha256": "83fa9694363c94ba588d6ba7567cbf5e1a2e4c7d7a478adf9bf361d369c7396c",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/api/search.ts",
+      "module_file": "modules/local-workspace/overlay/frontend/src/lib/api/search.ts",
+      "sha256": "d8822ad1958e8307393a90cceb4afe93224d9515744bf99919cf6c6a047456f5",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/research-frontend/src/lib/api/client.ts",
+      "module_file": "modules/local-workspace/overlay/frontend/src/lib/api/client.ts",
+      "sha256": "6db9de938081e8a3ead4b8b082cd8ba725c3e4e6a970a74b13f8922d38ebaa21",
+      "disposition": "superseded by upstream; see local-workspace/UPSTREAM-RECONCILIATION.json"
+    },
+    {
+      "source": "patches/source.py",
+      "module_file": "modules/local-processing/overlay/open_notebook/graphs/source.py",
+      "sha256": "3d80361a59fa109f88b8a538dfff78894537ac80272572c1f5be078a5c8b32cb",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/provision.py",
+      "module_file": "modules/local-processing/overlay/open_notebook/ai/provision.py",
+      "sha256": "7310f26a051a8c95ab45448832c6c02a7d9a0755101100f8644cfe538c546b23",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/podcast_models.py",
+      "module_file": "modules/local-processing/overlay/open_notebook/podcasts/models.py",
+      "sha256": "76b2b8a7ca0f91a12c4dd64c0dc1483ed4481f6c511d0c4ef85b0aa994ab8bc9",
+      "disposition": "module source"
+    },
+    {
+      "source": "patches/cpu-constraints.txt",
+      "module_file": "modules/local-processing/cpu-constraints.txt",
+      "sha256": "84382723cccf7410420a49910b9958c94892f7aeb32c55dc2823bbce576374c6",
+      "disposition": "module source"
+    },
+    {
+      "source": "frontend/src/components/settings/DefaultModelSelectors.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/settings/DefaultModelSelectors.tsx",
+      "sha256": "e2c78488100f7ed18a8dd4a398455bcca019ebdcb0633a7aad4aef44e12639e7",
+      "disposition": "module overlay"
+    },
+    {
+      "source": "frontend/src/components/settings/DefaultModelSelectors.test.tsx",
+      "module_file": "modules/local-workspace/overlay/frontend/src/components/settings/DefaultModelSelectors.test.tsx",
+      "sha256": "aa6be5ee9cc3c157f851f70072810bc5916e33258d42f69f5c5052fd5213c444",
+      "disposition": "module overlay"
+    }
+  ],
+  "excluded": [
+    "Private reports, browser sessions, tokens, user configuration and logs",
+    "Model weights and synthetic voice audio files",
+    "Machine-specific launch agents (replaced by portable setup tools)"
+  ],
+  "replaced_infrastructure": {
+    "patches/research_router.py": "api/routers/modules.py generic authenticated proxy",
+    "patches/research_api_main.py": "api/main.py generic module registration",
+    "launch scripts": "modules/local-deployment/legacy-templates plus portable sidecar tools"
+  }
+}

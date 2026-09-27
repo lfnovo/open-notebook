@@ -46,6 +46,7 @@ from api.routers import (
     transformations,
 )
 from api.routers import commands as commands_router
+from api.routers.modules import register_module_routes
 from open_notebook.database.async_migrate import AsyncMigrationManager
 from open_notebook.exceptions import (
     AuthenticationError,
@@ -209,8 +210,12 @@ async def lifespan(app: FastAPI):
 
     logger.success("API initialization completed successfully")
 
-    # Yield control to the application
-    yield
+    from open_notebook.modules.search_adapter import SearchAdapter
+    await SearchAdapter.start()
+    try:
+        yield
+    finally:
+        await SearchAdapter.close()
 
     # Shutdown: cleanup if needed
     logger.info("API shutdown complete")
@@ -414,3 +419,6 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
+
+# Optional module routes inherit the application authentication middleware.
+register_module_routes(app)

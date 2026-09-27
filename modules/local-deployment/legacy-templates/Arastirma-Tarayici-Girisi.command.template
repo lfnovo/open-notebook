@@ -1,0 +1,82 @@
+#!/bin/bash
+# Uses the current extension transport; the old profile path is legacy fallback.
+set -euo pipefail
+
+CHROME='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+ROOT="$HOME/Library/Application Support/OpenNotebookResearch"
+if /usr/bin/python3 - "$ROOT/config.json" <<'CHECK'
+import json,sys
+try: extension=json.load(open(sys.argv[1])).get('browser_transport')=='extension'
+except (OSError,ValueError): extension=False
+sys.exit(0 if extension else 1)
+CHECK
+then
+  printf 'Guncel yontem: gunluk Chrome + Open Notebook arastirma eklentisi. Ayrica profile giris gerekmiyor.\n'
+  printf 'Eklenti panelinden Yerel baglantiyi baslatin; Chrome acik kalmalidir.\n'
+  exec /usr/bin/open -a 'Google Chrome' 'chrome://extensions/?id=diheppcpeakdedliglnjfgegpoakeanb'
+fi
+
+PROFILE="$ROOT/browser-profile"
+LOCK="$ROOT/browser.lock"
+
+if [ ! -x "$CHROME" ]; then
+  printf 'Google Chrome bulunamadi: %s\n' "$CHROME" >&2
+  exit 1
+fi
+
+if [ -f "$LOCK" ]; then
+  pid=$(/usr/bin/python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("pid",""))' "$LOCK" 2>/dev/null || true)
+  if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+    printf 'Arastirma servisi su anda bu profili kullaniyor (pid %s).\n' "$pid" >&2
+    printf 'Once arastirma tarayicisini kapatin: curl -X POST -H "Authorization: Bearer <anahtar>" http://127.0.0.1:8320/browser/close\n' >&2
+    exit 1
+  fi
+  rm -f "$LOCK"
+fi
+
+# A profile that has already collected failed sign-in attempts can keep failing. Starting
+# clean is ordinary troubleshooting, and it is the one remaining experiment for the Google
+# rejection: if a never-automated profile is also refused, the cause is not local state.
+if [ -d "$PROFILE" ]; then
+  printf 'Mevcut arastirma profili bulundu.\n'
+  printf '  1) Mevcut profille devam et\n'
+  printf '  2) Temiz profille basla (eskisi yedege tasinir, silinmez)\n'
+  printf 'Secim [1/2]: '
+  read -r choice
+  if [ "$choice" = "2" ]; then
+    stamp=$(date +%Y%m%d-%H%M%S)
+    mv "$PROFILE" "$PROFILE.onceki-$stamp"
+    printf 'Eski profil saklandi: %s\n' "$PROFILE.onceki-$stamp"
+  fi
+fi
+
+mkdir -p "$PROFILE"
+chmod 700 "$PROFILE"
+
+cat <<'TXT'
+
+Arastirma tarayicisi aciliyor (gunluk Chrome profiliniz kullanilmaz).
+
+  1. Acilan sekmelerde ChatGPT, Gemini ve Claude hesaplarina giris yapin.
+  2. Cikan guvenlik dogrulamalarini kendiniz tamamlayin.
+  3. Her hesapta Deep Research / Derin arastirma modunun gorundugunu kontrol edin.
+  4. Bitince BU Chrome penceresini tamamen kapatin (Cmd+Q).
+  5. Sonra dogrulama calistirin:  ./Arastirma-Giris-Dogrula.command
+
+Parolalariniz hicbir yerel servise girilmez ve kaydedilmez.
+
+TXT
+
+# Claim the profile for the sign-in browser so the research service refuses to attach
+# while it is open. `exec` keeps this pid, and a stale file is cleaned up on liveness
+# check, so no exit trap is needed.
+printf '%s' "$$" > "$ROOT/login-browser.pid"
+chmod 600 "$ROOT/login-browser.pid"
+
+exec "$CHROME" \
+  --user-data-dir="$PROFILE" \
+  --no-first-run \
+  --no-default-browser-check \
+  'https://chatgpt.com/' \
+  'https://gemini.google.com/app' \
+  'https://claude.ai/new'

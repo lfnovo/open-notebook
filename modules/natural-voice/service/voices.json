@@ -1,0 +1,18 @@
+{
+  "deniz": {
+    "name": "Deniz — sıcak erkek ses",
+    "seed": 21,
+    "instruct": "A middle-aged male speaker with a warm, resonant baritone voice. Natural conversational Turkish, clear pronunciation, thoughtful and relaxed podcast delivery, moderate pace."
+  },
+  "selin": {
+    "name": "Selin — canlı kadın ses",
+    "seed": 42,
+    "instruct": "A female speaker in her thirties with a warm, clear, expressive voice. Natural conversational Turkish with confident and friendly podcast delivery, moderate pace."
+  },
+  "emre": {
+    "name": "Emre — enerjik erkek ses",
+    "seed": 83,
+    "instruct": "A young adult male speaker with a clear, bright, expressive tenor voice. Natural conversational Turkish, curious and engaging podcast delivery with lively but unhurried intonation."
+  },
+  "reference_text": "Bugün iş dünyasında başarının ne anlama geldiğini konuşacağız. Büyük hedefler kadar, müşteriye verilen sözlerin tutulması da önemli. Peki, bir şirketin gerçekten değer ürettiğini nasıl anlarız?"
+}

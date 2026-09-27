@@ -1,0 +1,9 @@
+fastapi==0.135.1
+uvicorn==0.42.0
+httpx==0.28.1
+pypdf==6.19.0
+python-docx==1.2.0
+watchdog==6.0.0
+usearch==2.25.3
+numpy==2.4.3
+openpyxl==3.1.5

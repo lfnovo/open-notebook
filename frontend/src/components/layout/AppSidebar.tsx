@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useModuleNavigation, type NavigationItem } from '@/lib/modules/navigation'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -42,16 +43,18 @@ import {
   Command,
 } from 'lucide-react'
 
-const getNavigation = (t: TFunction) => [
+const getNavigation = (t: TFunction, moduleItems: (section: string) => NavigationItem[]) => [
   {
     title: t('navigation.collect'),
     items: [
+      ...moduleItems('collect'),
       { name: t('navigation.sources'), href: '/sources', icon: FileText, iconClass: 'text-sage' },
     ],
   },
   {
     title: t('navigation.process'),
     items: [
+      ...moduleItems('process'),
       { name: t('navigation.notebooks'), href: '/notebooks', icon: Book, iconClass: 'text-teal' },
       { name: t('navigation.askAndSearch'), href: '/search', icon: Search, iconClass: undefined },
     ],
@@ -59,12 +62,14 @@ const getNavigation = (t: TFunction) => [
   {
     title: t('navigation.create'),
     items: [
+      ...moduleItems('create'),
       { name: t('navigation.podcasts'), href: '/podcasts', icon: Mic, iconClass: 'text-mauve' },
     ],
   },
   {
     title: t('navigation.manage'),
     items: [
+      ...moduleItems('manage'),
       { name: t('navigation.models'), href: '/settings/models', icon: Bot, iconClass: undefined },
       { name: t('navigation.transformations'), href: '/transformations', icon: Shuffle, iconClass: undefined },
       { name: t('navigation.settings'), href: '/settings', icon: Settings, iconClass: undefined },
@@ -88,7 +93,8 @@ type CreateTarget = 'source' | 'notebook' | 'podcast'
 
 export function AppSidebar() {
   const { t } = useTranslation()
-  const navigation = getNavigation(t)
+  const moduleItems = useModuleNavigation(t)
+  const navigation = getNavigation(t, moduleItems)
   const pathname = usePathname()
   const { logout } = useAuth()
   const { isCollapsed, toggleCollapse } = useSidebarStore()

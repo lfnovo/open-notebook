@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "id": "local-processing",
+  "name": "Local processing adapters",
+  "description": "Existing provider compatibility fixes and CPU-only dependency constraints.",
+  "version": "0.1.0",
+  "author": "karacaismail",
+  "activation": "build",
+  "dependencies": [],
+  "settings": [
+    {
+      "key": "prefer_turkish",
+      "kind": "boolean",
+      "default": true,
+      "label_key": "modules.fields.turkish",
+      "help_key": "modules.fields.turkishHelp"
+    }
+  ],
+  "model_policies": []
+}

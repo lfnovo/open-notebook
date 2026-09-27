@@ -1,0 +1,6 @@
+# Private runtime state may contain complete research outputs and diagnostics.
+/request-results/
+/request-state/
+/model-cooldowns.json
+/logs/
+/empty-workspace/

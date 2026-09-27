@@ -1,0 +1,355 @@
+{
+  "$defs": {
+    "FrontendSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "entry": {
+          "pattern": "^[a-zA-Z0-9_/-]+\\.tsx$",
+          "title": "Entry",
+          "type": "string"
+        },
+        "route": {
+          "pattern": "^/[a-z][a-z0-9/-]*$",
+          "title": "Route",
+          "type": "string"
+        },
+        "label_key": {
+          "title": "Label Key",
+          "type": "string"
+        },
+        "section": {
+          "default": "process",
+          "enum": [
+            "collect",
+            "process",
+            "create",
+            "manage"
+          ],
+          "title": "Section",
+          "type": "string"
+        },
+        "icon": {
+          "default": "puzzle",
+          "enum": [
+            "telescope",
+            "puzzle"
+          ],
+          "title": "Icon",
+          "type": "string"
+        },
+        "search_widget": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_/-]+\\.tsx$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Search Widget"
+        }
+      },
+      "required": [
+        "entry",
+        "route",
+        "label_key"
+      ],
+      "title": "FrontendSpec",
+      "type": "object"
+    },
+    "ModelPolicySpec": {
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "title": "Provider",
+          "type": "string"
+        },
+        "model_type": {
+          "title": "Model Type",
+          "type": "string"
+        },
+        "names": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Names",
+          "type": "array"
+        },
+        "config": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Config",
+          "type": "object"
+        }
+      },
+      "required": [
+        "provider",
+        "model_type"
+      ],
+      "title": "ModelPolicySpec",
+      "type": "object"
+    },
+    "ServiceSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "url_env": {
+          "pattern": "^[A-Z][A-Z0-9_]+$",
+          "title": "Url Env",
+          "type": "string"
+        },
+        "key_env": {
+          "pattern": "^[A-Z][A-Z0-9_]+$",
+          "title": "Key Env",
+          "type": "string"
+        },
+        "health_path": {
+          "default": "health",
+          "pattern": "^[a-zA-Z0-9_/-]+$",
+          "title": "Health Path",
+          "type": "string"
+        },
+        "busy_fields": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Busy Fields",
+          "type": "array"
+        },
+        "pending_path": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9_/-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pending Path"
+        },
+        "proxy_alias": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Proxy Alias"
+        },
+        "control_path": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_/-]+$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Control Path"
+        }
+      },
+      "required": [
+        "url_env",
+        "key_env"
+      ],
+      "title": "ServiceSpec",
+      "type": "object"
+    },
+    "SettingSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Key",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "boolean",
+            "integer",
+            "choice",
+            "text"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "default": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "boolean"
+            }
+          ],
+          "title": "Default"
+        },
+        "label_key": {
+          "title": "Label Key",
+          "type": "string"
+        },
+        "help_key": {
+          "title": "Help Key",
+          "type": "string"
+        },
+        "minimum": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Minimum"
+        },
+        "maximum": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Maximum"
+        },
+        "options": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Options",
+          "type": "array"
+        }
+      },
+      "required": [
+        "key",
+        "kind",
+        "default",
+        "label_key",
+        "help_key"
+      ],
+      "title": "SettingSpec",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "id": {
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "description": {
+      "title": "Description",
+      "type": "string"
+    },
+    "version": {
+      "title": "Version",
+      "type": "string"
+    },
+    "author": {
+      "title": "Author",
+      "type": "string"
+    },
+    "activation": {
+      "enum": [
+        "runtime",
+        "external",
+        "build"
+      ],
+      "title": "Activation",
+      "type": "string"
+    },
+    "dependencies": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Dependencies",
+      "type": "array"
+    },
+    "frontend": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FrontendSpec"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "service": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ServiceSpec"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "settings": {
+      "items": {
+        "$ref": "#/$defs/SettingSpec"
+      },
+      "title": "Settings",
+      "type": "array"
+    },
+    "model_policies": {
+      "items": {
+        "$ref": "#/$defs/ModelPolicySpec"
+      },
+      "title": "Model Policies",
+      "type": "array"
+    },
+    "request_defaults": {
+      "additionalProperties": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "type": "object"
+      },
+      "title": "Request Defaults",
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema_version",
+    "id",
+    "name",
+    "description",
+    "version",
+    "author",
+    "activation"
+  ],
+  "title": "Manifest",
+  "type": "object"
+}

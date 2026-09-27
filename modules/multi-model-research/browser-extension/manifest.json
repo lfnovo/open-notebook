@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Open Notebook — Araştırma Bağlantısı",
+  "version": "0.3.1",
+  "description": "Yerel Open Notebook görevlerini üç sağlayıcının hesap oturumlarıyla, kendisinin açtığı sekmelerde yürütür.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "nativeMessaging",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "https://gemini.google.com/*",
+    "https://claude.ai/*",
+    "https://connector-openai-deep-research.web-sandbox.oaiusercontent.com/*"
+  ],
+  "background": {
+    "service_worker": "worker.js"
+  },
+  "action": {
+    "default_title": "Open Notebook araştırma bağlantısı",
+    "default_popup": "popup.html"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; connect-src 'none'"
+  }
+}

@@ -6,6 +6,7 @@ from surrealdb import RecordID
 
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel
+from open_notebook.modules.runtime import model_policy
 
 
 async def _resolve_model_config(
@@ -28,6 +29,8 @@ async def _resolve_model_config(
         from open_notebook.ai.key_provider import provision_provider_keys
 
         await provision_provider_keys(model.provider)
+    module_config = model_policy(model.provider, model.name, model.type)
+    config = {**config, **module_config}
     provider = model.provider
     if provider == "anthropic_compatible":
         provider, config = await resolve_anthropic_compatible_config(config)

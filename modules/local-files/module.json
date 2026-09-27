@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "id": "local-files",
+  "name": "Local files",
+  "description": "Private local file catalog, multilingual full-text and semantic retrieval with incremental indexing.",
+  "version": "0.1.0",
+  "author": "karacaismail",
+  "activation": "runtime",
+  "dependencies": [],
+  "service": {
+    "url_env": "LOCAL_FILES_URL",
+    "key_env": "LOCAL_FILES_KEY",
+    "control_path": "control"
+  },
+  "settings": [
+    {
+      "key": "result_limit",
+      "kind": "integer",
+      "default": 20,
+      "minimum": 5,
+      "maximum": 60,
+      "label_key": "files.limit",
+      "help_key": "files.limitHelp"
+    }
+  ],
+  "request_defaults": {
+    "POST search": {
+      "limit": "result_limit"
+    }
+  },
+  "model_policies": [],
+  "frontend": {
+    "entry": "page.tsx",
+    "route": "/files",
+    "label_key": "files.title",
+    "section": "collect",
+    "icon": "puzzle",
+    "search_widget": "SearchPanel.tsx"
+  }
+}

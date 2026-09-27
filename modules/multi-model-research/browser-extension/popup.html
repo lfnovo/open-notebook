@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="tr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="popup.css"><title>Open Notebook araştırma bağlantısı</title></head>
+<body>
+<h1>Araştırma bağlantısı</h1>
+<p>Open Notebook görevleri bu eklentinin açtığı araştırma sekmelerinde yürür.</p>
+<button id="connect" type="button">Yerel bağlantıyı başlat</button>
+<button id="disconnect" type="button">Bağlantıyı durdur</button>
+<p id="connection" role="status">Yerel bağlantı kontrol ediliyor…</p>
+<p>Seçili sekmedeki erişim kontrolü soru göndermez.</p>
+<button id="check" type="button">Bu sekmeyi kontrol et</button>
+<p id="status" role="status" aria-live="polite">Henüz kontrol edilmedi.</p>
+<pre id="result" hidden></pre>
+<p class="note">Bu kontrol, araştırma erişiminin kesin doğrulaması değildir. Görevler ve raporlar yalnız yerel Open Notebook bağlantısıyla aktarılır. Bağlantıyı durdurmak sağlayıcıda başlamış araştırmayı iptal etmez.</p>
+<button id="close" type="button">Paneli kapat</button>
+<script src="popup.js"></script>
+</body></html>

@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "id": "local-workspace",
+  "name": "Local workspace design",
+  "description": "Optional local interface, theme and compatibility customizations.",
+  "version": "0.1.0",
+  "author": "karacaismail",
+  "activation": "build",
+  "dependencies": [],
+  "settings": [
+    {
+      "key": "density",
+      "kind": "choice",
+      "default": "comfortable",
+      "label_key": "modules.fields.density",
+      "help_key": "modules.fields.densityHelp",
+      "options": [
+        "comfortable",
+        "compact"
+      ]
+    }
+  ],
+  "model_policies": []
+}

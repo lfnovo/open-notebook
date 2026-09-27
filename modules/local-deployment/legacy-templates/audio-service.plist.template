@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>DO_NOT_TRACK</key>
+		<string>1</string>
+		<key>HF_HUB_DISABLE_TELEMETRY</key>
+		<string>1</string>
+		<key>HF_HUB_OFFLINE</key>
+		<string>1</string>
+		<key>NUMBA_CACHE_DIR</key>
+		<string>__USER_HOME__/Library/Application Support/OpenNotebookAudio/cache</string>
+		<key>PATH</key>
+		<string>/usr/bin:/bin:/usr/sbin:/sbin</string>
+	</dict>
+	<key>KeepAlive</key>
+	<true/>
+	<key>Label</key>
+	<string>local.open-notebook.audio</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>__USER_HOME__/Library/Application Support/OpenNotebookAudio/venv/bin/python</string>
+		<string>__USER_HOME__/Library/Application Support/OpenNotebookAudio/server.py</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardErrorPath</key>
+	<string>__USER_HOME__/Library/Application Support/OpenNotebookAudio/logs/error.log</string>
+	<key>StandardOutPath</key>
+	<string>__USER_HOME__/Library/Application Support/OpenNotebookAudio/logs/server.log</string>
+	<key>ThrottleInterval</key>
+	<integer>10</integer>
+	<key>WorkingDirectory</key>
+	<string>__USER_HOME__/Library/Application Support/OpenNotebookAudio</string>
+</dict>
+</plist>

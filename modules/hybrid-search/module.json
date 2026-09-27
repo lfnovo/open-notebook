@@ -1,0 +1,13 @@
+{
+  "schema_version": 1, "id": "hybrid-search", "name": "Hybrid search", "description": "Local passage retrieval with multilingual BM25, vectors, rank fusion and neural reranking.",
+  "version": "0.1.0", "author": "karacaismail", "activation": "runtime", "dependencies": [],
+  "settings": [
+    {"key":"candidate_count","kind":"integer","default":120,"minimum":20,"maximum":400,"label_key":"modules.fields.searchCandidates","help_key":"modules.fields.searchCandidatesHelp"},
+    {"key":"rerank_limit","kind":"integer","default":32,"minimum":10,"maximum":80,"label_key":"modules.fields.rerankLimit","help_key":"modules.fields.rerankLimitHelp"},
+    {"key":"ask_results","kind":"integer","default":12,"minimum":5,"maximum":30,"label_key":"modules.fields.askResults","help_key":"modules.fields.askResultsHelp"},
+    {"key":"rerank_enabled","kind":"boolean","default":true,"label_key":"modules.fields.rerankEnabled","help_key":"modules.fields.rerankEnabledHelp"},
+    {"key":"sync_interval","kind":"integer","default":60,"minimum":15,"maximum":600,"label_key":"modules.fields.searchSync","help_key":"modules.fields.searchSyncHelp"},
+    {"key":"metadata_cache_seconds","kind":"integer","default":10,"minimum":0,"maximum":300,"label_key":"modules.fields.metadataCache","help_key":"modules.fields.metadataCacheHelp"},
+    {"key":"weak_relevance_permille","kind":"integer","default":1,"minimum":0,"maximum":1000,"label_key":"modules.fields.weakRelevance","help_key":"modules.fields.weakRelevanceHelp"}
+  ], "model_policies": []
+}

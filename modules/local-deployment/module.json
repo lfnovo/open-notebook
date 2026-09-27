@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "id": "local-deployment",
+  "name": "Local deployment",
+  "description": "Portable startup, backup and sidecar installation tools.",
+  "version": "0.1.0",
+  "author": "karacaismail",
+  "activation": "external",
+  "dependencies": [],
+  "settings": [
+    {
+      "key": "compression",
+      "kind": "choice",
+      "default": "gzip",
+      "label_key": "modules.fields.compression",
+      "help_key": "modules.fields.compressionHelp",
+      "options": [
+        "gzip",
+        "xz"
+      ]
+    }
+  ],
+  "model_policies": []
+}

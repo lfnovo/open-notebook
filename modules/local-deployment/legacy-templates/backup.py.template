@@ -1,0 +1,186 @@
+#!/usr/bin/env python3
+"""Consistent local backup of actual Colima container volumes (not empty host bind dirs)."""
+from datetime import datetime
+import fcntl
+import hashlib
+import json
+import os
+from pathlib import Path
+import shutil
+import sqlite3
+import subprocess
+import tarfile
+import tempfile
+import urllib.request
+import urllib.error
+
+ROOT = Path(__file__).resolve().parent
+DEST = Path.home() / 'Library/Application Support/OpenNotebookBackups'
+DOCKER = ['__USER_HOME__/.local/bin/docker', '--host', 'unix://__USER_HOME__/.colima/factory/docker.sock']
+APP = 'open-notebook-local-open_notebook-1'
+DB = 'open-notebook-local-surrealdb-1'
+
+
+def docker(*args):
+    return subprocess.run(DOCKER + list(args), check=True, capture_output=True, text=True)
+
+
+def verify_archive(path):
+    """Hash each member once, without repeated backward seeks through gzip."""
+    observed = {}; names = set(); saved = None
+    with tarfile.open(path, mode='r|gz') as archive:
+        for member in archive:
+            rel = Path(member.name)
+            if rel.is_absolute() or '..' in rel.parts or member.name in names:
+                raise RuntimeError('Unsafe or duplicate backup archive member')
+            names.add(member.name)
+            if member.isdir():
+                continue
+            if not member.isfile():
+                raise RuntimeError('Unsupported backup archive member')
+            stream = archive.extractfile(member)
+            if member.name == 'manifest.json':
+                try:
+                    saved = json.load(stream)
+                except (ValueError, TypeError) as error:
+                    raise RuntimeError('Invalid backup manifest') from error
+                continue
+            checksum = hashlib.sha256(); size = 0
+            while True:
+                block = stream.read(1024 * 1024)
+                if not block:
+                    break
+                checksum.update(block); size += len(block)
+            if size != member.size:
+                raise RuntimeError('Truncated backup archive member')
+            observed[member.name] = {'size':size, 'sha256':checksum.hexdigest()}
+    if not isinstance(saved, dict) or saved.get('files') != observed or not observed:
+        raise RuntimeError('Backup manifest, membership or checksum verification failed')
+    return len(observed)
+
+
+def busy_reason():
+    def get(url):
+        with urllib.request.urlopen(url, timeout=10) as response:
+            return json.load(response)
+    try:
+        queues = get('http://127.0.0.1:8317/health').get('queues', {})
+        if any(v['active'] or v['waiting'] for v in queues.values()):
+            return 'Account requests are active'
+    except (OSError, ValueError):
+        pass
+    try:
+        voice = get('http://127.0.0.1:8319/health')
+        if voice.get('active') or voice.get('waiting'):
+            return 'Local neural speech is active'
+    except (OSError, ValueError):
+        pass
+    try:
+        if get('http://127.0.0.1:8318/health').get('stt_active'):
+            return 'Local transcription is active'
+    except (OSError, ValueError):
+        pass
+    try:
+        research = get('http://127.0.0.1:8320/health')
+        if research.get('active_synthesis') or research.get('pending_exports'):
+            return 'Research synthesis or notebook export is active'
+    except (OSError, ValueError):
+        pass
+    # Inspect every source, including pages beyond the first 100 records.
+    try:
+        offset = 0
+        while True:
+            sources = get('http://127.0.0.1:5055/api/sources?limit=100&offset='+str(offset))
+            if any(s.get('status') in ('running','queued','pending','submitted','processing') for s in sources):
+                return 'Source processing is active'
+            if len(sources) < 100: break
+            offset += 100
+        episodes = get('http://127.0.0.1:5055/api/podcasts/episodes')
+        if any(e.get('job_status') in ('running','queued','pending','submitted','processing') for e in episodes):
+            return 'Podcast generation is active'
+    except (OSError, ValueError):
+        if docker('inspect','--format','{{.State.Running}}',APP).stdout.strip() == 'true':
+            return 'Application status cannot be checked safely'
+    return None
+
+
+def main():
+    DEST.mkdir(parents=True, exist_ok=True, mode=0o700)
+    os.chmod(DEST, 0o700)
+    with (DEST / '.backup.lock').open('w') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        reason = busy_reason()
+        if reason:
+            print(json.dumps({'status':'skipped_busy','reason':reason}))
+            return
+        stamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+        backup = DEST / ('open-notebook-' + stamp + '.tar.gz')
+        app_running = docker('inspect', '--format', '{{.State.Running}}', APP).stdout.strip() == 'true'
+        db_running = docker('inspect', '--format', '{{.State.Running}}', DB).stdout.strip() == 'true'
+        with tempfile.TemporaryDirectory(prefix='staging-', dir=DEST) as temp:
+            stage = Path(temp)
+            try:
+                if app_running: docker('stop', '--time', '45', APP)
+                if db_running: docker('stop', '--time', '45', DB)
+                # docker cp reads the VM/container contents even though Colima does
+                # not share the host's Documents folder. Include upload/audio files.
+                (stage / 'notebook_data').mkdir()
+                image = docker('inspect', '--format', '{{.Config.Image}}', APP).stdout.strip()
+                proc = subprocess.Popen(DOCKER + ['run', '--rm', '--network', 'none', '--read-only',
+                    '--volumes-from', APP + ':ro', '--entrypoint', 'tar', image,
+                    '-C', '/app/data', '--exclude=./.cache', '-cf', '-', '.'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                with tarfile.open(fileobj=proc.stdout, mode='r|') as stream:
+                    for member in stream:
+                        rel = Path(member.name)
+                        if rel.is_absolute() or '..' in rel.parts or member.issym() or member.islnk():
+                            raise RuntimeError('Unsafe backup archive member')
+                        dest = stage / 'notebook_data' / rel
+                        if member.isdir(): dest.mkdir(parents=True, exist_ok=True)
+                        elif member.isfile():
+                            dest.parent.mkdir(parents=True, exist_ok=True)
+                            with dest.open('wb') as out: shutil.copyfileobj(stream.extractfile(member), out)
+                if proc.wait() != 0: raise RuntimeError('Failed to copy application data')
+                (stage / 'surreal_data').mkdir()
+                docker('cp', DB + ':/mydata/.', str(stage / 'surreal_data'))
+                config = stage / 'configuration'; config.mkdir()
+                for name in ['compose.yaml', '.env', 'control.sh', 'backup.py', 'install-autostart.py', 'README.md', 'YAPILANDIRMA-DENETIMI.md', 'account-bridge', 'audio', 'natural-voice', 'research', 'browser-access-probe', 'embedding', 'patches', '.client']:
+                    src = ROOT / name
+                    if src.is_dir(): shutil.copytree(src, config / name, ignore=shutil.ignore_patterns('__pycache__', 'logs', 'empty-workspace', 'node_modules', '.next', 'browser-profile'))
+                    elif src.exists(): shutil.copy2(src, config / name)
+                research_data = Path.home() / 'Library/Application Support/OpenNotebookResearch/data'
+                if (research_data/'research.sqlite3').is_file():
+                    research_copy = stage/'research_data'; research_copy.mkdir(mode=0o700)
+                    # SQLite backup includes the WAL consistently. Originals are immutable;
+                    # copy them after the snapshot so every referenced file is available.
+                    with sqlite3.connect('file:'+str(research_data/'research.sqlite3')+'?mode=ro',uri=True) as source:
+                        with sqlite3.connect(research_copy/'research.sqlite3') as target:
+                            source.backup(target)
+                            if target.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
+                                raise RuntimeError('Research database integrity check failed')
+                    if (research_data/'artifacts').exists():
+                        shutil.copytree(research_data/'artifacts',research_copy/'artifacts')
+                    # Browser job logs hold the only copy of a web report and its submission
+                    # journal. The signed-in browser profile is deliberately NOT backed up.
+                    if (research_data/'browser_jobs').exists():
+                        shutil.copytree(research_data/'browser_jobs',research_copy/'browser_jobs')
+                files = [p for p in stage.rglob('*') if p.is_file()]
+                if not any(p.is_file() and p.stat().st_size for p in (stage/'surreal_data').rglob('*')):
+                    raise RuntimeError('Database backup is empty')
+                manifest = {str(p.relative_to(stage)): {'size': p.stat().st_size, 'sha256': hashlib.sha256(p.read_bytes()).hexdigest()} for p in files}
+                (stage/'manifest.json').write_text(json.dumps({'created':stamp,'files':manifest}, indent=2))
+                partial = backup.with_suffix('.partial')
+                with tarfile.open(partial, 'w:gz') as tar:
+                    for child in stage.iterdir(): tar.add(child, arcname=child.name)
+                partial.chmod(0o600)
+                verify_archive(partial)
+                partial.replace(backup)
+            finally:
+                if db_running: docker('start', DB)
+                if app_running: docker('start', APP)
+        # Keep seven verified timestamped backups; never delete the last good copy.
+        for old in sorted(DEST.glob('open-notebook-*.tar.gz'))[:-7]: old.unlink()
+        print(json.dumps({'status':'verified', 'backup':str(backup), 'bytes':backup.stat().st_size}))
+
+
+if __name__ == '__main__':
+    main()

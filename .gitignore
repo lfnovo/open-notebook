@@ -154,3 +154,19 @@ docker-compose.override.yml
 # Local QA/debug artifacts
 screenshot-*.png
 history.txt
+
+# Optional module private/runtime/build artifacts
+modules/installed.json
+modules/build.json
+modules/**/service/config.json
+modules/**/service/.*-key
+modules/**/service/data/
+modules/**/service/models/
+modules/**/service/voices/
+modules/**/service/tmp/
+modules/**/service/venv/
+modules/**/service/empty-workspace/
+frontend/src/modules/
+
+# Generated non-secret module build defaults
+modules/defaults.json

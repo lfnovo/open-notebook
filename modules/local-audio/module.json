@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "id": "local-audio",
+  "name": "Local transcription",
+  "description": "MLX Whisper transcription and macOS speech fallback.",
+  "version": "0.1.0",
+  "author": "karacaismail",
+  "activation": "external",
+  "dependencies": [],
+  "settings": [
+    {
+      "key": "timeout_seconds",
+      "kind": "integer",
+      "default": 600,
+      "label_key": "modules.fields.timeout",
+      "help_key": "modules.fields.timeoutHelp",
+      "minimum": 30,
+      "maximum": 7200
+    }
+  ],
+  "model_policies": [
+    {
+      "provider": "openai_compatible",
+      "model_type": "speech_to_text",
+      "names": [
+        "whisper-small-local"
+      ],
+      "config": {
+        "timeout": "timeout_seconds"
+      }
+    },
+    {
+      "provider": "openai_compatible",
+      "model_type": "text_to_speech",
+      "names": [
+        "macos-turkish-tts"
+      ],
+      "config": {
+        "timeout": "timeout_seconds"
+      }
+    }
+  ]
+}

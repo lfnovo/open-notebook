@@ -1,0 +1,7 @@
+#!/bin/bash
+# Checks the configured transport; no request to close everyday Chrome.
+set -euo pipefail
+DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PY="$HOME/Library/Application Support/OpenNotebookResearch/venv/bin/python"
+[ -x "$PY" ] || PY=/usr/bin/python3
+exec "$PY" "$DIR/research/verify_login.py"

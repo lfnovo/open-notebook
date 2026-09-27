@@ -1,0 +1,4 @@
+#!/bin/bash
+set -euo pipefail
+cd '__USER_HOME__/Library/Application Support/OpenNotebookAccountBridge/empty-workspace'
+exec '__USER_HOME__/Library/Application Support/OpenNotebookAccountBridge/agy'

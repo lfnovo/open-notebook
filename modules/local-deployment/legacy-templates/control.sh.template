@@ -1,0 +1,208 @@
+#!/bin/bash
+set -euo pipefail
+DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+export PATH="__USER_HOME__/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+BRIDGE_DIR="__USER_HOME__/Library/Application Support/OpenNotebookAccountBridge"
+BRIDGE_SERVICE="gui/$(id -u)/local.open-notebook.account-bridge"
+EMBED_DIR="__USER_HOME__/Library/Application Support/OpenNotebookEmbedding"
+EMBED_SERVICE="gui/$(id -u)/local.open-notebook.embedding"
+AUDIO_DIR="__USER_HOME__/Library/Application Support/OpenNotebookAudio"
+AUDIO_SERVICE="gui/$(id -u)/local.open-notebook.audio"
+VOICE_DIR="__USER_HOME__/Library/Application Support/OpenNotebookNaturalVoice"
+VOICE_SERVICE="gui/$(id -u)/local.open-notebook.natural-voice"
+
+RESEARCH_DIR="__USER_HOME__/Library/Application Support/OpenNotebookResearch"
+RESEARCH_SERVICE="gui/$(id -u)/local.open-notebook.research"
+
+research_start() {
+  mkdir -p "$RESEARCH_DIR/logs" "$RESEARCH_DIR/data"
+  chmod 700 "$RESEARCH_DIR" "$RESEARCH_DIR/data"
+  local changed=0 file
+  local files=()
+  for file in "$DIR/research/"*.py; do
+    [ -f "$file" ] && files+=("${file##*/}")
+  done
+  files+=(config.json .research-key service.plist requirements.lock)
+  for file in "${files[@]}"; do
+    if { [ "$file" = config.json ] || [ "$file" = .research-key ]; } && [ -f "$RESEARCH_DIR/$file" ]; then continue; fi
+    if ! cmp -s "$DIR/research/$file" "$RESEARCH_DIR/$file"; then changed=1; fi
+  done
+  if [ "$changed" -eq 1 ] && curl --fail --silent http://127.0.0.1:8320/health | /usr/bin/python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get("active_synthesis") or d.get("pending_exports") else 1)' 2>/dev/null; then
+    printf 'Arastirma calisiyor; guncellemeden once bitmesini bekleyin.\n' >&2
+    return 1
+  fi
+  for file in "${files[@]}"; do
+    if { [ "$file" = config.json ] || [ "$file" = .research-key ]; } && [ -f "$RESEARCH_DIR/$file" ]; then continue; fi
+    cp "$DIR/research/$file" "$RESEARCH_DIR/$file"
+  done
+  chmod 600 "$RESEARCH_DIR/.research-key"
+  "$RESEARCH_DIR/venv/bin/python" "$RESEARCH_DIR/install_extension_host.py"
+  if ! launchctl print "$RESEARCH_SERVICE" >/dev/null 2>&1; then
+    launchctl bootstrap "gui/$(id -u)" "$RESEARCH_DIR/service.plist"
+  elif [ "$changed" -eq 1 ]; then
+    launchctl kickstart -k "$RESEARCH_SERVICE"
+  fi
+  local attempt
+  for attempt in {1..60}; do
+    if curl --fail --silent http://127.0.0.1:8320/health >/dev/null; then return; fi
+    sleep 0.5
+  done
+  printf 'Yerel arastirma servisi baslatilamadi.\n' >&2
+  return 1
+}
+
+voice_start() {
+  mkdir -p "$VOICE_DIR/logs" "$VOICE_DIR/voices"
+  local changed=0 file
+  for file in server.py .voice-key service.plist voices.json model-info.json voices/deniz.wav voices/selin.wav voices/emre.wav; do
+    if ! cmp -s "$DIR/natural-voice/$file" "$VOICE_DIR/$file"; then
+      cp "$DIR/natural-voice/$file" "$VOICE_DIR/$file"
+      changed=1
+    fi
+  done
+  chmod 600 "$VOICE_DIR/.voice-key"
+  if ! launchctl print "$VOICE_SERVICE" >/dev/null 2>&1; then
+    launchctl bootstrap "gui/$(id -u)" "$VOICE_DIR/service.plist"
+  elif [ "$changed" -eq 1 ]; then
+    launchctl kickstart -k "$VOICE_SERVICE"
+  fi
+  local attempt
+  for attempt in {1..120}; do
+    if curl --fail --silent http://127.0.0.1:8319/health >/dev/null; then return; fi
+    sleep 0.5
+  done
+  printf 'Yerel dogal ses servisi baslatilamadi.\n' >&2
+  return 1
+}
+
+audio_start() {
+  local changed=0 file
+  for file in server.py .audio-key service.plist; do
+    if ! cmp -s "$DIR/audio/$file" "$AUDIO_DIR/$file"; then
+      cp "$DIR/audio/$file" "$AUDIO_DIR/$file"
+      changed=1
+    fi
+  done
+  chmod 600 "$AUDIO_DIR/.audio-key"
+  if ! launchctl print "$AUDIO_SERVICE" >/dev/null 2>&1; then
+    launchctl bootstrap "gui/$(id -u)" "$AUDIO_DIR/service.plist"
+  elif [ "$changed" -eq 1 ]; then
+    launchctl kickstart -k "$AUDIO_SERVICE"
+  fi
+  local attempt
+  for attempt in {1..60}; do
+    if curl --fail --silent http://127.0.0.1:8318/health >/dev/null; then return; fi
+    sleep 0.5
+  done
+  printf "Yerel ses servisi baslatilamadi.\n" >&2
+  return 1
+}
+
+embedding_start() {
+  mkdir -p "$EMBED_DIR/logs" "$EMBED_DIR/models"
+  chmod 700 "$EMBED_DIR"
+  cp "$DIR/embedding/service.plist" "$EMBED_DIR/service.plist"
+  if ! launchctl print "$EMBED_SERVICE" >/dev/null 2>&1; then
+    launchctl bootstrap "gui/$(id -u)" "$EMBED_DIR/service.plist"
+  fi
+  local attempt
+  for attempt in {1..30}; do
+    if curl --fail --silent http://127.0.0.1:11434/api/version >/dev/null; then
+      if ! OLLAMA_HOST=127.0.0.1:11434 "$EMBED_DIR/ollama" show embeddinggemma:300m-qat-q8_0 >/dev/null 2>&1; then
+        OLLAMA_HOST=127.0.0.1:11434 "$EMBED_DIR/ollama" pull embeddinggemma:300m-qat-q8_0
+      fi
+      return
+    fi
+    sleep 0.5
+  done
+  printf 'Yerel embedding servisi baslatilamadi: %s/logs/error.log\n' "$EMBED_DIR" >&2
+  return 1
+}
+
+bridge_start() {
+  mkdir -p "$BRIDGE_DIR/logs" "$BRIDGE_DIR/empty-workspace" "$HOME/.gemini/config/agents"
+  chmod 700 "$BRIDGE_DIR"
+  local changed=0 file
+  for file in server.py cancellation.py preliminary.py notebook-preliminary.md config.json .bridge-key service.plist; do
+    if ! cmp -s "$DIR/account-bridge/$file" "$BRIDGE_DIR/$file"; then
+      cp "$DIR/account-bridge/$file" "$BRIDGE_DIR/$file"
+      changed=1
+    fi
+  done
+  chmod 600 "$BRIDGE_DIR/.bridge-key"
+  cp "$DIR/account-bridge/notebook-text.md" "$HOME/.gemini/config/agents/notebook-text.md"
+  if ! launchctl print "$BRIDGE_SERVICE" >/dev/null 2>&1; then
+    launchctl bootstrap "gui/$(id -u)" "$BRIDGE_DIR/service.plist"
+  elif [ "$changed" -eq 1 ]; then
+    launchctl kickstart -k "$BRIDGE_SERVICE"
+  fi
+  local attempt
+  for attempt in {1..30}; do
+    if curl --fail --silent http://127.0.0.1:8317/health >/dev/null; then return; fi
+    sleep 0.5
+  done
+  printf 'Hesap baglantisi baslatilamadi. Gunluk: %s/logs/error.log\n' "$BRIDGE_DIR" >&2
+  return 1
+}
+
+compose() {
+  docker --config "$DIR/.client" \
+    --host unix://__USER_HOME__/.colima/factory/docker.sock \
+    compose --project-directory "$DIR" --env-file "$DIR/.env" \
+    -f "$DIR/compose.yaml" "$@"
+}
+
+case "${1:-start}" in
+  start)
+    bridge_start
+    embedding_start
+    audio_start
+    voice_start
+    research_start
+    if ! colima status --profile factory >/dev/null 2>&1; then
+      colima start --profile factory
+    fi
+    compose up -d --wait --wait-timeout 1200
+    printf '\nOpen Notebook: http://localhost:8502\n'
+    ;;
+  stop)
+    launchctl bootout "$RESEARCH_SERVICE" 2>/dev/null || true
+    compose stop
+    launchctl bootout "$BRIDGE_SERVICE" 2>/dev/null || true
+    launchctl bootout "$EMBED_SERVICE" 2>/dev/null || true
+    launchctl bootout "$AUDIO_SERVICE" 2>/dev/null || true
+    launchctl bootout "$VOICE_SERVICE" 2>/dev/null || true
+    ;;
+  restart)
+    bridge_start
+    embedding_start
+    audio_start
+    voice_start
+    research_start
+    launchctl kickstart -k "$BRIDGE_SERVICE"
+    launchctl kickstart -k "$EMBED_SERVICE"
+    launchctl kickstart -k "$AUDIO_SERVICE"
+    launchctl kickstart -k "$VOICE_SERVICE"
+    launchctl kickstart -k "$RESEARCH_SERVICE"
+    compose restart
+    compose up -d --wait --wait-timeout 1200
+    ;;
+  status)
+    compose ps
+    curl --fail --silent http://127.0.0.1:8317/health
+    printf '\n'
+    curl --fail --silent http://127.0.0.1:11434/api/version
+    printf '\n'
+    curl --fail --silent http://127.0.0.1:8318/health
+    printf '\n'
+    curl --fail --silent http://127.0.0.1:8319/health
+    printf '\n'
+    curl --fail --silent http://127.0.0.1:8320/health
+    printf '\n'
+    ;;
+  research-start) research_start ;;
+  bridge-start) bridge_start ;;
+  backup) /usr/bin/python3 "$DIR/backup.py" ;;
+  logs) compose logs --tail 150 ;;
+  *) printf 'Kullanim: %s {start|stop|restart|status|logs|backup}\n' "$0"; exit 1 ;;
+esac

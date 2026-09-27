@@ -16,6 +16,9 @@
 
 version: 1
 
+pr_descriptions:
+  cubic_review_link: false
+
 reviews:
   # Skip files with no reviewable logic to preserve the monthly reviewed-line quota:
   # CHANGELOG entries are prose (and every PR + rebase re-reviews them); lockfiles

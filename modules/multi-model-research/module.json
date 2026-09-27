@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "id": "multi-model-research",
+  "name": "Multi-model research",
+  "description": "Evidence-preserving research with optional account-based preliminary research, browser reports and synthesis.",
+  "version": "0.1.0",
+  "author": "karacaismail",
+  "activation": "runtime",
+  "dependencies": [
+    "account-models"
+  ],
+  "frontend": {
+    "entry": "page.tsx",
+    "route": "/research",
+    "label_key": "research.title",
+    "section": "process",
+    "icon": "telescope"
+  },
+  "service": {
+    "url_env": "LOCAL_RESEARCH_URL",
+    "key_env": "LOCAL_RESEARCH_KEY",
+    "health_path": "health",
+    "busy_fields": [
+      "active_synthesis",
+      "pending_exports"
+    ],
+    "pending_path": "runs",
+    "proxy_alias": "research"
+  },
+  "settings": [
+    {
+      "key": "account_review",
+      "kind": "boolean",
+      "default": true,
+      "label_key": "research.accountReview",
+      "help_key": "research.accountReviewHelp"
+    },
+    {
+      "key": "preliminary",
+      "kind": "boolean",
+      "default": true,
+      "label_key": "research.preliminary",
+      "help_key": "research.preliminaryHelp"
+    },
+    {
+      "key": "language",
+      "kind": "text",
+      "default": "Türkçe",
+      "label_key": "modules.fields.language",
+      "help_key": "modules.fields.languageHelp"
+    },
+    {
+      "key": "auto_synthesize",
+      "kind": "boolean",
+      "default": true,
+      "label_key": "modules.fields.auto",
+      "help_key": "modules.fields.autoHelp"
+    },
+    {
+      "key": "execution_mode",
+      "kind": "choice",
+      "default": "browser",
+      "label_key": "modules.fields.mode",
+      "help_key": "modules.fields.modeHelp",
+      "options": [
+        "browser",
+        "imports"
+      ]
+    }
+  ],
+  "model_policies": [],
+  "request_defaults": {
+    "POST runs": {
+      "language": "language",
+      "auto_synthesize": "auto_synthesize",
+      "execution_mode": "execution_mode",
+      "preliminary": "preliminary",
+      "account_review": "account_review"
+    }
+  }
+}

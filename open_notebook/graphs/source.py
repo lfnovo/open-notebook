@@ -16,6 +16,8 @@ from open_notebook.domain.notebook import Asset, Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.graphs.transformation import graph as transform_graph
 from open_notebook.utils.runtime_capabilities import engine_runtime_missing
+from open_notebook.modules.content_adapter import ContentAudioAdapter
+from open_notebook.modules.registry import ModuleError
 
 # Default preferred languages for YouTube transcript selection, used when
 # ContentSettings.youtube_preferred_languages is unset. content-core's own
@@ -121,9 +123,12 @@ async def content_process(state: SourceState) -> dict:
             if stt_model:
                 config_kwargs["audio_provider"] = stt_model.provider
                 config_kwargs["audio_model"] = stt_model.name
+                config_kwargs.update(ContentAudioAdapter().configure(stt_model.provider, stt_model.name))
                 logger.debug(
                     f"Using speech-to-text model: {stt_model.provider}/{stt_model.name}"
                 )
+    except ModuleError:
+        raise
     except Exception as e:
         logger.warning(f"Failed to retrieve speech-to-text model configuration: {e}")
         # Continue without custom audio model (content-core will use its default)

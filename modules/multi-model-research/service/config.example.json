@@ -1,0 +1,27 @@
+{
+  "bridge_key_path": "../account-models/.bridge-key",
+  "max_input_tokens": 180000,
+  "provider_input_limits": {},
+  "token_margin": {
+    "ChatGPT": {
+      "multiplier": 1.15,
+      "overhead_tokens": 4096,
+      "basis": "Local 2026-09-21 observations: 3 completed calls, usage / serialized CLI input 1.076\u20131.137; conservative estimate, not provider-tokenizer attestation."
+    },
+    "Claude": {
+      "multiplier": 1.25,
+      "overhead_tokens": 4096,
+      "basis": "Uncalibrated: reported usage can aggregate multiple calls/cache. Previous margin retained; no claim of exact context measurement."
+    }
+  },
+  "forecast_output_tokens_by_round": {
+    "1": 20000,
+    "2": 24000,
+    "3": 32000
+  },
+  "context_compaction": true,
+  "compaction_headroom": 0.05,
+  "browser_transport": "extension",
+  "account_timeout_seconds": 3900,
+  "segmented_synthesis": true
+}

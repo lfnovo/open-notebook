@@ -1,0 +1,28 @@
+{
+  "port": 8317,
+  "timeout_seconds": 300,
+  "path": "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin",
+  "executables": {
+    "codex": "codex",
+    "claude": "claude",
+    "gemini": "agy"
+  },
+  "models": {
+    "chatgpt-account": {
+      "provider": "codex",
+      "research_cli_model": "gpt-6-astra",
+      "research_effort": "max"
+    },
+    "claude-account": {
+      "provider": "claude",
+      "research_cli_model": "claude-fable-5-1",
+      "research_effort": "max"
+    },
+    "gemini-account": {
+      "provider": "gemini"
+    }
+  },
+  "queue_capacity": 32,
+  "queue_wait_seconds": 240,
+  "research_timeout_seconds": 3600
+}

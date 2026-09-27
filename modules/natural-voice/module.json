@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "id": "natural-voice",
+  "name": "Natural local voices",
+  "description": "VoxCPM2 speech with operator-supplied synthetic references.",
+  "version": "0.1.0",
+  "author": "karacaismail",
+  "activation": "external",
+  "dependencies": [],
+  "settings": [
+    {
+      "key": "timeout_seconds",
+      "kind": "integer",
+      "default": 1800,
+      "label_key": "modules.fields.timeout",
+      "help_key": "modules.fields.timeoutHelp",
+      "minimum": 30,
+      "maximum": 7200
+    }
+  ],
+  "model_policies": [
+    {
+      "provider": "openai_compatible",
+      "model_type": "text_to_speech",
+      "names": [
+        "voxcpm2-turkish-local"
+      ],
+      "config": {
+        "timeout": "timeout_seconds"
+      }
+    }
+  ]
+}

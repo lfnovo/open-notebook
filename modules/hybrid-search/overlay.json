@@ -1,0 +1,62 @@
+[
+  {
+    "target": "api/models.py",
+    "sha256_before": "b9493e62ef273254f485ea6e7e74f99a88ed6703bc7d10a3538c9620a80e5200"
+  },
+  {
+    "target": "api/routers/search.py",
+    "sha256_before": "abb30372cc987bb4eff3eca0bc9b201be52f12288e1338b9a7de86194dd786bd"
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/search/page.test.tsx",
+    "sha256_before": "97e163450c99da576f404e4ea9236d40784d844a5adf4eccc31b303d9db01891"
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/search/page.tsx",
+    "sha256_before": "56d71afbd3076872575b0241a1f6660136b1504d2e7b655a9118def8134d6228"
+  },
+  {
+    "target": "frontend/src/components/search/HybridStatus.tsx",
+    "sha256_before": null
+  },
+  {
+    "target": "frontend/src/lib/hooks/use-ask.ts",
+    "sha256_before": "ee0b528e397ffda4520370d84503364cae658d63c6bef6247d07d59ef3af10ff"
+  },
+  {
+    "target": "frontend/src/lib/hooks/use-search.ts",
+    "sha256_before": "fec71b18b830d3b9060d5f48b784a32ba3d98e9a49efe849429fccc90b7e412a"
+  },
+  {
+    "target": "frontend/src/lib/types/search.ts",
+    "sha256_before": "94308a250f3a28409f740a78102968445d5d39c3ab051e0c1c1f655654617f31"
+  },
+  {
+    "target": "open_notebook/graphs/ask.py",
+    "sha256_before": "7fb42d72264abf2d62a9b2f60bf8d14724dd0a7a6950caad5c4a7a35e90cfadf"
+  },
+  {
+    "target": "open_notebook/modules/hybrid_search/__init__.py",
+    "sha256_before": null
+  },
+  {
+    "target": "open_notebook/modules/hybrid_search/ranking.py",
+    "sha256_before": null
+  },
+  {
+    "target": "open_notebook/modules/hybrid_search/service.py",
+    "sha256_before": null
+  },
+  {
+    "target": "prompts/ask/final_answer.jinja",
+    "sha256_before": "be7e337fdc78b159d01f96a7f5840e4183306ea0acf30c5af67a3d66115cdb19"
+  },
+  {
+    "target": "prompts/ask/query_process.jinja",
+    "sha256_before": "c02655861f6346ddfbab46d5d9c704b3dc14255adac2d122f4b7355a05051093"
+  },
+  {
+    "target": "open_notebook/modules/hybrid_search/storage.py",
+    "sha256_before": null
+  }
+]

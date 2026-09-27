@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>DO_NOT_TRACK</key>
+		<string>1</string>
+		<key>HF_HUB_DISABLE_TELEMETRY</key>
+		<string>1</string>
+		<key>HF_HUB_OFFLINE</key>
+		<string>1</string>
+		<key>PATH</key>
+		<string>/usr/bin:/bin:/usr/sbin:/sbin</string>
+		<key>TOKENIZERS_PARALLELISM</key>
+		<string>false</string>
+	</dict>
+	<key>KeepAlive</key>
+	<true/>
+	<key>Label</key>
+	<string>local.open-notebook.natural-voice</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>__USER_HOME__/Library/Application Support/OpenNotebookNaturalVoice/venv/bin/python</string>
+		<string>__USER_HOME__/Library/Application Support/OpenNotebookNaturalVoice/server.py</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardErrorPath</key>
+	<string>__USER_HOME__/Library/Application Support/OpenNotebookNaturalVoice/logs/error.log</string>
+	<key>StandardOutPath</key>
+	<string>__USER_HOME__/Library/Application Support/OpenNotebookNaturalVoice/logs/server.log</string>
+	<key>ThrottleInterval</key>
+	<integer>15</integer>
+	<key>WorkingDirectory</key>
+	<string>__USER_HOME__/Library/Application Support/OpenNotebookNaturalVoice</string>
+</dict>
+</plist>

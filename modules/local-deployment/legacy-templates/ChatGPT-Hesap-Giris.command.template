@@ -1,0 +1,4 @@
+#!/bin/bash
+set -euo pipefail
+export PATH="__USER_HOME__/.local/bin:/usr/bin:/bin:$PATH"
+codex login

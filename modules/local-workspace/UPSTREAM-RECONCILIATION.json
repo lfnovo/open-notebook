@@ -1,0 +1,134 @@
+[
+  {
+    "target": "frontend/package-lock.json",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/package.json",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/next.config.ts",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/settings/api-keys/page.test.tsx",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/src/components/ui/markdown-editor.test.tsx",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/src/components/settings/CredentialFormDialog.tsx",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/src/components/layout/AppSidebar.test.tsx",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/src/lib/locales/tr-TR/index.ts",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/src/lib/locales/fr-FR/index.ts",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/src/lib/locales/de-DE/index.ts",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/src/lib/locales/pl-PL/index.ts",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/src/lib/locales/es-ES/index.ts",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/src/lib/locales/ru-RU/index.ts",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/src/lib/locales/ca-ES/index.ts",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/src/lib/locales/ja-JP/index.ts",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/src/lib/locales/zh-CN/index.ts",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/src/lib/locales/bn-IN/index.ts",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/src/lib/locales/zh-TW/index.ts",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/src/lib/locales/pt-BR/index.ts",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/src/lib/locales/it-IT/index.ts",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/src/lib/locales/en-US/index.ts",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/src/lib/hooks/use-source-chat.ts",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/src/lib/hooks/use-ask.ts",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/src/lib/api/search.ts",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/src/lib/api/client.ts",
+    "reason": "Retain current upstream fixes, translations and regression tests instead of older deployment copy."
+  },
+  {
+    "target": "frontend/src/components/ui/markdown-editor.tsx",
+    "reason": "Retain upstream theme hydration and Markdown editor fixes."
+  },
+  {
+    "target": "frontend/src/lib/stores/theme-store.ts",
+    "reason": "Retain upstream theme hydration and Markdown editor fixes."
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/search/page.tsx",
+    "reason": "Preserve upstream search scoping, matched-record navigation and source deduplication; keep current regression-test setup."
+  },
+  {
+    "target": "frontend/src/test/setup.ts",
+    "reason": "Preserve upstream search scoping, matched-record navigation and source deduplication; keep current regression-test setup."
+  },
+  {
+    "target": "frontend/src/components/sources/AddExistingSourceDialog.tsx",
+    "reason": "Preserve upstream search scoping, matched-record navigation and source deduplication; keep current regression-test setup."
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/sources/page.tsx",
+    "reason": "Retain upstream source-page empty-state creation and loading behavior."
+  },
+  {
+    "target": "frontend/src/components/common/ThemeToggle.tsx",
+    "reason": "Retain upstream accessible theme-toggle spacing."
+  },
+  {
+    "target": "frontend/src/app/(dashboard)/settings/page.tsx",
+    "reason": "Retired overlay: the core module host now owns General / Modules settings tabs and the shared MVVM settings workspace."
+  }
+]

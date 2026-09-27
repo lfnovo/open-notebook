@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+"""Synchronize a launchd-readable deployment; preserve Colima's existing data paths."""
+import os
+from pathlib import Path
+import plistlib
+import shutil
+import subprocess
+
+ROOT = Path(__file__).resolve().parent
+RUNTIME = Path.home() / 'Library/Application Support/OpenNotebookStartup'
+AGENTS = Path.home() / 'Library/LaunchAgents'
+LABEL = 'local.open-notebook.startup'
+
+def main():
+    RUNTIME.mkdir(parents=True, exist_ok=True, mode=0o700)
+    RUNTIME.chmod(0o700)
+    (RUNTIME/'logs').mkdir(exist_ok=True)
+    AGENTS.mkdir(parents=True, exist_ok=True)
+    for name in ['compose.yaml','.env','control.sh','backup.py','install-autostart.py','README.md','YAPILANDIRMA-DENETIMI.md','account-bridge','audio','natural-voice','research','embedding','patches','.client']:
+        source = ROOT/name
+        if source.resolve() == (RUNTIME/name).resolve(): continue
+        if source.is_dir():
+            shutil.copytree(source, RUNTIME/name, dirs_exist_ok=True,
+                            ignore=shutil.ignore_patterns('logs','__pycache__','empty-workspace'))
+        elif source.exists(): shutil.copy2(source,RUNTIME/name)
+    (RUNTIME/'.env').chmod(0o600)
+    for relative in ['account-bridge/.bridge-key','audio/.audio-key','natural-voice/.voice-key','research/.research-key']:
+        (RUNTIME/relative).chmod(0o600)
+    for component in ['account-bridge','embedding','audio','natural-voice','research']:
+        source = ROOT/component/'service.plist'
+        data = plistlib.loads(source.read_bytes())
+        shutil.copy2(source, AGENTS/(data['Label']+'.plist'))
+    plist = {'Label':LABEL, 'ProgramArguments':['/bin/bash',str(RUNTIME/'control.sh'),'start'],
+             'WorkingDirectory':str(RUNTIME), 'RunAtLoad':True,
+             'EnvironmentVariables':{'PATH':'__USER_HOME__/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin'},
+             'StandardOutPath':str(RUNTIME/'logs/startup.log'),
+             'StandardErrorPath':str(RUNTIME/'logs/error.log')}
+    target = AGENTS/(LABEL+'.plist')
+    target.write_bytes(plistlib.dumps(plist))
+    target.chmod(0o644)
+    service = 'gui/'+str(os.getuid())+'/'+LABEL
+    if subprocess.run(['launchctl','print',service],capture_output=True).returncode:
+        subprocess.run(['launchctl','bootstrap','gui/'+str(os.getuid()),str(target)],check=True)
+    print('Login startup installed; configuration synchronized to '+str(RUNTIME))
+
+if __name__=='__main__': main()

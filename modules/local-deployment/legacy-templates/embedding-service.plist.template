@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>OLLAMA_HOST</key>
+		<string>127.0.0.1:11434</string>
+		<key>OLLAMA_KEEP_ALIVE</key>
+		<string>10m</string>
+		<key>OLLAMA_MAX_LOADED_MODELS</key>
+		<string>1</string>
+		<key>OLLAMA_MODELS</key>
+		<string>__USER_HOME__/Library/Application Support/OpenNotebookEmbedding/models</string>
+		<key>OLLAMA_NO_CLOUD</key>
+		<string>1</string>
+		<key>OLLAMA_NUM_PARALLEL</key>
+		<string>1</string>
+		<key>PATH</key>
+		<string>/usr/bin:/bin:/usr/sbin:/sbin</string>
+	</dict>
+	<key>KeepAlive</key>
+	<true/>
+	<key>Label</key>
+	<string>local.open-notebook.embedding</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>__USER_HOME__/Library/Application Support/OpenNotebookEmbedding/ollama</string>
+		<string>serve</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardErrorPath</key>
+	<string>__USER_HOME__/Library/Application Support/OpenNotebookEmbedding/logs/error.log</string>
+	<key>StandardOutPath</key>
+	<string>__USER_HOME__/Library/Application Support/OpenNotebookEmbedding/logs/server.log</string>
+	<key>ThrottleInterval</key>
+	<integer>10</integer>
+	<key>WorkingDirectory</key>
+	<string>__USER_HOME__/Library/Application Support/OpenNotebookEmbedding</string>
+</dict>
+</plist>

@@ -15,6 +15,7 @@ from open_notebook.ai.connection_tester import normalize_anthropic_compatible_ba
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel, RecordModel
 from open_notebook.exceptions import ConfigurationError
+from open_notebook.modules.runtime import model_policy
 from open_notebook.utils.url_validation import validate_url
 
 ModelType = Union[LanguageModel, EmbeddingModel, SpeechToTextModel, TextToSpeechModel]
@@ -243,6 +244,8 @@ class ModelManager:
             from open_notebook.ai.key_provider import provision_provider_keys
 
             await provision_provider_keys(model.provider)
+
+        config = model_policy(model.provider, model.name, model.type, config)
 
         if model.provider == "anthropic_compatible":
             provider, config = await resolve_anthropic_compatible_config(

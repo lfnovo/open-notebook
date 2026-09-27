@@ -19,6 +19,7 @@ from open_notebook.ai.models import Model, model_manager
 from open_notebook.database.repository import repo_query, ensure_record_id, db_connection, parse_record_ids
 from open_notebook.exceptions import ConfigurationError, DatabaseOperationError, InvalidInputError
 from open_notebook.modules.registry import Registry
+from .storage import PassageWriter, MAX_ROWS
 from .ranking import folded, query_terms, passages, fuse, exact_match, group_results, diversify
 
 VERSION = 'hybrid-v1'
@@ -58,6 +59,7 @@ async def checked_query(sql, variables=None):
 class HybridSearch:
     def __init__(self, query=checked_query):
         self.query = query
+        self.writer = PassageWriter(query, ensure_record_id)
         self.task = None
         self.periodic = None
         self.lock = asyncio.Lock()
@@ -178,6 +180,8 @@ class HybridSearch:
                     settings()  # Stop admitting new work as soon as the module is disabled.
                     old = current.get(doc['id'])
                     if old and old['doc_hash'] == doc['doc_hash']:
+                        if old.get('cleanup_pending'):
+                            await self.writer.cleanup(table, doc['id'], doc['doc_hash'])
                         self.state['processed'] += 1
                         continue
                     rows = await self.query(f"SELECT {doc['body_field']} AS content FROM $record", {'record': ensure_record_id(doc['id'])})
@@ -203,14 +207,7 @@ class HybridSearch:
                             'doc_id': doc['id'], 'parent_id': doc['parent_id'], 'title': doc['title'], 'kind': doc['kind'],
                             'doc_hash': doc['doc_hash'], 'part': n, 'embedding': vector,
                             'search_tr': folded(doc['title']+'\n'+part['content']), 'search_en': folded(doc['title']+'\n'+part['content'])})
-                    # One transaction replaces only this document's derived passages.
-                    await self.query(f"""BEGIN TRANSACTION;
-                        DELETE {table} WHERE doc_id=$doc;
-                        INSERT INTO {table} $rows;
-                        UPSERT $record CONTENT $meta;
-                        COMMIT TRANSACTION;""", {'doc': doc['id'], 'rows': payload,
-                            'record': ensure_record_id('hs_document:'+digest(table+doc['id'])),
-                            'meta': {'doc_id': doc['id'], 'doc_hash': doc['doc_hash'], 'generation': table, 'parts': len(parts)}})
+                    await self.writer.replace(table, doc['id'], doc['doc_hash'], payload)
                     self.state['processed'] += 1
                 latest = await self.metadata(fresh=True)
                 indexed_rows = await self.query('SELECT doc_id,doc_hash FROM hs_document WHERE generation=$generation', {'generation':table})
@@ -220,7 +217,7 @@ class HybridSearch:
                     return  # Retry next cycle; do not publish a partial new generation.
                 docs = latest
                 ids = [d['id'] for d in docs]
-                await self.query(f'DELETE {table} WHERE doc_id NOT IN $ids', {'ids': ids})
+                await self.writer.prune(table, 'doc_id NOT IN $ids', {'ids': ids})
                 await self.query('DELETE hs_document WHERE generation=$generation AND doc_id NOT IN $ids', {'ids': ids, 'generation': table})
                 # Only publish a completely built generation; old generations remain recoverable.
                 await self.query('UPSERT hs_state:active CONTENT $state', {'state': {'table': table, 'signature': signature, 'dimension': dimension,
@@ -395,7 +392,26 @@ class HybridSearch:
                 stale += 1
                 continue
             kept.append(row)
-        candidates = kept
+        # Partially written replacements are never evidence until the matching
+        # document completion marker is committed. Reads follow candidate count.
+        published = {}
+        doc_ids = sorted({row['doc_id'] for row in kept})
+        for offset in range(0, len(doc_ids), MAX_ROWS):
+            batch = doc_ids[offset:offset+MAX_ROWS]
+            records = [self.writer.metadata_id(table, doc) for doc in batch]
+            committed = await self.query('SELECT doc_id,doc_hash FROM $records;', {'records': records})
+            if len(committed) > len(batch) or any(r.get('doc_id') not in batch for r in committed):
+                raise DatabaseOperationError('Invalid index publication markers')
+            for record in committed:
+                if record['doc_id'] in published:
+                    raise DatabaseOperationError('Duplicate index publication marker')
+                published[record['doc_id']] = record.get('doc_hash')
+        candidates = []
+        for row in kept:
+            if published.get(row['doc_id']) == row['doc_hash']:
+                candidates.append(row)
+            else:
+                stale += 1
         if stale:
             warnings.append('index_updating'); await self.start()
         candidates = diversify(candidates)

@@ -37,3 +37,14 @@ See [ADR-012](../../docs/7-DEVELOPMENT/decisions/ADR-012-hybrid-search.md) for i
 fallback rules, model limits and trade-offs. Index files are derivative data; schema
 rollback is disabling the module and restoring the prior application code. Preserve
 `hs_state` and original database backups until the replacement has been validated.
+
+Large document maintenance stages writes in groups of at most 16 passages and
+256 KiB of serialized input. Search admits a new version only after its complete
+publication marker is committed; interrupted cleanup resumes on the next pass.
+Original notes/sources are never altered. See
+[ADR-027](../../docs/7-DEVELOPMENT/decisions/ADR-027-bounded-index-publication.md).
+`tests/bounded_integration.py` exercises 3,386 synthetic passages with injected
+interruption against an isolated SurrealDB 2.6 instance, without model calls.
+It requires the exact disposable database URL/name asserted in that script and
+real BM25/HNSW indexes. Allow the database the normal deployment memory budget;
+small write transactions do not eliminate index and read memory requirements.

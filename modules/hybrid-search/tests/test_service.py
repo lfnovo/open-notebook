@@ -107,3 +107,15 @@ def test_unknown_citation_rejected(text,allowed):
  from open_notebook.graphs.ask import validate_citations
  from open_notebook.exceptions import ExternalServiceError
  with pytest.raises(ExternalServiceError):validate_citations(text,allowed)
+
+@pytest.mark.asyncio
+async def test_unpublished_partial_document_never_reaches_search(engine):
+ engine.query.return_value=[]
+ rows,meta=await engine.search('AB-123',rerank=False)
+ assert rows==[] and 'index_updating' in meta['warnings']
+ engine.start.assert_awaited()
+
+@pytest.mark.asyncio
+async def test_publication_lookup_failure_never_returns_unverified_parts(engine):
+ engine.query.side_effect=DatabaseOperationError('unavailable')
+ with pytest.raises(DatabaseOperationError):await engine.search('AB-123',rerank=False)

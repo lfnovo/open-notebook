@@ -13,6 +13,10 @@ def engine_with(monkeypatch, docs, seen):
 
     async def query(sql, variables=None):
         seen.append((sql, variables or {}))
+        if sql.startswith('SELECT doc_id,doc_hash FROM $records'):
+            requested = {str(r) for r in variables['records']}
+            return [{'doc_id': d['id'], 'doc_hash': d['doc_hash']} for d in docs
+                    if str(engine.writer.metadata_id('hs_p_a', d['id'])) in requested]
         return []
 
     engine = service.HybridSearch(query=query)

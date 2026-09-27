@@ -54,5 +54,9 @@
   {
     "target": "prompts/ask/query_process.jinja",
     "sha256_before": "c02655861f6346ddfbab46d5d9c704b3dc14255adac2d122f4b7355a05051093"
+  },
+  {
+    "target": "open_notebook/modules/hybrid_search/storage.py",
+    "sha256_before": null
   }
 ]

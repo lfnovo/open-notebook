@@ -182,4 +182,7 @@ async def test_commands_log_incomplete_generation_as_permanent(during_import):
             await invoke(data)
         assert caught.value is error
         assert "permanent" in logger.error.call_args.args[0]
+        assert "source:test" in logger.error.call_args.args[0]
+        if not during_import:
+            assert "transformation:test" in logger.error.call_args.args[0]
         logger.debug.assert_not_called()

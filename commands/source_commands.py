@@ -257,7 +257,8 @@ async def run_transformation_command(
 
     except IncompleteGenerationError as e:
         logger.error(
-            f"Generation failed (permanent) for source {input_data.source_id}: {e}"
+            f"Generation failed (permanent) for transformation "
+            f"{input_data.transformation_id} on source {input_data.source_id}: {e}"
         )
         raise  # Preserve failed job status; stop_on prevents automatic retries.
     except ValueError as e:

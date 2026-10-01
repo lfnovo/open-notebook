@@ -6,13 +6,14 @@ canonical validator and mandatory checks, and adds the risk-selected probes. The
 planning is the **risk**, not the feature: for each change ask *what can this break, and for
 whom?* Use commands and selectors the repository supports; no secret values belong here.
 
-The rows are the release's **Bucket A** (agent-run, automated now) and **Bucket C** (the
-release owner, with real credentials); **Bucket B** (automatable with investment) follows the
-table.
+The rows are the release's **Bucket A** (`agent` in *Who*: automated, run now) and
+**Bucket C** (`owner` in *Who*: the release owner runs it by hand; the *Who / paid scope*
+column says which of those need real credentials or paid calls); **Bucket B** (automatable
+with investment) follows the table.
 
 | Check | Change / risk | Real probe | Observable success | Prerequisites | Who / paid scope | Stage | Mandatory |
 |---|---|---|---|---|---|---|---|
-| Backend suite | any backend change | `[commands.validator]` | pytest, ruff and mypy exit 0 | `uv sync --extra dev`, `.env` | agent / free | pre-GO | yes |
+| Backend suite | any backend change | `[commands.validator]` | pytest, ruff and mypy exit 0 | `uv sync --group dev`, `.env` | agent / free | pre-GO | yes |
 | Frontend | any frontend change | `[commands.frontend]` | lint, tests and production build pass | `npm ci` in `frontend/` | agent / free | pre-GO | yes |
 | Dev-DB leak | new or changed tests | per-table counts before and after the suite | no diff (at least `credential`) | live dev DB reachable | agent / free | pre-GO | yes |
 | Smoke journey | any change to sources, chat, ask, transformations, podcasts, search | `smoke-e2e` skill on the dev stack, `[smoke].journey` | GO with every mandatory surface run | stack up, default chat + embedding models | agent / small paid (one chat, one embed, one podcast) | pre-GO | yes |

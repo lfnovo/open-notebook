@@ -132,3 +132,54 @@ async def test_worker_retry_policy(command_id, error, expected_attempts):
                 attempts += 1
                 raise error
     assert attempts == expected_attempts
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("during_import", [True, False])
+async def test_commands_log_incomplete_generation_as_permanent(during_import):
+    from commands.source_commands import (
+        RunTransformationInput,
+        SourceProcessingInput,
+        process_source_command,
+        run_transformation_command,
+    )
+
+    error = IncompleteGenerationError("Model reached generation limit")
+    source = Source(id="source:test", full_text="Source content")
+    if during_import:
+        invoke = process_source_command
+        data = SourceProcessingInput(
+            source_id="source:test",
+            content_state={},
+            notebook_ids=[],
+            transformations=[],
+            embed=False,
+        )
+        graph_path = "commands.source_commands.source_graph.ainvoke"
+    else:
+        invoke = run_transformation_command
+        data = RunTransformationInput(
+            source_id="source:test",
+            transformation_id="transformation:test",
+        )
+        graph_path = "commands.source_commands.transform_graph.ainvoke"
+
+    with (
+        patch(
+            "commands.source_commands.Source.get", new=AsyncMock(return_value=source)
+        ),
+        patch.object(Source, "save", new_callable=AsyncMock),
+        patch(
+            "commands.source_commands.Transformation.get",
+            new=AsyncMock(
+                return_value=SimpleNamespace(model_id=None),
+            ),
+        ),
+        patch(graph_path, new=AsyncMock(side_effect=error)),
+        patch("commands.source_commands.logger") as logger,
+    ):
+        with pytest.raises(IncompleteGenerationError) as caught:
+            await invoke(data)
+        assert caught.value is error
+        assert "permanent" in logger.error.call_args.args[0]
+        logger.debug.assert_not_called()

@@ -136,6 +136,11 @@ async def process_source_command(
             processing_time=processing_time,
         )
 
+    except IncompleteGenerationError as e:
+        logger.error(
+            f"Generation failed (permanent) for source {input_data.source_id}: {e}"
+        )
+        raise  # Preserve failed job status; stop_on prevents automatic retries.
     except ValueError as e:
         # Validation errors are permanent failures. Re-raise so surreal-commands
         # marks the job as `failed` (stop_on=[ValueError] already prevents
@@ -250,6 +255,11 @@ async def run_transformation_command(
             processing_time=processing_time,
         )
 
+    except IncompleteGenerationError as e:
+        logger.error(
+            f"Generation failed (permanent) for source {input_data.source_id}: {e}"
+        )
+        raise  # Preserve failed job status; stop_on prevents automatic retries.
     except ValueError as e:
         # Validation errors are permanent failures - don't retry
         processing_time = time.time() - start_time

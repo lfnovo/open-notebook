@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import { sourcesApi } from '@/lib/api/sources'
@@ -114,6 +114,7 @@ function SourceDetailContentInner({
   const [selectedInsight, setSelectedInsight] = useState<SourceInsightResponse | null>(null)
   const [insightToDelete, setInsightToDelete] = useState<string | null>(null)
   const [deletingInsight, setDeletingInsight] = useState(false)
+  const insightPollingRef = useRef<AbortController | null>(null)
 
   // A 404 means the source was deleted (e.g. a dangling chat/ask reference) —
   // handled by the shared "content no longer exists" state. The global query
@@ -157,17 +158,25 @@ function SourceDetailContentInner({
     }
   }, [fetchInsights, fetchTransformations, sourceId])
 
+  useEffect(() => () => insightPollingRef.current?.abort(), [])
+
   const createInsight = async () => {
     if (!selectedTransformation) {
       toast.error(t('sources.selectTransformation'))
       return
     }
 
+    insightPollingRef.current?.abort()
+    const controller = new AbortController()
+    insightPollingRef.current = controller
+
     try {
       setCreatingInsight(true)
       const response = await insightsApi.create(sourceId, {
         transformation_id: selectedTransformation
       })
+      if (controller.signal.aborted) return
+
       // Show toast for async operation
       toast.success(t('sources.insightGenerationStarted'))
       setSelectedTransformation('')
@@ -176,30 +185,50 @@ function SourceDetailContentInner({
       if (response.command_id) {
         // Poll in background (don't block UI)
         insightsApi.waitForCommand(response.command_id, {
-          maxAttempts: 120, // Up to 4 minutes (120 * 2s)
-          intervalMs: 2000
-        }).then(success => {
-          if (success) {
-            void fetchInsights()
-            // Invalidate sources queries so notebook page refreshes with updated insights_count
-            queryClient.invalidateQueries({ queryKey: ['sources'] })
+          intervalMs: 2000,
+          signal: controller.signal,
+        }).then(async status => {
+          if (controller.signal.aborted) return
+
+          await fetchInsights()
+          if (controller.signal.aborted) return
+          // Invalidate sources queries so notebook page refreshes with updated insights_count
+          queryClient.invalidateQueries({ queryKey: ['sources'] })
+          if (status?.status !== 'completed') {
+            toast.error(status?.error_message || t('common.error'))
           }
         }).catch(err => {
+          if (controller.signal.aborted) return
           console.error('Error waiting for insight command:', err)
+          toast.error(t('common.error'))
+        }).finally(() => {
+          if (insightPollingRef.current === controller) {
+            insightPollingRef.current = null
+          }
         })
       } else {
         // Fallback: refresh after delay if no command_id
         setTimeout(() => {
+          if (controller.signal.aborted) return
           void fetchInsights()
           // Also invalidate sources queries
           queryClient.invalidateQueries({ queryKey: ['sources'] })
+          if (insightPollingRef.current === controller) {
+            insightPollingRef.current = null
+          }
         }, 5000)
       }
     } catch (err) {
+      if (controller.signal.aborted) return
       console.error('Failed to create insight:', err)
       toast.error(t('common.error'))
+      if (insightPollingRef.current === controller) {
+        insightPollingRef.current = null
+      }
     } finally {
-      setCreatingInsight(false)
+      if (!controller.signal.aborted) {
+        setCreatingInsight(false)
+      }
     }
   }
 

@@ -56,10 +56,31 @@ class TestNormalizeSourceUrl:
             "https://example.com:443/article"
         ) == normalize_source_url("https://example.com/article")
 
-    def test_different_targets_differ(self):
-        assert normalize_source_url("https://example.com/a") != normalize_source_url(
-            "https://example.com/b"
+    def test_default_port_is_scheme_specific(self):
+        # 443 is not the default port for http, 80 is not for https.
+        assert normalize_source_url("http://example.com:443/a") != normalize_source_url(
+            "http://example.com/a"
         )
+        assert normalize_source_url("https://example.com:80/a") != normalize_source_url(
+            "https://example.com/a"
+        )
+        assert normalize_source_url("http://example.com:80/a") == normalize_source_url(
+            "http://example.com/a"
+        )
+
+    def test_encoded_reserved_chars_not_conflated(self):
+        assert normalize_source_url(
+            "https://example.com/a%2Fb"
+        ) != normalize_source_url("https://example.com/a/b")
+
+    def test_encoded_unreserved_chars_match(self):
+        assert normalize_source_url(
+            "https://example.com/%7Euser"
+        ) == normalize_source_url("https://example.com/~user")
+
+    def test_malformed_url_never_raises(self):
+        assert normalize_source_url("http://[::1") == "http://[::1"
+        assert normalize_source_url("::::") == "::::"
 
 
 class TestContentHash:
@@ -157,4 +178,44 @@ class TestCheckDuplicatesEndpoint:
 
     def test_link_without_url_is_400(self, client):
         response = client.post("/api/sources/check-duplicates", json={"type": "link"})
+        assert response.status_code == 400
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
+    async def test_malformed_url_is_fail_open(self, mock_query):
+        """A candidate URL that fails normalization returns [] (never 500)."""
+        mock_query.return_value = EXISTING
+        assert (
+            await find_duplicate_sources(source_type="link", url="http://[::1")
+        ) == []
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
+    async def test_no_keys_skips_query(self, mock_query):
+        assert await find_duplicate_sources() == []
+        mock_query.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
+    async def test_link_lookup_is_keyed_by_host(self, mock_query):
+        """Link probes filter by URL host instead of scanning the table."""
+        mock_query.return_value = EXISTING
+        await find_duplicate_sources(
+            source_type="link", url="https://example.com/article"
+        )
+        query, params = mock_query.await_args.args
+        assert "LIMIT 500" not in query
+        assert params["host"] == "example.com"
+
+    def test_invalid_type_is_rejected(self, client):
+        response = client.post(
+            "/api/sources/check-duplicates", json={"type": "podcast"}
+        )
+        assert response.status_code == 422
+
+    def test_metadata_url_is_rejected(self, client):
+        response = client.post(
+            "/api/sources/check-duplicates",
+            json={"type": "link", "url": "http://169.254.169.254/latest/"},
+        )
         assert response.status_code == 400

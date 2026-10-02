@@ -54,7 +54,7 @@ export function DuplicateSourceDialog({
               </p>
               {(match.created || match.updated) && (
                 <p className="text-xs text-muted-foreground">
-                  {match.created || match.updated}
+                  {new Date(match.created || match.updated || '').toLocaleString()}
                 </p>
               )}
               {match.excerpt && (
@@ -67,7 +67,7 @@ export function DuplicateSourceDialog({
         </ul>
 
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onCancel}>
+          <AlertDialogCancel>
             {t('common.cancel')}
           </AlertDialogCancel>
           <Button onClick={onProceed}>{t('sources.duplicateProceed')}</Button>

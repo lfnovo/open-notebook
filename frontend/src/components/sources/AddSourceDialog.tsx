@@ -118,6 +118,10 @@ export function AddSourceDialog({
   const [pendingSubmit, setPendingSubmit] = useState<CreateSourceFormData | null>(null)
   const [checkingDuplicates, setCheckingDuplicates] = useState(false)
 
+  // Generation counter for the duplicate probe (#257): a stale probe result
+  // is ignored when the dialog was closed while the request was pending.
+  const probeRef = useRef(0)
+
   // Cleanup timeouts to prevent memory leaks
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -433,6 +437,8 @@ export function AddSourceDialog({
     // sources per submit and a modal per item would be unusable. A failed
     // probe never blocks creation (fail-open).
     if (!isBatchMode) {
+      probeRef.current += 1
+      const probeId = probeRef.current
       setCheckingDuplicates(true)
       try {
         const file = data.type === 'upload' && data.file
@@ -445,12 +451,14 @@ export function AddSourceDialog({
           content: data.type === 'text' ? data.content : undefined,
           filename: file instanceof File ? file.name : undefined,
         })
+        if (probeRef.current !== probeId) return
         if (duplicates.length > 0) {
           setDuplicateMatches(duplicates)
           setPendingSubmit(data)
           return
         }
       } catch {
+        if (probeRef.current !== probeId) return
         // fail-open: proceed with creation when the probe errors
       } finally {
         setCheckingDuplicates(false)
@@ -490,6 +498,7 @@ export function AddSourceDialog({
     setBatchProgress(null)
     setDuplicateMatches([])
     setPendingSubmit(null)
+    probeRef.current += 1
 
     // Reset to default transformations
     if (transformations.length > 0) {

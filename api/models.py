@@ -393,7 +393,9 @@ class DuplicateSourceInfo(BaseModel):
 
 
 class DuplicateCheckRequest(BaseModel):
-    type: str = Field(..., description="Source type: link, upload, or text")
+    type: Literal["link", "upload", "text"] = Field(
+        ..., description="Source type: link, upload, or text"
+    )
     url: Optional[str] = Field(None, description="URL for link type")
     title: Optional[str] = Field(None, description="Source title")
     content: Optional[str] = Field(None, description="Text content for text type")

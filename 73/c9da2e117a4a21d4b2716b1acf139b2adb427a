@@ -1,0 +1,21 @@
+CHANGELOG.md
+  s_4e49aa2b4d2aeb::t_dfd8432c9ef537 14
+  s_4e49aa2b4d2aeb::t_a154e025a6e48a 17-28
+  s_4e49aa2b4d2aeb::t_10f19e81a7a08c 36-40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "73c9da2e117a4a21d4b2716b1acf139b2adb427a",
+  "prompts": {},
+  "sessions": {
+    "s_4e49aa2b4d2aeb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4f84118f-d31a-4941-a308-71a2d3ca2179",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

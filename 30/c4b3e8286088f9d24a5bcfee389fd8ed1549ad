@@ -1,0 +1,86 @@
+frontend/src/app/(dashboard)/search/page.tsx
+  s_c1bd782d0ec3da::t_2819591833f745 353-357
+frontend/src/components/ui/markdown-editor.test.tsx
+  s_c1bd782d0ec3da::t_2819591833f745 1-2,4-5,7-15,35-91,93-135
+frontend/src/lib/locales/de-DE/index.ts
+  s_c1bd782d0ec3da::t_2819591833f745 491-492
+frontend/src/lib/stores/theme-store.ts
+  s_c1bd782d0ec3da::t_2819591833f745 2,8,10,15-16,21-25,55-59,66,70,75
+pyproject.toml
+  s_c1bd782d0ec3da::t_2819591833f745 25
+frontend/src/lib/locales/ru-RU/index.ts
+  s_c1bd782d0ec3da::t_2819591833f745 488-489
+frontend/src/lib/locales/es-ES/index.ts
+  s_c1bd782d0ec3da::t_2819591833f745 488-489
+frontend/src/lib/locales/fr-FR/index.ts
+  s_c1bd782d0ec3da::t_2819591833f745 488-489
+frontend/src/app/globals.css
+  s_c1bd782d0ec3da::t_2819591833f745 440-448
+frontend/src/lib/locales/en-US/index.ts
+  s_c1bd782d0ec3da::t_2819591833f745 486-487
+frontend/src/components/podcasts/EpisodeProfilesPanel.tsx
+  s_c1bd782d0ec3da::t_2819591833f745 118-120,243-244,250-256
+frontend/src/lib/locales/tr-TR/index.ts
+  s_c1bd782d0ec3da::t_2819591833f745 488-489
+README.md
+  s_c1bd782d0ec3da::t_2819591833f745 217
+frontend/src/lib/locales/it-IT/index.ts
+  s_c1bd782d0ec3da::t_2819591833f745 488-489
+frontend/src/lib/locales/ja-JP/index.ts
+  s_c1bd782d0ec3da::t_2819591833f745 488-489
+frontend/src/components/layout/AppSidebar.tsx
+  s_c1bd782d0ec3da::t_2819591833f745 374
+frontend/src/components/common/ThemeToggle.tsx
+  s_c1bd782d0ec3da::t_2819591833f745 28,30-33,63
+frontend/src/lib/locales/zh-CN/index.ts
+  s_c1bd782d0ec3da::t_2819591833f745 488-489
+frontend/src/lib/locales/zh-TW/index.ts
+  s_c1bd782d0ec3da::t_2819591833f745 488-489
+frontend/src/lib/locales/pt-BR/index.ts
+  s_c1bd782d0ec3da::t_2819591833f745 488-489
+frontend/src/lib/hooks/use-source-chat.ts
+  s_c1bd782d0ec3da::t_2819591833f745 147,153-157,162-165
+open_notebook/graphs/source.py
+  s_c1bd782d0ec3da::t_2819591833f745 20-21,34-35,93-94
+tests/test_graphs.py
+  s_c1bd782d0ec3da::t_2819591833f745 406,432-475,504,553,588-590,616-618
+frontend/src/lib/locales/pl-PL/index.ts
+  s_c1bd782d0ec3da::t_2819591833f745 488-489
+frontend/src/components/ui/markdown-editor.tsx
+  s_c1bd782d0ec3da::t_2819591833f745 10-11,68-69,72-87,93
+open_notebook/domain/content_settings.py
+  s_c1bd782d0ec3da::t_2819591833f745 45
+docs/3-USER-GUIDE/search.md
+  s_c1bd782d0ec3da::t_2819591833f745 67-74,118-124
+  s_c1bd782d0ec3da::t_7919f5a144b3a3 125
+frontend/src/lib/locales/ca-ES/index.ts
+  s_c1bd782d0ec3da::t_2819591833f745 488-489
+frontend/src/lib/locales/bn-IN/index.ts
+  s_c1bd782d0ec3da::t_2819591833f745 488-489
+frontend/package.json
+  s_c1bd782d0ec3da::t_2819591833f745 46
+frontend/src/components/layout/AppSidebar.test.tsx
+  s_c1bd782d0ec3da::t_2819591833f745 25-41
+CHANGELOG.md
+  s_c1bd782d0ec3da::t_133809b8ea91af 24
+frontend/package-lock.json
+  s_c1bd782d0ec3da::t_8ddb691c532778 41,1845-1847,1860-1862,1876-1878,1892-1894,1898-1900,1911-1913,1917-1919,1930-1932,1936-1938,1949-1951,1955-1957,1968-1970,1984-1986,8389-8391,9902-9904,9911,9941-9943,9946,9960-9967,11804-11806
+uv.lock
+  s_c1bd782d0ec3da::t_039e69ea3b2e8b 8-9,53,65-102,520,525-558,1588,1595,1597,2119,2365,2405,2407,2409,2595,2597,2599,3204-3205,3439-3451
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "30c4b3e8286088f9d24a5bcfee389fd8ed1549ad",
+  "prompts": {},
+  "sessions": {
+    "s_c1bd782d0ec3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d04bd113-987d-49e9-af38-12cb4d8b30bb",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

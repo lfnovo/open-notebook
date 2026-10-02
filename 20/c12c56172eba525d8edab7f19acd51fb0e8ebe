@@ -1,0 +1,19 @@
+CHANGELOG.md
+  s_7ddc9b6ed4c681::t_e0ef8093571a91 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "20c12c56172eba525d8edab7f19acd51fb0e8ebe",
+  "prompts": {},
+  "sessions": {
+    "s_7ddc9b6ed4c681": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b2ff6dd0-24fe-49f6-af48-1474a7832501",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

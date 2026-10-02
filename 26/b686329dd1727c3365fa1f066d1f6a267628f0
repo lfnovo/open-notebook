@@ -1,0 +1,33 @@
+CHANGELOG.md
+  s_7421a04ffabb0b::t_ef9117cb16287f 11
+  s_7421a04ffabb0b::t_f805eeb03a0071 10,12
+frontend/src/components/sources/SourceDetailContent.tsx
+  s_7421a04ffabb0b::t_1b4ddd9203140a 120-124,127,130-131
+  s_7421a04ffabb0b::t_ab89c35dafe815 399-401
+  s_7421a04ffabb0b::t_5e33b3fbcc704f 809
+  s_7421a04ffabb0b::t_6afdb09eeb099c 230-233,239
+  s_7421a04ffabb0b::t_618df209710565 91-99,125-126,128-129,132
+  s_7421a04ffabb0b::t_2306257e72624e 252
+  s_7421a04ffabb0b::t_75691d7cb44ed8 234-237,241
+  s_7421a04ffabb0b::t_245626c1af16d1 7
+  s_7421a04ffabb0b::t_6a31450a2f3e4c 380-383
+  s_7421a04ffabb0b::t_292b13a02ae9bc 391
+  s_7421a04ffabb0b::t_5569cd80cef965 8
+  s_7421a04ffabb0b::t_7fd6b51beda87b 160
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "26b686329dd1727c3365fa1f066d1f6a267628f0",
+  "prompts": {},
+  "sessions": {
+    "s_7421a04ffabb0b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fb412aa1-2bb7-4a12-a60d-f60841b43985",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

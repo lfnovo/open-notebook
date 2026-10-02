@@ -1,0 +1,19 @@
+frontend/next.config.ts
+  s_7b3428ae87ada8::t_a73662fa19a1aa 15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "577b6e2317f979463b6fc13e8fddc0b4594f2642",
+  "prompts": {},
+  "sessions": {
+    "s_7b3428ae87ada8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2b8e1db2-3afc-4824-b7da-f35fe098681d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

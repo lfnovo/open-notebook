@@ -1,0 +1,19 @@
+tmp-design/foundation/04-implementation-plan.md
+  s_29e4db9e94e63e::t_5e49b1271c834e 1-98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "d1377e39579ccdcef7dcf2242849870dff76374d",
+  "prompts": {},
+  "sessions": {
+    "s_29e4db9e94e63e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "751e15f7-997c-4119-9276-c45c2cade437",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

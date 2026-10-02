@@ -1,0 +1,23 @@
+frontend/package.json
+  s_29e4db9e94e63e::t_ff398289b5be9a 84
+frontend/package-lock.json
+  s_29e4db9e94e63e::t_6b2daacea82b90 5542-5544
+uv.lock
+  s_29e4db9e94e63e::t_ba19593d5ad080 2595,2597,2599
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "b9a432f34c80612f357215bf2b107690b9b7ea72",
+  "prompts": {},
+  "sessions": {
+    "s_29e4db9e94e63e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "751e15f7-997c-4119-9276-c45c2cade437",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

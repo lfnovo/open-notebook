@@ -1,0 +1,57 @@
+frontend/src/app/dev/design/page.tsx
+  s_29e4db9e94e63e::t_ec1cc8152eb8dd 491-495,502
+  s_29e4db9e94e63e::t_07e0b4abf61a20 9-11
+  s_29e4db9e94e63e::t_4d129c32503a23 407
+  s_29e4db9e94e63e::t_da0bda4c898bf0 146,150-167
+  s_29e4db9e94e63e::t_8417abaa85f838 1-8,12-145,147-149,168-406,408-490,496-501,503-506
+frontend/src/components/ui/button.tsx
+  s_29e4db9e94e63e::t_b094c46f6381d2 13,15,17,19,21
+frontend/src/components/ui/badge.tsx
+  s_29e4db9e94e63e::t_72a9965761f6b6 13,15,17
+  s_29e4db9e94e63e::t_45e19f551ded12 8
+frontend/src/components/ui/dialog.tsx
+  s_29e4db9e94e63e::t_59809793aa865d 66
+frontend/src/components/ui/card.tsx
+  s_29e4db9e94e63e::t_b69a39790e4fbc 10
+frontend/src/components/ui/popover.tsx
+  s_29e4db9e94e63e::t_b2b49cb193b1aa 33
+frontend/src/app/globals.css
+  s_29e4db9e94e63e::t_6dabf92ccbf7bc 7-20,24-26,44,52,58-132,136-295,298-300,302-364,408,415,417,421,423
+frontend/src/components/ui/select.tsx
+  s_29e4db9e94e63e::t_52f0ed4dfff006 40
+  s_29e4db9e94e63e::t_7948adc646ca2b 64
+frontend/src/app/layout.tsx
+  s_29e4db9e94e63e::t_9445e04c92847b 2-6
+  s_29e4db9e94e63e::t_8a158d47db53be 48-50
+  s_29e4db9e94e63e::t_c9b319d728bb90 17-31
+frontend/src/components/ui/alert-dialog.tsx
+  s_29e4db9e94e63e::t_49e7f47a368177 57
+frontend/src/components/ui/textarea.tsx
+  s_29e4db9e94e63e::t_7263cf378dd000 10
+frontend/src/components/ui/tooltip.tsx
+  s_29e4db9e94e63e::t_9c350762de0783 55
+  s_29e4db9e94e63e::t_17fdfec35bd7f4 49
+frontend/src/components/ui/input.tsx
+  s_29e4db9e94e63e::t_52b4b81c2f8149 11
+frontend/src/components/ui/tabs.tsx
+  s_29e4db9e94e63e::t_254e6981ebc294 45
+  s_29e4db9e94e63e::t_c38e4968f3063a 29
+frontend/src/components/ui/dropdown-menu.tsx
+  s_29e4db9e94e63e::t_d59338d36d9b2e 45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "1d65d765c9c759df54a598932627374231be5f3d",
+  "prompts": {},
+  "sessions": {
+    "s_29e4db9e94e63e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "751e15f7-997c-4119-9276-c45c2cade437",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

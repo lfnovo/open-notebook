@@ -1,0 +1,86 @@
+frontend/src/components/sources/SourceInsightDialog.tsx
+  s_7421a04ffabb0b::t_f64c86fa4d6143 12-13
+  s_7421a04ffabb0b::t_00229eada14c0f 41-44,47
+  s_7421a04ffabb0b::t_cbbe1d73a3675c 130-134
+  s_7421a04ffabb0b::t_dd71230eb81c58 39
+frontend/src/components/sources/SourceDetailContent.tsx
+  s_7421a04ffabb0b::t_12341c0b9a949f 104
+  s_7421a04ffabb0b::t_9f360fb38de801 116
+  s_7421a04ffabb0b::t_4d8f8483f31f4c 13-14
+  s_7421a04ffabb0b::t_725ff8cfafa351 396,399
+  s_7421a04ffabb0b::t_66f702fd32df83 128-130,134
+  s_7421a04ffabb0b::t_05d383dc4e9607 398,400-401
+  s_7421a04ffabb0b::t_3a877ec3f12233 308
+frontend/src/components/sources/SourceDialog.tsx
+  s_7421a04ffabb0b::t_ea301aeb25c1f6 51,53
+frontend/src/lib/utils/error-handler.ts
+  s_7421a04ffabb0b::t_f71cec9616d1f7 1-10
+frontend/src/lib/locales/pl-PL/index.ts
+  s_7421a04ffabb0b::t_8b57eddd6a23c1 114-119
+frontend/src/lib/locales/pt-BR/index.ts
+  s_7421a04ffabb0b::t_8b57eddd6a23c1 114-119
+frontend/src/app/(dashboard)/notebooks/components/NoteEditorDialog.test.tsx
+  s_7421a04ffabb0b::t_65067ba83c69ff 1
+  s_7421a04ffabb0b::t_431b503682092e 2-89,91-117
+  s_7421a04ffabb0b::t_022e3cb1c65108 90
+frontend/src/app/(dashboard)/sources/[id]/page.tsx
+  s_7421a04ffabb0b::t_b3f08a5af13a2c 47
+frontend/src/lib/locales/ru-RU/index.ts
+  s_7421a04ffabb0b::t_8b57eddd6a23c1 114-119
+frontend/src/components/common/ContentUnavailable.tsx
+  s_7421a04ffabb0b::t_463737346287a5 5,18,30,33-52
+  s_7421a04ffabb0b::t_3ed2e94cce44b3 1-4,6-17,19-29,31-32,53-55
+frontend/src/components/sources/SourceInsightDialog.test.tsx
+  s_7421a04ffabb0b::t_0dc46931c56858 2-89,91-122
+  s_7421a04ffabb0b::t_9b24c01c6f40ad 1
+  s_7421a04ffabb0b::t_7468b11fb4126f 90
+frontend/src/lib/locales/ja-JP/index.ts
+  s_7421a04ffabb0b::t_8b57eddd6a23c1 114-119
+frontend/src/app/(dashboard)/notebooks/components/NoteEditorDialog.tsx
+  s_7421a04ffabb0b::t_384a6e73c4ddcc 45-54
+  s_7421a04ffabb0b::t_84c3371ec6840f 211
+  s_7421a04ffabb0b::t_b68bb189f6aa1b 140-145
+  s_7421a04ffabb0b::t_ba0cf73dc90dd3 16-17
+frontend/src/lib/locales/ca-ES/index.ts
+  s_7421a04ffabb0b::t_8b57eddd6a23c1 114-119
+frontend/src/lib/locales/bn-IN/index.ts
+  s_7421a04ffabb0b::t_8b57eddd6a23c1 114-119
+frontend/src/components/sources/SourceDetailContent.test.tsx
+  s_7421a04ffabb0b::t_672e4848e7fece 1-105
+CHANGELOG.md
+  s_7421a04ffabb0b::t_fec7165bb6c097 11
+frontend/src/lib/locales/de-DE/index.ts
+  s_7421a04ffabb0b::t_8b57eddd6a23c1 117-122
+frontend/src/lib/locales/en-US/index.ts
+  s_7421a04ffabb0b::t_8b57eddd6a23c1 112-117
+frontend/src/lib/locales/fr-FR/index.ts
+  s_7421a04ffabb0b::t_8b57eddd6a23c1 114-119
+frontend/src/lib/api/query-client.ts
+  s_7421a04ffabb0b::t_d6a3e739552085 2,9-11
+frontend/src/lib/locales/zh-CN/index.ts
+  s_7421a04ffabb0b::t_8b57eddd6a23c1 114-119
+frontend/src/lib/locales/zh-TW/index.ts
+  s_7421a04ffabb0b::t_8b57eddd6a23c1 114-119
+frontend/src/lib/locales/tr-TR/index.ts
+  s_7421a04ffabb0b::t_8b57eddd6a23c1 114-119
+frontend/src/lib/locales/es-ES/index.ts
+  s_7421a04ffabb0b::t_8b57eddd6a23c1 114-119
+frontend/src/lib/locales/it-IT/index.ts
+  s_7421a04ffabb0b::t_8b57eddd6a23c1 114-119
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "2c2ff2d1b8e98aee4996f20973ebe61aaa81bc27",
+  "prompts": {},
+  "sessions": {
+    "s_7421a04ffabb0b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fb412aa1-2bb7-4a12-a60d-f60841b43985",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

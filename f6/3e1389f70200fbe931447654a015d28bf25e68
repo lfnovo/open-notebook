@@ -1,0 +1,25 @@
+supervisord.conf
+  s_7421a04ffabb0b::t_e6998621b145c6 34-37
+docs/5-CONFIGURATION/environment-reference.md
+  s_7421a04ffabb0b::t_e6998621b145c6 16
+CHANGELOG.md
+  s_7421a04ffabb0b::t_e6998621b145c6 12
+docs/5-CONFIGURATION/reverse-proxy.md
+  s_7421a04ffabb0b::t_e6998621b145c6 131
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "f63e1389f70200fbe931447654a015d28bf25e68",
+  "prompts": {},
+  "sessions": {
+    "s_7421a04ffabb0b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fb412aa1-2bb7-4a12-a60d-f60841b43985",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

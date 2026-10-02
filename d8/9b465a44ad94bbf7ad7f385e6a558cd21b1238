@@ -1,0 +1,62 @@
+frontend/src/lib/locales/bn-IN/index.ts
+  s_068a6f20b755a6::t_0729db9f593a30 879-881
+frontend/src/lib/locales/de-DE/index.ts
+  s_068a6f20b755a6::t_0729db9f593a30 881-883
+frontend/src/lib/locales/fr-FR/index.ts
+  s_068a6f20b755a6::t_0729db9f593a30 878-880
+frontend/src/lib/locales/ca-ES/index.ts
+  s_068a6f20b755a6::t_0729db9f593a30 878-880
+frontend/src/lib/locales/zh-CN/index.ts
+  s_068a6f20b755a6::t_0729db9f593a30 878-880
+frontend/src/lib/locales/ru-RU/index.ts
+  s_068a6f20b755a6::t_0729db9f593a30 878-880
+frontend/src/lib/locales/en-US/index.ts
+  s_068a6f20b755a6::t_0729db9f593a30 877-879
+frontend/src/lib/locales/pl-PL/index.ts
+  s_068a6f20b755a6::t_0729db9f593a30 878-880
+frontend/src/components/settings/DefaultModelSelectors.tsx
+  s_068a6f20b755a6::t_f62cae46b993bf 230
+  s_068a6f20b755a6::t_d1fea56fc3cea2 111-113
+  s_068a6f20b755a6::t_4d8959b46be994 159
+  s_068a6f20b755a6::t_d54aeb98e6c274 185-186
+  s_068a6f20b755a6::t_a63df71031c9d9 247
+  s_068a6f20b755a6::t_6fe54caf7536a0 37-38,47,52-64
+  s_068a6f20b755a6::t_5a4e5d7d22934d 65
+frontend/src/lib/locales/tr-TR/index.ts
+  s_068a6f20b755a6::t_0729db9f593a30 878-880
+frontend/src/lib/locales/ja-JP/index.ts
+  s_068a6f20b755a6::t_0729db9f593a30 878-880
+CHANGELOG.md
+  s_068a6f20b755a6::t_86f5c649635c9b 18
+frontend/src/lib/locales/pt-BR/index.ts
+  s_068a6f20b755a6::t_0729db9f593a30 878-880
+frontend/src/lib/locales/it-IT/index.ts
+  s_068a6f20b755a6::t_0729db9f593a30 878-880
+frontend/src/lib/locales/zh-TW/index.ts
+  s_068a6f20b755a6::t_0729db9f593a30 878-880
+open_notebook/ai/models.py
+  s_068a6f20b755a6::t_d1b62ae221c451 356
+api/routers/models.py
+  s_068a6f20b755a6::t_a9ffd6247bf5d8 792-798,807
+frontend/src/lib/locales/es-ES/index.ts
+  s_068a6f20b755a6::t_0729db9f593a30 879-881
+tests/test_models_api.py
+  s_068a6f20b755a6::t_24b582dab8ccb0 490-564
+  s_068a6f20b755a6::t_18fc47d73de780 565-619
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "d89b465a44ad94bbf7ad7f385e6a558cd21b1238",
+  "prompts": {},
+  "sessions": {
+    "s_068a6f20b755a6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "10d0e64f-b7a2-4459-8df7-b4b4f402c43a",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

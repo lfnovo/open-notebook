@@ -1,0 +1,23 @@
+frontend/src/components/sources/ChatPanel.tsx
+  s_068a6f20b755a6::t_bac1a225fef2b7 3,83-86,97,157,159-162,219-224,232-376
+  s_068a6f20b755a6::t_468254baf535b1 377
+frontend/src/components/sources/ChatPanel.test.tsx
+  s_068a6f20b755a6::t_04510165d9f084 19-20
+  s_068a6f20b755a6::t_08da883fac3537 1-18,21-83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "da1ce04960df90e16c504f45a5fb175a07dbee71",
+  "prompts": {},
+  "sessions": {
+    "s_068a6f20b755a6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "10d0e64f-b7a2-4459-8df7-b4b4f402c43a",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

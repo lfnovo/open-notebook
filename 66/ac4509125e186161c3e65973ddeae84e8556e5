@@ -1,0 +1,43 @@
+frontend/src/lib/locales/ja-JP/index.ts
+  s_7ddc9b6ed4c681::t_6d3de287a8de8a 758
+frontend/src/lib/locales/tr-TR/index.ts
+  s_7ddc9b6ed4c681::t_6d3de287a8de8a 758
+frontend/src/lib/locales/it-IT/index.ts
+  s_7ddc9b6ed4c681::t_6d3de287a8de8a 758
+frontend/src/lib/locales/zh-CN/index.ts
+  s_7ddc9b6ed4c681::t_6d3de287a8de8a 758
+frontend/src/lib/locales/ru-RU/index.ts
+  s_7ddc9b6ed4c681::t_6d3de287a8de8a 758
+frontend/src/lib/locales/es-ES/index.ts
+  s_7ddc9b6ed4c681::t_6d3de287a8de8a 759
+frontend/src/lib/locales/fr-FR/index.ts
+  s_7ddc9b6ed4c681::t_6d3de287a8de8a 758
+frontend/src/lib/locales/pt-BR/index.ts
+  s_7ddc9b6ed4c681::t_6d3de287a8de8a 758
+frontend/src/lib/locales/bn-IN/index.ts
+  s_7ddc9b6ed4c681::t_6d3de287a8de8a 759
+frontend/src/lib/locales/ca-ES/index.ts
+  s_7ddc9b6ed4c681::t_6d3de287a8de8a 758
+frontend/src/lib/locales/de-DE/index.ts
+  s_7ddc9b6ed4c681::t_6d3de287a8de8a 761
+frontend/src/lib/locales/pl-PL/index.ts
+  s_7ddc9b6ed4c681::t_6d3de287a8de8a 758
+frontend/src/lib/locales/zh-TW/index.ts
+  s_7ddc9b6ed4c681::t_6d3de287a8de8a 758
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "66ac4509125e186161c3e65973ddeae84e8556e5",
+  "prompts": {},
+  "sessions": {
+    "s_7ddc9b6ed4c681": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b2ff6dd0-24fe-49f6-af48-1474a7832501",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

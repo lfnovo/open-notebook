@@ -1,0 +1,22 @@
+frontend/src/lib/types/podcasts.ts
+  s_7421a04ffabb0b::t_7e3ebfd1a3d731 72
+frontend/src/components/podcasts/GeneratePodcastDialog.tsx
+  s_7421a04ffabb0b::t_5b2a139113bc9e 404-410
+  s_7421a04ffabb0b::t_4352b464b1180a 433
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "e565d14e8659b6bdbc3e9c1277691ccf892cdf18",
+  "prompts": {},
+  "sessions": {
+    "s_7421a04ffabb0b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fb412aa1-2bb7-4a12-a60d-f60841b43985",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+tests/test_url_validation.py
+  s_4e49aa2b4d2aeb::t_a33b85e4330fa8 247-373
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "35a385662ee56a8f62a81d8b90a15a8dab454f6f",
+  "prompts": {},
+  "sessions": {
+    "s_4e49aa2b4d2aeb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4f84118f-d31a-4941-a308-71a2d3ca2179",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

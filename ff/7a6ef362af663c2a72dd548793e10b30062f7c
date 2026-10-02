@@ -1,0 +1,83 @@
+.claude/skills/release/runbook.md
+  s_4e49aa2b4d2aeb::t_964a4eeb753206 8-9,12,16,21,25,43,50,54,56-92,95,101,105,110
+  s_4e49aa2b4d2aeb::t_e229989035ed17 5-7
+  s_4e49aa2b4d2aeb::t_df121db5ecd94f 10-11
+  s_4e49aa2b4d2aeb::t_556f2dd6263c03 13-15
+  s_4e49aa2b4d2aeb::t_a136e8ee79a991 17-20
+  s_4e49aa2b4d2aeb::t_f9c04522001e16 22-24
+  s_4e49aa2b4d2aeb::t_5610ffdbe87c7f 26-28,40-42
+  s_4e49aa2b4d2aeb::t_57527556289856 44-49
+  s_4e49aa2b4d2aeb::t_5ee8ce348b982e 51-53
+  s_4e49aa2b4d2aeb::t_a934dd89c6ac48 55
+  s_4e49aa2b4d2aeb::t_86486ace746fe6 93-94
+  s_4e49aa2b4d2aeb::t_1d2afac866e06e 96-100
+  s_4e49aa2b4d2aeb::t_6f199a3fd70667 102-104
+  s_4e49aa2b4d2aeb::t_5ec8f4e483c2bc 106-109
+  s_4e49aa2b4d2aeb::t_6f07594ab1f913 1-4,29-39
+.claude/skills/process-discussions/SKILL.md
+  s_5c4500e8618bb3::t_20fa1879b8178e 1-53,63-144,151-171
+  s_5c4500e8618bb3::t_dcc179856b82a7 145-150
+  s_5c4500e8618bb3::t_301660f07bf3b2 54-62
+.gitignore
+  s_5c4500e8618bb3::t_f3997eef172df8 133-136
+.claude/agents/harness-qa.md
+  s_e2ac2040dbc68b::t_196fe63d3e2c0c 1-178
+.claude/agents/smoke-e2e.md
+  s_7f6f8dd214e0a9::t_eebc1509e95540 1-493
+.claude/skills/release/SKILL.md
+  s_7421a04ffabb0b::t_0117b1856eae40 1-116
+.claude/skills/release/comms-templates.md
+  s_7f6f8dd214e0a9::t_4a479e47e985b0 1-60
+.claude/skills/release/gates.md
+  s_7f6f8dd214e0a9::t_c476442fcde412 1-44
+.claude/skills/release/test-matrix.md
+  s_e2ac2040dbc68b::t_47c6cd78735f0d 1-66
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "ff7a6ef362af663c2a72dd548793e10b30062f7c",
+  "prompts": {},
+  "sessions": {
+    "s_4e49aa2b4d2aeb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4f84118f-d31a-4941-a308-71a2d3ca2179",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    },
+    "s_5c4500e8618bb3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "623769a6-222e-4b94-b23a-e3db7000ac63",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    },
+    "s_7421a04ffabb0b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fb412aa1-2bb7-4a12-a60d-f60841b43985",
+        "model": "unknown"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    },
+    "s_7f6f8dd214e0a9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2084959d-2098-48fd-8223-14651de0f3b8",
+        "model": "unknown"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    },
+    "s_e2ac2040dbc68b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bc36125d-9896-40cd-a548-ad88dfe7dc65",
+        "model": "unknown"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

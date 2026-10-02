@@ -1,0 +1,19 @@
+CHANGELOG.md
+  s_c1bd782d0ec3da::t_5816fd1d339081 18-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "9e27878cf687beca19ffe0c8c0af73013e3743af",
+  "prompts": {},
+  "sessions": {
+    "s_c1bd782d0ec3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d04bd113-987d-49e9-af38-12cb4d8b30bb",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

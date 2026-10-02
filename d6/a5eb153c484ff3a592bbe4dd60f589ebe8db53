@@ -1,0 +1,92 @@
+open_notebook/database/migrations/20.surrealql
+  s_7421a04ffabb0b::t_ccbc943a89e914 1-20
+api/routers/episode_profiles.py
+  s_7421a04ffabb0b::t_e8ee81ad44ed45 80-81
+  s_7421a04ffabb0b::t_24c432816f9182 268
+  s_7421a04ffabb0b::t_9bdfadc8012b07 152
+  s_7421a04ffabb0b::t_367e3c44b61b13 190-195,199
+  s_7421a04ffabb0b::t_5cff408d59c26d 166
+  s_7421a04ffabb0b::t_3c9f3954e99d7a 1,7-8,17-22,36-44,50-52,66-72
+  s_7421a04ffabb0b::t_b11966419fcce6 104
+  s_7421a04ffabb0b::t_0c4d0cf4a77393 120-126
+  s_7421a04ffabb0b::t_f3f9f1b3224ef7 73-74
+frontend/src/lib/types/podcasts.ts
+  s_7421a04ffabb0b::t_9c1a92874a7a94 15-18
+  s_7421a04ffabb0b::t_6a9af62953b982 136,140,144,146-148
+frontend/src/lib/locales/ca-ES/index.ts
+  s_7421a04ffabb0b::t_8caf5924689f5b 550-551
+frontend/src/lib/locales/bn-IN/index.ts
+  s_7421a04ffabb0b::t_8caf5924689f5b 550-551
+frontend/src/lib/locales/tr-TR/index.ts
+  s_7421a04ffabb0b::t_8caf5924689f5b 550-551
+tests/test_podcast_speaker_profile.py
+  s_7421a04ffabb0b::t_08c91556bb8a3b 2-15,29,50-53,61,68,73-77,85,88-89,93-116,126-154,156-276
+  s_7421a04ffabb0b::t_ab9a25971d70c2 155
+frontend/src/lib/locales/pl-PL/index.ts
+  s_7421a04ffabb0b::t_8caf5924689f5b 550-551
+frontend/src/lib/locales/pt-BR/index.ts
+  s_7421a04ffabb0b::t_8caf5924689f5b 550-551
+frontend/src/lib/locales/it-IT/index.ts
+  s_7421a04ffabb0b::t_8caf5924689f5b 550-551
+frontend/src/lib/locales/ja-JP/index.ts
+  s_7421a04ffabb0b::t_8caf5924689f5b 550-551
+frontend/src/components/podcasts/GeneratePodcastDialog.tsx
+  s_7421a04ffabb0b::t_f31eb93b15a410 431
+  s_7421a04ffabb0b::t_012e92eb8d3526 404-416
+  s_7421a04ffabb0b::t_21d6355fc5790d 540-547
+open_notebook/database/migrations/20_down.surrealql
+  s_7421a04ffabb0b::t_2836ad9c2f62e3 1-12
+frontend/src/lib/locales/es-ES/index.ts
+  s_7421a04ffabb0b::t_8caf5924689f5b 550-551
+frontend/src/lib/locales/ru-RU/index.ts
+  s_7421a04ffabb0b::t_8caf5924689f5b 550-551
+commands/podcast_commands.py
+  s_7421a04ffabb0b::t_2d3bc38ccce21d 42-44
+  s_7421a04ffabb0b::t_ffd6f28091626a 84-94,96
+api/podcast_service.py
+  s_7421a04ffabb0b::t_5a8513e01eb246 52-54
+  s_7421a04ffabb0b::t_4b43bc11d0366e 79,82
+CHANGELOG.md
+  s_7421a04ffabb0b::t_ef8dad50973f0c 11
+frontend/src/lib/locales/en-US/index.ts
+  s_7421a04ffabb0b::t_8caf5924689f5b 548-549
+open_notebook/podcasts/models.py
+  s_7421a04ffabb0b::t_d02b41b48a2858 45,58-65
+  s_7421a04ffabb0b::t_31f64a6e979f5f 108-109
+  s_7421a04ffabb0b::t_40c6685547dc3a 222-242
+frontend/src/lib/locales/de-DE/index.ts
+  s_7421a04ffabb0b::t_8caf5924689f5b 553-554
+open_notebook/database/async_migrate.py
+  s_7421a04ffabb0b::t_ffb0ffedccf4a8 198-200
+  s_7421a04ffabb0b::t_cf5dd33d7d3922 136-138
+frontend/src/components/podcasts/EpisodeProfilesPanel.tsx
+  s_7421a04ffabb0b::t_2e0c90274b39d9 246-250
+  s_7421a04ffabb0b::t_eced21c2b50bfb 49,51-55
+tests/test_domain.py
+  s_7421a04ffabb0b::t_fc3f63c4622a7f 11,514-520
+frontend/src/lib/locales/fr-FR/index.ts
+  s_7421a04ffabb0b::t_8caf5924689f5b 550-551
+frontend/src/lib/locales/zh-TW/index.ts
+  s_7421a04ffabb0b::t_8caf5924689f5b 550-551
+frontend/src/lib/locales/zh-CN/index.ts
+  s_7421a04ffabb0b::t_8caf5924689f5b 550-551
+frontend/src/components/podcasts/forms/EpisodeProfileFormDialog.tsx
+  s_7421a04ffabb0b::t_45c7bb41e8fa6b 222
+  s_7421a04ffabb0b::t_69733e17228fb1 75,81-83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "d6a5eb153c484ff3a592bbe4dd60f589ebe8db53",
+  "prompts": {},
+  "sessions": {
+    "s_7421a04ffabb0b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fb412aa1-2bb7-4a12-a60d-f60841b43985",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

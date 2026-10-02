@@ -1,0 +1,21 @@
+README.md
+  s_deea26d3646cda::t_81892ca6a1933e 26-27
+  s_deea26d3646cda::t_f33349981a9c66 333
+  s_deea26d3646cda::t_0259634b8b9b72 359
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "6866c5aeb03f9ec313aca479bdcb51df4d889023",
+  "prompts": {},
+  "sessions": {
+    "s_deea26d3646cda": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f1ead5f7-ca81-42ba-ab96-868da743b3d6",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

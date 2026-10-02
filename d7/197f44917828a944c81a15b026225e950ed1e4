@@ -1,0 +1,42 @@
+frontend/src/components/podcasts/EpisodeCard.tsx
+  s_7421a04ffabb0b::t_ffa502a0ad6b60 315-320
+  s_7421a04ffabb0b::t_83b514bbd31b14 292-297
+  s_7421a04ffabb0b::t_d32ee7eb2b2a90 132-145
+  s_7421a04ffabb0b::t_8a8cc7905844d3 281-286
+frontend/src/lib/types/podcasts.ts
+  s_7421a04ffabb0b::t_a42458ce8b5f4c 46-51,58-61,68-69
+api/routers/podcasts.py
+  s_7421a04ffabb0b::t_9ff9a3ec0c8c80 13,20-84
+  s_7421a04ffabb0b::t_d0315886e89d63 228-237
+  s_7421a04ffabb0b::t_92ceb0393d232d 194-198
+  s_7421a04ffabb0b::t_3e3a63e427ee86 287-288,292-301
+  s_7421a04ffabb0b::t_9bcc5bbbb53d04 85
+tests/test_podcast_episode_model_resolution.py
+  s_7421a04ffabb0b::t_13ef63ee2e0e9b 1-316
+frontend/src/components/podcasts/EpisodeCard.test.tsx
+  s_7421a04ffabb0b::t_535d62cb69c4b5 1-137
+CHANGELOG.md
+  s_7421a04ffabb0b::t_f810126b4202b3 19
+open_notebook/ai/models.py
+  s_7421a04ffabb0b::t_b2c89addfaa9fa 70
+  s_7421a04ffabb0b::t_558fe7c40b6f35 69,71-106
+  s_7421a04ffabb0b::t_a14d9c2ddba776 1
+  s_7421a04ffabb0b::t_8ea9e1ddf262df 11
+  s_7421a04ffabb0b::t_37a47ca0d94bea 68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "d7197f44917828a944c81a15b026225e950ed1e4",
+  "prompts": {},
+  "sessions": {
+    "s_7421a04ffabb0b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fb412aa1-2bb7-4a12-a60d-f60841b43985",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

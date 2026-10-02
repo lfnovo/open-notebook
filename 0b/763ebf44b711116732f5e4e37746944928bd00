@@ -1,0 +1,25 @@
+docker-compose.yml
+  s_7421a04ffabb0b::t_a6ce9e2e515a58 8-10
+CHANGELOG.md
+  s_7421a04ffabb0b::t_a6ce9e2e515a58 12
+docs/1-INSTALLATION/docker-compose.md
+  s_7421a04ffabb0b::t_a6ce9e2e515a58 36-40,43-47,63,66-68,84
+README.md
+  s_7421a04ffabb0b::t_a6ce9e2e515a58 117-124,126-130,134-135,137,142-143,145-146,148-151,153-154,162
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "0b763ebf44b711116732f5e4e37746944928bd00",
+  "prompts": {},
+  "sessions": {
+    "s_7421a04ffabb0b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fb412aa1-2bb7-4a12-a60d-f60841b43985",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+prompts/source_chat/system.jinja
+  s_11868ff5e2011d::t_afe547dcbe14c9 2,5,11
+open_notebook/graphs/source_chat.py
+  s_11868ff5e2011d::t_698c114c314a81 33-44,115-120,225-226,228-231,254-256
+open_notebook/utils/context_builder.py
+  s_11868ff5e2011d::t_f03c8d1a21d501 33-36,44-94,198,200-203,211-212,221-235,237,239-246,253-258,260,263
+  s_11868ff5e2011d::t_1e333551301b24 278-279
+tests/test_utils.py
+  s_11868ff5e2011d::t_89d66322b3884f 27-30,274,282,292-295,297-302,319-320,324-325,342-409,412-431,446
+  s_11868ff5e2011d::t_f4563f0e80e3e2 410-411
+  s_11868ff5e2011d::t_f5def69fd72c7f 13-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "81bf32037d0d56af0002ca0943d55d9b552357cd",
+  "prompts": {},
+  "sessions": {
+    "s_11868ff5e2011d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9f23-2f93-7613-9620-28845eb2c16d",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

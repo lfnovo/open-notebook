@@ -1,0 +1,24 @@
+pyproject.toml
+  s_7421a04ffabb0b::t_2eddf0d8c58f8b 64,66,72-74
+  s_7421a04ffabb0b::t_060f38cb713e88 75
+.github/workflows/test.yml
+  s_7421a04ffabb0b::t_2eddf0d8c58f8b 81
+uv.lock
+  s_7421a04ffabb0b::t_ad0218aeef7e8f 2076,2086-2089,2125,2127,2133-2136
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "a131fcdc43de9f56d9d5dd0cc5701283948db134",
+  "prompts": {},
+  "sessions": {
+    "s_7421a04ffabb0b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fb412aa1-2bb7-4a12-a60d-f60841b43985",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

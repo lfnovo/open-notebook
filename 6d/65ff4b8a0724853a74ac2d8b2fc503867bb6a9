@@ -1,0 +1,33 @@
+tests/test_upload_type_mitigations.py
+  s_7ddc9b6ed4c681::t_2ad45b38d4b599 95-154
+CHANGELOG.md
+  s_7ddc9b6ed4c681::t_713d60b93d60a1 20
+api/routers/sources.py
+  s_7ddc9b6ed4c681::t_8cc36ac970fdda 43,48-72
+  s_7ddc9b6ed4c681::t_bda1870126fca5 447-448
+  s_7ddc9b6ed4c681::t_9748c9ef7488b0 964-965
+  s_7ddc9b6ed4c681::t_a8f8e65599f504 6,73
+api/main.py
+  s_7ddc9b6ed4c681::t_7b92b19204d33d 51
+  s_7ddc9b6ed4c681::t_0d5b1b58b3b285 354-360
+  s_7ddc9b6ed4c681::t_6ee786c4680ff6 351-353
+  s_7ddc9b6ed4c681::t_15a56ad8843c45 350
+tests/test_typed_exceptions_reach_handlers.py
+  s_7ddc9b6ed4c681::t_f2981236ef1d5c 94-115
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "6d65ff4b8a0724853a74ac2d8b2fc503867bb6a9",
+  "prompts": {},
+  "sessions": {
+    "s_7ddc9b6ed4c681": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b2ff6dd0-24fe-49f6-af48-1474a7832501",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

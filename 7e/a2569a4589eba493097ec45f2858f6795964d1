@@ -1,0 +1,153 @@
+frontend/src/app/(dashboard)/notebooks/components/RecentlyViewed.tsx
+  s_29e4db9e94e63e::t_4d7c31051ee461 76
+  s_29e4db9e94e63e::t_df0cebbc27078e 99,101-106,111,113,115
+frontend/src/app/(dashboard)/search/page.tsx
+  s_29e4db9e94e63e::t_9e2503aced47c0 236,239,242
+  s_29e4db9e94e63e::t_753d356592e9eb 162
+  s_29e4db9e94e63e::t_c37e4f170ab82a 455
+  s_29e4db9e94e63e::t_f7337e21171870 465
+frontend/src/app/(dashboard)/settings/page.tsx
+  s_29e4db9e94e63e::t_88fea7e8da78e7 20
+frontend/src/app/(dashboard)/sources/page.tsx
+  s_29e4db9e94e63e::t_7538dea44cdabd 246-250
+  s_29e4db9e94e63e::t_63903a8ac0ce6a 343
+  s_29e4db9e94e63e::t_189968d1a5d93d 382-386,388
+  s_29e4db9e94e63e::t_f1e115693257dd 377
+  s_29e4db9e94e63e::t_a88379c43f1301 419-426,428
+  s_29e4db9e94e63e::t_9fc44e5d049aba 11
+  s_29e4db9e94e63e::t_7248e39bd1c252 321
+frontend/src/components/sources/SourceDialog.tsx
+  s_29e4db9e94e63e::t_a7ba59db352cea 50
+frontend/src/app/(dashboard)/notebooks/components/NotesColumn.tsx
+  s_29e4db9e94e63e::t_b2e71965ab5849 98
+  s_29e4db9e94e63e::t_a3f6201308e5a5 150
+  s_29e4db9e94e63e::t_83f1fa148573eb 90-93
+  s_29e4db9e94e63e::t_36fef4075b86da 140,144
+frontend/src/components/sources/AddSourceDialog.tsx
+  s_29e4db9e94e63e::t_d4909c17925375 588
+frontend/src/app/(dashboard)/advanced/components/RebuildEmbeddings.tsx
+  s_29e4db9e94e63e::t_9c3705a4e2eb61 275,279,283
+  s_29e4db9e94e63e::t_781bc15bc28503 287
+frontend/src/components/search/StreamingResponse.tsx
+  s_29e4db9e94e63e::t_9f037041a9551f 89
+  s_29e4db9e94e63e::t_8467a0741b06a7 71
+  s_29e4db9e94e63e::t_d6c67f567bd1bb 112
+  s_29e4db9e94e63e::t_ef5fb2c25e7429 133,136
+frontend/src/components/sources/SourceDetailContent.tsx
+  s_29e4db9e94e63e::t_f347c33b3eb446 709
+  s_29e4db9e94e63e::t_255359d0712da4 788-789
+  s_29e4db9e94e63e::t_5027fe0f06dc45 751,753
+  s_29e4db9e94e63e::t_8f11a63ab979fe 648-651
+  s_29e4db9e94e63e::t_041bd482a236ff 738
+  s_29e4db9e94e63e::t_0ba0e237c8071b 679
+  s_29e4db9e94e63e::t_94ab38bdece139 487,489,497-521,523-541
+  s_29e4db9e94e63e::t_12f45848792c42 544-571,573-600,602,604-623,625-645
+  s_29e4db9e94e63e::t_6e7345149cea91 413,424
+frontend/src/components/podcasts/EpisodeCard.tsx
+  s_29e4db9e94e63e::t_bf973f6cce5f9b 260-262
+  s_29e4db9e94e63e::t_bf90a9138ce8c4 434-436
+  s_29e4db9e94e63e::t_007c381e1c505b 228
+frontend/src/components/sources/NotebookAssociations.tsx
+  s_29e4db9e94e63e::t_349d24a3bf0c81 108-119,125-134,139-147
+  s_29e4db9e94e63e::t_e0d63fbd9a39f7 159-160
+  s_29e4db9e94e63e::t_c9d142adb44cd0 215-216
+frontend/src/components/podcasts/EpisodeProfilesPanel.tsx
+  s_29e4db9e94e63e::t_1ac2f72423211d 90
+  s_29e4db9e94e63e::t_adb4d9607461fc 107
+  s_29e4db9e94e63e::t_69e90ee4faeedb 120
+frontend/src/app/(dashboard)/transformations/page.tsx
+  s_29e4db9e94e63e::t_2d0fa9dca2476a 32
+frontend/src/components/sources/SourceInsightDialog.tsx
+  s_29e4db9e94e63e::t_3fb6e3bcd776a0 78,82-83
+frontend/src/app/(dashboard)/notebooks/components/NotebookCard.tsx
+  s_29e4db9e94e63e::t_ace9dccbdbf028 117-118,121-122,125
+  s_29e4db9e94e63e::t_217d8a8a7b4833 53-54
+frontend/src/components/sources/steps/ProcessingStep.tsx
+  s_29e4db9e94e63e::t_439ae4b085b48f 109,111
+  s_29e4db9e94e63e::t_fd15e4eb08200b 94,96,98-99
+frontend/src/app/(dashboard)/podcasts/page.tsx
+  s_29e4db9e94e63e::t_31d90bc302a55f 32
+frontend/src/components/podcasts/SpeakerProfilesPanel.tsx
+  s_29e4db9e94e63e::t_c2714709287edb 97
+  s_29e4db9e94e63e::t_b73cc49207a416 86
+  s_29e4db9e94e63e::t_94a38603465eb7 77
+frontend/src/components/podcasts/TemplatesTab.tsx
+  s_29e4db9e94e63e::t_6c653df5b74dd5 33
+  s_29e4db9e94e63e::t_20425ba92b9f8d 46
+  s_29e4db9e94e63e::t_357c8a167cecf9 42
+frontend/src/components/settings/ProviderSection.tsx
+  s_29e4db9e94e63e::t_0d266bb8bcf3da 52,56
+  s_29e4db9e94e63e::t_5c6e08c0f142a2 72-73,75,77-78,80
+frontend/src/components/sources/SourceCard.tsx
+  s_29e4db9e94e63e::t_88499b70342e01 225
+  s_29e4db9e94e63e::t_7c5609720d79b0 260
+  s_29e4db9e94e63e::t_87c7af031f43a0 409-410,414
+  s_29e4db9e94e63e::t_bbea155a8e3290 269
+  s_29e4db9e94e63e::t_bc54cff4452209 310,316
+  s_29e4db9e94e63e::t_2e37023d58fab3 274-276,279,282-285,289-293
+  s_29e4db9e94e63e::t_4aebfc7c8e104a 250
+frontend/src/components/podcasts/EpisodesTab.tsx
+  s_29e4db9e94e63e::t_93194949d40996 138
+  s_29e4db9e94e63e::t_c4333b262e1247 47
+  s_29e4db9e94e63e::t_7c745e82ab4649 87
+frontend/src/app/(dashboard)/advanced/page.tsx
+  s_29e4db9e94e63e::t_47189d53d552f3 16
+frontend/src/app/(dashboard)/notebooks/components/NotebookDeleteDialog.tsx
+  s_29e4db9e94e63e::t_13ddaba783fbf4 78
+frontend/src/app/(dashboard)/settings/api-keys/page.tsx
+  s_29e4db9e94e63e::t_a2fb68f469e8da 94-95
+frontend/src/app/(dashboard)/notebooks/components/SourcesColumn.tsx
+  s_29e4db9e94e63e::t_ebeb4665bed4a6 162-165
+  s_29e4db9e94e63e::t_00a31cda823679 170
+  s_29e4db9e94e63e::t_a091b6f1a6b0af 224
+frontend/src/components/sources/steps/SourceTypeStep.tsx
+  s_29e4db9e94e63e::t_122a523bd2814e 259
+  s_29e4db9e94e63e::t_eb0158e0a6b85c 289-292
+  s_29e4db9e94e63e::t_35fabe019db4d2 340
+frontend/src/app/(dashboard)/transformations/components/TransformationsList.tsx
+  s_29e4db9e94e63e::t_64ab4542fb397c 74
+frontend/src/app/(dashboard)/advanced/components/SystemInfo.tsx
+  s_29e4db9e94e63e::t_a793314900b030 60
+  s_29e4db9e94e63e::t_1799609233d135 68
+  s_29e4db9e94e63e::t_36bf43a71e487f 47
+  s_29e4db9e94e63e::t_7a9a52c5c3dba1 37
+  s_29e4db9e94e63e::t_6fdb79b20e133b 53
+frontend/src/app/(dashboard)/notebooks/components/NotebookList.tsx
+  s_29e4db9e94e63e::t_2796f96452d668 79
+frontend/src/components/sources/ChatPanel.tsx
+  s_29e4db9e94e63e::t_7553dd081db6d8 109-110
+  s_29e4db9e94e63e::t_ac3608ebfb07cb 118
+  s_29e4db9e94e63e::t_4c26600b177a23 168-169,172
+  s_29e4db9e94e63e::t_5f90663be00e92 338-339,345,347-348
+  s_29e4db9e94e63e::t_57e61d27149b08 369-370
+frontend/src/app/(dashboard)/notebooks/components/NotebookRow.tsx
+  s_29e4db9e94e63e::t_0645f58b80474a 59
+  s_29e4db9e94e63e::t_c3dfc88577d14d 76-77,80-81,84
+frontend/src/components/settings/CredentialItem.tsx
+  s_29e4db9e94e63e::t_b58fe46ed24975 174
+frontend/src/components/sources/AddExistingSourceDialog.tsx
+  s_29e4db9e94e63e::t_65c780069a1c6a 269,271
+  s_29e4db9e94e63e::t_00d782714594a1 232-233
+frontend/src/app/(dashboard)/notebooks/components/NotebookHeader.tsx
+  s_29e4db9e94e63e::t_d913c3d2c9444f 99-102
+  s_29e4db9e94e63e::t_b8cdd8b7c0ae98 62-63
+  s_29e4db9e94e63e::t_fb6dffb0b539a7 115
+frontend/src/app/(dashboard)/notebooks/page.tsx
+  s_29e4db9e94e63e::t_1e3ae043f5bade 60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "7ea2569a4589eba493097ec45f2858f6795964d1",
+  "prompts": {},
+  "sessions": {
+    "s_29e4db9e94e63e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "751e15f7-997c-4119-9276-c45c2cade437",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

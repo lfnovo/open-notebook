@@ -1,0 +1,69 @@
+frontend/src/lib/locales/zh-CN/index.ts
+  s_7ddc9b6ed4c681::t_4dd207443cc117 770-771
+CHANGELOG.md
+  s_7ddc9b6ed4c681::t_16297f43c03227 11
+frontend/src/lib/locales/it-IT/index.ts
+  s_7ddc9b6ed4c681::t_4dd207443cc117 770-771
+api/routers/settings.py
+  s_7ddc9b6ed4c681::t_491afff3f3a52e 74-75
+  s_7ddc9b6ed4c681::t_8a92ee5672505f 25
+  s_7ddc9b6ed4c681::t_3c67b13d60dd41 88
+frontend/src/app/(dashboard)/settings/components/SettingsForm.tsx
+  s_7ddc9b6ed4c681::t_7a1bf721b2e187 11
+  s_7ddc9b6ed4c681::t_294295e40e94d2 70
+  s_7ddc9b6ed4c681::t_151b715ae61b9c 24
+  s_7ddc9b6ed4c681::t_082a1674e158d1 144-163
+  s_7ddc9b6ed4c681::t_d4a3d9bb551b89 54
+open_notebook/domain/content_settings.py
+  s_7ddc9b6ed4c681::t_a4da5adc26a394 22-28
+frontend/src/lib/types/api.ts
+  s_7ddc9b6ed4c681::t_12ec2eb32311b5 60
+api/models.py
+  s_7ddc9b6ed4c681::t_fee81137b3ae61 280,289
+frontend/src/lib/locales/en-US/index.ts
+  s_7ddc9b6ed4c681::t_4dd207443cc117 769-770
+frontend/src/lib/locales/pl-PL/index.ts
+  s_7ddc9b6ed4c681::t_4dd207443cc117 770-771
+frontend/src/lib/locales/zh-TW/index.ts
+  s_7ddc9b6ed4c681::t_4dd207443cc117 770-771
+open_notebook/graphs/source.py
+  s_7ddc9b6ed4c681::t_dadf2a4a951362 74-75
+frontend/src/lib/locales/bn-IN/index.ts
+  s_7ddc9b6ed4c681::t_4dd207443cc117 771-772
+frontend/src/lib/locales/fr-FR/index.ts
+  s_7ddc9b6ed4c681::t_4dd207443cc117 770-771
+frontend/src/lib/locales/de-DE/index.ts
+  s_7ddc9b6ed4c681::t_4dd207443cc117 773-774
+frontend/src/lib/locales/es-ES/index.ts
+  s_7ddc9b6ed4c681::t_4dd207443cc117 771-772
+frontend/src/lib/locales/ru-RU/index.ts
+  s_7ddc9b6ed4c681::t_4dd207443cc117 770-771
+tests/test_domain.py
+  s_7ddc9b6ed4c681::t_c230c6c95f5dc2 585-590
+tests/test_graphs.py
+  s_7ddc9b6ed4c681::t_6dce8c9063158d 406,423
+frontend/src/lib/locales/tr-TR/index.ts
+  s_7ddc9b6ed4c681::t_4dd207443cc117 770-771
+frontend/src/lib/locales/ca-ES/index.ts
+  s_7ddc9b6ed4c681::t_4dd207443cc117 770-771
+frontend/src/lib/locales/ja-JP/index.ts
+  s_7ddc9b6ed4c681::t_4dd207443cc117 770-771
+frontend/src/lib/locales/pt-BR/index.ts
+  s_7ddc9b6ed4c681::t_4dd207443cc117 770-771
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "2b7ad9fc070fca8454c0db28adfc1ef1582f3c97",
+  "prompts": {},
+  "sessions": {
+    "s_7ddc9b6ed4c681": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b2ff6dd0-24fe-49f6-af48-1474a7832501",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

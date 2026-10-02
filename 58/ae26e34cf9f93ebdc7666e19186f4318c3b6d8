@@ -1,0 +1,23 @@
+frontend/package.json
+  s_4e49aa2b4d2aeb::t_6b9c5a3f244208 37
+frontend/package-lock.json
+  s_4e49aa2b4d2aeb::t_8f50cca8bd70c0 32,5451-5453,5458,5461-5485
+uv.lock
+  s_4e49aa2b4d2aeb::t_d8e15c62a8c7a2 1829,1847,1849
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "58ae26e34cf9f93ebdc7666e19186f4318c3b6d8",
+  "prompts": {},
+  "sessions": {
+    "s_4e49aa2b4d2aeb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4f84118f-d31a-4941-a308-71a2d3ca2179",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+tests/test_graphs.py
+  s_7ddc9b6ed4c681::t_9fd679b09619bc 320-324
+open_notebook/graphs/source.py
+  s_7ddc9b6ed4c681::t_0f0cc8ecf74504 18-32
+  s_7ddc9b6ed4c681::t_f223dce3875078 59-61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "2a3aaecc7f2afd71b374a1549073c0104bd06fd8",
+  "prompts": {},
+  "sessions": {
+    "s_7ddc9b6ed4c681": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b2ff6dd0-24fe-49f6-af48-1474a7832501",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

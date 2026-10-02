@@ -1,0 +1,89 @@
+tests/test_model_discovery.py
+  s_068a6f20b755a6::t_66fc814307efe2 16,20,59-60,69,82-84,192-224,338-411
+.agents/skills/release/test-matrix.md
+  s_deea26d3646cda::t_9c671f22df146d 1-66
+docs/5-CONFIGURATION/omlx.md
+  s_068a6f20b755a6::t_66fc814307efe2 1-125
+.env.example
+  s_068a6f20b755a6::t_66fc814307efe2 53-56
+docs/5-CONFIGURATION/openai-compatible.md
+  s_068a6f20b755a6::t_66fc814307efe2 29,407
+open_notebook/ai/key_provider.py
+  s_068a6f20b755a6::t_66fc814307efe2 67-72,79-87
+docs/3-USER-GUIDE/api-configuration.md
+  s_068a6f20b755a6::t_66fc814307efe2 105,210-217
+  s_068a6f20b755a6::t_80f0261e9cb395 218
+docs/4-AI-PROVIDERS/index.md
+  s_068a6f20b755a6::t_66fc814307efe2 53-54,76-96,109-118,153-155,157,177-178
+  s_068a6f20b755a6::t_d5e82db3c78268 179
+open_notebook/ai/model_discovery.py
+  s_068a6f20b755a6::t_1e47a0fda9f93b 788-802
+  s_068a6f20b755a6::t_66fc814307efe2 154-156,168-186,209,340-341,489-521,574,576-579,598-609,613-656,803-852,863,876-878
+.agents/skills/release/gates.md
+  s_deea26d3646cda::t_9c671f22df146d 1-44
+api/credentials_service.py
+  s_068a6f20b755a6::t_66fc814307efe2 21,131-139,298-306,408,413-415,539-565,631-651,684,693-702
+frontend/src/components/settings/CredentialFormDialog.tsx
+  s_068a6f20b755a6::t_66fc814307efe2 19-21,49,51-52,77-78,243-249
+README.md
+  s_068a6f20b755a6::t_66fc814307efe2 232,235,239,242,245-246,249
+tests/test_credential_provider_validation.py
+  s_068a6f20b755a6::t_66fc814307efe2 34-36,41,116-117
+.agents/skills/release/comms-templates.md
+  s_deea26d3646cda::t_9c671f22df146d 1-60
+CHANGELOG.md
+  s_068a6f20b755a6::t_66fc814307efe2 11,14-15,18
+docs/5-CONFIGURATION/environment-reference.md
+  s_068a6f20b755a6::t_66fc814307efe2 301-302,319-321
+docs/5-CONFIGURATION/index.md
+  s_068a6f20b755a6::t_66fc814307efe2 32,34,40,216-218
+open_notebook/ai/connection_tester.py
+  s_068a6f20b755a6::t_66fc814307efe2 302-306
+.codex/agents/harness-qa.toml
+  s_deea26d3646cda::t_9c671f22df146d 1-171
+.codex/agents/on-tech.toml
+  s_deea26d3646cda::t_9c671f22df146d 1-196
+api/models.py
+  s_068a6f20b755a6::t_66fc814307efe2 570-572,577
+api/routers/models.py
+  s_068a6f20b755a6::t_66fc814307efe2 408,411-413
+open_notebook/domain/credential.py
+  s_068a6f20b755a6::t_66fc814307efe2 128-132,134,136
+.agents/skills/release/SKILL.md
+  s_deea26d3646cda::t_9c671f22df146d 1-116
+tests/test_credentials_api.py
+  s_068a6f20b755a6::t_66fc814307efe2 310-400,429-468,491-495
+open_notebook/ai/provider_registry.py
+  s_068a6f20b755a6::t_66fc814307efe2 137,161-189,211,224-235
+docs/5-CONFIGURATION/ai-providers.md
+  s_068a6f20b755a6::t_66fc814307efe2 242-248,345-428,511-533,535
+  s_068a6f20b755a6::t_bd2805d26793ea 534,536
+.codex/agents/smoke-e2e.toml
+  s_deea26d3646cda::t_9c671f22df146d 1-486
+.agents/skills/release/runbook.md
+  s_deea26d3646cda::t_9c671f22df146d 1-73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "e9864a61919e7f2743ed7aa1048c80bca092ceb8",
+  "prompts": {},
+  "sessions": {
+    "s_068a6f20b755a6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "10d0e64f-b7a2-4459-8df7-b4b4f402c43a",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    },
+    "s_deea26d3646cda": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f1ead5f7-ca81-42ba-ab96-868da743b3d6",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

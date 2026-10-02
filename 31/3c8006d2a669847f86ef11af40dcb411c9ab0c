@@ -1,0 +1,72 @@
+examples/docker-compose-dev.yml
+  s_7421a04ffabb0b::t_f162c4077fcff4 9-11
+examples/docker-compose-full-local.yml
+  s_7421a04ffabb0b::t_f162c4077fcff4 34-36
+commands/podcast_commands.py
+  s_7421a04ffabb0b::t_f162c4077fcff4 42,80-83,85,87
+.github/RELEASE_PROCESS.md
+  s_7421a04ffabb0b::t_f162c4077fcff4 18-21,161-174
+examples/docker-compose-speaches.yml
+  s_7421a04ffabb0b::t_f162c4077fcff4 30-32
+frontend/src/lib/locales/zh-CN/index.ts
+  s_7421a04ffabb0b::t_f162c4077fcff4 626,629,632,635,644,647,650,654
+frontend/src/lib/locales/zh-TW/index.ts
+  s_7421a04ffabb0b::t_f162c4077fcff4 626,629,632,635,644,647,650,654
+README.md
+  s_7421a04ffabb0b::t_f162c4077fcff4 120-122
+docs/7-DEVELOPMENT/quick-start.md
+  s_7421a04ffabb0b::t_f162c4077fcff4 40
+docs/5-CONFIGURATION/environment-reference.md
+  s_7421a04ffabb0b::t_f162c4077fcff4 16
+docs/0-START-HERE/quick-start-external-ollama.md
+  s_7421a04ffabb0b::t_f162c4077fcff4 49,52-54
+supervisord.conf
+  s_7421a04ffabb0b::t_f162c4077fcff4 34-37
+tests/test_podcast_speaker_profile.py
+  s_7421a04ffabb0b::t_f162c4077fcff4 1-91
+docs/0-START-HERE/quick-start-cloud.md
+  s_7421a04ffabb0b::t_f162c4077fcff4 29,31-33
+docs/0-START-HERE/quick-start-openai.md
+  s_7421a04ffabb0b::t_f162c4077fcff4 26,28-30
+docs/5-CONFIGURATION/reverse-proxy.md
+  s_7421a04ffabb0b::t_f162c4077fcff4 131,427-429
+frontend/src/app/(dashboard)/transformations/components/TransformationsList.test.tsx
+  s_7421a04ffabb0b::t_f162c4077fcff4 1-45
+docker-compose.override.yml.example
+  s_7421a04ffabb0b::t_f162c4077fcff4 17-22
+docs/1-INSTALLATION/docker-compose.md
+  s_7421a04ffabb0b::t_f162c4077fcff4 34-38,41-47,64-66,68-69
+CHANGELOG.md
+  s_7421a04ffabb0b::t_f162c4077fcff4 12-13,17-19,56-57
+  s_7421a04ffabb0b::t_915e991c0f47af 58
+docs/5-CONFIGURATION/database.md
+  s_7421a04ffabb0b::t_f162c4077fcff4 36-37
+examples/docker-compose-ollama.yml
+  s_7421a04ffabb0b::t_f162c4077fcff4 19-21
+frontend/src/app/(dashboard)/transformations/components/TransformationsList.tsx
+  s_7421a04ffabb0b::t_f162c4077fcff4 38-50,53-66,93
+docs/5-CONFIGURATION/advanced.md
+  s_7421a04ffabb0b::t_f162c4077fcff4 167
+docs/0-START-HERE/quick-start-local.md
+  s_7421a04ffabb0b::t_f162c4077fcff4 36,39-41
+docs/5-CONFIGURATION/openai-compatible.md
+  s_7421a04ffabb0b::t_f162c4077fcff4 206-209
+docs/7-DEVELOPMENT/development-setup.md
+  s_7421a04ffabb0b::t_f162c4077fcff4 91-93,96,99,103,337
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "313c8006d2a669847f86ef11af40dcb411c9ab0c",
+  "prompts": {},
+  "sessions": {
+    "s_7421a04ffabb0b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fb412aa1-2bb7-4a12-a60d-f60841b43985",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

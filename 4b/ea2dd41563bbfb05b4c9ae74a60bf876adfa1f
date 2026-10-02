@@ -1,0 +1,19 @@
+.claude/skills/process-discussions/SKILL.md
+  s_5c4500e8618bb3::t_77af6d3826730a 16-18,98-99,105-118,157-160
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "4bea2dd41563bbfb05b4c9ae74a60bf876adfa1f",
+  "prompts": {},
+  "sessions": {
+    "s_5c4500e8618bb3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "623769a6-222e-4b94-b23a-e3db7000ac63",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,111 @@
+frontend/src/lib/api/capabilities.ts
+  s_7ddc9b6ed4c681::t_e9d5e197bb933b 1-13
+frontend/src/lib/locales/ja-JP/index.ts
+  s_7ddc9b6ed4c681::t_f5afe98612fb0f 758-759
+frontend/src/lib/locales/zh-TW/index.ts
+  s_7ddc9b6ed4c681::t_1176177b467e17 758-759
+CHANGELOG.md
+  s_7ddc9b6ed4c681::t_4ebef680cc4387 11-13
+docs/3-USER-GUIDE/content-processing-engines.md
+  s_7ddc9b6ed4c681::t_39f44dbc2fd5bb 1-141
+docs/5-CONFIGURATION/advanced.md
+  s_7ddc9b6ed4c681::t_977bb7e4e2bb50 253,261-269,284-292
+  s_361086fd550cc0::t_dd56af94d81f8d 293
+frontend/src/lib/locales/pl-PL/index.ts
+  s_7ddc9b6ed4c681::t_2f9e08ef1866bd 758-759
+tests/test_capabilities_api.py
+  s_7ddc9b6ed4c681::t_023b17b1e4a303 1-78
+frontend/src/lib/hooks/use-capabilities.ts
+  s_7ddc9b6ed4c681::t_9af4f7359ce8d6 1-20
+frontend/src/lib/locales/tr-TR/index.ts
+  s_7ddc9b6ed4c681::t_fac39fe906693c 758-759
+frontend/src/lib/locales/bn-IN/index.ts
+  s_7ddc9b6ed4c681::t_19a2052d5449a6 759-760
+docs/3-USER-GUIDE/index.md
+  s_7ddc9b6ed4c681::t_4f06356e3c715b 28-29
+frontend/src/lib/locales/ca-ES/index.ts
+  s_7ddc9b6ed4c681::t_7275939a16b9c0 758-759
+frontend/src/lib/locales/fr-FR/index.ts
+  s_7ddc9b6ed4c681::t_5f226cb429911b 758-759
+frontend/src/lib/types/api.ts
+  s_7ddc9b6ed4c681::t_b3d74c4400bffd 64-69
+frontend/src/lib/locales/ru-RU/index.ts
+  s_7ddc9b6ed4c681::t_3f68bc204cd4c5 758-759
+api/main.py
+  s_7ddc9b6ed4c681::t_2eb6c2d05a0ebd 20
+  s_7ddc9b6ed4c681::t_20ad3604a46b4d 398
+frontend/src/app/(dashboard)/settings/components/SettingsForm.tsx
+  s_7ddc9b6ed4c681::t_074b49e21407de 15
+  s_7ddc9b6ed4c681::t_d9266d2e672ffe 166
+  s_7ddc9b6ed4c681::t_3ecc72221d0ede 136,142-144
+  s_7ddc9b6ed4c681::t_356fb171db201d 33,35-40
+  s_7ddc9b6ed4c681::t_4c9df6d94e4dc4 195,201-203
+Dockerfile
+  s_7ddc9b6ed4c681::t_2442bbe28a015d 138-140
+  s_7ddc9b6ed4c681::t_e9be55ca99424d 109-117
+  s_7ddc9b6ed4c681::t_89cf2b93d37c06 120
+docker-compose.yml
+  s_7ddc9b6ed4c681::t_af81be9e941d70 44-50
+docs/5-CONFIGURATION/environment-reference.md
+  s_7ddc9b6ed4c681::t_54d097881e31f8 108-110,112-121,126-128
+frontend/src/lib/locales/pt-BR/index.ts
+  s_7ddc9b6ed4c681::t_a0b0b41ddb2b21 758-759
+api/models.py
+  s_7ddc9b6ed4c681::t_392c136c15a396 596-618
+frontend/src/lib/locales/zh-CN/index.ts
+  s_7ddc9b6ed4c681::t_bf588130ae40e1 758-759
+docs/7-DEVELOPMENT/decisions/README.md
+  s_7ddc9b6ed4c681::t_34f59bb458464d 51
+docs/3-USER-GUIDE/adding-sources.md
+  s_7ddc9b6ed4c681::t_f308214232bae5 53,59
+  s_7ddc9b6ed4c681::t_0c8db471aaa76c 197
+  s_7ddc9b6ed4c681::t_e59beeae0947ec 367-369
+  s_7ddc9b6ed4c681::t_3fc2094b36405a 71-72,78-79,83
+  s_7ddc9b6ed4c681::t_97675b38780cd1 381
+  s_361086fd550cc0::t_5e336c9a745ea9 60
+docs/7-DEVELOPMENT/decisions/ADR-007-optin-runtimes.md
+  s_7ddc9b6ed4c681::t_c27b54bd54aef4 1-41
+frontend/src/lib/locales/en-US/index.ts
+  s_7ddc9b6ed4c681::t_0e0f1e38651014 757-758
+api/routers/capabilities.py
+  s_7ddc9b6ed4c681::t_d854a1284bca99 1-56
+frontend/src/lib/locales/it-IT/index.ts
+  s_7ddc9b6ed4c681::t_b71b4be00ed966 758-759
+scripts/docker-entrypoint.sh
+  s_7ddc9b6ed4c681::t_bd44fd4d8bb35e 1-116
+frontend/src/app/(dashboard)/settings/components/SettingsForm.test.tsx
+  s_7ddc9b6ed4c681::t_16203975cfdf77 4-11
+  s_7ddc9b6ed4c681::t_3489f4ea18cbfe 1-3,12-88
+pyproject.toml
+  s_7ddc9b6ed4c681::t_83d4ee63de89e0 40
+frontend/src/lib/locales/de-DE/index.ts
+  s_7ddc9b6ed4c681::t_d86eef5bf6635e 761-762
+frontend/src/lib/locales/es-ES/index.ts
+  s_7ddc9b6ed4c681::t_8cd64ca205f421 759-760
+uv.lock
+  s_7ddc9b6ed4c681::t_94cd210f85ab0f 2060,2107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "736523a14ed18023e511ad3dadd36b80d74a4ecd",
+  "prompts": {},
+  "sessions": {
+    "s_361086fd550cc0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f58b9-e511-79e2-b749-42ff2b47a107",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    },
+    "s_7ddc9b6ed4c681": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b2ff6dd0-24fe-49f6-af48-1474a7832501",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

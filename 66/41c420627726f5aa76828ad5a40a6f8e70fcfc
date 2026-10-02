@@ -1,0 +1,19 @@
+tests/test_utils.py
+  s_11868ff5e2011d::t_c4096d5f631047 386-418
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.19",
+  "base_commit_sha": "6641c420627726f5aa76828ad5a40a6f8e70fcfc",
+  "prompts": {},
+  "sessions": {
+    "s_11868ff5e2011d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9f23-2f93-7613-9620-28845eb2c16d",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+frontend/src/lib/locales/zh-TW/index.ts
+  s_7421a04ffabb0b::t_9407e659204d77 626,629,632,635,644,647,650,654
+CHANGELOG.md
+  s_7421a04ffabb0b::t_9407e659204d77 12
+frontend/src/lib/locales/zh-CN/index.ts
+  s_7421a04ffabb0b::t_9407e659204d77 626,629,632,635,644,647,650,654
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "4fc964412b9ac8a855c45305bbc91de2a6f2426d",
+  "prompts": {},
+  "sessions": {
+    "s_7421a04ffabb0b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fb412aa1-2bb7-4a12-a60d-f60841b43985",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

@@ -215,6 +215,7 @@ async def find_duplicate_sources(
     source creation.
     """
     norm_url = normalize_source_url(url) if url else None
+    norm_content = " ".join((content or "").split())
     wanted_hash = content_hash(content)
     norm_title = normalize_filename(title)
     norm_filename = normalize_filename(filename)
@@ -233,7 +234,14 @@ async def find_duplicate_sources(
         )
         params["host"] = host
     if wanted_hash:
-        clauses.append("(full_text != NONE)")
+        # Bounded prefilter: a hash match implies identical normalized length,
+        # so skip rows whose stored length cannot match before copying+hashing.
+        clauses.append(
+            "(full_text != NONE AND string::len(full_text) >= $min_len "
+            "AND string::len(full_text) <= $max_len)"
+        )
+        params["min_len"] = max(len(norm_content) - 32, 0)
+        params["max_len"] = len(norm_content) + 32
     if weak:
         clauses.append(
             "(title != NONE AND string::lowercase(string::trim(title)) = $weak_title)"

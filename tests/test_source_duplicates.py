@@ -186,6 +186,16 @@ class TestFindDuplicateSources:
         assert "string::trim(title)" in query
         assert params["weak_title"] == "my doc"
 
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
+    async def test_content_lookup_is_length_bounded(self, mock_query):
+        """Text probes prefilter by stored length before hashing full_text."""
+        mock_query.return_value = []
+        await find_duplicate_sources(source_type="text", content="hello world")
+        query, params = mock_query.await_args.args
+        assert "string::len(full_text)" in query
+        assert params["min_len"] <= len("hello world") <= params["max_len"]
+
 
 class TestCheckDuplicatesEndpoint:
     @pytest.mark.asyncio

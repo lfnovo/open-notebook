@@ -194,7 +194,23 @@ class TestFindDuplicateSources:
         await find_duplicate_sources(source_type="text", content="hello world")
         query, params = mock_query.await_args.args
         assert "string::len(full_text)" in query
-        assert params["min_len"] <= len("hello world") <= params["max_len"]
+        # Independently pinned: raw len 11 -> [max(5, -501), 534].
+        assert params["min_len"] == 5
+        assert params["max_len"] == 534
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
+    async def test_content_prefilter_excludes_mismatched_rows(self, mock_query):
+        """Rows outside the length window are dropped by the DB, not hashed."""
+        mock_query.return_value = [
+            {"id": "source:9", "title": "t", "asset": {}, "full_text": "x" * 5000}
+        ]
+        assert (
+            await find_duplicate_sources(source_type="text", content="hello world")
+            == []
+        )
+        query, _ = mock_query.await_args.args
+        assert "string::len(full_text)" in query
 
 
 class TestCheckDuplicatesEndpoint:

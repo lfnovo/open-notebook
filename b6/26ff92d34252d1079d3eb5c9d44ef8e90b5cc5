@@ -1,0 +1,20 @@
+frontend/package-lock.json
+  h_b951d72cb60ead 32,41,1880-1882,1895-1897,1911-1913,1927-1929,1943-1945,1959-1961,1975-1977,1991-1993,2007-2009,5479-5481,5485,9965-9967,9970,9984-9991
+frontend/package.json
+  h_b951d72cb60ead 37,46
+pyproject.toml
+  h_b951d72cb60ead 93-99
+uv.lock
+  h_b951d72cb60ead 14-19,795,797,799,2747,2749,2751,2852-2863,3457,3459,3461-3469,3574,3576,3578,3634,3639,3641,3643,3645
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b626ff92d34252d1079d3eb5c9d44ef8e90b5cc5",
+  "prompts": {},
+  "humans": {
+    "h_b951d72cb60ead": {
+      "author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

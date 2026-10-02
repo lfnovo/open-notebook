@@ -379,6 +379,33 @@ class SourceCreate(BaseModel):
         return self
 
 
+class DuplicateSourceInfo(BaseModel):
+    id: str
+    title: Optional[str] = None
+    filename: Optional[str] = None
+    url: Optional[str] = None
+    created: Optional[str] = None
+    updated: Optional[str] = None
+    excerpt: Optional[str] = None
+    match_reason: str = Field(
+        ..., description="Which key matched: url, content, or filename"
+    )
+
+
+class DuplicateCheckRequest(BaseModel):
+    type: str = Field(..., description="Source type: link, upload, or text")
+    url: Optional[str] = Field(None, description="URL for link type")
+    title: Optional[str] = Field(None, description="Source title")
+    content: Optional[str] = Field(None, description="Text content for text type")
+    filename: Optional[str] = Field(
+        None, description="Original filename for upload type"
+    )
+
+
+class DuplicateCheckResponse(BaseModel):
+    duplicates: List[DuplicateSourceInfo] = Field(default_factory=list)
+
+
 class SourceUpdate(BaseModel):
     title: Optional[str] = Field(None, description="Source title")
     topics: Optional[List[str]] = Field(None, description="Source topics")

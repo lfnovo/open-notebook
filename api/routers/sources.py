@@ -1,7 +1,9 @@
 import asyncio
+import hashlib
 import os
 from pathlib import Path
 from typing import Any, List, Optional
+from urllib.parse import unquote, urlparse, urlunparse
 
 from content_core import check_file_support
 from fastapi import (
@@ -23,6 +25,9 @@ from api.credentials_service import validate_url
 from api.models import (
     AssetModel,
     CreateSourceInsightRequest,
+    DuplicateCheckRequest,
+    DuplicateCheckResponse,
+    DuplicateSourceInfo,
     InsightCreationResponse,
     SourceCreate,
     SourceInsightResponse,
@@ -100,6 +105,110 @@ SOURCE_TYPE_EXPRESSION = (
     "IF asset.file_path != NONE THEN 'file' "
     "ELSE IF asset.url != NONE THEN 'link' ELSE 'text' END"
 )
+
+
+def normalize_source_url(url: str) -> str:
+    """Normalize a link URL for duplicate comparison (Issue #257).
+
+    Lowercases scheme/host, strips default ports, trailing slashes, fragments,
+    tracking query params (utm_*), and percent-decoding noise so that
+    trivially-different spellings of the same link still match.
+    """
+    parsed = urlparse(unquote(url.strip()))
+    scheme = (parsed.scheme or "http").lower()
+    host = (parsed.hostname or "").lower()
+    if not host:
+        return url.strip().lower()
+    try:
+        port = f":{parsed.port}" if parsed.port and parsed.port not in (80, 443) else ""
+    except ValueError:
+        port = ""
+    path = parsed.path.rstrip("/") or "/"
+    if path == "/":
+        path = ""
+    query_parts = sorted(
+        p for p in parsed.query.split("&") if p and not p.lower().startswith("utm_")
+    )
+    return urlunparse((scheme, f"{host}{port}", path, "", "&".join(query_parts), ""))
+
+
+def normalize_filename(name: Optional[str]) -> str:
+    """Normalize a filename/title for weak duplicate matching."""
+    return (name or "").strip().lower()
+
+
+def content_hash(text: Optional[str]) -> Optional[str]:
+    """SHA-256 of normalized extracted text; None when there is nothing to hash."""
+    if not text or not text.strip():
+        return None
+    return hashlib.sha256(" ".join(text.split()).encode("utf-8")).hexdigest()
+
+
+def _row_to_duplicate_info(row: dict, match_reason: str) -> DuplicateSourceInfo:
+    asset = row.get("asset") or {}
+    filename = None
+    if asset.get("file_path"):
+        filename = os.path.basename(str(asset.get("file_path")))
+    full_text = row.get("full_text") or ""
+    return DuplicateSourceInfo(
+        id=str(row.get("id")),
+        title=row.get("title"),
+        filename=filename,
+        url=asset.get("url"),
+        created=str(row.get("created")) if row.get("created") else None,
+        updated=str(row.get("updated")) if row.get("updated") else None,
+        excerpt=full_text[:200] if full_text else None,
+        match_reason=match_reason,
+    )
+
+
+async def find_duplicate_sources(
+    source_type: Optional[str] = None,
+    url: Optional[str] = None,
+    title: Optional[str] = None,
+    content: Optional[str] = None,
+    filename: Optional[str] = None,
+) -> List[DuplicateSourceInfo]:
+    """Find existing sources matching the candidate (#257).
+
+    Priority order: normalized URL for links, exact content hash for text
+    sources, normalized filename/title as a weak fallback. Returns [] (never
+    raises) so a duplicate lookup can never block source creation.
+    """
+    try:
+        rows = await repo_query(
+            "SELECT id, title, asset, full_text, created, updated FROM source LIMIT 500"
+        )
+    except Exception as e:  # pragma: no cover - defensive
+        logger.warning(f"Duplicate lookup skipped (query failed): {e}")
+        return []
+    duplicates: List[DuplicateSourceInfo] = []
+    norm_title = normalize_filename(title)
+    norm_filename = normalize_filename(filename)
+    norm_url = normalize_source_url(url) if url else None
+    wanted_hash = content_hash(content)
+    for row in rows:
+        asset = row.get("asset") or {}
+        if norm_url and asset.get("url"):
+            try:
+                if normalize_source_url(str(asset["url"])) == norm_url:
+                    duplicates.append(_row_to_duplicate_info(row, "url"))
+                    continue
+            except Exception:
+                pass
+        if wanted_hash and row.get("full_text"):
+            if content_hash(str(row["full_text"])) == wanted_hash:
+                duplicates.append(_row_to_duplicate_info(row, "content"))
+                continue
+        candidates = [normalize_filename(row.get("title"))]
+        if asset.get("file_path"):
+            candidates.append(
+                normalize_filename(os.path.basename(str(asset["file_path"])))
+            )
+        weak = norm_filename or (norm_title if source_type != "link" else None)
+        if weak and weak in candidates:
+            duplicates.append(_row_to_duplicate_info(row, "filename"))
+    return duplicates
 
 
 async def _stamp_source_view(source_id: str) -> None:
@@ -252,6 +361,26 @@ def parse_source_form_data(
         raise
 
     return source_data, file
+
+
+@router.post("/sources/check-duplicates", response_model=DuplicateCheckResponse)
+async def check_duplicates(payload: DuplicateCheckRequest):
+    """Pre-creation duplicate probe for the add-source flow (#257).
+
+    Returns matching sources with a summary (title, filename, dates, excerpt)
+    so the client can warn and offer Cancel vs Proceed-anyway. Never blocks:
+    returns an empty list when nothing matches or the lookup fails.
+    """
+    if payload.type == "link" and not payload.url:
+        raise HTTPException(status_code=400, detail="URL is required for link type")
+    duplicates = await find_duplicate_sources(
+        source_type=payload.type,
+        url=payload.url,
+        title=payload.title,
+        content=payload.content,
+        filename=payload.filename,
+    )
+    return DuplicateCheckResponse(duplicates=duplicates)
 
 
 @router.get("/sources", response_model=List[SourceListResponse])

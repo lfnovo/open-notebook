@@ -149,6 +149,43 @@ class TestFindDuplicateSources:
             )
         ) == []
 
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
+    async def test_malformed_url_is_fail_open(self, mock_query):
+        """A candidate URL that fails normalization returns [] (never 500)."""
+        mock_query.return_value = EXISTING
+        assert (
+            await find_duplicate_sources(source_type="link", url="http://[::1")
+        ) == []
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
+    async def test_no_keys_skips_query(self, mock_query):
+        assert await find_duplicate_sources() == []
+        mock_query.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
+    async def test_link_lookup_is_keyed_by_host(self, mock_query):
+        """Link probes filter by URL host instead of scanning the table."""
+        mock_query.return_value = EXISTING
+        await find_duplicate_sources(
+            source_type="link", url="https://example.com/article"
+        )
+        query, params = mock_query.await_args.args
+        assert "LIMIT 500" not in query
+        assert params["host"] == "example.com"
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
+    async def test_title_prefilter_trims_whitespace(self, mock_query):
+        """Stored titles with surrounding whitespace must not escape the prefilter."""
+        mock_query.return_value = []
+        await find_duplicate_sources(source_type="text", title="My Doc")
+        query, params = mock_query.await_args.args
+        assert "string::trim(title)" in query
+        assert params["weak_title"] == "my doc"
+
 
 class TestCheckDuplicatesEndpoint:
     @pytest.mark.asyncio
@@ -179,33 +216,6 @@ class TestCheckDuplicatesEndpoint:
     def test_link_without_url_is_400(self, client):
         response = client.post("/api/sources/check-duplicates", json={"type": "link"})
         assert response.status_code == 400
-
-    @pytest.mark.asyncio
-    @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
-    async def test_malformed_url_is_fail_open(self, mock_query):
-        """A candidate URL that fails normalization returns [] (never 500)."""
-        mock_query.return_value = EXISTING
-        assert (
-            await find_duplicate_sources(source_type="link", url="http://[::1")
-        ) == []
-
-    @pytest.mark.asyncio
-    @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
-    async def test_no_keys_skips_query(self, mock_query):
-        assert await find_duplicate_sources() == []
-        mock_query.assert_not_awaited()
-
-    @pytest.mark.asyncio
-    @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
-    async def test_link_lookup_is_keyed_by_host(self, mock_query):
-        """Link probes filter by URL host instead of scanning the table."""
-        mock_query.return_value = EXISTING
-        await find_duplicate_sources(
-            source_type="link", url="https://example.com/article"
-        )
-        query, params = mock_query.await_args.args
-        assert "LIMIT 500" not in query
-        assert params["host"] == "example.com"
 
     def test_invalid_type_is_rejected(self, client):
         response = client.post(

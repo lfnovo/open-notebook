@@ -235,7 +235,9 @@ async def find_duplicate_sources(
     if wanted_hash:
         clauses.append("(full_text != NONE)")
     if weak:
-        clauses.append("(title != NONE AND string::lowercase(title) = $weak_title)")
+        clauses.append(
+            "(title != NONE AND string::lowercase(string::trim(title)) = $weak_title)"
+        )
         params["weak_title"] = weak
         clauses.append("(asset.file_path != NONE)")
     if not clauses:

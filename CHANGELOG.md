@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- Dependency security update: `next` 16.3.8 (critical RCE advisory in `next/og` `ImageResponse`; the app does not use `next/og`), `axios` 1.20.0, and the npm overrides for `postcss` (8.5.23) and `brace-expansion` (1.1.21); Python `anyio` 4.14.2, `pyjwt` 2.15.1, `tornado` 6.5.10, `urllib3` 2.8.0 and `virtualenv` 21.14.5. Remaining `npm audit` findings are moderate and limited to the test runner (`vitest`/`@vitest/mocker`, `fflate`). Dependabot now skips odd-numbered (non-LTS) Node majors for the image base
+
 ### Fixed
 - Batch large embedding inserts into groups of 50 records and reuse one database connection across batches to reduce oversized WebSocket payloads and repeated sign-ins.
 

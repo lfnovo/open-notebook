@@ -164,6 +164,12 @@ Bad: "Summarize this"
 
 Processing runs in background. You can continue working.
 
+### Large Documents
+
+A transformation always tries the whole source in one call first. If the source is larger than the model's context window, Open Notebook splits it into sections that fit, processes the sections in parallel, and then merges the partial results into one output. No configuration is needed, and sources that fit are processed exactly as before.
+
+The merge step is a synthesis: the model combines the partial results, removes redundancy and condenses. That suits summaries, key concepts and takeaways well. For extraction-style transformations where every item matters (lists of names, dates, quotes), the synthesis can drop or compress items. When completeness matters more than length, use a model with a larger context window so the source is processed in a single pass.
+
 ---
 
 ## Transformation Examples

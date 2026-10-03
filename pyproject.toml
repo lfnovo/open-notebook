@@ -90,6 +90,17 @@ ignore = [
 ]
 
 [tool.uv]
+# Security floors for transitive runtime, notebook and development dependencies,
+# so a future resolution cannot select versions with known advisories again
+# (raised in #1404; originally proposed in #1389).
+constraint-dependencies = [
+    "anyio>=4.14.2",
+    "pyjwt>=2.15.1",
+    "urllib3>=2.8.0",
+    "tornado>=6.5.10",
+    "virtualenv>=21.14.5",
+    "soupsieve>=2.9",
+]
 # Pillow < 12.2.0 has open security advisories (PSD OOB write, FITS
 # decompression bomb, PDF trailer DoS). The only thing holding it back is
 # moviepy's `pillow<12` cap, pulled in via podcast-creator 0.12.0 — and

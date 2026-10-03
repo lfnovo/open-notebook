@@ -116,9 +116,8 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
         id: transformation.id,
         data: {
           name: data.name,
-          // Send cleared fields as-is so the clear persists; an empty title
-          // falls back to the name, as on create.
-          title: data.title || data.name,
+          title: data.title || undefined,
+          // Send a cleared description as-is so the clear persists.
           description: data.description ?? '',
           prompt: data.prompt,
           apply_default: Boolean(data.apply_default),

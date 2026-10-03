@@ -1123,7 +1123,7 @@ async def create_source_insight(source_id: str, request: CreateSourceInsightRequ
         # Don't queue a transformation the model can only answer by inventing
         # content (e.g. a link that failed to fetch).
         if not source.full_text or not source.full_text.strip():
-            raise HTTPException(status_code=400, detail="Source has no text content")
+            raise InvalidInputError("Source has no text content")
 
         # Validate transformation exists
         transformation = await Transformation.get(request.transformation_id)

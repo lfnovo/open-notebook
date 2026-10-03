@@ -81,7 +81,7 @@ def test_source_chat_node_rejects_empty_reply(reply):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("reply", EMPTY_REPLIES)
 async def test_ask_final_answer_rejects_empty_reply(reply):
-    from open_notebook.graphs.ask import write_final_answer
+    from open_notebook.graphs.ask import ThreadState, write_final_answer
 
     model = MagicMock()
     model.ainvoke = AsyncMock(return_value=MagicMock(content=reply))
@@ -91,7 +91,7 @@ async def test_ask_final_answer_rejects_empty_reply(reply):
     ):
         with pytest.raises(IncompleteGenerationError, match="empty response"):
             await write_final_answer(
-                {"question": "q", "answers": ["a"]},  # type: ignore[arg-type]
+                cast(ThreadState, {"question": "q", "answers": ["a"]}),
                 cast(RunnableConfig, {"configurable": {}}),
             )
 

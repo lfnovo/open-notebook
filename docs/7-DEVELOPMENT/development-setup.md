@@ -263,7 +263,7 @@ would. The config at `.pre-commit-config.yaml` wires up:
 | Tool | What it checks | CI equivalent |
 |------|----------------|---------------|
 | **ruff** (lint) | Python lint rules (`E`, `F`, `I`) | `ruff check .` |
-| **ruff** (format) | Python formatting (line-length 88) | Not yet gated |
+| **ruff** (format) | Python formatting (line-length 88) | `ruff format --check .` |
 | **mypy** | Python type correctness | `python -m mypy .` |
 | **pre-commit-hooks** | Large files, merge conflicts, YAML/TOML syntax, trailing whitespace, EOF newlines | — |
 

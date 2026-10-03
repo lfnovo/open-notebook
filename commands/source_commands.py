@@ -12,6 +12,7 @@ from open_notebook.exceptions import (
     ConfigurationError,
     ContextLengthExceededError,
     IncompleteGenerationError,
+    InvalidInputError,
 )
 
 try:
@@ -191,6 +192,7 @@ class RunTransformationOutput(CommandOutput):
             ConfigurationError,
             ContextLengthExceededError,
             IncompleteGenerationError,
+            InvalidInputError,
         ],  # Don't retry validation/config errors or incomplete generations
         "retry_log_level": "warning",
     },
@@ -255,7 +257,8 @@ async def run_transformation_command(
             processing_time=processing_time,
         )
 
-    except IncompleteGenerationError as e:
+    except (IncompleteGenerationError, InvalidInputError) as e:
+        # e.g. the source has no text to transform
         logger.error(
             f"Generation failed (permanent) for transformation "
             f"{input_data.transformation_id} on source {input_data.source_id}: {e}"

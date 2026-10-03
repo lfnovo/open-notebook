@@ -173,6 +173,7 @@ export const plPL = {
     answerModelNotFound: "Nie znaleziono modelu odpowiedzi",
     finalAnswerModelNotFound: "Nie znaleziono modelu ostatecznej odpowiedzi",
     noAnswerGenerated: "Nie udało się wygenerować odpowiedzi",
+    sourceHasNoText: "To źródło nie zawiera tekstu do przekształcenia",
     genericError: "Wystąpił nieoczekiwany błąd",
   },
   connectionErrors: {

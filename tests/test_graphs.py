@@ -148,6 +148,35 @@ class TestTransformationGraph:
         with pytest.raises(AssertionError, match="No content to transform"):
             await run_transformation(state, config)
 
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("full_text", ["", "   \n\t ", None])
+    async def test_run_transformation_rejects_source_without_text(self, full_text):
+        """A source with no extracted text must not reach the model, and no
+        insight is saved (#1394)."""
+        from open_notebook.domain.transformation import Transformation
+        from open_notebook.exceptions import InvalidInputError
+
+        mock_source = MagicMock(spec=Source)
+        mock_source.full_text = full_text
+        mock_source.add_insight = AsyncMock()
+
+        state = {
+            "input_text": None,
+            "transformation": MagicMock(spec=Transformation),
+            "source": mock_source,
+        }
+        config: RunnableConfig = {"configurable": {"model_id": None}}
+
+        with patch(
+            "open_notebook.graphs.transformation.provision_langchain_model",
+            new_callable=AsyncMock,
+        ) as mock_provision:
+            with pytest.raises(InvalidInputError, match="no text content"):
+                await run_transformation(state, config)
+
+        mock_provision.assert_not_called()
+        mock_source.add_insight.assert_not_called()
+
     def test_transformation_graph_compilation(self):
         """Test that transformation graph compiles correctly."""
         assert transformation_graph is not None

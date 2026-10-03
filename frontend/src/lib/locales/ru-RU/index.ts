@@ -173,6 +173,7 @@ export const ruRU = {
     answerModelNotFound: "Модель ответов не найдена",
     finalAnswerModelNotFound: "Модель итогового ответа не найдена",
     noAnswerGenerated: "Не удалось сгенерировать ответ",
+    sourceHasNoText: "В этом источнике нет текста для преобразования",
     genericError: "Произошла непредвиденная ошибка",
   },
   connectionErrors: {

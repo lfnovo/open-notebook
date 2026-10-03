@@ -173,6 +173,7 @@ export const frFR = {
     answerModelNotFound: "Modèle de réponse introuvable",
     finalAnswerModelNotFound: "Modèle de réponse finale introuvable",
     noAnswerGenerated: "Aucune réponse n'a pu être générée",
+    sourceHasNoText: "Cette source n'a aucun contenu textuel à transformer",
     genericError: "Une erreur inattendue est survenue",
   },
   connectionErrors: {

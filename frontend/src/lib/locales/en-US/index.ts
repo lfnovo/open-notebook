@@ -171,6 +171,7 @@ export const enUS = {
     answerModelNotFound: "Answer model not found",
     finalAnswerModelNotFound: "Final answer model not found",
     noAnswerGenerated: "No answer could be generated",
+    sourceHasNoText: "This source has no text content to transform",
     genericError: "An unexpected error occurred",
   },
   connectionErrors: {

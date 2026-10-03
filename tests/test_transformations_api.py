@@ -240,3 +240,28 @@ def test_execute_request_model_overrides_stored_model():
         mock_ainvoke.call_args.kwargs["config"]["configurable"]["model_id"]
         == "model:override"
     )
+
+
+def test_incomplete_generation_returns_actionable_502():
+    from open_notebook.exceptions import IncompleteGenerationError
+
+    message = (
+        "The model reached its generation limit before completing the "
+        "transformation. Try a shorter transformation or a different model."
+    )
+    with (
+        patch(
+            "api.routers.transformations.Transformation.get",
+            new=AsyncMock(return_value=_transformation()),
+        ),
+        patch(
+            "api.routers.transformations.transformation_graph.ainvoke",
+            new=AsyncMock(side_effect=IncompleteGenerationError(message)),
+        ),
+    ):
+        response = _client().post(
+            "/api/transformations/execute",
+            json={"transformation_id": "transformation:123", "input_text": "Input"},
+        )
+    assert response.status_code == 502
+    assert response.json()["detail"] == message

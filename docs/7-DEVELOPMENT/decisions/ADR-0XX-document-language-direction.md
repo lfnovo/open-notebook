@@ -1,4 +1,4 @@
-# ADR-009: Apply UI language and direction to the root document
+# ADR-0XX: Apply UI language and direction to the root document
 
 - **Status**: Accepted
 - **Date**: 2026-09

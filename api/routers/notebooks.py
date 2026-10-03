@@ -73,21 +73,18 @@ async def get_notebooks(
             f"Allowed fields: {', '.join(sorted(allowed_fields))}. "
             "Allowed directions: asc, desc"
         )
+        invalid = InvalidInputError(
+            f"Invalid order_by: '{order_by}'. {allowed_message}"
+        )
         try:
             validated_order_by = Notebook._validate_order_by(order_by)
         except InvalidInputError:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid order_by: '{order_by}'. {allowed_message}",
-            )
+            raise invalid from None
         if (
             "," in validated_order_by
             or validated_order_by.split()[0] not in allowed_fields
         ):
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid order_by: '{order_by}'. {allowed_message}",
-            )
+            raise invalid
 
         # Build the query with counts
         query = f"""

@@ -1,6 +1,7 @@
 import asyncio
 import json
 from typing import AsyncGenerator, List, Optional
+from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Path
 from fastapi.responses import StreamingResponse
@@ -23,7 +24,10 @@ from open_notebook.exceptions import (
     OpenNotebookError,
 )
 from open_notebook.graphs.source_chat import source_chat_graph as source_chat_graph
-from open_notebook.utils.graph_utils import get_session_message_count
+from open_notebook.utils.graph_utils import (
+    get_session_message_count,
+    invoke_chat_turn,
+)
 
 router = APIRouter()
 
@@ -348,7 +352,8 @@ async def stream_source_chat_response(
         state_values["model_override"] = model_override
 
         # Add user message to state
-        user_message = HumanMessage(content=message)
+        # Explicit id so a failed turn can remove it from the checkpoint.
+        user_message = HumanMessage(content=message, id=str(uuid4()))
         state_values["messages"].append(user_message)
 
         # Send user message event
@@ -359,17 +364,16 @@ async def stream_source_chat_response(
         # event loop. While blocked, even the already-yielded SSE events can't
         # flush and every other request stalls until the LLM finishes. Mirrors the
         # get_state() calls above.
-        # The lambda pins down which `invoke` overload is used; asyncio.to_thread
-        # can't resolve overloaded callables on its own. The ignore is a langgraph
-        # typing limitation: it accepts a partial state dict at runtime, but the
-        # signature requires the full state type.
+        # invoke_chat_turn also drops the question from the checkpoint when the
+        # turn fails, so a retry doesn't add it twice.
         result = await asyncio.to_thread(
-            lambda: source_chat_graph.invoke(
-                input=state_values,  # type: ignore[arg-type]
-                config=RunnableConfig(
-                    configurable={"thread_id": session_id, "model_id": model_override}
-                ),
-            )
+            invoke_chat_turn,
+            source_chat_graph,
+            state_values,
+            RunnableConfig(
+                configurable={"thread_id": session_id, "model_id": model_override}
+            ),
+            user_message,
         )
 
         # Stream this turn's AI response. result["messages"] is the full
@@ -399,7 +403,12 @@ async def stream_source_chat_response(
     except Exception as e:
         from open_notebook.utils.error_classifier import classify_error
 
-        _, error_message = classify_error(e)
+        # Typed errors already carry a user-facing message; only raw provider
+        # exceptions need classifying.
+        if isinstance(e, OpenNotebookError):
+            error_message = str(e)
+        else:
+            _, error_message = classify_error(e)
         logger.error(f"Error in source chat streaming: {str(e)}")
         error_event = {"type": "error", "message": error_message}
         yield f"data: {json.dumps(error_event)}\n\n"

@@ -126,7 +126,12 @@ async def stream_ask_response(
     except Exception as e:
         from open_notebook.utils.error_classifier import classify_error
 
-        _, user_message = classify_error(e)
+        # Typed errors already carry a user-facing message; only raw provider
+        # exceptions need classifying.
+        if isinstance(e, OpenNotebookError):
+            user_message = str(e)
+        else:
+            _, user_message = classify_error(e)
         logger.error(f"Error in ask streaming: {str(e)}")
         error_data = {"type": "error", "message": user_message}
         yield f"data: {json.dumps(error_data)}\n\n"

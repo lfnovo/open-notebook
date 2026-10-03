@@ -36,11 +36,13 @@ class CreateSourceChatSessionRequest(BaseModel):
         None, description="Optional model override for this session"
     )
 
+
 class UpdateSourceChatSessionRequest(BaseModel):
     title: Optional[str] = Field(None, description="New session title")
     model_override: Optional[str] = Field(
         None, description="Model override for this session"
     )
+
 
 class ContextIndicator(BaseModel):
     sources: List[str] = Field(
@@ -52,6 +54,7 @@ class ContextIndicator(BaseModel):
     notes: List[str] = Field(
         default_factory=list, description="Note IDs used in context"
     )
+
 
 class SourceChatSessionResponse(BaseModel):
     id: str = Field(..., description="Session ID")
@@ -66,6 +69,7 @@ class SourceChatSessionResponse(BaseModel):
         None, description="Number of messages in session"
     )
 
+
 class SourceChatSessionWithMessagesResponse(SourceChatSessionResponse):
     messages: List[ChatMessage] = Field(
         default_factory=list, description="Session messages"
@@ -74,11 +78,13 @@ class SourceChatSessionWithMessagesResponse(SourceChatSessionResponse):
         None, description="Context indicators from last response"
     )
 
+
 class SendMessageRequest(BaseModel):
     message: str = Field(..., description="User message content")
     model_override: Optional[str] = Field(
         None, description="Optional model override for this message"
     )
+
 
 @router.post(
     "/sources/{source_id}/chat/sessions", response_model=SourceChatSessionResponse
@@ -195,9 +201,12 @@ async def get_source_chat_session(
     """Get a specific source chat session with its messages."""
     try:
         # Verify source + session exist and are related (404s otherwise)
-        _full_source_id, _source, full_session_id, session = (
-            await get_verified_source_session(source_id, session_id)
-        )
+        (
+            _full_source_id,
+            _source,
+            full_session_id,
+            session,
+        ) = await get_verified_source_session(source_id, session_id)
 
         # Get session state from LangGraph to retrieve messages
         # Use sync get_state() in a thread since SqliteSaver doesn't support async
@@ -260,9 +269,12 @@ async def update_source_chat_session(
     """Update source chat session title and/or model override."""
     try:
         # Verify source + session exist and are related (404s otherwise)
-        _full_source_id, _source, full_session_id, session = (
-            await get_verified_source_session(source_id, session_id)
-        )
+        (
+            _full_source_id,
+            _source,
+            full_session_id,
+            session,
+        ) = await get_verified_source_session(source_id, session_id)
 
         # Update session fields
         if request.title is not None:
@@ -307,9 +319,12 @@ async def delete_source_chat_session(
     """Delete a source chat session."""
     try:
         # Verify source + session exist and are related (404s otherwise)
-        _full_source_id, _source, full_session_id, session = (
-            await get_verified_source_session(source_id, session_id)
-        )
+        (
+            _full_source_id,
+            _source,
+            full_session_id,
+            session,
+        ) = await get_verified_source_session(source_id, session_id)
 
         await session.delete()
 
@@ -372,16 +387,17 @@ async def stream_source_chat_response(
             )
         )
 
-        # Stream the complete AI response
-        if "messages" in result:
-            for msg in result["messages"]:
-                if hasattr(msg, "type") and msg.type == "ai":
-                    ai_event = {
-                        "type": "ai_message",
-                        "content": msg.content if hasattr(msg, "content") else str(msg),
-                        "timestamp": None,
-                    }
-                    yield f"data: {json.dumps(ai_event)}\n\n"
+        # Stream this turn's AI response. result["messages"] is the full
+        # checkpointed history, so only the last message is new.
+        if result.get("messages"):
+            msg = result["messages"][-1]
+            if getattr(msg, "type", None) == "ai":
+                ai_event = {
+                    "type": "ai_message",
+                    "content": msg.content if hasattr(msg, "content") else str(msg),
+                    "timestamp": None,
+                }
+                yield f"data: {json.dumps(ai_event)}\n\n"
 
         # Stream context indicators
         if "context_indicators" in result:
@@ -413,9 +429,12 @@ async def send_message_to_source_chat(
     """Send a message to source chat session with SSE streaming response."""
     try:
         # Verify source + session exist and are related (404s otherwise)
-        full_source_id, _source, full_session_id, session = (
-            await get_verified_source_session(source_id, session_id)
-        )
+        (
+            full_source_id,
+            _source,
+            full_session_id,
+            session,
+        ) = await get_verified_source_session(source_id, session_id)
 
         if not request.message:
             raise HTTPException(status_code=400, detail="Message content is required")

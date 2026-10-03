@@ -27,7 +27,12 @@ from typing_extensions import TypedDict
 from open_notebook.ai.provision import provision_langchain_model
 from open_notebook.domain.notebook import Source
 from open_notebook.domain.transformation import DefaultPrompts, Transformation
-from open_notebook.exceptions import ContextLengthExceededError, OpenNotebookError
+from open_notebook.exceptions import (
+    ContextLengthExceededError,
+    IncompleteGenerationError,
+    InvalidInputError,
+    OpenNotebookError,
+)
 from open_notebook.utils import clean_thinking_content
 from open_notebook.utils.error_classifier import classify_error
 from open_notebook.utils.text_utils import extract_text_content
@@ -52,9 +57,7 @@ _CHUNK_CONCURRENCY_LIMIT = 3
 # the loop it is first awaited from, and this graph runs from both the worker's
 # and the API's loops. All Send() nodes of one invocation share a loop, so a
 # per-loop semaphore still bounds the fan-out of a single transformation.
-_chunk_semaphores: "weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, asyncio.Semaphore]" = (
-    weakref.WeakKeyDictionary()
-)
+_chunk_semaphores: "weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, asyncio.Semaphore]" = weakref.WeakKeyDictionary()
 
 
 def _get_chunk_semaphore() -> asyncio.Semaphore:
@@ -114,7 +117,27 @@ def _get_source(state: dict) -> Optional[Source]:
 
 
 def _extract_response_content(response) -> str:
-    return clean_thinking_content(extract_text_content(response.content))
+    """Return the cleaned response text, rejecting truncated or empty output so
+    it is never saved as an insight or fed into synthesis."""
+    # Provider adapters use different keys for the termination reason.
+    # Check before saving: a nonempty answer can still be incomplete.
+    metadata = response.response_metadata
+    for key in ("finish_reason", "stop_reason", "done_reason"):
+        reason = metadata.get(key)
+        if isinstance(reason, str) and reason.lower() in ("length", "max_tokens"):
+            raise IncompleteGenerationError(
+                "The model reached its generation limit before completing the "
+                "transformation. Try a shorter transformation or a different model."
+            )
+
+    cleaned_content = clean_thinking_content(extract_text_content(response.content))
+    if not cleaned_content.strip():
+        raise IncompleteGenerationError(
+            "The model returned no usable text for the transformation after "
+            "removing thinking content. Try a shorter transformation or a "
+            "different model."
+        )
+    return cleaned_content
 
 
 async def _invoke_llm(
@@ -170,7 +193,11 @@ async def try_full_content(state: dict, config: RunnableConfig) -> dict:
     chunking by returning chunking parameters and ``needs_chunking=True``."""
     source = _get_source(state)
     content = _get_content(state)
-    assert source or content, "No content to transform"
+    if not content.strip():
+        # A source whose extraction produced no text would hand the model
+        # an empty input, and whatever it invents would be saved as an
+        # insight.
+        raise InvalidInputError("There is no text content to transform")
 
     transformation: Transformation = state["transformation"]
     title = transformation.title
@@ -408,7 +435,9 @@ agent_state.add_node("try_full", try_full_content)  # type: ignore[type-var]
 agent_state.add_node("process_chunk", process_chunk)  # type: ignore[type-var]
 agent_state.add_node("synthesize", synthesize_results)  # type: ignore[type-var]
 agent_state.add_edge(START, "try_full")
-agent_state.add_conditional_edges("try_full", fan_out_chunks, ["process_chunk", "synthesize"])
+agent_state.add_conditional_edges(
+    "try_full", fan_out_chunks, ["process_chunk", "synthesize"]
+)
 agent_state.add_edge("process_chunk", "synthesize")
 agent_state.add_edge("synthesize", END)
 graph = agent_state.compile()

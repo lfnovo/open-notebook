@@ -110,7 +110,10 @@ class TestClassification:
             # Token-rate throttles mention tokens but are transient, not a
             # context window: they must stay retryable and must not chunk.
             ("Too many tokens per minute for this model, slow down.", RateLimitError),
-            ("Request too large for model on tokens per min (TPM): Limit 6000", RateLimitError),
+            (
+                "Request too large for model on tokens per min (TPM): Limit 6000",
+                RateLimitError,
+            ),
             ("Error code: 401 - invalid api key", AuthenticationError),
             ("Error code: 503 - service unavailable", ExternalServiceError),
         ],
@@ -129,7 +132,7 @@ class TestClassification:
         assert not issubclass(exc_class, ContextLengthExceededError)
 
     def test_status_code_inside_a_larger_number_does_not_match(self):
-        """"4290 items" must not read as HTTP 429; unknown wording falls through
+        """ "4290 items" must not read as HTTP 429; unknown wording falls through
         to the generic external error."""
         exc_class, _ = classify_error(Exception("Processed 4290 items, then failed"))
 

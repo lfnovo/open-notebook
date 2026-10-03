@@ -11,7 +11,11 @@ from typing_extensions import TypedDict
 
 from open_notebook.ai.provision import provision_langchain_model
 from open_notebook.domain.notebook import vector_search
-from open_notebook.exceptions import ExternalServiceError, OpenNotebookError
+from open_notebook.exceptions import (
+    ExternalServiceError,
+    IncompleteGenerationError,
+    OpenNotebookError,
+)
 from open_notebook.utils import clean_thinking_content
 from open_notebook.utils.error_classifier import classify_error
 from open_notebook.utils.text_utils import extract_text_content
@@ -139,7 +143,9 @@ async def provide_answer(state: SubGraphState, config: RunnableConfig) -> dict:
         payload["results"] = results
         ids = [r["id"] for r in results]
         payload["ids"] = ids
-        system_prompt = Prompter(prompt_template="ask/query_process").render(data=payload)  # type: ignore[arg-type]
+        system_prompt = Prompter(prompt_template="ask/query_process").render(
+            data=payload  # type: ignore[arg-type]
+        )
         model = await provision_langchain_model(
             system_prompt,
             config.get("configurable", {}).get("answer_model"),
@@ -170,8 +176,14 @@ async def write_final_answer(state: ThreadState, config: RunnableConfig) -> dict
             max_tokens=ASK_MAX_TOKENS,
         )
         ai_message = await model.ainvoke(system_prompt)
-        final_content = extract_text_content(ai_message.content)
-        return {"final_answer": clean_thinking_content(final_content)}
+        final_content = clean_thinking_content(extract_text_content(ai_message.content))
+        if not final_content.strip():
+            raise IncompleteGenerationError(
+                "The final answer model returned an empty response. Try again, or "
+                "pick a different final answer model in the Ask page's advanced "
+                "model options."
+            )
+        return {"final_answer": final_content}
     except OpenNotebookError:
         raise
     except Exception as e:

@@ -19,9 +19,7 @@ def client():
 
 
 def _patch_probes(monkeypatch, *, docling, crawl4ai_local, crawl4ai_remote):
-    monkeypatch.setattr(
-        "api.routers.capabilities.docling_available", lambda: docling
-    )
+    monkeypatch.setattr("api.routers.capabilities.docling_available", lambda: docling)
     monkeypatch.setattr(
         "api.routers.capabilities.crawl4ai_remote_configured",
         lambda: crawl4ai_remote,
@@ -78,9 +76,7 @@ class TestCrawl4aiLocalReadiness:
     def test_not_ready_when_package_missing(self, monkeypatch):
         import open_notebook.utils.runtime_capabilities as cap
 
-        monkeypatch.setattr(
-            cap.importlib.util, "find_spec", lambda name, *a, **k: None
-        )
+        monkeypatch.setattr(cap.importlib.util, "find_spec", lambda name, *a, **k: None)
         assert cap.crawl4ai_local_ready() is False
 
     def test_not_ready_when_browser_missing(self, monkeypatch, tmp_path):

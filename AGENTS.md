@@ -20,7 +20,7 @@ Or all at once: `make start-all` (status: `make status`, stop: `make stop-all`).
 ## Commands
 
 - Tests: `uv run pytest tests/`
-- Python lint/typecheck: `ruff check . --fix` · `uv run python -m mypy .`
+- Python lint/format/typecheck: `ruff check . --fix` · `ruff format .` · `uv run python -m mypy .`
 - Frontend (inside `frontend/`): `npm run lint` · `npm run test` · `npm run build`
 - Docker release: `make docker-release` (see `.github/RELEASE_PROCESS.md`)
 
@@ -30,6 +30,7 @@ Or all at once: `make start-all` (status: `make status`, stop: `make stop-all`).
 - **Never commit secrets.** Credentials are encrypted at rest and require `OPEN_NOTEBOOK_ENCRYPTION_KEY` to be set.
 - CORS is wide-open and auth is a simple password middleware — **dev defaults, not production hardening**. Don't build features that assume otherwise.
 - Product direction questions (does this feature fit?) → [VISION.md](VISION.md). Past decisions ("why is it like this?") → [docs/7-DEVELOPMENT/decisions/](docs/7-DEVELOPMENT/decisions/). Structural decisions made while coding should produce a new decision record there.
+- Maintainer profile lives in `.maintainer/`; do not run release, triage or discussions workflows without it.
 
 ## Where to look
 

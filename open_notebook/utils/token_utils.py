@@ -133,9 +133,7 @@ def parse_context_limit_error(error: Exception) -> Optional[Tuple[Optional[int],
         return int(match.group(2)), int(match.group(1))
 
     # Anthropic: "prompt is too long: 10000 tokens > 8192 maximum"
-    match = re.search(
-        r"prompt is too long: (\d+) tokens? > (\d+) maximum", error_str
-    )
+    match = re.search(r"prompt is too long: (\d+) tokens? > (\d+) maximum", error_str)
     if match:
         return int(match.group(1)), int(match.group(2))
 
@@ -267,8 +265,7 @@ def _merge_splits(
             elif separator == " ":
                 char_limit = max_tokens * 4
                 sub_chunks = [
-                    part[i : i + char_limit]
-                    for i in range(0, len(part), char_limit)
+                    part[i : i + char_limit] for i in range(0, len(part), char_limit)
                 ]
             else:
                 sub_chunks = [part]

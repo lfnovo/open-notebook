@@ -132,8 +132,8 @@ class TestTransformationGraph:
         assert state["output"] == ""
 
     @pytest.mark.asyncio
-    async def test_try_full_content_assertion_no_content(self):
-        """try_full_content raises an assertion when there's no content."""
+    async def test_try_full_content_rejects_no_content(self):
+        """try_full_content raises InvalidInputError when there's no content."""
         from unittest.mock import MagicMock
 
         from open_notebook.domain.transformation import Transformation
@@ -148,8 +148,39 @@ class TestTransformationGraph:
 
         config: RunnableConfig = {"configurable": {"model_id": None}}
 
-        with pytest.raises(AssertionError, match="No content to transform"):
+        from open_notebook.exceptions import InvalidInputError
+
+        with pytest.raises(InvalidInputError, match="no text content"):
             await try_full_content(state, config)
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("full_text", ["", "   \n\t ", None])
+    async def test_try_full_content_rejects_source_without_text(self, full_text):
+        """A source with no extracted text must not reach the model, and no
+        insight is saved (#1394)."""
+        from open_notebook.domain.transformation import Transformation
+        from open_notebook.exceptions import InvalidInputError
+
+        mock_source = MagicMock(spec=Source)
+        mock_source.full_text = full_text
+        mock_source.add_insight = AsyncMock()
+
+        state = {
+            "input_text": None,
+            "transformation": MagicMock(spec=Transformation),
+            "source": mock_source,
+        }
+        config: RunnableConfig = {"configurable": {"model_id": None}}
+
+        with patch(
+            "open_notebook.graphs.transformation.provision_langchain_model",
+            new_callable=AsyncMock,
+        ) as mock_provision:
+            with pytest.raises(InvalidInputError, match="no text content"):
+                await try_full_content(state, config)
+
+        mock_provision.assert_not_called()
+        mock_source.add_insight.assert_not_called()
 
     def test_transformation_graph_compilation(self):
         """Test that transformation graph compiles correctly."""
@@ -419,9 +450,9 @@ class TestTransformationChunkingReduce:
 
         assert result["output"] == "merged"
         assert len(seen_call_tokens) > 1, "should batch into multiple calls"
-        assert all(
-            n <= budget for n in seen_call_tokens
-        ), f"a synthesis call exceeded budget: {seen_call_tokens}"
+        assert all(n <= budget for n in seen_call_tokens), (
+            f"a synthesis call exceeded budget: {seen_call_tokens}"
+        )
 
     @pytest.mark.asyncio
     async def test_synthesis_provider_errors_are_classified(self):

@@ -173,6 +173,7 @@ export const trTR = {
     answerModelNotFound: "Yanıt modeli bulunamadı",
     finalAnswerModelNotFound: "Son yanıt modeli bulunamadı",
     noAnswerGenerated: "Yanıt oluşturulamadı",
+    sourceHasNoText: "Bu kaynakta dönüştürülecek metin içeriği yok",
     genericError: "Beklenmeyen bir hata oluştu",
   },
   connectionErrors: {

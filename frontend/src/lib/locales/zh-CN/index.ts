@@ -173,6 +173,7 @@ export const zhCN = {
     answerModelNotFound: "未找到回答模型",
     finalAnswerModelNotFound: "未找到最终回答模型",
     noAnswerGenerated: "未能生成回答",
+    sourceHasNoText: "此来源没有可转换的文本内容",
     genericError: "发生了意外错误",
   },
   connectionErrors: {

@@ -89,6 +89,4 @@ async def save_insight_as_note(insight_id: str, request: SaveAsNoteRequest):
         raise
     except Exception as e:
         logger.error(f"Error saving insight {insight_id} as note: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail="Error saving insight as note"
-        )
+        raise HTTPException(status_code=500, detail="Error saving insight as note")

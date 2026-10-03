@@ -42,6 +42,7 @@ def _assert_chunks_within_token_limit(chunks: list[str]) -> None:
     for chunk in chunks:
         assert token_count(chunk) <= CHUNK_SIZE
 
+
 # ============================================================================
 # TEST SUITE 1: Content Type Detection from Extension
 # ============================================================================
@@ -55,14 +56,21 @@ class TestDetectContentTypeFromExtension:
         assert detect_content_type_from_extension("file.html") == ContentType.HTML
         assert detect_content_type_from_extension("file.htm") == ContentType.HTML
         assert detect_content_type_from_extension("file.xhtml") == ContentType.HTML
-        assert detect_content_type_from_extension("/path/to/file.HTML") == ContentType.HTML
+        assert (
+            detect_content_type_from_extension("/path/to/file.HTML") == ContentType.HTML
+        )
 
     def test_markdown_extensions(self):
         """Test Markdown file extensions."""
         assert detect_content_type_from_extension("file.md") == ContentType.MARKDOWN
-        assert detect_content_type_from_extension("file.markdown") == ContentType.MARKDOWN
+        assert (
+            detect_content_type_from_extension("file.markdown") == ContentType.MARKDOWN
+        )
         assert detect_content_type_from_extension("file.mdown") == ContentType.MARKDOWN
-        assert detect_content_type_from_extension("/path/to/README.MD") == ContentType.MARKDOWN
+        assert (
+            detect_content_type_from_extension("/path/to/README.MD")
+            == ContentType.MARKDOWN
+        )
 
     def test_plain_text_extensions(self):
         """Test plain text file extensions."""
@@ -264,14 +272,18 @@ class TestChunkText:
 
     def test_cjk_text_is_chunked_by_tokens(self):
         """Test that long CJK text is chunked using token measurement."""
-        text = _build_text_exceeding_tokens("這是一段中文內容，用來驗證分塊邏輯。", CHUNK_SIZE)
+        text = _build_text_exceeding_tokens(
+            "這是一段中文內容，用來驗證分塊邏輯。", CHUNK_SIZE
+        )
         chunks = chunk_text(text, content_type=ContentType.PLAIN)
         assert len(chunks) > 1
         _assert_chunks_within_token_limit(chunks)
 
     def test_mixed_language_text_is_chunked_by_tokens(self):
         """Test that mixed-language text is chunked using token measurement."""
-        fragment = "This paragraph mixes English and 中文內容 to verify token-based chunking. "
+        fragment = (
+            "This paragraph mixes English and 中文內容 to verify token-based chunking. "
+        )
         text = _build_text_exceeding_tokens(fragment, CHUNK_SIZE)
         chunks = chunk_text(text, content_type=ContentType.PLAIN)
         assert len(chunks) > 1

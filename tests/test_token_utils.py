@@ -65,7 +65,9 @@ class TestGetContextLimitFromError:
         assert get_context_limit_from_error(Exception(message), 8192) == expected
 
     def test_falls_back_to_default(self):
-        assert get_context_limit_from_error(Exception("context window exceeded"), 4096) == (
+        assert get_context_limit_from_error(
+            Exception("context window exceeded"), 4096
+        ) == (
             None,
             4096,
         )

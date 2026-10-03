@@ -23,7 +23,9 @@ from open_notebook.exceptions import (
 # A keyword is a lowercase substring, an HTTP status code (matched as a standalone
 # number) or a compiled regex for wordings a substring can't pin down.
 _Keyword = str | re.Pattern[str]
-_CLASSIFICATION_RULES: list[tuple[list[_Keyword], type[OpenNotebookError], str | None]] = [
+_CLASSIFICATION_RULES: list[
+    tuple[list[_Keyword], type[OpenNotebookError], str | None]
+] = [
     # Authentication errors
     (
         ["authentication", "unauthorized", "invalid api key", "invalid_api_key", "401"],
@@ -60,7 +62,14 @@ _CLASSIFICATION_RULES: list[tuple[list[_Keyword], type[OpenNotebookError], str |
     ),
     # Network errors
     (
-        ["connecterror", "timeoutexception", "connection refused", "connection error", "timed out", "timeout"],
+        [
+            "connecterror",
+            "timeoutexception",
+            "connection refused",
+            "connection error",
+            "timed out",
+            "timeout",
+        ],
         NetworkError,
         "Could not connect to the AI provider. Please check your network connection and provider URL.",
     ),
@@ -86,7 +95,9 @@ _CLASSIFICATION_RULES: list[tuple[list[_Keyword], type[OpenNotebookError], str |
             "input token count",
             # "exceeds the maximum" only when tokens are what's being counted —
             # the bare phrase also describes upload sizes and request counts.
-            re.compile(r"tokens?\b.{0,40}\bexceeds? the maximum|exceeds? the maximum\b.{0,40}\btokens?"),
+            re.compile(
+                r"tokens?\b.{0,40}\bexceeds? the maximum|exceeds? the maximum\b.{0,40}\btokens?"
+            ),
         ],
         ContextLengthExceededError,
         "Content too large for the selected model. Try using a smaller selection or a model with a larger context window.",
@@ -99,7 +110,14 @@ _CLASSIFICATION_RULES: list[tuple[list[_Keyword], type[OpenNotebookError], str |
     ),
     # Provider availability errors
     (
-        ["500", "502", "503", "service unavailable", "overloaded", "internal server error"],
+        [
+            "500",
+            "502",
+            "503",
+            "service unavailable",
+            "overloaded",
+            "internal server error",
+        ],
         ExternalServiceError,
         "The AI provider is temporarily unavailable. Please try again in a few minutes.",
     ),
@@ -123,13 +141,13 @@ def classify_error(exception: BaseException) -> tuple[type[OpenNotebookError], s
     for keywords, exc_class, message in _CLASSIFICATION_RULES:
         for keyword in keywords:
             if _keyword_matches(keyword, combined):
-                user_message = message if message is not None else _truncate(str(exception))
+                user_message = (
+                    message if message is not None else _truncate(str(exception))
+                )
                 return exc_class, user_message
 
     # Unclassified error - log for future improvement
-    logger.warning(
-        f"Unclassified LLM error ({type(exception).__name__}): {exception}"
-    )
+    logger.warning(f"Unclassified LLM error ({type(exception).__name__}): {exception}")
     return ExternalServiceError, f"AI service error: {_truncate(str(exception))}"
 
 

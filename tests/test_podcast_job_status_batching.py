@@ -208,9 +208,7 @@ class TestListPodcastEpisodesUsesBatchedLookup:
     @pytest.mark.asyncio
     async def test_error_message_propagates_from_batch_result(self):
         episode = make_episode(command="command:err", suffix="err")
-        batch_result = {
-            "command:err": {"status": "failed", "error_message": "kaboom"}
-        }
+        batch_result = {"command:err": {"status": "failed", "error_message": "kaboom"}}
 
         with (
             patch(

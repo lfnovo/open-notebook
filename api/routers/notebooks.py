@@ -65,30 +65,26 @@ async def get_notebooks(
 ):
     """Get all notebooks with optional filtering and ordering."""
     try:
-        # Validate order_by against allowlist to prevent SurrealQL injection
+        # Normalize through the central validator (SurrealQL injection guard),
+        # then apply this endpoint's stricter allowlist: a single clause on one
+        # of the sortable notebook fields.
         allowed_fields = {"name", "created", "updated"}
-        allowed_directions = {"asc", "desc"}
-
-        parts = order_by.strip().lower().split()
-        if len(parts) == 1:
-            if parts[0] not in allowed_fields:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Invalid order_by field: '{order_by}'. Allowed fields: {', '.join(sorted(allowed_fields))}",
-                )
-            validated_order_by = parts[0]
-        elif len(parts) == 2:
-            if parts[0] not in allowed_fields or parts[1] not in allowed_directions:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Invalid order_by: '{order_by}'. Allowed fields: {', '.join(sorted(allowed_fields))}. Allowed directions: asc, desc",
-                )
-            validated_order_by = f"{parts[0]} {parts[1]}"
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid order_by format: '{order_by}'. Expected 'field' or 'field direction'",
-            )
+        allowed_message = (
+            f"Allowed fields: {', '.join(sorted(allowed_fields))}. "
+            "Allowed directions: asc, desc"
+        )
+        invalid = InvalidInputError(
+            f"Invalid order_by: '{order_by}'. {allowed_message}"
+        )
+        try:
+            validated_order_by = Notebook._validate_order_by(order_by)
+        except InvalidInputError:
+            raise invalid from None
+        if (
+            "," in validated_order_by
+            or validated_order_by.split()[0] not in allowed_fields
+        ):
+            raise invalid
 
         # Build the query with counts
         query = f"""
@@ -288,8 +284,10 @@ async def update_notebook(notebook_id: str, notebook_update: NotebookUpdate):
         # Update only provided fields
         if notebook_update.name is not None:
             notebook.name = notebook_update.name
-        if notebook_update.description is not None:
-            notebook.description = notebook_update.description
+        # An explicit "" (or null) clears the description; only an absent
+        # field leaves it untouched.
+        if "description" in notebook_update.model_fields_set:
+            notebook.description = notebook_update.description or ""
         if notebook_update.archived is not None:
             notebook.archived = notebook_update.archived
 

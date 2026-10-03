@@ -485,7 +485,9 @@ class Source(ObjectModel):
         # Callers looping over many sources can batch-fetch insights up front
         # via SourceInsight.get_for_sources() and pass them in here, instead
         # of paying a separate query per source.
-        insight_objects = insights if insights is not None else await self.get_insights()
+        insight_objects = (
+            insights if insights is not None else await self.get_insights()
+        )
         insights = [insight.model_dump() for insight in insight_objects]
         if context_size == "long":
             return dict(
@@ -630,7 +632,9 @@ class Source(ObjectModel):
             return str(command_id)
 
         except Exception as e:
-            logger.exception(f"Error submitting create_insight for source {self.id}: {e}")
+            logger.exception(
+                f"Error submitting create_insight for source {self.id}: {e}"
+            )
             raise DatabaseOperationError(e)
 
     def _prepare_save_data(self) -> dict:

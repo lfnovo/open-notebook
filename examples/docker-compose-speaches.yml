@@ -15,7 +15,7 @@
 #   2. Change OPEN_NOTEBOOK_ENCRYPTION_KEY below
 #   3. Run: docker compose up -d
 #   4. Download models (see instructions below)
-#   5. Configure in UI: Settings → API Keys → Add OpenAI-Compatible
+#   5. Configure in UI: Manage → Models → Add OpenAI-Compatible
 #
 # Full documentation:
 # - TTS setup: https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/local-tts.md
@@ -88,7 +88,7 @@ volumes:
 # CONFIGURATION IN OPEN NOTEBOOK
 # ==========================================
 #
-# 1. Go to Settings → API Keys
+# 1. Go to Manage → Models
 # 2. Click "Add Credential" → Select "OpenAI-Compatible"
 # 3. Configure:
 #    - Name: "Local Speaches"

@@ -32,7 +32,9 @@ from open_notebook.domain.notebook import Asset, Source
 
 
 def make_source(file_path, **overrides):
-    defaults = dict(id="source:test123", title="Test Source", asset=Asset(file_path=file_path))
+    defaults = dict(
+        id="source:test123", title="Test Source", asset=Asset(file_path=file_path)
+    )
     defaults.update(overrides)
     return Source(**defaults)
 
@@ -45,7 +47,9 @@ def client():
 
 
 class TestDownloadsAlwaysServedAsOctetStream:
-    def test_html_file_download_is_octet_stream_not_text_html(self, client, tmp_path, monkeypatch):
+    def test_html_file_download_is_octet_stream_not_text_html(
+        self, client, tmp_path, monkeypatch
+    ):
         """Even if an attacker got an .html file stored, downloading it
         must never come back as text/html (which a browser would render)."""
         real_root = tmp_path / "uploads"
@@ -56,13 +60,17 @@ class TestDownloadsAlwaysServedAsOctetStream:
         malicious_html.write_text("<script>alert(document.cookie)</script>")
 
         source = make_source(file_path=str(malicious_html))
-        with patch("api.routers.sources.Source.get", new=AsyncMock(return_value=source)):
+        with patch(
+            "api.routers.sources.Source.get", new=AsyncMock(return_value=source)
+        ):
             response = client.get("/api/sources/source:test123/download")
 
         assert response.status_code == 200
         assert response.headers["content-type"] == "application/octet-stream"
 
-    def test_svg_file_download_is_octet_stream_not_svg_xml(self, client, tmp_path, monkeypatch):
+    def test_svg_file_download_is_octet_stream_not_svg_xml(
+        self, client, tmp_path, monkeypatch
+    ):
         real_root = tmp_path / "uploads"
         real_root.mkdir()
         monkeypatch.setattr("api.routers.sources.UPLOADS_FOLDER", str(real_root))
@@ -73,7 +81,9 @@ class TestDownloadsAlwaysServedAsOctetStream:
         )
 
         source = make_source(file_path=str(malicious_svg))
-        with patch("api.routers.sources.Source.get", new=AsyncMock(return_value=source)):
+        with patch(
+            "api.routers.sources.Source.get", new=AsyncMock(return_value=source)
+        ):
             response = client.get("/api/sources/source:test123/download")
 
         assert response.status_code == 200
@@ -87,7 +97,9 @@ class TestContentCoreRejectsUnrecognizedContent:
         from content_core.content.identification.file_detector import FileDetector
 
         garbage = tmp_path / "garbage.bin"
-        garbage.write_bytes(bytes(range(256)) * 4)  # not any recognized signature/text pattern
+        garbage.write_bytes(
+            bytes(range(256)) * 4
+        )  # not any recognized signature/text pattern
 
         detector = FileDetector()
         with pytest.raises(UnsupportedTypeException):

@@ -16,7 +16,7 @@ async def _resolve_model_config(
     Used by resolve_outline_config, resolve_transcript_config, resolve_tts_config,
     and per-speaker TTS overrides. Optionally passes through a max_tokens override.
     """
-    from open_notebook.ai.models import Model
+    from open_notebook.ai.models import Model, resolve_anthropic_compatible_config
 
     model = await Model.get(model_id)
     config: dict = {}
@@ -28,9 +28,12 @@ async def _resolve_model_config(
         from open_notebook.ai.key_provider import provision_provider_keys
 
         await provision_provider_keys(model.provider)
+    provider = model.provider
+    if provider == "anthropic_compatible":
+        provider, config = await resolve_anthropic_compatible_config(config)
     if max_tokens is not None:
         config = {**config, "max_tokens": max_tokens}
-    return (model.provider, model.name, config)
+    return (provider, model.name, config)
 
 
 class EpisodeProfile(ObjectModel):
@@ -142,9 +145,7 @@ class SpeakerProfile(ObjectModel):
     description: Optional[str] = Field(None, description="Profile description")
 
     # Model registry reference
-    voice_model: Optional[str] = Field(
-        None, description="Model record ID for TTS"
-    )
+    voice_model: Optional[str] = Field(None, description="Model record ID for TTS")
 
     speakers: List[Dict[str, Any]] = Field(
         ..., description="Array of speaker configurations"
@@ -194,9 +195,7 @@ class SpeakerProfile(ObjectModel):
         return None
 
     @classmethod
-    async def resolve(
-        cls, ref: Union[str, RecordID]
-    ) -> Optional["SpeakerProfile"]:
+    async def resolve(cls, ref: Union[str, RecordID]) -> Optional["SpeakerProfile"]:
         """Resolve a speaker profile by record ID or by unique name.
 
         The API contract accepts speaker profiles by NAME (see

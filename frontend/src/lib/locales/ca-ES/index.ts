@@ -173,6 +173,7 @@ export const caES = {
     answerModelNotFound: "No s'ha trobat el model de resposta",
     finalAnswerModelNotFound: "No s'ha trobat el model de resposta final",
     noAnswerGenerated: "No s'ha pogut generar cap resposta",
+    sourceHasNoText: "Aquesta font no té contingut de text per transformar",
     genericError: "S'ha produït un error inesperat",
   },
   connectionErrors: {

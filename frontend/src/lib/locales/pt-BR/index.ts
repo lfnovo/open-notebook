@@ -173,6 +173,7 @@ export const ptBR = {
     answerModelNotFound: "Modelo de resposta não encontrado",
     finalAnswerModelNotFound: "Modelo de resposta final não encontrado",
     noAnswerGenerated: "Nenhuma resposta pôde ser gerada",
+    sourceHasNoText: "Esta fonte não tem conteúdo de texto para transformar",
     genericError: "Ocorreu um erro inesperado",
   },
   connectionErrors: {

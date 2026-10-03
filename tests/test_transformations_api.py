@@ -50,9 +50,7 @@ def test_create_transformation_with_model_id_persists_and_reads_back():
         transformation.updated = datetime(2026, 1, 1, 12, 0, 0)
 
     with (
-        patch.object(
-            Transformation, "save", autospec=True, side_effect=capture_save
-        ),
+        patch.object(Transformation, "save", autospec=True, side_effect=capture_save),
         patch(
             "api.routers.transformations.Model.get",
             new_callable=AsyncMock,
@@ -164,9 +162,7 @@ def test_update_transformation_model_id_is_used_by_subsequent_execution():
             new_callable=AsyncMock,
             return_value=transformation,
         ),
-        patch.object(
-            Transformation, "save", autospec=True, side_effect=save_update
-        ),
+        patch.object(Transformation, "save", autospec=True, side_effect=save_update),
         patch(
             "api.routers.transformations.Model.get",
             new_callable=AsyncMock,
@@ -240,3 +236,28 @@ def test_execute_request_model_overrides_stored_model():
         mock_ainvoke.call_args.kwargs["config"]["configurable"]["model_id"]
         == "model:override"
     )
+
+
+def test_incomplete_generation_returns_actionable_502():
+    from open_notebook.exceptions import IncompleteGenerationError
+
+    message = (
+        "The model reached its generation limit before completing the "
+        "transformation. Try a shorter transformation or a different model."
+    )
+    with (
+        patch(
+            "api.routers.transformations.Transformation.get",
+            new=AsyncMock(return_value=_transformation()),
+        ),
+        patch(
+            "api.routers.transformations.transformation_graph.ainvoke",
+            new=AsyncMock(side_effect=IncompleteGenerationError(message)),
+        ),
+    ):
+        response = _client().post(
+            "/api/transformations/execute",
+            json={"transformation_id": "transformation:123", "input_text": "Input"},
+        )
+    assert response.status_code == 502
+    assert response.json()["detail"] == message

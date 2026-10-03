@@ -37,9 +37,14 @@ updates:
     cooldown:
       default-days: 7
     groups:
+      # Minor and patch updates travel together; majors arrive as their own PRs
+      # so one breaking package can't block the rest (#1371, #1410 failed whole).
       all-npm:
         patterns:
           - "*"
+        update-types:
+          - "minor"
+          - "patch"
       npm-security:
         applies-to: security-updates
         patterns:
@@ -51,6 +56,15 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 7
+    ignore:
+      # Base-image majors are deliberate migrations, not routine bumps:
+      # Node moves between LTS lines on purpose (#1381, #1406), and a SurrealDB
+      # major changes the on-disk format of the -single image's database — v3
+      # is tracked in #378 and needs the upgrade gate (make release-test).
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "surrealdb/surrealdb"
+        update-types: ["version-update:semver-major"]
     groups:
       all-docker:
         patterns:

@@ -24,3 +24,8 @@ do not duplicate them here.
   host need `http://host.docker.internal:<port>`, not `localhost`.
 - **Dev-machine ports may belong to other projects**: check who owns 3000/5055/8000 before
   starting or killing anything; the frontend runs fine on `PORT=3001 npm run dev`.
+- **ADR numbers are assigned by the maintainer at merge, not by contributors.** In
+  September 2026 four open PRs (#1360, #1332, #1367, #1376) each created `ADR-009-*.md`.
+  Ask contributors to name the file `ADR-0XX-<slug>.md`; at merge, take the next free
+  number from `docs/7-DEVELOPMENT/decisions/README.md` and add the index row there (#1360
+  landed without its row).

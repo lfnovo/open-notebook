@@ -16,6 +16,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
+import { KATEX_OPTIONS } from '@/lib/utils/katex-options'
 
 interface TransformationPlaygroundProps {
   transformations: Transformation[] | undefined
@@ -128,7 +129,7 @@ export function TransformationPlayground({ transformations, selectedTransformati
                     <div className="prose prose-sm max-w-none dark:prose-invert">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm, remarkMath]}
-                        rehypePlugins={[rehypeKatex]}
+                        rehypePlugins={[[rehypeKatex, KATEX_OPTIONS]]}
                         components={{
                           table: ({ children }) => (
                             <div className="my-4 overflow-x-auto">

@@ -42,9 +42,8 @@ export function useSourceChat(sourceId: string) {
     if (currentSession?.messages) {
       setMessages(currentSession.messages)
     }
-    if (currentSession) {
-      setContextIndicators(currentSession.context_indicators ?? null)
-    }
+    // Also clears the badge when the session goes away (deleted / switched).
+    setContextIndicators(currentSession?.context_indicators ?? null)
   }, [currentSession])
 
   // Auto-select most recent session when sessions are loaded

@@ -109,7 +109,7 @@ export function SaveToNotebooksDialog({
           >
             {createNote.isPending ? (
               <>
-                <LoadingSpinner size="sm" className="mr-2" />
+                <LoadingSpinner size="sm" className="me-2" />
                 {t('searchPage.saving')}
               </>
             ) : (

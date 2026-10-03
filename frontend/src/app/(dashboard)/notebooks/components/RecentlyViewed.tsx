@@ -5,7 +5,8 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
 import type { Locale } from 'date-fns/locale'
-import { BookOpen, ChevronDown, ChevronRight, FileText } from 'lucide-react'
+import { BookOpen, ChevronDown, FileText } from 'lucide-react'
+import { ChevronEnd } from '@/components/ui/directional-icons'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -64,7 +65,7 @@ export function RecentlyViewed({ limit = 12 }: RecentlyViewedProps) {
             {isOpen ? (
               <ChevronDown className="h-4 w-4" />
             ) : (
-              <ChevronRight className="h-4 w-4" />
+              <ChevronEnd className="h-4 w-4" />
             )}
             <span className="sr-only">
               {t('notebooks.toggleRecentlyViewed', {
@@ -107,7 +108,7 @@ export function RecentlyViewed({ limit = 12 }: RecentlyViewedProps) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex min-w-0 items-center gap-2">
-                    <p className="truncate text-sm font-medium">{item.title}</p>
+                    <p className="truncate text-sm font-medium" dir="auto">{item.title}</p>
                     <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                       {typeLabel}
                     </span>

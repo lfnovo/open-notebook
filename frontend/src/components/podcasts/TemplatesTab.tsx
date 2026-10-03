@@ -41,7 +41,7 @@ export function TemplatesTab() {
           value="overview"
           className="overflow-hidden rounded-md border border-border bg-card px-4"
         >
-          <AccordionTrigger className="gap-2 py-4 text-left text-sm font-semibold">
+          <AccordionTrigger className="gap-2 py-4 text-start text-sm font-semibold">
             <div className="flex items-center gap-2">
               <Lightbulb className="h-4 w-4 text-gold" />
               {t('podcasts.howTemplatesPowerTitle')}
@@ -55,7 +55,7 @@ export function TemplatesTab() {
 
               <div className="space-y-2">
                 <h4 className="font-medium text-foreground">{t('podcasts.episodeProfilesSetFormat')}</h4>
-                <ul className="list-disc space-y-1 pl-5">
+                <ul className="list-disc space-y-1 ps-5">
                   <li>{t('podcasts.episodeProfilesList1')}</li>
                   <li>{t('podcasts.episodeProfilesList2')}</li>
                   <li>{t('podcasts.episodeProfilesList3')}</li>
@@ -64,7 +64,7 @@ export function TemplatesTab() {
 
               <div className="space-y-2">
                 <h4 className="font-medium text-foreground">{t('podcasts.speakerProfilesBringVoices')}</h4>
-                <ul className="list-disc space-y-1 pl-5">
+                <ul className="list-disc space-y-1 ps-5">
                   <li>{t('podcasts.speakerProfilesList1')}</li>
                   <li>{t('podcasts.speakerProfilesList2')}</li>
                   <li>{t('podcasts.speakerProfilesList3')}</li>
@@ -73,7 +73,7 @@ export function TemplatesTab() {
 
               <div className="space-y-2">
                 <h4 className="font-medium text-foreground">{t('podcasts.recommendedWorkflow')}</h4>
-                <ol className="list-decimal space-y-1 pl-5">
+                <ol className="list-decimal space-y-1 ps-5">
                   <li>{t('podcasts.workflowStep1')}</li>
                   <li>{t('podcasts.workflowStep2')}</li>
                   <li>{t('podcasts.workflowStep3')}</li>

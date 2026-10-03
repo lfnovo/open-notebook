@@ -49,7 +49,7 @@ export function ProviderSection({
   const activeTypes = new Set<string>(providerModels.map(m => m.type))
 
   return (
-    <Card className={hasCredentials ? 'border-l-2 border-l-fern' : undefined}>
+    <Card className={hasCredentials ? 'border-s-2 border-s-fern' : undefined}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-wrap">

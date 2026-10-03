@@ -96,7 +96,7 @@ export function CredentialItem({
             </div>
             {credential.has_api_key && (
               <Badge variant="outline" className="text-[10px]">
-                <Key className="h-2.5 w-2.5 mr-0.5" />
+                <Key className="h-2.5 w-2.5 me-0.5" />
                 Key
               </Badge>
             )}
@@ -171,12 +171,12 @@ export function CredentialItem({
                         <Badge
                           key={model.id}
                           variant={defaultSlot ? 'default' : 'secondary'}
-                          className="font-mono text-[11px] gap-1 pr-0.5 group/model"
+                          className="font-mono text-[11px] gap-1 pe-0.5 group/model"
                         >
                           {model.name}
-                          {defaultSlot && <span className="ml-0.5 opacity-75">({defaultSlot})</span>}
+                          {defaultSlot && <span className="ms-0.5 opacity-75">({defaultSlot})</span>}
                           <button
-                            className="ml-0.5 opacity-0 group-hover/model:opacity-60 hover:!opacity-100 transition-opacity"
+                            className="ms-0.5 opacity-0 group-hover/model:opacity-60 hover:!opacity-100 transition-opacity"
                             onClick={() => testModel(model.id, model.name)}
                             disabled={isModelTestPending && testingModelId === model.id}
                             title={t('models.testModel')}

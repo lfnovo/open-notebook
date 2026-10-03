@@ -107,12 +107,12 @@ export function TransformationPlayground({ transformations, selectedTransformati
             >
               {executeTransformation.isPending ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 me-2 animate-spin" />
                   {t('transformations.running')}
                 </>
               ) : (
                 <>
-                  <Play className="h-4 w-4 mr-2" />
+                  <Play className="h-4 w-4 me-2" />
                   {t('transformations.runTest')}
                 </>
               )}
@@ -138,7 +138,7 @@ export function TransformationPlayground({ transformations, selectedTransformati
                           thead: ({ children }) => <thead className="bg-muted">{children}</thead>,
                           tbody: ({ children }) => <tbody>{children}</tbody>,
                           tr: ({ children }) => <tr className="border-b border-border">{children}</tr>,
-                          th: ({ children }) => <th className="border border-border px-3 py-2 text-left font-semibold">{children}</th>,
+                          th: ({ children }) => <th className="border border-border px-3 py-2 text-start font-semibold">{children}</th>,
                           td: ({ children }) => <td className="border border-border px-3 py-2">{children}</td>,
                         }}
                       >

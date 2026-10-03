@@ -51,5 +51,6 @@ What this makes easier, what it makes harder, what to watch. (bullets)
 | [ADR-007](ADR-007-optin-runtimes.md) | Heavy extraction runtimes (Docling, Crawl4AI local) are opt-in, installed at startup | Accepted |
 | [ADR-008](ADR-008-notebook-scoped-search.md) | Notebook scope is an optional filter on the existing search functions | Accepted |
 | [ADR-0XX](ADR-0XX-document-language-direction.md) | Apply UI language and direction to the root document | Accepted |
+| [ADR-0YY](ADR-0YY-rtl-layout-mirroring.md) | RTL layout mirroring stacked on the language/direction plumbing | Accepted |
 | [PDR-001](PDR-001-single-user-first.md) | Single-user first; don't preclude multi-user | Accepted |
 | [PDR-002](PDR-002-provider-agnostic-core.md) | Provider-agnostic core by default | Accepted |

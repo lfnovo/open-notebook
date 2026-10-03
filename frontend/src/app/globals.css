@@ -364,6 +364,21 @@
   --shadow-overlay: 0 2px 6px rgba(0, 0, 0, 0.4), 0 20px 52px rgba(0, 0, 0, 0.55);
 }
 
+@layer utilities {
+  /* Logical properties for RTL support */
+  .bs-0 { border-inline-start-width: 0; }
+  .be-0 { border-inline-end-width: 0; }
+  .bs { border-inline-start-width: 1px; }
+  .be { border-inline-end-width: 1px; }
+  .bs-2 { border-inline-start-width: 2px; }
+  .be-2 { border-inline-end-width: 2px; }
+  .bs-4 { border-inline-start-width: 4px; }
+  .be-4 { border-inline-end-width: 4px; }
+
+  .absolute-inset-inline-start { position: absolute; inset-inline-start: 0; }
+  .absolute-inset-inline-end { position: absolute; inset-inline-end: 0; }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

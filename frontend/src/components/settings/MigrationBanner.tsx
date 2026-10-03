@@ -2,7 +2,8 @@
 
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { AlertTriangle, ArrowRight, Loader2 } from 'lucide-react'
+import { AlertTriangle, Loader2 } from 'lucide-react'
+import { ArrowEnd } from '@/components/ui/directional-icons'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useMigrateFromEnv } from '@/lib/hooks/use-credentials'
 
@@ -37,13 +38,13 @@ export function MigrationBanner({ providersToMigrate }: MigrationBannerProps) {
         >
           {migrate.isPending ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="me-2 h-4 w-4 animate-spin" />
               {t('apiKeys.migrating')}
             </>
           ) : (
             <>
               {t('apiKeys.migrateToDatabase')}
-              <ArrowRight className="ml-2 h-4 w-4" />
+              <ArrowEnd className="ms-2 h-4 w-4" />
             </>
           )}
         </Button>

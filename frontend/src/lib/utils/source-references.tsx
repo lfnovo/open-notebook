@@ -306,7 +306,7 @@ export function createReferenceLinkComponent(
           className="text-primary hover:underline cursor-pointer inline font-medium"
           type="button"
         >
-          <IconComponent className="h-3 w-3 inline mr-1" aria-hidden="true" />
+          <IconComponent className="h-3 w-3 inline me-1" aria-hidden="true" />
           {children}
         </button>
       )

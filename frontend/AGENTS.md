@@ -20,6 +20,7 @@ Normative rules for working on the Next.js frontend. Architecture and flow walkt
 ## Gotchas
 
 - Zustand stores with `persist`: check `hasHydrated` before rendering persisted state (SSR hydration mismatch), and keep each store's `name` key unique (localStorage collision).
+- **RTL / layout direction**: use Tailwind's logical properties (`ms-`, `pe-`, `border-s`, `start-`, `end-`, `text-start`) — never physical ones (`ml-`/`mr-`, `text-left`); `src/lib/logical-classes.test.ts` enforces this. Radix primitives inherit direction from the `DirectionProvider` in `I18nProvider`; to read direction in JS use `useDirection()` from `src/components/ui/directional-icons.tsx`, and use its `ChevronStart`/`ChevronEnd`/`ArrowStart`/`ArrowEnd`/`SendDirectional`/`AlignStart` for direction-sensitive icons.
 - `NEXT_PUBLIC_API_TIMEOUT_MS`: default 600000 (10 min) for slow LLM calls; `0` disables the timeout.
 - SSE (`useAsk`): incomplete lines stay in the buffer between reads; incomplete JSON is silently skipped — don't "simplify" the buffer handling.
 - `useSourceStatus` polls every 2s while status is `running`/`queued`/`new`.

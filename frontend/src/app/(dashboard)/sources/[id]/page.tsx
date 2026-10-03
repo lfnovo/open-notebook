@@ -3,7 +3,7 @@
 import { useRouter, useParams } from 'next/navigation'
 import { useCallback } from 'react'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowStart } from '@/components/ui/directional-icons'
 import { useSourceChat } from '@/lib/hooks/use-source-chat'
 import { ChatPanel } from '@/components/sources/ChatPanel'
 import { useNavigation } from '@/lib/hooks/use-navigation'
@@ -34,7 +34,7 @@ export default function SourceDetailPage() {
           onClick={handleBack}
           className="mb-4"
         >
-          <ArrowLeft className="mr-2 h-4 w-4" />
+          <ArrowStart className="me-2 h-4 w-4" />
           {navigation.getReturnLabel()}
         </Button>
       </div>

@@ -240,7 +240,7 @@ export default function SearchPage() {
                           disabled={ask.isStreaming}
                           className="h-auto py-1 px-2"
                         >
-                          <Settings className="h-3 w-3 mr-1" />
+                          <Settings className="h-3 w-3 me-1" />
                           {t('searchPage.advanced')}
                         </Button>
                       </div>
@@ -265,7 +265,7 @@ export default function SearchPage() {
                       >
                         {ask.isStreaming ? (
                           <>
-                            <LoadingSpinner size="sm" className="mr-2" />
+                            <LoadingSpinner size="sm" className="me-2" />
                             {t('searchPage.processing')}
                           </>
                         ) : (
@@ -279,7 +279,7 @@ export default function SearchPage() {
                           onClick={() => setShowSaveDialog(true)}
                           className="w-full"
                         >
-                          <Save className="h-4 w-4 mr-2" />
+                          <Save className="h-4 w-4 me-2" />
                           {t('searchPage.saveToNotebooks')}
                         </Button>
                       )}
@@ -356,7 +356,7 @@ export default function SearchPage() {
                       {searchMutation.isPending ? (
                         <LoadingSpinner size="sm" />
                       ) : (
-                        <Search className="h-4 w-4 mr-2" />
+                        <Search className="h-4 w-4 me-2" />
                       )}
                       {t('searchPage.search')}
                     </Button>
@@ -393,13 +393,13 @@ export default function SearchPage() {
                       onValueChange={(value: 'text' | 'vector') => setSearchType(value)}
                       disabled={modelsLoading || searchMutation.isPending}
                     >
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center gap-2">
                         <RadioGroupItem value="text" id="text" />
                         <Label htmlFor="text" className="font-normal cursor-pointer">
                           {t('searchPage.textSearch')}
                         </Label>
                       </div>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center gap-2">
                         <RadioGroupItem
                           value="vector"
                           id="vector"
@@ -419,7 +419,7 @@ export default function SearchPage() {
                   <div className="space-y-2" role="group" aria-labelledby="search-in-label">
                     <span id="search-in-label" className="text-sm font-medium leading-none">{t('searchPage.searchIn')}</span>
                     <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center gap-2">
                         <Checkbox
                           id="sources"
                           name="sources"
@@ -431,7 +431,7 @@ export default function SearchPage() {
                           {t('searchPage.searchSources')}
                         </Label>
                       </div>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center gap-2">
                         <Checkbox
                           id="notes"
                           name="notes"
@@ -477,10 +477,11 @@ export default function SearchPage() {
                                   <button
                                     onClick={() => openModal(modalType, id)}
                                     className="text-primary hover:underline font-medium"
+                                    dir="auto"
                                   >
                                     {result.title}
                                   </button>
-                                  <Badge variant="secondary" className="ml-2 font-mono text-[11px]">
+                                  <Badge variant="secondary" className="ms-2 font-mono text-[11px]">
                                     {result.final_score.toFixed(2)}
                                   </Badge>
                                 </div>
@@ -494,7 +495,7 @@ export default function SearchPage() {
                                   </CollapsibleTrigger>
                                   <CollapsibleContent className="mt-2 space-y-1">
                                     {result.matches.map((match, i) => (
-                                      <div key={i} className="text-sm pl-6 py-1 border-l-2 border-muted">
+                                      <div key={i} className="text-sm ps-6 py-1 border-s-2 border-muted" dir="auto">
                                         {match}
                                       </div>
                                     ))}

@@ -75,7 +75,7 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between gap-2 pr-8">
+          <DialogTitle className="flex items-center justify-between gap-2 pe-8">
             <span>{t('sources.sourceInsight')}</span>
             <div className="flex items-center gap-2">
               {displayInsight?.insight_type && (

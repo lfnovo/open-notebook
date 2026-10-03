@@ -4,7 +4,8 @@ import { useMemo } from 'react'
 import Link from 'next/link'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { ShieldAlert, AlertTriangle, ArrowRight, ExternalLink } from 'lucide-react'
+import { ShieldAlert, AlertTriangle, ExternalLink } from 'lucide-react'
+import { ArrowEnd } from '@/components/ui/directional-icons'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useCredentialStatus, useEnvStatus } from '@/lib/hooks/use-credentials'
 
@@ -47,7 +48,7 @@ export function SetupBanner() {
               className="inline-flex items-center shrink-0 text-sm font-medium underline underline-offset-2 hover:text-destructive/80"
             >
               {t('setupBanner.viewDocs')}
-              <ExternalLink className="ml-1 h-3 w-3" />
+              <ExternalLink className="ms-1 h-3 w-3" />
             </a>
           </AlertDescription>
         </Alert>
@@ -74,7 +75,7 @@ export function SetupBanner() {
           >
             <Link href="/settings/models">
               {t('setupBanner.goToSettings')}
-              <ArrowRight className="ml-2 h-4 w-4" />
+              <ArrowEnd className="ms-2 h-4 w-4" />
             </Link>
           </Button>
         </AlertDescription>

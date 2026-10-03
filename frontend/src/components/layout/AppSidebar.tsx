@@ -34,13 +34,13 @@ import {
   Shuffle,
   Settings,
   LogOut,
-  ChevronLeft,
   Menu,
   FileText,
   Plus,
   Wrench,
   Command,
 } from 'lucide-react'
+import { ChevronStart, useDirection } from '@/components/ui/directional-icons'
 
 const getNavigation = (t: TFunction) => [
   {
@@ -105,6 +105,7 @@ export function AppSidebar() {
 
   const [createMenuOpen, setCreateMenuOpen] = useState(false)
   const [isMac, setIsMac] = useState(true) // Default to Mac for SSR
+  const dir = useDirection()
 
   // Detect platform for keyboard shortcut display
   useEffect(() => {
@@ -123,11 +124,17 @@ export function AppSidebar() {
     }
   }
 
+  // Detect RTL for tooltip/dropdown positioning
+  const isRTL = dir === 'rtl'
+  const tooltipSide = isRTL ? 'left' : 'right'
+  const dropdownSide = isCollapsed ? (isRTL ? 'left' : 'right') : 'bottom'
+  const dropdownAlign = isCollapsed ? (isRTL ? 'start' : 'end') : 'start'
+
   return (
     <TooltipProvider delayDuration={0}>
       <div
         className={cn(
-          'app-sidebar flex h-full flex-col bg-sidebar border-sidebar-border border-r transition-all duration-300',
+          'app-sidebar flex h-full flex-col bg-sidebar border-sidebar-border border-e transition-all duration-300',
           isCollapsed ? 'w-16' : 'w-64'
         )}
       >
@@ -164,7 +171,7 @@ export function AppSidebar() {
                 className="text-sidebar-foreground hover:bg-sidebar-accent"
                 data-testid="sidebar-toggle"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronStart className="h-4 w-4" />
               </Button>
             </>
           )}
@@ -198,7 +205,7 @@ export function AppSidebar() {
                       </Button>
                     </DropdownMenuTrigger>
                   </TooltipTrigger>
-                   <TooltipContent side="right">{t('common.create')}</TooltipContent>
+                   <TooltipContent side={tooltipSide}>{t('common.create')}</TooltipContent>
                 </Tooltip>
               ) : (
                 <DropdownMenuTrigger asChild>
@@ -208,15 +215,15 @@ export function AppSidebar() {
                     size="sm"
                     className="w-full justify-start font-display font-bold"
                    >
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4 me-2" />
                     {t('common.create')}
                   </Button>
                 </DropdownMenuTrigger>
               )}
 
               <DropdownMenuContent
-                align={isCollapsed ? 'end' : 'start'}
-                side={isCollapsed ? 'right' : 'bottom'}
+                align={dropdownAlign}
+                side={dropdownSide}
                 className="w-48"
               >
                 <DropdownMenuItem
@@ -273,7 +280,7 @@ export function AppSidebar() {
                       className={cn(
                         'w-full gap-2.5 text-[13px] font-medium text-sidebar-foreground/80 sidebar-menu-item relative',
                         isActive &&
-                          'bg-popover font-semibold text-sidebar-foreground ring-1 ring-inset ring-border before:absolute before:-left-1.5 before:top-[7px] before:bottom-[7px] before:w-[3px] before:rounded-[2px] before:bg-fern',
+                          'bg-popover font-semibold text-sidebar-foreground ring-1 ring-inset ring-border before:absolute before:-[inset-inline-start:0.375rem] before:top-[7px] before:bottom-[7px] before:w-[3px] before:rounded-[2px] before:bg-fern',
                         isCollapsed ? 'justify-center px-2' : 'justify-start'
                       )}
                     >
@@ -290,7 +297,7 @@ export function AppSidebar() {
                             {button}
                           </Link>
                         </TooltipTrigger>
-                        <TooltipContent side="right">{item.name}</TooltipContent>
+                        <TooltipContent side={tooltipSide}>{item.name}</TooltipContent>
                       </Tooltip>
                     )
                   }
@@ -344,7 +351,7 @@ export function AppSidebar() {
                       <ThemeToggle iconOnly />
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent side="right">{t('common.theme')}</TooltipContent>
+                  <TooltipContent side={tooltipSide}>{t('common.theme')}</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -352,7 +359,7 @@ export function AppSidebar() {
                       <LanguageToggle iconOnly />
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent side="right">{t('common.language')}</TooltipContent>
+                  <TooltipContent side={tooltipSide}>{t('common.language')}</TooltipContent>
                 </Tooltip>
               </>
             ) : (
@@ -375,7 +382,7 @@ export function AppSidebar() {
                   <LogOut className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-               <TooltipContent side="right">{t('common.signOut')}</TooltipContent>
+               <TooltipContent side={tooltipSide}>{t('common.signOut')}</TooltipContent>
             </Tooltip>
           ) : (
             <Button

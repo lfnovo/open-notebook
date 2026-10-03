@@ -244,7 +244,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
             <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
-                  <InfoIcon className="mr-2 h-4 w-4" /> {t('podcasts.details')}
+                  <InfoIcon className="me-2 h-4 w-4" /> {t('podcasts.details')}
                 </Button>
               </DialogTrigger>
               <DialogContent className="w-[min(90vw,720px)] max-h-[85vh] overflow-hidden">
@@ -272,7 +272,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                     </TabsList>
 
                     <TabsContent value="summary" className="flex-1 overflow-hidden">
-                      <ScrollArea className="h-full pr-4">
+                      <ScrollArea className="h-full pe-4">
                         <div className="space-y-6">
                           <section className="space-y-2">
                             <h4 className="text-sm font-semibold text-foreground">{t('podcasts.episodeProfile')}</h4>
@@ -355,7 +355,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                     </TabsContent>
 
                     <TabsContent value="outline" className="flex-1 overflow-hidden">
-                      <ScrollArea className="h-full pr-4">
+                      <ScrollArea className="h-full pe-4">
                         {outlineSegments.length > 0 ? (
                           <div className="space-y-3">
                             {outlineSegments.map((segment, index) => (
@@ -377,7 +377,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                     </TabsContent>
 
                     <TabsContent value="transcript" className="flex-1 overflow-hidden">
-                      <ScrollArea className="h-full pr-4 space-y-3">
+                      <ScrollArea className="h-full pe-4 space-y-3">
                         {transcriptEntries.length > 0 ? (
                           transcriptEntries.map((entry, index) => (
                             <div key={index} className="rounded border bg-muted/20 p-3 text-xs space-y-1">
@@ -401,14 +401,14 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                 onClick={handleRetry}
                 disabled={retrying}
               >
-                <RefreshCcw className={cn('mr-2 h-4 w-4', retrying && 'animate-spin')} />
+                <RefreshCcw className={cn('me-2 h-4 w-4', retrying && 'animate-spin')} />
                 {retrying ? t('podcasts.retrying') : t('podcasts.retry')}
               </Button>
             ) : null}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="text-destructive">
-                  <Trash2 className="mr-2 h-4 w-4" />
+                  <Trash2 className="me-2 h-4 w-4" />
                   {t('podcasts.delete')}
                 </Button>
               </AlertDialogTrigger>

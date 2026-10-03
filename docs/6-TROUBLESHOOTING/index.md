@@ -220,7 +220,7 @@ SURREAL_COMMANDS_MAX_TASKS=2
 **High costs?**
 ```bash
 # Switch to cheaper model
-# In Settings → Models → Choose gpt-4o-mini (OpenAI)
+# In Manage → Models → Choose gpt-4o-mini (OpenAI)
 # Or use Ollama (free)
 ```
 

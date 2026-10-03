@@ -74,7 +74,7 @@ Firecrawl  →  Jina  →  Crawl4AI  →  simple (bs4)
 - **crawl4ai** — a site needs a real browser (JavaScript-rendered content) but you'd rather not use a paid API. Requires Crawl4AI to be enabled.
 - **simple** — the site is plain HTML and you want the fastest, dependency-free path.
 
-See the [Environment Reference](../5-CONFIGURATION/environment-reference.md#content-extraction) for the API keys and tuning variables (`FIRECRAWL_API_URL`, `CCORE_FIRECRAWL_PROXY`, `CCORE_FIRECRAWL_WAIT_FOR`, `CRAWL4AI_API_URL`).
+See the [Environment Reference](../5-CONFIGURATION/environment-reference.md#content-extraction) for the API keys and tuning variables (`FIRECRAWL_API_URL`, `CCORE_FIRECRAWL_PROXY`, `CCORE_FIRECRAWL_WAIT_FOR`, `CRAWL4AI_API_URL`, `CRAWL4AI_API_TOKEN`).
 
 ---
 
@@ -101,7 +101,7 @@ Docling and local Crawl4AI are heavy: Docling pulls a multi-hundred-MB to multi-
 |-------------|-----------|
 | `OPEN_NOTEBOOK_ENABLE_DOCLING=true` | The `docling` document engine, the OCR toggle, and image sources (PNG/JPEG/TIFF/BMP). |
 | `OPEN_NOTEBOOK_ENABLE_CRAWL4AI=true` | The local `crawl4ai` URL engine (JavaScript rendering via Chromium). |
-| `CRAWL4AI_API_URL=…` | The `crawl4ai` engine against a **remote** Crawl4AI server — no local install needed. |
+| `CRAWL4AI_API_URL=…` | The `crawl4ai` engine against a **remote** Crawl4AI server — no local install needed. Add `CRAWL4AI_API_TOKEN=…` if the server requires a bearer token (Crawl4AI Docker ≥ 0.9.0 does by default). |
 
 Notes:
 

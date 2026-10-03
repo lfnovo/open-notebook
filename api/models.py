@@ -36,7 +36,35 @@ class RecentlyViewedResponse(BaseModel):
 
 
 # Search models
-class SearchRequest(BaseModel):
+class NotebookScopeMixin(BaseModel):
+    """Optional notebook scope shared by Search and Ask requests (#574, #87).
+
+    Both `notebook_id` (single, the shape #574 proposed and existing clients
+    already send) and `notebook_ids` (several) are accepted; `scope_notebook_ids`
+    merges them. An empty scope means the whole knowledge base.
+    """
+
+    notebook_id: Optional[str] = Field(
+        None, description="Restrict results to a single notebook"
+    )
+    notebook_ids: Optional[List[str]] = Field(
+        None,
+        max_length=50,
+        description="Restrict results to these notebooks (omit or empty for all)",
+    )
+
+    @property
+    def scope_notebook_ids(self) -> List[str]:
+        # Keep empty strings so validation rejects them instead of silently
+        # widening the scope to the whole knowledge base.
+        merged: List[str] = []
+        for nb_id in [self.notebook_id, *(self.notebook_ids or [])]:
+            if nb_id is not None and nb_id not in merged:
+                merged.append(nb_id)
+        return merged
+
+
+class SearchRequest(NotebookScopeMixin):
     query: str = Field(..., description="Search query")
     type: Literal["text", "vector"] = Field("text", description="Search type")
     limit: int = Field(100, description="Maximum number of results", ge=1, le=1000)
@@ -53,7 +81,7 @@ class SearchResponse(BaseModel):
     search_type: str = Field(..., description="Type of search performed")
 
 
-class AskRequest(BaseModel):
+class AskRequest(NotebookScopeMixin):
     question: str = Field(..., description="Question to ask the knowledge base")
     strategy_model: str = Field(..., description="Model ID for query strategy")
     answer_model: str = Field(..., description="Model ID for individual answers")

@@ -84,7 +84,7 @@ _PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
             display_name="Anthropic",
             modalities=_LANGUAGE_ONLY,
             required_env=("ANTHROPIC_API_KEY",),
-            test_model="claude-3-haiku-20240307",
+            test_model="claude-haiku-4-5-20251001",
             docs_url="https://console.anthropic.com/settings/keys",
         ),
         ProviderSpec(

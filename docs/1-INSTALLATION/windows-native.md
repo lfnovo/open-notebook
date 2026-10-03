@@ -116,6 +116,30 @@ start "Frontend" cmd /k "cd /d %ROOT%\frontend && npm run dev"
 
 Then open http://127.0.0.1:3000.
 
+## Optional: production frontend build
+
+`npm run dev` is the development server: it compiles pages on demand and runs
+with development overhead, unlike what the Docker image runs. For day-to-day use you can build once and serve the
+standalone output, which is exactly what the container does (`node server.js`):
+
+```batch
+cd frontend
+npm run build
+
+REM The standalone output does not include static assets — copy them in
+REM (the Dockerfile does the same with COPY). Without this the UI loads unstyled.
+xcopy .next\static .next\standalone\.next\static /E /I /Y
+xcopy public .next\standalone\public /E /I /Y
+
+cd .next\standalone
+set PORT=8502
+set HOSTNAME=127.0.0.1
+node server.js
+```
+
+Then open http://127.0.0.1:8502. Re-run the build and both `xcopy` lines after
+every upgrade.
+
 ## Critical Windows Fixes
 
 ### Issue 1: Wrong Python Version
@@ -228,7 +252,7 @@ GOOGLE_API_KEY=your-key-here
 
 ## Available AI Models
 
-Once running, add models in Settings. Common model names:
+Once running, add models in Manage → Models. Common model names:
 
 | Provider  | Models                                                       |
 | --------- | ------------------------------------------------------------ |
@@ -249,6 +273,73 @@ cd frontend && npm install && cd ..
 ```
 
 Then restart all services. Your `.env` and data are preserved.
+
+## Migrating from a Docker Install
+
+If you already run Open Notebook with the stock `docker-compose.yml`, you can
+move to a native install **without re-importing anything**: the compose file
+bind-mounts `./surreal_data` and `./notebook_data`, so the database and uploads
+already live on your Windows disk.
+
+Run the `docker compose` commands below from the folder that contains your
+`docker-compose.yml`, so they work whatever your container names are.
+
+1. **Match the SurrealDB version.** A native `surreal` of the same version can
+   open the existing RocksDB files directly. Check the container's version:
+
+   ```batch
+   docker compose exec surrealdb /surreal version
+   ```
+
+   and download the matching Windows binary from the
+   [SurrealDB releases](https://github.com/surrealdb/surrealdb/releases).
+
+2. **Back up first** while the containers are still running:
+
+   ```batch
+   surreal export --endpoint http://127.0.0.1:8000 --username root --password <your-password> ^
+     --namespace open_notebook --database open_notebook backup.surql
+   ```
+
+3. **Remove the containers.** Stopping is not enough: the stock compose file
+   uses `restart: always`, so Docker Desktop would start them again on its next
+   launch and they would fight the native services over ports 8000 and 5055.
+   `down` removes the containers but keeps the bind-mounted `surreal_data` and
+   `notebook_data` folders (do **not** add `-v`); `docker compose up -d` brings
+   the Docker setup back if you need to roll back:
+
+   ```batch
+   docker compose down
+   ```
+
+4. **Start SurrealDB on the existing data** (path from the compose file's
+   `rocksdb:/mydata/mydatabase.db`):
+
+   ```batch
+   surreal start --user root --pass <your-password> --bind 127.0.0.1:8000 rocksdb:surreal_data\mydatabase.db
+   ```
+
+5. **Fix what only made sense inside the container**, before starting the API
+   and worker. Run these in `surreal sql` (namespace/database `open_notebook`):
+
+   ```sql
+   -- Credentials that reached host services (Ollama, local embedding servers)
+   -- through host.docker.internal now run on the same machine:
+   UPDATE credential SET base_url = string::replace(base_url, 'host.docker.internal', '127.0.0.1')
+     WHERE base_url CONTAINS 'host.docker.internal';
+
+   -- A job that was running when the container stopped stays 'running' forever;
+   -- put it back in the queue (the worker picks up 'new' jobs on startup):
+   UPDATE command SET status = 'new' WHERE status = 'running';
+   ```
+
+6. **Start the API, worker and frontend** as described above.
+
+**Known limitation:** sources uploaded inside Docker store absolute container
+paths such as `/app/data/uploads/<file>.pdf`, which do not resolve on Windows.
+Their extracted text, notes and embeddings are unaffected — search and chat keep
+working — but features that re-read the original file (re-processing, download)
+will not find it for those older sources. New uploads are fine.
 
 ## Services & Ports
 
@@ -282,4 +373,5 @@ Found another Windows-specific issue? Please share your solution!
 ---
 
 *Tested on Windows 11 ARM64 with Open Notebook v1.6.0*
+*Docker migration and production frontend build tested on Windows 11 x64 with Open Notebook v1.14.0 and SurrealDB 2.6.5*
 *Created: January 2026*

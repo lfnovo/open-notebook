@@ -110,6 +110,10 @@ class TestCredentialModelDiscovery:
         requests = []
 
         class FakeAsyncClient:
+            def __init__(self, *args, **kwargs):
+                # Accept httpx.AsyncClient kwargs (e.g. verify=...)
+                pass
+
             async def __aenter__(self):
                 return self
 
@@ -169,6 +173,10 @@ class TestCredentialModelDiscovery:
         requests = []
 
         class FakeAsyncClient:
+            def __init__(self, *args, **kwargs):
+                # Accept httpx.AsyncClient kwargs (e.g. verify=...)
+                pass
+
             async def __aenter__(self):
                 return self
 
@@ -210,6 +218,10 @@ class TestCredentialModelDiscovery:
         requests = []
 
         class FakeAsyncClient:
+            def __init__(self, *args, **kwargs):
+                # Accept httpx.AsyncClient kwargs (e.g. verify=...)
+                pass
+
             async def __aenter__(self):
                 return self
 
@@ -256,6 +268,10 @@ class TestCredentialModelDiscovery:
         captured = {}
 
         class FakeAsyncClient:
+            def __init__(self, *args, **kwargs):
+                # Accept httpx.AsyncClient kwargs (e.g. verify=...)
+                pass
+
             async def __aenter__(self):
                 return self
 
@@ -318,6 +334,10 @@ class TestOmlxDiscovery:
         pinned_calls = []
 
         class FakeAsyncClient:
+            def __init__(self, *args, **kwargs):
+                # Accept httpx.AsyncClient kwargs (e.g. verify=...)
+                pass
+
             async def __aenter__(self):
                 return self
 
@@ -356,6 +376,10 @@ class TestOmlxDiscovery:
         captured = {}
 
         class FakeAsyncClient:
+            def __init__(self, *args, **kwargs):
+                # Accept httpx.AsyncClient kwargs (e.g. verify=...)
+                pass
+
             async def __aenter__(self):
                 return self
 

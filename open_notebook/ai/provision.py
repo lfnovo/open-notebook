@@ -40,11 +40,11 @@ async def provision_langchain_model(
             f"Model provisioning failed: No model found. "
             f"Selection reason: {selection_reason}. "
             f"model_id={model_id}, default_type={default_type}. "
-            f"Please check Settings → Models and ensure a default model is configured for '{default_type}'."
+            f"Please check Manage → Models and ensure a default model is configured for '{default_type}'."
         )
         raise ConfigurationError(
             f"No model configured for {selection_reason}. "
-            f"Please go to Settings → Models and configure a default model for '{default_type}'."
+            f"Please go to Manage → Models and configure a default model for '{default_type}'."
         )
 
     if not isinstance(model, LanguageModel):

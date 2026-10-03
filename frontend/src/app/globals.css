@@ -437,4 +437,13 @@
   .prose blockquote p::after {
     content: none !important;
   }
+
+  /* Tailwind preflight removes the browser defaults used by the editor preview. */
+  .w-md-editor-preview :where(.wmde-markdown ul) {
+    list-style-type: disc;
+  }
+
+  .w-md-editor-preview :where(.wmde-markdown ol) {
+    list-style-type: decimal;
+  }
 }

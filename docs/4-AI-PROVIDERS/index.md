@@ -245,7 +245,7 @@ Any use: Free (electricity only)
 
 1. **You've chosen a provider** (from this comparison guide)
 2. **Follow the setup guide**: [AI Providers Configuration](../5-CONFIGURATION/ai-providers.md)
-3. **Add your credential** in Settings → API Keys
+3. **Add your credential** in Manage → Models
 4. **Test your connection** and discover models
 5. **Start using Open Notebook!**
 

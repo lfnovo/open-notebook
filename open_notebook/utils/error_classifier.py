@@ -10,6 +10,7 @@ from loguru import logger
 from open_notebook.exceptions import (
     AuthenticationError,
     ConfigurationError,
+    ContextLengthExceededError,
     ExternalServiceError,
     NetworkError,
     OpenNotebookError,
@@ -51,7 +52,7 @@ _CLASSIFICATION_RULES: list[tuple[list[str], type[OpenNotebookError], str | None
     # Context length errors
     (
         ["context length", "token limit", "maximum context", "context_length_exceeded", "max_tokens"],
-        ExternalServiceError,
+        ContextLengthExceededError,
         "Content too large for the selected model. Try using a smaller selection or a model with a larger context window.",
     ),
     # Payload too large errors

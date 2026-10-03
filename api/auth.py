@@ -69,7 +69,7 @@ class PasswordAuthMiddleware(BaseHTTPMiddleware):
 
         # Check password (constant-time to avoid a timing side-channel)
         if not secrets.compare_digest(
-            credentials.encode("utf-8"), self.password.encode("utf-8")
+            credentials.encode("latin-1"), self.password.encode("utf-8")
         ):
             return JSONResponse(
                 status_code=401,

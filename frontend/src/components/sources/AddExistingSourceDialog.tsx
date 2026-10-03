@@ -91,9 +91,12 @@ export function AddExistingSourceDialog({
         minimum_score: 0.01,
       })
 
-      // Since we set search_sources=true and search_notes=false,
-      // the API only returns sources, no need to filter
-      const sources = response.results.map(r => ({
+      const sourceIds = new Set<string>()
+      const sources = response.results.filter(r => {
+        if (sourceIds.has(r.parent_id)) return false
+        sourceIds.add(r.parent_id)
+        return true
+      }).map(r => ({
         id: r.parent_id,
         title: r.title || 'Untitled',
         topics: [],

@@ -154,3 +154,7 @@ docker-compose.override.yml
 # Local QA/debug artifacts
 screenshot-*.png
 history.txt
+
+# oss-maintainer local state
+.maintainer/profile.local.toml
+.maintainer/state/

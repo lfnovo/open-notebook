@@ -90,12 +90,30 @@ export function DiscoverModelsDialog({
     setCustomModelSelected(false)
   }, [searchQuery])
 
-  // Filter discovered models by search query
+  // Filter discovered models by selected modality first, then search query.
+  // Without the type filter, switching Model Type left the full chat catalog
+  // visible (#1274) even though registration would stamp a different type.
   const filteredModels = useMemo(() => {
-    if (!searchQuery.trim()) return discoveredModels
+    const byType = discoveredModels.filter(
+      (m) => !m.model_type || m.model_type === selectedType
+    )
+    if (!searchQuery.trim()) return byType
     const q = searchQuery.toLowerCase()
-    return discoveredModels.filter(m => m.name.toLowerCase().includes(q))
-  }, [discoveredModels, searchQuery])
+    return byType.filter((m) => m.name.toLowerCase().includes(q))
+  }, [discoveredModels, searchQuery, selectedType])
+
+  // Drop selections that no longer belong to the active model type.
+  useEffect(() => {
+    setSelectedModels((prev) => {
+      const allowed = new Set(
+        discoveredModels
+          .filter((m) => !m.model_type || m.model_type === selectedType)
+          .map((m) => m.name)
+      )
+      const next = new Set([...prev].filter((name) => allowed.has(name)))
+      return next.size === prev.size ? prev : next
+    })
+  }, [discoveredModels, selectedType])
 
   // Show custom model option when search doesn't exactly match any discovered model
   const showCustomOption = useMemo(() => {

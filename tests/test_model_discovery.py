@@ -174,7 +174,17 @@ class TestGenericOpenAICompatDiscovery:
         def handler(url, headers, params, timeout):
             return json_response(
                 url,
-                {"data": [{"id": "acme/embedding-x", "name": "Acme Embedding X"}]},
+                {
+                    "data": [
+                        {"id": "openai/gpt-4o", "name": "GPT-4o"},
+                        {
+                            "id": "openai/text-embedding-3-small",
+                            "name": "Text Embedding 3 Small",
+                            "architecture": {"output_modalities": ["embeddings"]},
+                        },
+                        {"id": "acme/chat-x", "name": "Acme Chat X"},
+                    ]
+                },
             )
 
         monkeypatch.setenv("OPENROUTER_API_KEY", "or-test")
@@ -183,10 +193,13 @@ class TestGenericOpenAICompatDiscovery:
         )
 
         models = await discover_openai_compatible_provider("openrouter")
-        assert len(models) == 1
-        # OpenRouter models are always registered as language models
-        assert models[0].model_type == "language"
-        assert models[0].description == "Acme Embedding X"
+        by_name = {m.name: m for m in models}
+        assert by_name["openai/gpt-4o"].model_type == "language"
+        assert by_name["openai/text-embedding-3-small"].model_type == "embedding"
+        assert by_name["acme/chat-x"].model_type == "language"
+        assert by_name["acme/chat-x"].description == "Acme Chat X"
+        # Name substring still classifies embeddings without architecture metadata.
+        assert by_name["openai/text-embedding-3-small"].description == "Text Embedding 3 Small"
 
 
 class TestOpenRouterDiscovery:

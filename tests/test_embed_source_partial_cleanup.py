@@ -13,6 +13,7 @@ import pytest
 from commands.embedding_commands import EmbedSourceInput, embed_source_command
 
 SOURCE_ID = "source:abc"
+OTHER_SOURCE_ID = "source:other"
 
 
 class _FakeSource:
@@ -22,13 +23,21 @@ class _FakeSource:
 
 class _FakeEmbeddingTable:
     def __init__(self, fail_on_batch: int):
-        self.rows: list = [{"source": SOURCE_ID, "order": 0, "stale": True}]
+        self.rows: list = [
+            {"source": SOURCE_ID, "order": 0, "stale": True},
+            {"source": OTHER_SOURCE_ID, "order": 0},
+        ]
         self.fail_on_batch = fail_on_batch
 
     async def repo_query(self, query, params=None):
-        assert query.startswith("DELETE source_embedding")
-        self.rows = [r for r in self.rows if str(r["source"]) != SOURCE_ID]
+        # Only honour the scoped form; an unscoped DELETE would fail here.
+        assert query == "DELETE source_embedding WHERE source = $source_id"
+        target = str(params["source_id"])
+        self.rows = [r for r in self.rows if str(r["source"]) != target]
         return []
+
+    def rows_for(self, source_id):
+        return [r for r in self.rows if r["source"] == source_id]
 
     async def repo_insert(self, table, records):
         assert table == "source_embedding"
@@ -68,7 +77,8 @@ async def test_failure_on_later_batch_leaves_no_embeddings():
         with pytest.raises(ConnectionError, match="websocket closed"):
             await embed_source_command(EmbedSourceInput(source_id=SOURCE_ID))
 
-    assert table.rows == []
+    assert table.rows_for(SOURCE_ID) == []
+    assert len(table.rows_for(OTHER_SOURCE_ID)) == 1
 
 
 @pytest.mark.asyncio
@@ -105,5 +115,7 @@ async def test_successful_insert_keeps_all_embeddings():
 
     assert result.success is True
     assert result.chunks_created == 120
-    assert len(table.rows) == 120
-    assert not any(r.get("stale") for r in table.rows)
+    rows = table.rows_for(SOURCE_ID)
+    assert len(rows) == 120
+    assert not any(r.get("stale") for r in rows)
+    assert len(table.rows_for(OTHER_SOURCE_ID)) == 1

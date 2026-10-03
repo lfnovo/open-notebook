@@ -5,6 +5,7 @@ This module provides functionality to test if a provider's API key is valid
 by making minimal API calls to each provider, and to test individual model
 configurations end-to-end.
 """
+
 import io
 import json
 import os
@@ -98,7 +99,9 @@ async def _test_azure_connection(
     """
     test_endpoint = endpoint or os.environ.get("AZURE_OPENAI_ENDPOINT")
     test_api_key = api_key or os.environ.get("AZURE_OPENAI_API_KEY")
-    test_api_version = api_version or os.environ.get("AZURE_OPENAI_API_VERSION", "2024-10-21")
+    test_api_version = api_version or os.environ.get(
+        "AZURE_OPENAI_API_VERSION", "2024-10-21"
+    )
 
     if not test_endpoint:
         return False, "No Azure endpoint configured"
@@ -110,13 +113,13 @@ async def _test_azure_connection(
 
     try:
         # Pin DNS at request time (closes rebinding TOCTOU left by validate_url alone).
-        models_url = (
-            f"{test_endpoint}/openai/models?api-version={test_api_version}"
-        )
+        models_url = f"{test_endpoint}/openai/models?api-version={test_api_version}"
         target = await prepare_pinned_http_target(models_url, "azure")
         headers = dict(target.headers)
         headers["api-key"] = test_api_key
-        async with httpx.AsyncClient(timeout=10.0, verify=httpx_verify_setting()) as client:
+        async with httpx.AsyncClient(
+            timeout=10.0, verify=httpx_verify_setting()
+        ) as client:
             response = await client.get(
                 target.url,
                 headers=headers,
@@ -159,7 +162,9 @@ async def _test_ollama_connection(base_url: str) -> Tuple[bool, str]:
         target = await prepare_pinned_http_target(
             f"{base_url.rstrip('/')}/api/tags", "ollama"
         )
-        async with httpx.AsyncClient(timeout=10.0, verify=httpx_verify_setting()) as client:
+        async with httpx.AsyncClient(
+            timeout=10.0, verify=httpx_verify_setting()
+        ) as client:
             # Try /api/tags endpoint (standard Ollama)
             response = await client.get(
                 target.url,
@@ -177,7 +182,10 @@ async def _test_ollama_connection(base_url: str) -> Tuple[bool, str]:
                     model_list = ", ".join(model_names)
                     if model_count > 3:
                         model_list += f" (+{model_count - 3} more)"
-                    return True, f"Connected. {model_count} models available: {model_list}"
+                    return (
+                        True,
+                        f"Connected. {model_count} models available: {model_list}",
+                    )
                 else:
                     return True, "Connected successfully (no models listed)"
             elif response.status_code == 401:
@@ -197,20 +205,22 @@ async def _test_ollama_connection(base_url: str) -> Tuple[bool, str]:
         return False, f"Connection error: {str(e)[:100]}"
 
 
-async def _test_openai_compatible_connection(base_url: str, api_key: Optional[str] = None) -> Tuple[bool, str]:
+async def _test_openai_compatible_connection(
+    base_url: str, api_key: Optional[str] = None
+) -> Tuple[bool, str]:
     """Test OpenAI-compatible server connectivity."""
     try:
         # Pin DNS at request time (closes rebinding TOCTOU left by validate_url alone).
         trimmed = base_url.rstrip("/")
-        models_url = (
-            trimmed if trimmed.endswith("/models") else f"{trimmed}/models"
-        )
+        models_url = trimmed if trimmed.endswith("/models") else f"{trimmed}/models"
         target = await prepare_pinned_http_target(models_url, "openai_compatible")
         headers = dict(target.headers)
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
 
-        async with httpx.AsyncClient(timeout=10.0, verify=httpx_verify_setting()) as client:
+        async with httpx.AsyncClient(
+            timeout=10.0, verify=httpx_verify_setting()
+        ) as client:
             # Try /models endpoint (standard OpenAI-compatible)
             response = await client.get(
                 target.url,
@@ -228,7 +238,10 @@ async def _test_openai_compatible_connection(base_url: str, api_key: Optional[st
                     model_list = ", ".join(model_names)
                     if model_count > 3:
                         model_list += f" (+{model_count - 3} more)"
-                    return True, f"Connected. {model_count} models available: {model_list}"
+                    return (
+                        True,
+                        f"Connected. {model_count} models available: {model_list}",
+                    )
                 else:
                     return True, "Connected successfully (no models listed)"
             elif response.status_code == 401:
@@ -263,7 +276,9 @@ async def _test_anthropic_compatible_connection(
         if api_key:
             headers["x-api-key"] = api_key
 
-        async with httpx.AsyncClient(timeout=10.0, verify=httpx_verify_setting()) as client:
+        async with httpx.AsyncClient(
+            timeout=10.0, verify=httpx_verify_setting()
+        ) as client:
             response = await client.get(
                 target.url,
                 headers=headers,
@@ -278,7 +293,10 @@ async def _test_anthropic_compatible_connection(
                     model_list = ", ".join(model_names)
                     if model_count > 3:
                         model_list += f" (+{model_count - 3} more)"
-                    return True, f"Connected. {model_count} models available: {model_list}"
+                    return (
+                        True,
+                        f"Connected. {model_count} models available: {model_list}",
+                    )
                 return True, "Connected successfully (no models listed)"
             if response.status_code == 401:
                 return False, "Invalid API key"
@@ -299,6 +317,7 @@ async def _test_anthropic_compatible_connection(
         return False, "Connection timed out. Check if server is accessible."
     except Exception as e:
         return False, f"Connection error: {str(e)[:100]}"
+
 
 # Default voices for TTS testing per provider
 # ElevenLabs, Mistral and OpenRouter excluded: voices looked up dynamically via
@@ -507,7 +526,10 @@ async def test_individual_model(model) -> Tuple[bool, str]:
 
         if model.type == "language":
             if not isinstance(esp_model, LanguageModel):
-                return False, f"Model type mismatch: expected a language model, got {type(esp_model).__name__}"
+                return (
+                    False,
+                    f"Model type mismatch: expected a language model, got {type(esp_model).__name__}",
+                )
             response = await esp_model.achat_complete(
                 messages=[{"role": "user", "content": "Hi!"}]
             )
@@ -519,7 +541,10 @@ async def test_individual_model(model) -> Tuple[bool, str]:
 
         elif model.type == "embedding":
             if not isinstance(esp_model, EmbeddingModel):
-                return False, f"Model type mismatch: expected an embedding model, got {type(esp_model).__name__}"
+                return (
+                    False,
+                    f"Model type mismatch: expected an embedding model, got {type(esp_model).__name__}",
+                )
             result = await esp_model.aembed(["This is a test."])
             if result and len(result) > 0:
                 dims = len(result[0])
@@ -528,7 +553,10 @@ async def test_individual_model(model) -> Tuple[bool, str]:
 
         elif model.type == "text_to_speech":
             if not isinstance(esp_model, TextToSpeechModel):
-                return False, f"Model type mismatch: expected a text-to-speech model, got {type(esp_model).__name__}"
+                return (
+                    False,
+                    f"Model type mismatch: expected a text-to-speech model, got {type(esp_model).__name__}",
+                )
             # For ElevenLabs, look up first available voice (API uses voice_id, not name)
             voice = DEFAULT_TEST_VOICES.get(model.provider)
             if not voice and hasattr(esp_model, "available_voices"):
@@ -551,7 +579,10 @@ async def test_individual_model(model) -> Tuple[bool, str]:
 
         elif model.type == "speech_to_text":
             if not isinstance(esp_model, SpeechToTextModel):
-                return False, f"Model type mismatch: expected a speech-to-text model, got {type(esp_model).__name__}"
+                return (
+                    False,
+                    f"Model type mismatch: expected a speech-to-text model, got {type(esp_model).__name__}",
+                )
             audio_file = _get_test_audio()
             transcription = await esp_model.atranscribe(
                 audio_file=audio_file, language="en"
@@ -562,7 +593,10 @@ async def test_individual_model(model) -> Tuple[bool, str]:
                 else str(transcription).strip()
             )
             if not text:
-                return True, "Connection successful (test clip produced no transcription)"
+                return (
+                    True,
+                    "Connection successful (test clip produced no transcription)",
+                )
             return True, f"Transcription: {text[:100]}"
 
         else:

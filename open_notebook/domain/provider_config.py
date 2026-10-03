@@ -301,9 +301,7 @@ class ProviderConfig(RecordModel):
 
         return None
 
-    def get_config(
-        self, provider: str, config_id: str
-    ) -> Optional[ProviderCredential]:
+    def get_config(self, provider: str, config_id: str) -> Optional[ProviderCredential]:
         """
         Get a specific configuration by ID.
 

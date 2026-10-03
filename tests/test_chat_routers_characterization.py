@@ -185,9 +185,7 @@ async def test_get_chat_session_no_state_yields_empty_messages(
 @patch("api.routers._chat_shared.Source.get", new_callable=AsyncMock)
 async def test_create_source_chat_session_missing_source_returns_404(mock_get, client):
     mock_get.side_effect = _nf
-    resp = client.post(
-        "/api/sources/gone/chat/sessions", json={"source_id": "gone"}
-    )
+    resp = client.post("/api/sources/gone/chat/sessions", json={"source_id": "gone"})
     assert resp.status_code == 404
     assert resp.json()["detail"] == "Source not found"
     mock_get.assert_awaited_once_with("source:gone")

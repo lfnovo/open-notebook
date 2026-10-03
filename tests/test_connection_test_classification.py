@@ -32,7 +32,9 @@ GOOGLE_DEPRECATED = "400 Model gemini-1.5-pro has been deprecated."
 GOOGLE_BAD_KEY_401 = "401 API key not valid. Please pass a valid API key."
 GOOGLE_PERM_403 = "403 Permission denied on resource project."
 GOOGLE_QUOTA_429 = "429 Resource has been exhausted (e.g. check quota)."
-DNS_FAILURE = "Connection error: [Errno -2] Name or service not known (getaddrinfo failed)"
+DNS_FAILURE = (
+    "Connection error: [Errno -2] Name or service not known (getaddrinfo failed)"
+)
 TIMEOUT = "Request timed out after 10s"
 
 
@@ -55,7 +57,12 @@ class TestConnectionFailureReason:
 
     @pytest.mark.parametrize(
         "msg",
-        [GOOGLE_RETIRED_MODEL_404, GOOGLE_DEPRECATED, GOOGLE_QUOTA_429, ANTHROPIC_RETIRED_HAIKU_404],
+        [
+            GOOGLE_RETIRED_MODEL_404,
+            GOOGLE_DEPRECATED,
+            GOOGLE_QUOTA_429,
+            ANTHROPIC_RETIRED_HAIKU_404,
+        ],
     )
     def test_provider_reached_returns_none(self, msg):
         # A model/quota problem came back FROM the provider — not a failure.

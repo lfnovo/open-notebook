@@ -86,7 +86,11 @@ async def validate_url(url: str, provider: str) -> None:
 
         except ValueError as ve:
             # Re-raise our own ValueErrors
-            if "Link-local" in str(ve) or "Invalid URL" in str(ve) or "metadata" in str(ve):
+            if (
+                "Link-local" in str(ve)
+                or "Invalid URL" in str(ve)
+                or "metadata" in str(ve)
+            ):
                 raise
             # Not an IP address, it's a hostname - need to resolve and check
             try:
@@ -201,7 +205,10 @@ async def _resolve_safe_ips(hostname: str) -> list[str]:
             _reject_dangerous_ip(parsed_ip, hostname, resolved=True)
             safe.append(ip_addr)
         except ValueError as inner_ve:
-            if "link-local" in str(inner_ve).lower() or "metadata" in str(inner_ve).lower():
+            if (
+                "link-local" in str(inner_ve).lower()
+                or "metadata" in str(inner_ve).lower()
+            ):
                 raise
             # Skip non-IP addresses (e.g., IPv6 zones)
             continue
@@ -236,9 +243,8 @@ def _reject_dangerous_ip(
     # Block AWS's IMDSv6 metadata address - a Unique Local Address, not
     # link-local, so it needs its own explicit check. Compare without scope
     # ID so scoped forms (fd00:ec2::254%eth0) cannot bypass the sentinel.
-    is_aws_imds_v6 = (
-        isinstance(ip, ipaddress.IPv6Address)
-        and int(ip) == int(_AWS_IMDS_V6_ADDRESS)
+    is_aws_imds_v6 = isinstance(ip, ipaddress.IPv6Address) and int(ip) == int(
+        _AWS_IMDS_V6_ADDRESS
     )
     if is_aws_imds_v6:
         if resolved:

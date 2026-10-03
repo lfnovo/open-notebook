@@ -91,9 +91,7 @@ class TestNoteUpdate:
         assert data["command_id"] == "command:embed789"
 
     @patch("api.routers.notes.Note")
-    def test_update_note_command_id_none_when_no_embedding(
-        self, mock_note_cls, client
-    ):
+    def test_update_note_command_id_none_when_no_embedding(self, mock_note_cls, client):
         """Test that command_id is None on update when no embedding is triggered."""
         mock_note = AsyncMock()
         mock_note.id = "note:abc123"

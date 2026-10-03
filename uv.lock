@@ -11,6 +11,14 @@ resolution-markers = [
 ]
 
 [manifest]
+constraints = [
+    { name = "anyio", specifier = ">=4.14.2" },
+    { name = "pyjwt", specifier = ">=2.15.1" },
+    { name = "soupsieve", specifier = ">=2.9" },
+    { name = "tornado", specifier = ">=6.5.10" },
+    { name = "urllib3", specifier = ">=2.8.0" },
+    { name = "virtualenv", specifier = ">=21.14.5" },
+]
 overrides = [{ name = "pillow", specifier = ">=12.2.0" }]
 
 [[package]]

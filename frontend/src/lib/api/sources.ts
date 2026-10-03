@@ -1,13 +1,15 @@
 import type { AxiosResponse } from 'axios'
 
 import apiClient from './client'
-import { 
-  SourceListResponse, 
-  SourceDetailResponse, 
+import {
+  SourceListResponse,
+  SourceDetailResponse,
   SourceResponse,
   SourceStatusResponse,
-  CreateSourceRequest, 
-  UpdateSourceRequest 
+  CreateSourceRequest,
+  UpdateSourceRequest,
+  DuplicateCheckRequest,
+  DuplicateSourceInfo,
 } from '@/lib/types/api'
 
 export type SourceSortField = 'type' | 'title' | 'created' | 'updated' | 'insights_count' | 'embedded'
@@ -66,6 +68,14 @@ export const sourcesApi = {
     
     const response = await apiClient.post<SourceResponse>('/sources', formData)
     return response.data
+  },
+
+  checkDuplicates: async (data: DuplicateCheckRequest) => {
+    const response = await apiClient.post<{ duplicates: DuplicateSourceInfo[] }>(
+      '/sources/check-duplicates',
+      data
+    )
+    return response.data.duplicates
   },
 
   update: async (id: string, data: UpdateSourceRequest) => {

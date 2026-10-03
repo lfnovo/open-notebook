@@ -158,3 +158,30 @@ describe('Unused Key Detection', () => {
     30_000,
   )
 })
+
+// NotebookLM vocabulary (simplified). The type name must state the DELIVERABLE
+// and its figure consequence, so a text document cannot be mistaken for one
+// with diagrams - the exact confusion that produced a bulleted, figure-less
+// artifact titled "Report ... con Diagrammi".
+describe('artifact type labels (NotebookLM vocabulary)', () => {
+  it('names the text type as a document without figures', () => {
+    expect(enUS.artifacts.kindReport).toBe('Document (text only)')
+  })
+
+  it('names the visual type as a slide deck with diagrams', () => {
+    expect(enUS.artifacts.kindDeck).toBe('Slide deck (with diagrams)')
+  })
+
+  it('names the plain document style as prose without diagrams', () => {
+    expect(enUS.artifacts.variantDocument).toContain('prose')
+    expect(enUS.artifacts.variantDocument).not.toContain('diagram')
+  })
+
+  it('names the illustrated style as the one that carries diagrams', () => {
+    expect(enUS.artifacts.variantIllustrated).toContain('diagrams')
+  })
+
+  it('names the detailed deck after the prose it adds to each bullet', () => {
+    expect(enUS.artifacts.variantDetailed).toContain('sentences')
+  })
+})

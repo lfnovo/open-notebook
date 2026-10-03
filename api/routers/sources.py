@@ -23,6 +23,9 @@ from api.credentials_service import validate_url
 from api.models import (
     AssetModel,
     CreateSourceInsightRequest,
+    DiscoveredSource,
+    DiscoverSourcesRequest,
+    DiscoverSourcesResponse,
     InsightCreationResponse,
     SourceCreate,
     SourceInsightResponse,
@@ -42,6 +45,7 @@ from open_notebook.exceptions import (
     OpenNotebookError,
     UnsupportedTypeException,
 )
+from open_notebook.research.web_search import normalize_url, search_web
 
 router = APIRouter()
 
@@ -711,6 +715,118 @@ async def create_source_json(source_data: SourceCreate):
     # Convert to form data format and call main endpoint
     form_data = (source_data, None)
     return await create_source(form_data)
+
+
+async def _existing_notebook_urls(notebook_id: str) -> set[str]:
+    """Return the normalized URLs of the sources already attached to a notebook.
+
+    Used to skip search hits the notebook already contains, so re-running
+    discovery is idempotent instead of creating duplicate sources.
+    """
+    rows: List[Any] = await repo_query(
+        "SELECT VALUE asset.url FROM source "
+        "WHERE id IN (SELECT VALUE in FROM reference WHERE out = $notebook_id)",
+        {"notebook_id": ensure_record_id(notebook_id)},
+    )
+    # SELECT VALUE yields bare scalars, so only string rows are usable here.
+    return {normalize_url(url) for url in rows if isinstance(url, str) and url}
+
+
+@router.post("/sources/discover", response_model=DiscoverSourcesResponse)
+async def discover_sources(request: DiscoverSourcesRequest):
+    """Search the web and attach the top hits to a notebook as link sources.
+
+    The search is provider-agnostic (see ``open_notebook.research.web_search``);
+    fetching each page is left to content-core, which runs through the normal
+    source processing pipeline once the candidate is ingested as a Source. Use
+    ``dry_run`` to preview the ranked candidates without creating anything.
+    """
+    notebook = await Notebook.get(request.notebook_id)
+    if not notebook:
+        raise HTTPException(status_code=404, detail="Notebook not found")
+
+    hits = await search_web(
+        request.query,
+        limit=request.limit,
+        provider=request.provider,
+        exclude_domains=request.exclude_domains,
+    )
+
+    existing = await _existing_notebook_urls(request.notebook_id)
+
+    results: List[DiscoveredSource] = []
+    seen: set[str] = set()
+    created_count = 0
+    skipped_count = 0
+
+    for hit in hits:
+        key = hit.normalized_url
+        if key in seen:
+            continue
+        seen.add(key)
+
+        entry = DiscoveredSource(
+            title=hit.title, url=hit.url, snippet=hit.snippet, score=hit.score
+        )
+
+        if key in existing:
+            entry.status = "skipped"
+            entry.error = "Already a source in this notebook"
+            skipped_count += 1
+            results.append(entry)
+            continue
+
+        if request.dry_run:
+            results.append(entry)
+            continue
+
+        # Block SSRF to internal/metadata addresses before storing the URL -
+        # the same guard the link-source endpoint applies. A single rejected
+        # hit must not fail the whole run, so it is reported per candidate.
+        try:
+            await validate_url(hit.url, "source")
+        except ValueError as e:
+            entry.status = "error"
+            entry.error = str(e)
+            results.append(entry)
+            continue
+
+        try:
+            source_data = SourceCreate(
+                type="link",
+                url=hit.url,
+                title=hit.title or None,
+                notebooks=[request.notebook_id],
+                embed=request.embed,
+                async_processing=True,
+            )
+            created = await _create_source_async_path(
+                source_data, {"url": hit.url}, [], None
+            )
+            entry.status = "created"
+            entry.source_id = created.id
+            created_count += 1
+        except Exception as e:
+            logger.error(f"Failed to create discovered source {hit.url}: {e}")
+            entry.status = "error"
+            entry.error = _truncate_error(str(e))
+
+        results.append(entry)
+
+    logger.info(
+        f"Discovered {len(results)} candidate(s) for notebook "
+        f"{request.notebook_id} via {request.provider or 'tavily'} "
+        f"(created={created_count}, skipped={skipped_count})"
+    )
+
+    return DiscoverSourcesResponse(
+        query=request.query,
+        provider=request.provider or "tavily",
+        notebook_id=request.notebook_id,
+        created_count=created_count,
+        skipped_count=skipped_count,
+        results=results,
+    )
 
 
 async def _resolve_source_file(source_id: str) -> tuple[str, str]:

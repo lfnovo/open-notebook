@@ -18,6 +18,13 @@ os.makedirs(UPLOADS_FOLDER, exist_ok=True)
 PODCASTS_FOLDER = f"{DATA_FOLDER}/podcasts"
 os.makedirs(PODCASTS_FOLDER, exist_ok=True)
 
+# ARTIFACTS FOLDER
+# Root of generated artifacts (#203 artifacts tab): one directory per artifact,
+# DATA_FOLDER/artifacts/<id>/. GeneratedArtifact.output_path stores a path
+# relative to this root, so the row never holds an absolute or escaping path.
+ARTIFACTS_FOLDER = f"{DATA_FOLDER}/artifacts"
+os.makedirs(ARTIFACTS_FOLDER, exist_ok=True)
+
 # TIKTOKEN CACHE FOLDER
 # Reads TIKTOKEN_CACHE_DIR from the environment so Docker can redirect the cache
 # to a path outside /data/ (which is typically volume-mounted and would hide the

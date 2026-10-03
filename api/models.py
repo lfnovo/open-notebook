@@ -465,6 +465,72 @@ class SourceStatusResponse(BaseModel):
     command_id: Optional[str] = Field(None, description="Command ID if available")
 
 
+# Web source discovery models (issue #973, first slice: search -> sources)
+class DiscoverSourcesRequest(BaseModel):
+    """Request to discover web sources and attach them to a notebook."""
+
+    query: str = Field(
+        ...,
+        min_length=1,
+        max_length=400,
+        description="Web search query (the topic to find sources for)",
+    )
+    notebook_id: str = Field(
+        ..., description="Notebook the discovered sources are attached to"
+    )
+    limit: int = Field(
+        5, ge=1, le=20, description="Maximum number of sources to create"
+    )
+    provider: Optional[str] = Field(
+        None, description="Search provider name (defaults to tavily)"
+    )
+    embed: bool = Field(
+        False, description="Embed the created sources for vector search"
+    )
+    exclude_domains: List[str] = Field(
+        default_factory=list,
+        max_length=50,
+        description="Domains the search provider must not return (max 50)",
+    )
+    dry_run: bool = Field(
+        False,
+        description="Return the ranked candidates without creating any source",
+    )
+
+
+class DiscoveredSource(BaseModel):
+    """A single web-search hit and the outcome of processing it."""
+
+    title: str = Field("", description="Page title reported by the provider")
+    url: str = Field(..., description="Absolute URL of the page")
+    snippet: str = Field("", description="Short provider-supplied excerpt")
+    score: float = Field(0.0, description="Provider relevance score (higher is better)")
+    source_id: Optional[str] = Field(
+        None, description="ID of the created source, when one was created"
+    )
+    status: Literal["candidate", "created", "skipped", "error"] = Field(
+        "candidate", description="Outcome for this hit"
+    )
+    error: Optional[str] = Field(
+        None, description="Why the hit was skipped or failed, when applicable"
+    )
+
+
+class DiscoverSourcesResponse(BaseModel):
+    """Result of a web source discovery run."""
+
+    query: str = Field(..., description="The query that was searched")
+    provider: str = Field(..., description="Search provider that answered")
+    notebook_id: str = Field(..., description="Notebook targeted by the run")
+    created_count: int = Field(0, description="Number of sources created")
+    skipped_count: int = Field(
+        0, description="Number of hits skipped because they already exist"
+    )
+    results: List[DiscoveredSource] = Field(
+        default_factory=list, description="Every hit considered, in rank order"
+    )
+
+
 # Error response
 class ErrorResponse(BaseModel):
     error: str

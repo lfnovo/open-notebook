@@ -1,0 +1,3 @@
+-- Roll back migration 26: drop the generated artifacts table and its index.
+REMOVE INDEX IF EXISTS idx_generated_artifact_notebook ON TABLE generated_artifact;
+REMOVE TABLE IF EXISTS generated_artifact;

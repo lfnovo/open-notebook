@@ -221,8 +221,10 @@ async def update_transformation(
             transformation.name = transformation_update.name
         if transformation_update.title is not None:
             transformation.title = transformation_update.title
-        if transformation_update.description is not None:
-            transformation.description = transformation_update.description
+        # An explicit "" (or null) clears the description; only an absent
+        # field leaves it untouched.
+        if "description" in transformation_update.model_fields_set:
+            transformation.description = transformation_update.description or ""
         if transformation_update.prompt is not None:
             transformation.prompt = transformation_update.prompt
         if transformation_update.apply_default is not None:

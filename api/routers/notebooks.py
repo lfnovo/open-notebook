@@ -284,8 +284,10 @@ async def update_notebook(notebook_id: str, notebook_update: NotebookUpdate):
         # Update only provided fields
         if notebook_update.name is not None:
             notebook.name = notebook_update.name
-        if notebook_update.description is not None:
-            notebook.description = notebook_update.description
+        # An explicit "" (or null) clears the description; only an absent
+        # field leaves it untouched.
+        if "description" in notebook_update.model_fields_set:
+            notebook.description = notebook_update.description or ""
         if notebook_update.archived is not None:
             notebook.archived = notebook_update.archived
 

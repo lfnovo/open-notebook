@@ -36,6 +36,7 @@ export const ERROR_MAP: Record<string, string> = {
   "Final answer model": "apiErrors.finalAnswerModelNotFound",
   "No answer generated": "apiErrors.noAnswerGenerated",
   "Source has no text content": "apiErrors.sourceHasNoText",
+  "There is no text content to transform": "apiErrors.sourceHasNoText",
 };
 
 /**

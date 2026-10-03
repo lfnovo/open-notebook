@@ -195,7 +195,7 @@ function SourceDetailContentInner({
           // Invalidate sources queries so notebook page refreshes with updated insights_count
           queryClient.invalidateQueries({ queryKey: ['sources'] })
           if (status?.status !== 'completed') {
-            toast.error(status?.error_message || t('common.error'))
+            toast.error(getApiErrorMessage(status?.error_message ?? '', (key) => t(key), 'common.error'))
           }
         }).catch(err => {
           if (controller.signal.aborted) return

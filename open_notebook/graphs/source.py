@@ -257,7 +257,9 @@ def trigger_transformations(state: SourceState, config: RunnableConfig) -> List[
 async def transform_content(state: TransformationState) -> Optional[dict]:
     source = state["source"]
     content = source.full_text
-    if not content:
+    # Whitespace-only text would hit the transformation graph's empty-content
+    # guard; skip it here like empty text.
+    if not content or not content.strip():
         return None
     transformation: Transformation = state["transformation"]
 

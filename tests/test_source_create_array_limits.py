@@ -20,7 +20,9 @@ def make_ids(n, prefix):
 
 class TestNotebooksMaxLength:
     def test_accepts_up_to_50_notebooks(self):
-        request = SourceCreate(type="text", content="hi", notebooks=make_ids(50, "notebook"))
+        request = SourceCreate(
+            type="text", content="hi", notebooks=make_ids(50, "notebook")
+        )
         assert request.notebooks is not None
         assert len(request.notebooks) == 50
 
@@ -50,7 +52,9 @@ class TestTransformationsMaxLength:
     def test_rejects_51_transformations(self):
         with pytest.raises(ValidationError):
             SourceCreate(
-                type="text", content="hi", transformations=make_ids(51, "transformation")
+                type="text",
+                content="hi",
+                transformations=make_ids(51, "transformation"),
             )
 
     def test_default_is_empty_list(self):

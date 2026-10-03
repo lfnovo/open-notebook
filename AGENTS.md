@@ -20,7 +20,7 @@ Or all at once: `make start-all` (status: `make status`, stop: `make stop-all`).
 ## Commands
 
 - Tests: `uv run pytest tests/`
-- Python lint/typecheck: `ruff check . --fix` · `uv run python -m mypy .`
+- Python lint/format/typecheck: `ruff check . --fix` · `ruff format .` · `uv run python -m mypy .`
 - Frontend (inside `frontend/`): `npm run lint` · `npm run test` · `npm run build`
 - Docker release: `make docker-release` (see `.github/RELEASE_PROCESS.md`)
 

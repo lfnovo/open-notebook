@@ -91,9 +91,7 @@ class TestNoteSaveEmbedResilience:
         note = Note(title="Test", content=None)
         with (
             patch("open_notebook.domain.base.ObjectModel.save", new=AsyncMock()),
-            patch(
-                "open_notebook.domain.notebook.submit_command"
-            ) as mock_submit,
+            patch("open_notebook.domain.notebook.submit_command") as mock_submit,
         ):
             object.__setattr__(note, "id", "note:abc123")
             command_id = await note.save()
@@ -119,7 +117,11 @@ class TestEmbeddingEndpointNoteBranch:
         ):
             response = client.post(
                 "/api/embed",
-                json={"item_id": "note:abc123", "item_type": "note", "async_processing": False},
+                json={
+                    "item_id": "note:abc123",
+                    "item_type": "note",
+                    "async_processing": False,
+                },
             )
 
         assert response.status_code == 500
@@ -131,9 +133,7 @@ class TestEmbeddingEndpointNoteBranch:
 
         with (
             patch("api.routers.embedding.Note.get", new=AsyncMock(return_value=note)),
-            patch.object(
-                Note, "save", new=AsyncMock(return_value="command:abc123")
-            ),
+            patch.object(Note, "save", new=AsyncMock(return_value="command:abc123")),
             patch(
                 "open_notebook.ai.models.model_manager.get_embedding_model",
                 new=AsyncMock(return_value=object()),
@@ -141,7 +141,11 @@ class TestEmbeddingEndpointNoteBranch:
         ):
             response = client.post(
                 "/api/embed",
-                json={"item_id": "note:abc123", "item_type": "note", "async_processing": False},
+                json={
+                    "item_id": "note:abc123",
+                    "item_type": "note",
+                    "async_processing": False,
+                },
             )
 
         assert response.status_code == 200
@@ -165,7 +169,11 @@ class TestEmbeddingEndpointNoteBranch:
         ):
             response = client.post(
                 "/api/embed",
-                json={"item_id": "note:abc123", "item_type": "note", "async_processing": False},
+                json={
+                    "item_id": "note:abc123",
+                    "item_type": "note",
+                    "async_processing": False,
+                },
             )
 
         assert response.status_code == 200

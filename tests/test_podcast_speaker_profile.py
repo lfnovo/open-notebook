@@ -108,9 +108,7 @@ class TestSpeakerProfileResolution:
             ),
             patch.object(SpeakerProfile, "resolve", new=speaker_resolve),
         ):
-            with pytest.raises(
-                ValueError, match="has no speaker profile configured"
-            ):
+            with pytest.raises(ValueError, match="has no speaker profile configured"):
                 await generate_podcast_command(make_input(speaker_profile=None))
 
         speaker_resolve.assert_not_awaited()
@@ -357,9 +355,7 @@ class TestOrphanedProfileDoesNotPoisonConfig:
                 "commands.podcast_commands._resolve_model_config",
                 new=AsyncMock(return_value=resolved),
             ),
-            patch(
-                "commands.podcast_commands.repo_query", new=fake_repo_query
-            ),
+            patch("commands.podcast_commands.repo_query", new=fake_repo_query),
             patch("commands.podcast_commands.configure", new=fake_configure),
             patch(
                 "commands.podcast_commands.create_podcast",
@@ -399,6 +395,5 @@ class TestOrphanedProfileDoesNotPoisonConfig:
         assert "Orphaned Profile" not in episode_config
         # Record ID rewritten to the speaker profile NAME for podcast-creator
         assert (
-            episode_config["Test Episode Profile"]["speaker_config"]
-            == "Tech Experts"
+            episode_config["Test Episode Profile"]["speaker_config"] == "Tech Experts"
         )

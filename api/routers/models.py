@@ -448,12 +448,11 @@ async def get_provider_availability():
             or _check_openai_compatible_support("STT")
             or _check_openai_compatible_support("TTS")
         )
-        provider_status["anthropic_compatible"] = (
-            await _check_provider_has_credential("anthropic_compatible")
-            or (
-                bool((os.environ.get("ANTHROPIC_COMPATIBLE_BASE_URL") or "").strip())
-                and bool((os.environ.get("ANTHROPIC_COMPATIBLE_API_KEY") or "").strip())
-            )
+        provider_status["anthropic_compatible"] = await _check_provider_has_credential(
+            "anthropic_compatible"
+        ) or (
+            bool((os.environ.get("ANTHROPIC_COMPATIBLE_BASE_URL") or "").strip())
+            and bool((os.environ.get("ANTHROPIC_COMPATIBLE_API_KEY") or "").strip())
         )
 
         available_providers = [k for k, v in provider_status.items() if v]
@@ -531,9 +530,7 @@ async def get_provider_availability():
 # =============================================================================
 
 
-@router.get(
-    "/models/discover/{provider}", response_model=List[DiscoveredModelResponse]
-)
+@router.get("/models/discover/{provider}", response_model=List[DiscoveredModelResponse])
 async def discover_models(provider: str):
     """
     Discover available models from a provider without registering them.
@@ -562,7 +559,8 @@ async def discover_models(provider: str):
     except Exception as e:
         logger.error(f"Error discovering models for {provider}: {str(e)}")
         raise HTTPException(
-            status_code=500, detail="Error discovering models. Check server logs for details."
+            status_code=500,
+            detail="Error discovering models. Check server logs for details.",
         )
 
 
@@ -594,7 +592,10 @@ async def sync_models(provider: str):
         raise
     except Exception as e:
         logger.error(f"Error syncing models for {provider}: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error syncing models. Check server logs for details.")
+        raise HTTPException(
+            status_code=500,
+            detail="Error syncing models. Check server logs for details.",
+        )
 
 
 @router.post("/models/sync", response_model=AllProvidersSyncResponse)
@@ -699,9 +700,7 @@ async def get_models_by_provider(provider: str):
         raise
     except Exception as e:
         logger.error(f"Error fetching models for {provider}: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Error fetching models: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error fetching models: {str(e)}")
 
 
 def _get_preferred_model(

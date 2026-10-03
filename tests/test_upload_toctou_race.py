@@ -35,9 +35,7 @@ def old_racy_pattern(upload_folder, original_filename, content, delay=0.02):
     suffix = Path(original_filename).suffix
     counter = 0
     while True:
-        candidate = (
-            original_filename if counter == 0 else f"{stem} ({counter}){suffix}"
-        )
+        candidate = original_filename if counter == 0 else f"{stem} ({counter}){suffix}"
         full_path = file_path / candidate
         if not full_path.exists():
             break
@@ -58,9 +56,7 @@ def new_fixed_pattern(upload_folder, original_filename, content):
 def run_concurrent_uploads(write_fn, upload_folder, n=8):
     with ThreadPoolExecutor(max_workers=n) as pool:
         futures = [
-            pool.submit(
-                write_fn, upload_folder, "report.pdf", f"content-{i}".encode()
-            )
+            pool.submit(write_fn, upload_folder, "report.pdf", f"content-{i}".encode())
             for i in range(n)
         ]
         return [f.result() for f in futures]

@@ -38,9 +38,7 @@ def make_fake_client(handler):
 
 
 def json_response(url, payload, status_code=200):
-    return httpx.Response(
-        status_code, json=payload, request=httpx.Request("GET", url)
-    )
+    return httpx.Response(status_code, json=payload, request=httpx.Request("GET", url))
 
 
 class TestOpenAICompatTable:
@@ -151,9 +149,15 @@ class TestGenericOpenAICompatDiscovery:
                 {
                     "data": [
                         # capabilities flag wins over name-based classification
-                        {"id": "magistral-medium", "capabilities": {"completion_chat": True}},
+                        {
+                            "id": "magistral-medium",
+                            "capabilities": {"completion_chat": True},
+                        },
                         # no chat capability -> falls back to name patterns
-                        {"id": "mistral-embed", "capabilities": {"completion_chat": False}},
+                        {
+                            "id": "mistral-embed",
+                            "capabilities": {"completion_chat": False},
+                        },
                     ]
                 },
             )
@@ -260,9 +264,7 @@ class TestAnthropicDiscovery:
         models = await discover_anthropic_models()
 
         assert len(requests) == 2
-        assert all(
-            r["url"] == "https://api.anthropic.com/v1/models" for r in requests
-        )
+        assert all(r["url"] == "https://api.anthropic.com/v1/models" for r in requests)
         assert requests[0]["headers"] == {
             "x-api-key": "sk-ant-test",
             "anthropic-version": "2023-06-01",
@@ -354,7 +356,9 @@ class TestNewEsperantoProviders:
     def test_ppq_classification_by_substring(self):
         from open_notebook.ai.model_discovery import classify_model_type
 
-        assert classify_model_type("openai/text-embedding-3-small", "ppq") == "embedding"
+        assert (
+            classify_model_type("openai/text-embedding-3-small", "ppq") == "embedding"
+        )
         assert classify_model_type("nova-3", "ppq") == "speech_to_text"
         assert classify_model_type("deepgram_aura_2", "ppq") == "text_to_speech"
         assert classify_model_type("auto", "ppq") == "language"

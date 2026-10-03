@@ -37,7 +37,9 @@ class TestMigration22Registration:
         manager = AsyncMigrationManager()
         assert len(manager.up_migrations) >= 22
         assert len(manager.up_migrations) == len(manager.down_migrations)
-        assert "REMOVE FIELD IF EXISTS outline_provider" in manager.up_migrations[21].sql
+        assert (
+            "REMOVE FIELD IF EXISTS outline_provider" in manager.up_migrations[21].sql
+        )
 
 
 class TestMigration22Content:

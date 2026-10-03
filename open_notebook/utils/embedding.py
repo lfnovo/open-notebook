@@ -197,7 +197,9 @@ async def generate_embeddings(
                         f"{len(batch)} texts): {e}"
                     ) from e
 
-    logger.debug(f"Generated {len(all_embeddings)} embeddings in {total_batches} batch(es)")
+    logger.debug(
+        f"Generated {len(all_embeddings)} embeddings in {total_batches} batch(es)"
+    )
     return all_embeddings
 
 

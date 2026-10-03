@@ -50,9 +50,7 @@ def test_create_transformation_with_model_id_persists_and_reads_back():
         transformation.updated = datetime(2026, 1, 1, 12, 0, 0)
 
     with (
-        patch.object(
-            Transformation, "save", autospec=True, side_effect=capture_save
-        ),
+        patch.object(Transformation, "save", autospec=True, side_effect=capture_save),
         patch(
             "api.routers.transformations.Model.get",
             new_callable=AsyncMock,
@@ -164,9 +162,7 @@ def test_update_transformation_model_id_is_used_by_subsequent_execution():
             new_callable=AsyncMock,
             return_value=transformation,
         ),
-        patch.object(
-            Transformation, "save", autospec=True, side_effect=save_update
-        ),
+        patch.object(Transformation, "save", autospec=True, side_effect=save_update),
         patch(
             "api.routers.transformations.Model.get",
             new_callable=AsyncMock,

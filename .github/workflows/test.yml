@@ -62,6 +62,9 @@ jobs:
       - name: Run ruff
         run: uv run ruff check .
 
+      - name: Check formatting
+        run: uv run ruff format --check .
+
   backend-typecheck:
     name: Backend Typecheck
     runs-on: ubuntu-latest

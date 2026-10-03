@@ -143,7 +143,9 @@ async def provide_answer(state: SubGraphState, config: RunnableConfig) -> dict:
         payload["results"] = results
         ids = [r["id"] for r in results]
         payload["ids"] = ids
-        system_prompt = Prompter(prompt_template="ask/query_process").render(data=payload)  # type: ignore[arg-type]
+        system_prompt = Prompter(prompt_template="ask/query_process").render(
+            data=payload  # type: ignore[arg-type]
+        )
         model = await provision_langchain_model(
             system_prompt,
             config.get("configurable", {}).get("answer_model"),

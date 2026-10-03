@@ -461,6 +461,8 @@ export const ruRU = {
     sessionCreated: "Сессия чата создана",
     sessionUpdated: "Сессия обновлена",
     sessionDeleted: "Сессия удалена",
+    stop: "Остановить",
+    generating: "Генерация...",
   },
   searchPage: {
     askAndSearch: "Запрос и поиск",

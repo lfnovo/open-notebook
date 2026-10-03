@@ -461,6 +461,8 @@ export const itIT = {
     sessionCreated: "Sessione chat creata",
     sessionUpdated: "Sessione aggiornata",
     sessionDeleted: "Sessione eliminata",
+    stop: "Interrompi",
+    generating: "Generazione...",
   },
   searchPage: {
     askAndSearch: "Chiedi e cerca",

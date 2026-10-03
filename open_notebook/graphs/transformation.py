@@ -7,7 +7,11 @@ from typing_extensions import TypedDict
 from open_notebook.ai.provision import provision_langchain_model
 from open_notebook.domain.notebook import Source
 from open_notebook.domain.transformation import DefaultPrompts, Transformation
-from open_notebook.exceptions import IncompleteGenerationError, OpenNotebookError
+from open_notebook.exceptions import (
+    IncompleteGenerationError,
+    InvalidInputError,
+    OpenNotebookError,
+)
 from open_notebook.utils import clean_thinking_content
 from open_notebook.utils.error_classifier import classify_error
 from open_notebook.utils.text_utils import extract_text_content
@@ -30,6 +34,11 @@ async def run_transformation(state: dict, config: RunnableConfig) -> dict:
     try:
         if not content:
             content = source.full_text
+        if not content or not str(content).strip():
+            # A source whose extraction produced no text would hand the model
+            # an empty input, and whatever it invents would be saved as an
+            # insight.
+            raise InvalidInputError("Source has no text content to transform")
         # transformation.prompt is user-controlled free text. Never compile it as
         # Jinja template *source* (Prompter(template_text=...)) - pass it as a
         # plain render variable into a fixed, developer-authored template instead.

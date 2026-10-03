@@ -13,7 +13,7 @@ import { SourceDetailResponse } from '@/lib/types/api'
 import { Transformation } from '@/lib/types/transformations'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ContentUnavailable } from '@/components/common/ContentUnavailable'
-import { isNotFoundError } from '@/lib/utils/error-handler'
+import { getApiErrorMessage, isNotFoundError } from '@/lib/utils/error-handler'
 import { InlineEdit } from '@/components/common/InlineEdit'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -221,7 +221,7 @@ function SourceDetailContentInner({
     } catch (err) {
       if (controller.signal.aborted) return
       console.error('Failed to create insight:', err)
-      toast.error(t('common.error'))
+      toast.error(getApiErrorMessage(err, (key) => t(key), 'common.error'))
       if (insightPollingRef.current === controller) {
         insightPollingRef.current = null
       }

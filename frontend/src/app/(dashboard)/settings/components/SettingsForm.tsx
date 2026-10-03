@@ -148,7 +148,7 @@ export function SettingsForm() {
               )}
             />
             {!doclingAvailable && (
-              <p className="text-sm text-muted-foreground">{t('settings.enableDoclingHint')}</p>
+              <p className="text-sm text-muted-foreground break-words">{t('settings.enableDoclingHint')}</p>
             )}
             <Collapsible open={expandedSections.doc} onOpenChange={() => toggleSection('doc')}>
               <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -245,7 +245,7 @@ export function SettingsForm() {
               )}
             />
             {!crawl4aiAvailable && (
-              <p className="text-sm text-muted-foreground">{t('settings.enableCrawl4aiHint')}</p>
+              <p className="text-sm text-muted-foreground break-words">{t('settings.enableCrawl4aiHint')}</p>
             )}
              <Collapsible open={expandedSections.url} onOpenChange={() => toggleSection('url')}>
               <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">

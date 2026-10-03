@@ -64,7 +64,7 @@ function DefaultModelSelect({
   })()
 
   return (
-    <div className="space-y-1">
+    <div className="min-w-0 space-y-1">
       <Label htmlFor={config.id} className="text-xs">
         {config.label}
         {config.required && <span className="text-destructive ml-0.5">*</span>}
@@ -76,7 +76,7 @@ function DefaultModelSelect({
         >
           <SelectTrigger
             id={config.id}
-            className={`h-8 text-xs ${config.required && !isValid && available.length > 0 ? 'border-destructive' : ''}`}
+            className={`h-8 min-w-0 flex-1 text-xs ${config.required && !isValid && available.length > 0 ? 'border-destructive' : ''}`}
           >
             <SelectValue placeholder={
               config.required && !isValid && available.length > 0
@@ -203,13 +203,13 @@ export function DefaultModelSelectors({
         {missingRequired.length > 0 && (
           <Alert>
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between gap-4">
-              <span>{t('models.missingRequiredModels', { models: missingRequired.join(', ') })}</span>
+            <AlertDescription className="flex flex-wrap items-center justify-between gap-4">
+              <span className="min-w-0 break-words">{t('models.missingRequiredModels', { models: missingRequired.join(', ') })}</span>
               <Button
                 variant="outline" size="sm"
                 onClick={() => autoAssign.mutate()}
                 disabled={autoAssign.isPending}
-                className="shrink-0 gap-1.5"
+                className="h-auto min-h-8 max-w-full shrink-0 gap-1.5 whitespace-normal"
               >
                 {autoAssign.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
                 {autoAssign.isPending ? t('models.autoAssigning') : t('models.autoAssign')}

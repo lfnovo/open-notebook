@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { forwardRef } from 'react'
+import { useDirection } from '@radix-ui/react-direction'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
@@ -66,11 +67,13 @@ export interface MarkdownEditorProps {
 export const MarkdownEditor = forwardRef<HTMLDivElement, MarkdownEditorProps>(
   ({ value = '', onChange, placeholder, height = 300, preview = 'live', hideToolbar = false, className, textareaId, name }, ref) => {
     const { effectiveTheme, hasHydrated } = useTheme()
+    const direction = useDirection()
 
     return (
       <div className={className} ref={ref}>
         {hasHydrated && (
           <MDEditor
+            direction={direction}
             value={value}
             onChange={onChange}
             preview={preview}

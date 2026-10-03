@@ -51,6 +51,10 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 7
+    ignore:
+      # Stay on Node LTS lines: odd majors are short-lived Current releases.
+      - dependency-name: "node"
+        versions: ["23.x", "25.x", "27.x", "29.x"]
     groups:
       all-docker:
         patterns:

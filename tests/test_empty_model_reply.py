@@ -20,12 +20,14 @@ from typing_extensions import TypedDict
 
 from open_notebook.exceptions import IncompleteGenerationError
 
-EMPTY_REPLIES = ["", "   \n\t", "<think>only reasoning</think>"]
+EMPTY_REPLIES = ["", "   \n\t", "<think>only reasoning</think>", None]
 
 
 def _sync_model_returning(content: str) -> MagicMock:
     model = MagicMock()
-    model.invoke = MagicMock(return_value=AIMessage(content=content))
+    # AIMessage won't accept content=None; some providers still return it.
+    reply = MagicMock(content=None) if content is None else AIMessage(content=content)
+    model.invoke = MagicMock(return_value=reply)
     return model
 
 
@@ -102,6 +104,8 @@ class _State(TypedDict, total=False):
     source_id: str
     model_override: str
     context_indicators: dict
+    context: str
+    notebook: object
 
 
 def _toy_graph(replies: list):
@@ -160,8 +164,39 @@ async def test_source_chat_failed_turn_is_rolled_back_and_retry_is_clean():
     ]
 
 
+def test_notebook_chat_failed_turn_is_rolled_back_and_retry_is_clean():
+    from fastapi.testclient import TestClient
+
+    from api.main import app
+
+    client = TestClient(app)
+    graph = _toy_graph(["", "the answer"])
+    session = MagicMock(model_override=None, save=AsyncMock())
+    with (
+        patch("api.routers.chat.chat_graph", graph),
+        patch(
+            "api.routers.chat.get_session_or_404",
+            new=AsyncMock(return_value=("chat_session:n", session)),
+        ),
+        patch("api.routers.chat.repo_query", new=AsyncMock(return_value=[])),
+    ):
+        payload = {"session_id": "chat_session:n", "message": "question", "context": {}}
+        failed = client.post("/api/chat/execute", json=payload)
+        assert failed.status_code >= 400
+        assert "empty response" in failed.json()["detail"]
+        assert _history(graph, "chat_session:n") == []
+
+        retried = client.post("/api/chat/execute", json=payload)
+
+    assert retried.status_code == 200
+    assert _history(graph, "chat_session:n") == [
+        ("human", "question"),
+        ("ai", "the answer"),
+    ]
+
+
 def test_discard_unanswered_message_keeps_earlier_turns():
-    from api.routers._chat_shared import discard_unanswered_message
+    from open_notebook.utils.graph_utils import discard_unanswered_message
 
     graph = _toy_graph(["first answer", ""])
     config = RunnableConfig(configurable={"thread_id": "t"})
@@ -178,7 +213,7 @@ def test_discard_unanswered_message_keeps_earlier_turns():
 
 
 def test_discard_unanswered_message_ignores_unknown_ids():
-    from api.routers._chat_shared import discard_unanswered_message
+    from open_notebook.utils.graph_utils import discard_unanswered_message
 
     graph = _toy_graph(["first answer"])
     config = RunnableConfig(configurable={"thread_id": "t"})

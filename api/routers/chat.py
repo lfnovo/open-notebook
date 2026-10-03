@@ -11,7 +11,6 @@ from pydantic import BaseModel, Field
 from api.routers._chat_shared import (
     ChatMessage,
     SuccessResponse,
-    discard_unanswered_message,
     extract_chat_messages,
     get_session_or_404,
 )
@@ -24,7 +23,10 @@ from open_notebook.exceptions import (
 from open_notebook.graphs.chat import graph as chat_graph
 from open_notebook.utils import token_count
 from open_notebook.utils.context_builder import build_notebook_context
-from open_notebook.utils.graph_utils import get_session_message_count
+from open_notebook.utils.graph_utils import (
+    get_session_message_count,
+    invoke_chat_turn,
+)
 
 router = APIRouter()
 
@@ -351,27 +353,20 @@ async def execute_chat(request: ExecuteChatRequest):
         # (SqliteSaver checkpoints are sync) doesn't block the event loop and
         # freeze the rest of the API while the LLM responds. Mirrors the
         # get_state() calls above.
-        # The lambda pins down which `invoke` overload is used; asyncio.to_thread
-        # can't resolve overloaded callables on its own. The ignore is a langgraph
-        # typing limitation: it accepts a partial state dict at runtime, but the
-        # signature requires the full state type.
-        try:
-            result = await asyncio.to_thread(
-                lambda: chat_graph.invoke(
-                    input=state_values,  # type: ignore[arg-type]
-                    config=RunnableConfig(
-                        configurable={
-                            "thread_id": full_session_id,
-                            "model_id": model_override,
-                        }
-                    ),
-                )
-            )
-        except Exception:
-            await asyncio.to_thread(
-                discard_unanswered_message, chat_graph, full_session_id, user_message
-            )
-            raise
+        # invoke_chat_turn also drops the question from the checkpoint when the
+        # turn fails, so a retry doesn't add it twice.
+        result = await asyncio.to_thread(
+            invoke_chat_turn,
+            chat_graph,
+            state_values,
+            RunnableConfig(
+                configurable={
+                    "thread_id": full_session_id,
+                    "model_id": model_override,
+                }
+            ),
+            user_message,
+        )
 
         # Update session timestamp
         await session.save()

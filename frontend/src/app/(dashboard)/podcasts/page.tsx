@@ -29,14 +29,14 @@ export default function PodcastsPage() {
       <div className="flex-1 overflow-y-auto">
         <div className="px-6 py-6 space-y-6">
           <header className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight">{t('podcasts.listTitle')}</h1>
+            <h1 className="font-display text-2xl font-bold tracking-tight">{t('podcasts.listTitle')}</h1>
             <p className="text-muted-foreground">
               {t('podcasts.listDesc')}
             </p>
           </header>
 
           {hasUnconfiguredProfiles ? (
-            <Alert className="bg-amber-50 text-amber-900 border-amber-200">
+            <Alert className="bg-warn-tint text-warn border-warn/30">
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>{t('podcasts.setupRequired')}</AlertTitle>
               <AlertDescription>

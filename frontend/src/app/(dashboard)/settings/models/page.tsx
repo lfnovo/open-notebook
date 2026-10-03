@@ -91,8 +91,8 @@ export default function ApiKeysPage() {
         <div className="p-6 space-y-6">
           {/* Header */}
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Key className="h-6 w-6" />
+            <h1 className="font-display text-2xl font-bold tracking-tight flex items-center gap-2">
+              <Key className="h-5 w-5 text-muted-foreground" />
               {t('apiKeys.title')}
             </h1>
             <p className="text-muted-foreground mt-1">{t('apiKeys.description')}</p>
@@ -100,11 +100,11 @@ export default function ApiKeysPage() {
 
           {/* Encryption warning */}
           {!encryptionReady && (
-            <Alert className="border-red-500/50 bg-red-50 dark:bg-red-950/20">
-              <ShieldAlert className="h-4 w-4 text-red-600 dark:text-red-400" />
-              <AlertTitle className="text-red-800 dark:text-red-200">{t('apiKeys.encryptionRequired')}</AlertTitle>
-              <AlertDescription className="text-red-700 dark:text-red-300">
-                <code className="text-xs bg-red-100 dark:bg-red-900/30 px-1 py-0.5 rounded">
+            <Alert className="border-destructive/30 bg-destructive-tint">
+              <ShieldAlert className="h-4 w-4 text-destructive" />
+              <AlertTitle className="text-destructive">{t('apiKeys.encryptionRequired')}</AlertTitle>
+              <AlertDescription className="text-destructive">
+                <code className="text-xs bg-destructive-tint px-1 py-0.5 rounded">
                   {t('apiKeys.encryptionRequiredDescription')}
                 </code>
               </AlertDescription>

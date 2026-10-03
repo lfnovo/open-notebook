@@ -59,8 +59,8 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
                 name="notebook-name"
                 value={notebook.name}
                 onSave={handleUpdateName}
-                className="text-2xl font-bold"
-                inputClassName="text-2xl font-bold"
+                className="font-display text-2xl font-bold tracking-tight"
+                inputClassName="font-display text-2xl font-bold tracking-tight"
                 placeholder={t('notebooks.namePlaceholder')}
               />
               {notebook.archived && (
@@ -89,14 +89,17 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowDeleteDialog(true)}
-                className="text-red-600 hover:text-red-700"
+                className="text-destructive hover:text-destructive"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 {t('common.delete')}
               </Button>
             </div>
           </div>
-          
+
+          {/* Signature: one short flat fern underline — one hue, no show */}
+          <div aria-hidden className="h-[3px] w-14 rounded-[1px] bg-fern" />
+
           <InlineEdit
             id="notebook-description"
             name="notebook-description"
@@ -109,7 +112,7 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
             emptyText={t('notebooks.addDescription')}
           />
           
-          <div className="text-sm text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             {t('common.created', { time: formatDistanceToNow(new Date(notebook.created), { addSuffix: true, locale: dfLocale }) })} • 
             {t('common.updated', { time: formatDistanceToNow(new Date(notebook.updated), { addSuffix: true, locale: dfLocale }) })}
           </div>

@@ -124,7 +124,7 @@ Before installing, you'll need:
 
 Once you're up and running:
 
-1. **Configure Models** - Choose your AI provider in Settings
+1. **Configure Models** - Choose your AI provider in Manage → Models
 2. **Create First Notebook** - Start organizing research
 3. **Add Sources** - PDFs, web links, documents
 4. **Explore Features** - Chat, search, transformations

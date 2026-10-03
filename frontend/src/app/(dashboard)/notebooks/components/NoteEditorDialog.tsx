@@ -186,7 +186,7 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
                   )}
                 />
                 {errors.content && (
-                  <p className="text-sm text-red-600 mt-1">{errors.content.message}</p>
+                  <p className="text-sm text-destructive mt-1">{errors.content.message}</p>
                 )}
               </div>
             </>

@@ -38,7 +38,7 @@ All embedding is fire-and-forget through the surreal-commands worker — nothing
 The single implementation behind both context consumers:
 
 - `build_notebook_context()` backs `POST /api/chat/context` (chat panel + podcast generation): it assembles source/note contexts from the inclusion config, whose status strings are matched textually ("not in" skips, "insights" → short context, "full content" → long context). Without a config, every source and note is included with its short context. Per-item failures are logged and skipped.
-- `build_source_context()` backs the source-chat graph: one source's short context plus its insights, truncated to a token budget by dropping insights (last-fetched first).
+- `build_source_context()` backs the source-chat graph: it requests the source's long context and adds insights as separate budgeted items. Full source text is retained when it fits. For an oversized source, up to 20% of the token budget is reserved for fitting insights in fetch order, unused space returns to the source, and a near-maximal token-aligned source prefix carries an explicit truncation notice. Prefix selection uses a cached binary search plus bounded forward validation for local BPE non-monotonicity; the offline word-count fallback stays logarithmic. Budget enforcement and `total_tokens` use the shared Markdown renderer that supplies the prompt, while internal counts/status metadata are not rendered to the model. If the budget cannot fit the rendered source headers, the notice, and at least one non-whitespace source character, the source item is omitted and metadata reports `source_text_status="omitted_budget"` rather than presenting notice-only text as source content.
 - Every call re-fetches — there is no cache layer.
 - Token counting uses `o200k_base` via tiktoken and is an estimate (±5-10% vs. the actual model); `token_count()` falls back to a coarse estimate if tiktoken is unavailable.
 
@@ -47,8 +47,9 @@ The single implementation behind both context consumers:
 Field-level encryption for sensitive values (API keys) stored in the database, using Fernet (AES-128-CBC + HMAC-SHA256).
 
 - Key source: `OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE` (Docker secrets) → `OPEN_NOTEBOOK_ENCRYPTION_KEY`. **No default** — credential storage is unavailable until the key is set.
-- Any string works as key: it's derived to a Fernet key via SHA-256, lazily on first use.
-- Decryption falls back gracefully: an `InvalidToken` (legacy unencrypted data) returns the original value, so pre-encryption databases keep working.
+- Any string works as key: it's derived to a Fernet key via PBKDF2-HMAC-SHA256 (600k iterations, fixed app salt), lazily on first use; the derived instance is cached per process.
+- New values carry a `pbkdf2v1:` marker. Decryption branches on it: marked values decrypt under PBKDF2 only (any failure raises — never returned as a key); unmarked values try the legacy SHA-256 derivation, then fall back to plaintext for pre-encryption data.
+- One-shot upgrade: `POST /api/credentials/migrate-encryption` rewrites stored keys into the marked format (idempotent, fail-closed per record). Lazy re-encrypt-on-save alone is not enough since keys are set once.
 - Key rotation is **not implemented** — changing the key orphans previously encrypted values.
 
 ## Text utilities (`utils/text_utils.py`)

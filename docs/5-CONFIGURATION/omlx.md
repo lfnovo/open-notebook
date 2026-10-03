@@ -2,7 +2,7 @@
 
 [oMLX](https://omlx.ai/) is a macOS-native inference server for Apple Silicon. It runs [MLX](https://opensource.apple.com/projects/mlx/) models locally and exposes an **OpenAI-compatible API** at `/v1`, so Open Notebook can use it for language and embedding models without sending data to the cloud.
 
-Open Notebook treats **oMLX** as a first-class provider in Settings → API Keys. Identity comes from Esperanto’s built-in `omlx` [OpenAI-compatible profile](https://github.com/lfnovo/esperanto/issues/228) (`AIFactory.create_language("omlx", ...)` / `create_embedding("omlx", ...)`). There is no remapping to the generic `openai-compatible` provider and no `OPENAI_COMPATIBLE_*` env mirroring.
+Open Notebook treats **oMLX** as a first-class provider in Manage → Models. Identity comes from Esperanto’s built-in `omlx` [OpenAI-compatible profile](https://github.com/lfnovo/esperanto/issues/228) (`AIFactory.create_language("omlx", ...)` / `create_embedding("omlx", ...)`). There is no remapping to the generic `openai-compatible` provider and no `OPENAI_COMPATIBLE_*` env mirroring.
 
 ## Why Choose oMLX?
 
@@ -61,7 +61,7 @@ http://localhost:11435/v1
 
 ## Configure Open Notebook
 
-1. Go to **Settings** → **API Keys**
+1. Go to **Manage** → **Models**
 2. Click **Add Credential** → select **oMLX**
 3. Set **Base URL** to `http://localhost:11435/v1` (prefilled by default)
 4. Optionally set an **API key** if you started oMLX with `--api-key`

@@ -44,7 +44,7 @@ function SummaryBadge({ label, value }: { label: string; value: number }) {
   return (
     <Badge variant="outline" className="font-medium">
       <span className="text-muted-foreground mr-1.5">{label}</span>
-      <span className="text-foreground">{value}</span>
+      <span className="font-mono text-foreground">{value}</span>
     </Badge>
   )
 }
@@ -84,7 +84,7 @@ export function EpisodesTab() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
-          <h2 className="text-xl font-semibold">{t('podcasts.overviewTitle')}</h2>
+          <h2 className="font-display text-xl font-semibold tracking-tight">{t('podcasts.overviewTitle')}</h2>
           <p className="text-sm text-muted-foreground">
             {t('podcasts.overviewDesc')}
           </p>
@@ -135,7 +135,7 @@ export function EpisodesTab() {
       ) : null}
 
       {emptyState ? (
-        <div className="rounded-lg border border-dashed bg-muted/30 p-10 text-center">
+        <div className="rounded-md border border-dashed p-10 text-center">
           <p className="text-sm text-muted-foreground">
             {t('podcasts.noEpisodesYet')}
           </p>

@@ -94,6 +94,12 @@ def parse_thinking_content(content: str) -> Tuple[str, str]:
         cleaned_content = content[malformed_match.end() :].strip()
         return thinking_content, cleaned_content
 
+    # Handle truncated output: <think>content (no closing tag). The model ran
+    # out of output budget while still reasoning, so nothing is a real answer.
+    stripped = content.lstrip()
+    if stripped.startswith("<think>"):
+        return stripped[len("<think>") :].strip(), ""
+
     return "", content
 
 

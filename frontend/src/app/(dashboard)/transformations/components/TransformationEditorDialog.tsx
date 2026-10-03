@@ -180,7 +180,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
                     )}
                   />
                   {errors.name && (
-                    <p className="text-sm text-red-600 mt-1">{errors.name.message}</p>
+                    <p className="text-sm text-destructive mt-1">{errors.name.message}</p>
                   )}
                 </div>
 
@@ -295,7 +295,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
                   )}
                 />
                 {errors.prompt && (
-                  <p className="text-sm text-red-600 mt-1">{errors.prompt.message}</p>
+                  <p className="text-sm text-destructive mt-1">{errors.prompt.message}</p>
                 )}
                  <p className="text-xs text-muted-foreground mt-3">
                    {t('transformations.promptHint')}

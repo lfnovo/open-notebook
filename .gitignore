@@ -130,7 +130,10 @@ docs/custom_gpt
 doc_exports/
 
 specs/
-.claude
+# .claude: personal state stays local; skills and agents are shared project tooling
+.claude/*
+!.claude/skills
+!.claude/agents
 .sisyphus
 
 .playwright-mcp/
@@ -151,3 +154,7 @@ docker-compose.override.yml
 # Local QA/debug artifacts
 screenshot-*.png
 history.txt
+
+# oss-maintainer local state
+.maintainer/profile.local.toml
+.maintainer/state/

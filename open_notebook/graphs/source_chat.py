@@ -15,7 +15,10 @@ from open_notebook.config import LANGGRAPH_CHECKPOINT_FILE
 from open_notebook.domain.notebook import Source, SourceInsight
 from open_notebook.exceptions import OpenNotebookError
 from open_notebook.utils import clean_thinking_content
-from open_notebook.utils.context_builder import build_source_context
+from open_notebook.utils.context_builder import (
+    build_source_context,
+    format_source_context,
+)
 from open_notebook.utils.error_classifier import classify_error
 from open_notebook.utils.text_utils import extract_text_content
 
@@ -28,6 +31,18 @@ class SourceChatState(TypedDict):
     context: Optional[str]
     model_override: Optional[str]
     context_indicators: Optional[Dict[str, List[str]]]
+
+
+def _source_content_is_available(
+    source_info: Dict,
+    context_data: Dict,
+) -> bool:
+    """Return whether source text, including a truncated prefix, is available."""
+    status = context_data.get("metadata", {}).get("source_text_status")
+    if status is not None:
+        return status in {"available", "truncated"}
+    full_text = source_info.get("full_text")
+    return isinstance(full_text, str) and bool(full_text.strip())
 
 
 def call_model_with_source_context(
@@ -100,7 +115,12 @@ def _call_model_with_source_context_inner(
     if context_data.get("sources"):
         source_info = context_data["sources"][0]  # First source
         source = Source(**source_info) if isinstance(source_info, dict) else source_info
-        context_indicators["sources"].append(source.id)
+        if (
+            isinstance(source_info, dict)
+            and _source_content_is_available(source_info, context_data)
+            and source.id
+        ):
+            context_indicators["sources"].append(source.id)
 
     if context_data.get("insights"):
         for insight_data in context_data["insights"]:
@@ -187,56 +207,8 @@ def _call_model_with_source_context_inner(
 
 
 def _format_source_context(context_data: Dict) -> str:
-    """
-    Format the context data into a readable string for the prompt.
-
-    Args:
-        context_data: Context data from build_source_context
-
-    Returns:
-        Formatted context string
-    """
-    context_parts = []
-
-    # Add source information
-    if context_data.get("sources"):
-        context_parts.append("## SOURCE CONTENT")
-        for source in context_data["sources"]:
-            if isinstance(source, dict):
-                context_parts.append(f"**Source ID:** {source.get('id', 'Unknown')}")
-                context_parts.append(f"**Title:** {source.get('title', 'No title')}")
-                if source.get("full_text"):
-                    # Truncate full text if too long
-                    full_text = source["full_text"]
-                    if len(full_text) > 5000:
-                        full_text = full_text[:5000] + "...\n[Content truncated]"
-                    context_parts.append(f"**Content:**\n{full_text}")
-                context_parts.append("")  # Empty line for separation
-
-    # Add insights
-    if context_data.get("insights"):
-        context_parts.append("## SOURCE INSIGHTS")
-        for insight in context_data["insights"]:
-            if isinstance(insight, dict):
-                context_parts.append(f"**Insight ID:** {insight.get('id', 'Unknown')}")
-                context_parts.append(
-                    f"**Type:** {insight.get('insight_type', 'Unknown')}"
-                )
-                context_parts.append(
-                    f"**Content:** {insight.get('content', 'No content')}"
-                )
-                context_parts.append("")  # Empty line for separation
-
-    # Add metadata
-    if context_data.get("metadata"):
-        metadata = context_data["metadata"]
-        context_parts.append("## CONTEXT METADATA")
-        context_parts.append(f"- Source count: {metadata.get('source_count', 0)}")
-        context_parts.append(f"- Insight count: {metadata.get('insight_count', 0)}")
-        context_parts.append(f"- Total tokens: {context_data.get('total_tokens', 0)}")
-        context_parts.append("")
-
-    return "\n".join(context_parts)
+    """Format context through the builder's shared budgeted renderer."""
+    return format_source_context(context_data)
 
 
 # Create SQLite checkpointer

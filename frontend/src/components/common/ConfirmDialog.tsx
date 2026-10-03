@@ -49,7 +49,7 @@ export function ConfirmDialog({
           <AlertDialogAction
             onClick={onConfirm}
             disabled={isLoading}
-            className={confirmVariant === 'destructive' ? 'bg-red-600 hover:bg-red-700' : ''}
+            className={confirmVariant === 'destructive' ? 'bg-destructive text-white hover:bg-destructive/90' : ''}
           >
             {isLoading ? (
               <>

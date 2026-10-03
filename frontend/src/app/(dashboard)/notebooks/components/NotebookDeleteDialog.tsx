@@ -75,7 +75,7 @@ export function NotebookDeleteDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <div className="py-4 space-y-3">
+        <div className="space-y-3">
           {isLoadingPreview ? (
             <div className="flex items-center gap-2 text-muted-foreground">
               <LoadingSpinner size="sm" />
@@ -149,7 +149,7 @@ export function NotebookDeleteDialog({
           <AlertDialogAction
             onClick={handleConfirm}
             disabled={isDeleting || isLoadingPreview}
-            className="bg-red-600 hover:bg-red-700"
+            className="bg-destructive text-white hover:bg-destructive/90"
           >
             {isDeleting ? (
               <>

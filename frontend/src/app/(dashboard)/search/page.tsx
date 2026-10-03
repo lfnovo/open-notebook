@@ -23,6 +23,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { StreamingResponse } from '@/components/search/StreamingResponse'
 import { AdvancedModelsDialog } from '@/components/search/AdvancedModelsDialog'
 import { SaveToNotebooksDialog } from '@/components/search/SaveToNotebooksDialog'
+import { NotebookScopeSelector } from '@/components/search/NotebookScopeSelector'
 
 export default function SearchPage() {
   const { t } = useTranslation()
@@ -42,6 +43,9 @@ export default function SearchPage() {
   const [searchType, setSearchType] = useState<'text' | 'vector'>('text')
   const [searchSources, setSearchSources] = useState(true)
   const [searchNotes, setSearchNotes] = useState(true)
+
+  // Notebook scope shared by Ask and Search; empty = whole knowledge base (#574, #87)
+  const [scopeNotebookIds, setScopeNotebookIds] = useState<string[]>([])
 
   // Ask state
   const [askQuestion, setAskQuestion] = useState(urlMode === 'ask' ? urlQuery : '')
@@ -91,9 +95,10 @@ export default function SearchPage() {
       limit: 100,
       search_sources: searchSources,
       search_notes: searchNotes,
-      minimum_score: 0.2
+      minimum_score: 0.2,
+      ...(scopeNotebookIds.length > 0 ? { notebook_ids: scopeNotebookIds } : {})
     })
-  }, [searchQuery, searchType, searchSources, searchNotes, searchMutation])
+  }, [searchQuery, searchType, searchSources, searchNotes, scopeNotebookIds, searchMutation])
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -110,8 +115,8 @@ export default function SearchPage() {
       finalAnswer: modelDefaults.default_chat_model
     }
 
-    ask.sendAsk(askQuestion, models)
-  }, [askQuestion, modelDefaults, customModels, ask])
+    ask.sendAsk(askQuestion, models, { notebookIds: scopeNotebookIds })
+  }, [askQuestion, modelDefaults, customModels, scopeNotebookIds, ask])
 
   // Auto-trigger search/ask when arriving with URL params
   useEffect(() => {
@@ -159,7 +164,7 @@ export default function SearchPage() {
   return (
     <AppShell>
       <div className="flex-1 overflow-y-auto p-4 md:p-6">
-        <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">{t('searchPage.askAndSearch')}</h1>
+        <h1 className="font-display text-xl md:text-2xl font-bold tracking-tight mb-4 md:mb-6">{t('searchPage.askAndSearch')}</h1>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'ask' | 'search')} className="w-full space-y-6">
           <div className="space-y-2">
@@ -208,9 +213,16 @@ export default function SearchPage() {
                   <p className="text-xs text-muted-foreground">{t('searchPage.pressToSubmit')}</p>
                 </div>
 
+                {/* Notebook scope */}
+                <NotebookScopeSelector
+                  selectedIds={scopeNotebookIds}
+                  onChange={setScopeNotebookIds}
+                  disabled={ask.isStreaming}
+                />
+
                 {/* Models Display */}
                 {!hasEmbeddingModel ? (
-                  <div className="flex items-center gap-2 p-3 text-sm text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/20 rounded-md">
+                  <div className="flex items-center gap-2 p-3 text-sm text-warn bg-warn-tint rounded-md">
                     <AlertCircle className="h-4 w-4" />
                     <span>{t('searchPage.noEmbeddingModel')}</span>
                   </div>
@@ -233,13 +245,13 @@ export default function SearchPage() {
                         </Button>
                       </div>
                       <div className="flex gap-2 text-xs flex-wrap">
-                        <Badge variant="secondary">
+                        <Badge variant="secondary" className="font-mono text-[11px]">
                           {t('searchPage.strategy')}: {resolveModelName(customModels?.strategy || modelDefaults?.default_chat_model)}
                         </Badge>
-                        <Badge variant="secondary">
+                        <Badge variant="secondary" className="font-mono text-[11px]">
                           {t('searchPage.answer')}: {resolveModelName(customModels?.answer || modelDefaults?.default_chat_model)}
                         </Badge>
-                        <Badge variant="secondary">
+                        <Badge variant="secondary" className="font-mono text-[11px]">
                           {t('searchPage.final')}: {resolveModelName(customModels?.finalAnswer || modelDefaults?.default_chat_model)}
                         </Badge>
                       </div>
@@ -350,15 +362,27 @@ export default function SearchPage() {
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">{t('searchPage.pressToSearch')}</p>
+                  {searchType === 'vector' ? (
+                    <p className="text-xs text-muted-foreground">{t('searchPage.searchCoverageVector')}</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">{t('searchPage.searchCoverageText')}</p>
+                  )}
                 </div>
 
                 {/* Search Options */}
                 <div className="space-y-4">
+                  {/* Notebook scope */}
+                  <NotebookScopeSelector
+                    selectedIds={scopeNotebookIds}
+                    onChange={setScopeNotebookIds}
+                    disabled={searchMutation.isPending}
+                  />
+
                   {/* Search Type */}
                   <div className="space-y-2" role="group" aria-labelledby="search-type-label">
                     <span id="search-type-label" className="text-sm font-medium leading-none">{t('searchPage.searchType')}</span>
                     {!hasEmbeddingModel && (
-                      <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-500">
+                      <div className="flex items-center gap-2 text-sm text-warn">
                         <AlertCircle className="h-4 w-4" />
                         <span>{t('searchPage.vectorSearchWarning')}</span>
                       </div>
@@ -442,17 +466,11 @@ export default function SearchPage() {
                     ) : (
                       <div className="space-y-2">
                         {searchMutation.data.results.map((result, index) => {
-                          // Parse type from parent_id (format: "source:id" or "note:id" or "source_insight:id")
-                          // Handle null parent_id gracefully (orphaned records)
-                          if (!result.parent_id) {
-                            console.warn('Search result with null parent_id:', result)
-                            return null
-                          }
-                          const [type, id] = result.parent_id.split(':')
+                          const [type, id] = result.id.split(':')
                           const modalType = type === 'source_insight' ? 'insight' : type as 'source' | 'note' | 'insight'
 
                           return (
-                          <Card key={index}>
+                          <Card key={index} className="transition-shadow hover:shadow-lift">
                             <CardContent className="pt-4">
                               <div className="flex items-start justify-between gap-4">
                                 <div className="flex-1">
@@ -462,7 +480,7 @@ export default function SearchPage() {
                                   >
                                     {result.title}
                                   </button>
-                                  <Badge variant="secondary" className="ml-2">
+                                  <Badge variant="secondary" className="ml-2 font-mono text-[11px]">
                                     {result.final_score.toFixed(2)}
                                   </Badge>
                                 </div>

@@ -76,7 +76,7 @@ export function NotebookList({
             )}
           </Button>
         )}
-        <h2 className="text-lg font-semibold">{title}</h2>
+        <h2 className="font-display text-lg font-semibold tracking-tight">{title}</h2>
         <span className="text-sm text-muted-foreground">({notebooks.length})</span>
       </div>
 

@@ -74,7 +74,7 @@ export function SpeakerProfilesPanel({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">{t('podcasts.speakerProfilesTitle')}</h2>
+          <h2 className="font-display text-lg font-semibold tracking-tight">{t('podcasts.speakerProfilesTitle')}</h2>
           <p className="text-sm text-muted-foreground">
             {t('podcasts.speakerProfilesDesc')}
           </p>
@@ -83,7 +83,7 @@ export function SpeakerProfilesPanel({
       </div>
 
       {sortedProfiles.length === 0 ? (
-        <div className="rounded-lg border border-dashed bg-muted/30 p-8 text-center text-sm text-muted-foreground">
+        <div className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
           {t('podcasts.noSpeakerProfiles')}
         </div>
       ) : (
@@ -94,7 +94,7 @@ export function SpeakerProfilesPanel({
             const unconfigured = needsModelSetup(profile)
 
             return (
-              <Card key={profile.id} className="shadow-sm">
+              <Card key={profile.id}>
                 <CardHeader className="flex flex-col gap-2">
                   <div className="flex items-center justify-between gap-2">
                     <div>
@@ -103,7 +103,7 @@ export function SpeakerProfilesPanel({
                           {profile.name}
                         </CardTitle>
                         {unconfigured ? (
-                          <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs">
+                          <Badge variant="outline" className="text-warn border-warn/30 text-xs">
                             <AlertTriangle className="h-3 w-3 mr-1" />
                             {t('podcasts.setupRequired')}
                           </Badge>

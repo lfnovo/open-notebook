@@ -8,7 +8,11 @@ from surreal_commands import CommandInput, CommandOutput, command
 from open_notebook.database.repository import ensure_record_id
 from open_notebook.domain.notebook import Source
 from open_notebook.domain.transformation import Transformation
-from open_notebook.exceptions import ConfigurationError
+from open_notebook.exceptions import (
+    ConfigurationError,
+    ContextLengthExceededError,
+    IncompleteGenerationError,
+)
 
 try:
     from open_notebook.graphs.source import source_graph
@@ -43,7 +47,12 @@ class SourceProcessingOutput(CommandOutput):
         "wait_strategy": "exponential_jitter",
         "wait_min": 1,
         "wait_max": 120,  # Allow queue to drain
-        "stop_on": [ValueError, ConfigurationError],  # Don't retry validation/config errors
+        "stop_on": [
+            ValueError,
+            ConfigurationError,
+            ContextLengthExceededError,
+            IncompleteGenerationError,
+        ],  # Don't retry validation/config errors or incomplete generations
         "retry_log_level": "debug",  # Avoid log noise during transaction conflicts
     },
 )
@@ -117,9 +126,7 @@ async def process_source_command(
         logger.info(
             f"Successfully processed source: {processed_source.id} in {processing_time:.2f}s"
         )
-        logger.info(
-            f"Created {insights_created} insights, embedding {embed_status}"
-        )
+        logger.info(f"Created {insights_created} insights, embedding {embed_status}")
 
         return SourceProcessingOutput(
             success=True,
@@ -129,6 +136,11 @@ async def process_source_command(
             processing_time=processing_time,
         )
 
+    except IncompleteGenerationError as e:
+        logger.error(
+            f"Generation failed (permanent) for source {input_data.source_id}: {e}"
+        )
+        raise  # Preserve failed job status; stop_on prevents automatic retries.
     except ValueError as e:
         # Validation errors are permanent failures. Re-raise so surreal-commands
         # marks the job as `failed` (stop_on=[ValueError] already prevents
@@ -140,9 +152,7 @@ async def process_source_command(
         raise
     except Exception as e:
         # Transient failure - will be retried (surreal-commands logs final failure)
-        logger.debug(
-            f"Transient error processing source {input_data.source_id}: {e}"
-        )
+        logger.debug(f"Transient error processing source {input_data.source_id}: {e}")
         raise
 
 
@@ -176,8 +186,13 @@ class RunTransformationOutput(CommandOutput):
         "wait_strategy": "exponential_jitter",
         "wait_min": 1,
         "wait_max": 60,
-        "stop_on": [ValueError, ConfigurationError],  # Don't retry validation/config errors
-        "retry_log_level": "debug",
+        "stop_on": [
+            ValueError,
+            ConfigurationError,
+            ContextLengthExceededError,
+            IncompleteGenerationError,
+        ],  # Don't retry validation/config errors or incomplete generations
+        "retry_log_level": "warning",
     },
 )
 async def run_transformation_command(
@@ -240,6 +255,12 @@ async def run_transformation_command(
             processing_time=processing_time,
         )
 
+    except IncompleteGenerationError as e:
+        logger.error(
+            f"Generation failed (permanent) for transformation "
+            f"{input_data.transformation_id} on source {input_data.source_id}: {e}"
+        )
+        raise  # Preserve failed job status; stop_on prevents automatic retries.
     except ValueError as e:
         # Validation errors are permanent failures - don't retry
         processing_time = time.time() - start_time

@@ -34,7 +34,7 @@
     "@tanstack/react-query": "^5.83.0",
     "@types/react-syntax-highlighter": "^15.5.13",
     "@uiw/react-md-editor": "^4.0.8",
-    "axios": "^1.18.1",
+    "axios": "^1.20.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -43,7 +43,7 @@
     "i18next-browser-languagedetector": "^8.2.0",
     "katex": "^0.16.47",
     "lucide-react": "^0.525.0",
-    "next": "^16.2.6",
+    "next": "^16.3.8",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-hook-form": "^7.60.0",
@@ -81,9 +81,9 @@
   },
   "overrides": {
     "ws": "8.21.0",
-    "brace-expansion": "1.1.15",
+    "brace-expansion": "1.1.21",
     "ajv": "6.15.0",
     "@eslint/plugin-kit": "0.7.2",
-    "postcss": "8.5.10"
+    "postcss": "8.5.23"
   }
 }

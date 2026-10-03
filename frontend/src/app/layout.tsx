@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import {
+  Bricolage_Grotesque,
+  Instrument_Sans,
+  Spline_Sans_Mono,
+} from "next/font/google";
 import "./globals.css";
 import "katex/dist/katex.min.css";
 import { Toaster } from "@/components/ui/sonner";
@@ -10,7 +14,21 @@ import { ConnectionGuard } from "@/components/common/ConnectionGuard";
 import { themeScript } from "@/lib/theme-script";
 import { I18nProvider } from "@/components/providers/I18nProvider";
 
-const inter = Inter({ subsets: ["latin"] });
+const instrumentSans = Instrument_Sans({
+  subsets: ["latin"],
+  variable: "--font-instrument-sans",
+});
+
+const bricolageGrotesque = Bricolage_Grotesque({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  variable: "--font-bricolage",
+});
+
+const splineSansMono = Spline_Sans_Mono({
+  subsets: ["latin"],
+  variable: "--font-spline-mono",
+});
 
 export const metadata: Metadata = {
   title: "Open Notebook",
@@ -27,7 +45,9 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className={inter.className}>
+      <body
+        className={`${instrumentSans.variable} ${bricolageGrotesque.variable} ${splineSansMono.variable} font-sans`}
+      >
         <ErrorBoundary>
           <ThemeProvider>
             <QueryProvider>

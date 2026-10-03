@@ -68,7 +68,7 @@ export function StreamingResponse({
             <CardHeader>
               <CollapsibleTrigger className="flex items-center justify-between w-full hover:opacity-80">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-primary" />
+                  <Sparkles className="h-4 w-4 text-teal" />
                   {t('common.strategy')}
                 </CardTitle>
                 <ChevronDown className={`h-4 w-4 transition-transform ${strategyOpen ? 'rotate-180' : ''}`} />
@@ -86,7 +86,7 @@ export function StreamingResponse({
                     <div className="space-y-2">
                       {strategy.searches.map((search, i) => (
                         <div key={i} className="flex items-start gap-2">
-                          <Badge variant="outline" className="mt-0.5">{i + 1}</Badge>
+                          <Badge variant="outline" className="mt-0.5 font-mono text-[11px]">{i + 1}</Badge>
                           <div className="flex-1">
                             <p className="text-sm font-medium">{search.term}</p>
                             <p className="text-xs text-muted-foreground">{search.instructions}</p>
@@ -109,7 +109,7 @@ export function StreamingResponse({
             <CardHeader>
               <CollapsibleTrigger className="flex items-center justify-between w-full hover:opacity-80">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Lightbulb className="h-4 w-4 text-primary" />
+                  <Lightbulb className="h-4 w-4 text-teal" />
                   {t('common.individualAnswers', { count: answers.length })}
                 </CardTitle>
                 <ChevronDown className={`h-4 w-4 transition-transform ${answersOpen ? 'rotate-180' : ''}`} />
@@ -130,10 +130,10 @@ export function StreamingResponse({
 
       {/* Final Answer Section - Always Open */}
       {finalAnswer && (
-        <Card className="border-primary">
+        <Card className="border-teal">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-primary" />
+              <CheckCircle className="h-4 w-4 text-teal" />
               {t('common.finalAnswer')}
             </CardTitle>
           </CardHeader>

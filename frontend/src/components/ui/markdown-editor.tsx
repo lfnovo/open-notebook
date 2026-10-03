@@ -7,6 +7,7 @@ import rehypeKatex from 'rehype-katex'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import type { PluggableList } from 'unified'
 
+import { useTheme } from '@/lib/stores/theme-store'
 import { KATEX_OPTIONS } from '@/lib/utils/katex-options'
 
 const MDEditor = dynamic(
@@ -65,22 +66,26 @@ export interface MarkdownEditorProps {
 
 export const MarkdownEditor = forwardRef<HTMLDivElement, MarkdownEditorProps>(
   ({ value = '', onChange, placeholder, height = 300, preview = 'live', hideToolbar = false, className, textareaId, name }, ref) => {
+    const { effectiveTheme, hasHydrated } = useTheme()
+
     return (
       <div className={className} ref={ref}>
-        <MDEditor
-          value={value}
-          onChange={onChange}
-          preview={preview}
-          height={height}
-          hideToolbar={hideToolbar}
-          textareaProps={{
-            placeholder: placeholder || 'Enter markdown...',
-            id: textareaId,
-            name: name,
-          }}
-          previewOptions={PREVIEW_OPTIONS}
-          data-color-mode="light"
-        />
+        {hasHydrated && (
+          <MDEditor
+            value={value}
+            onChange={onChange}
+            preview={preview}
+            height={height}
+            hideToolbar={hideToolbar}
+            textareaProps={{
+              placeholder: placeholder || 'Enter markdown...',
+              id: textareaId,
+              name: name,
+            }}
+            previewOptions={PREVIEW_OPTIONS}
+            data-color-mode={effectiveTheme}
+          />
+        )}
       </div>
     )
   }

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Batch large embedding inserts into groups of 50 records and reuse one database connection across batches to reduce oversized WebSocket payloads and repeated sign-ins.
+- **An empty model reply is now an error, not an answer.** Notebook chat and source chat stored a blank AI message that was replayed as context on later turns, and streaming Ask finished with an empty final answer and no error. All three now surface "The model returned an empty response" (transformations already did). A failed chat turn also no longer leaves the question in the conversation history, so retrying does not duplicate it, and streamed errors keep their specific message instead of a generic "AI service error" (#1392)
 - `GET /api/notebooks` now normalizes `order_by` through the shared `_validate_order_by()` guard, keeping its stricter `name`/`created`/`updated` allowlist on top, so the two ORDER BY validators can no longer drift (#1416)
 - **Source chat no longer repeats earlier answers in the streamed reply.** The stream sent every AI message in the checkpointed history, so the second and later answers arrived concatenated with all previous ones; it now sends only the new answer. The context badge ("1 Sources") is also restored from the saved session after a page refresh (#1393)
 

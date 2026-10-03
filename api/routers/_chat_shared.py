@@ -15,6 +15,9 @@ Behavior notes:
 from typing import Any, Iterable, List, Optional, Tuple
 
 from fastapi import HTTPException
+from langchain_core.messages import BaseMessage, RemoveMessage
+from langchain_core.runnables import RunnableConfig
+from loguru import logger
 from pydantic import BaseModel, Field
 
 from open_notebook.database.repository import ensure_record_id, repo_query
@@ -92,3 +95,25 @@ def extract_chat_messages(raw_messages: Iterable[Any]) -> List[ChatMessage]:
             )
         )
     return messages
+
+
+def discard_unanswered_message(
+    graph: Any, thread_id: str, message: BaseMessage
+) -> None:
+    """Remove a user message whose turn failed from the thread's checkpoint.
+
+    LangGraph checkpoints the graph input before running the nodes, so when the
+    model call fails the question stays in history with no answer, and a retry
+    adds it a second time. Synchronous (SqliteSaver); call via asyncio.to_thread.
+    Best-effort: never masks the original error.
+    """
+    if not message.id:
+        return
+    try:
+        config = RunnableConfig(configurable={"thread_id": thread_id})
+        state = graph.get_state(config)
+        messages = (state.values or {}).get("messages", []) if state else []
+        if any(getattr(m, "id", None) == message.id for m in messages):
+            graph.update_state(config, {"messages": [RemoveMessage(id=message.id)]})
+    except Exception as e:
+        logger.warning(f"Could not discard unanswered message in {thread_id}: {e}")

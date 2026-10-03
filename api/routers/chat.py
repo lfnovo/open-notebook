@@ -1,6 +1,7 @@
 import asyncio
 import traceback
 from typing import Any, Dict, List, Optional
+from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Query
 from langchain_core.runnables import RunnableConfig
@@ -10,6 +11,7 @@ from pydantic import BaseModel, Field
 from api.routers._chat_shared import (
     ChatMessage,
     SuccessResponse,
+    discard_unanswered_message,
     extract_chat_messages,
     get_session_or_404,
 )
@@ -341,7 +343,8 @@ async def execute_chat(request: ExecuteChatRequest):
         # Add user message to state
         from langchain_core.messages import HumanMessage
 
-        user_message = HumanMessage(content=request.message)
+        # Explicit id so a failed turn can remove it from the checkpoint.
+        user_message = HumanMessage(content=request.message, id=str(uuid4()))
         state_values["messages"].append(user_message)
 
         # Execute chat graph in a thread so the synchronous LangGraph invoke
@@ -352,17 +355,23 @@ async def execute_chat(request: ExecuteChatRequest):
         # can't resolve overloaded callables on its own. The ignore is a langgraph
         # typing limitation: it accepts a partial state dict at runtime, but the
         # signature requires the full state type.
-        result = await asyncio.to_thread(
-            lambda: chat_graph.invoke(
-                input=state_values,  # type: ignore[arg-type]
-                config=RunnableConfig(
-                    configurable={
-                        "thread_id": full_session_id,
-                        "model_id": model_override,
-                    }
-                ),
+        try:
+            result = await asyncio.to_thread(
+                lambda: chat_graph.invoke(
+                    input=state_values,  # type: ignore[arg-type]
+                    config=RunnableConfig(
+                        configurable={
+                            "thread_id": full_session_id,
+                            "model_id": model_override,
+                        }
+                    ),
+                )
             )
-        )
+        except Exception:
+            await asyncio.to_thread(
+                discard_unanswered_message, chat_graph, full_session_id, user_message
+            )
+            raise
 
         # Update session timestamp
         await session.save()

@@ -1,6 +1,7 @@
 import asyncio
 import json
 from typing import AsyncGenerator, List, Optional
+from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Path
 from fastapi.responses import StreamingResponse
@@ -12,6 +13,7 @@ from pydantic import BaseModel, Field
 from api.routers._chat_shared import (
     ChatMessage,
     SuccessResponse,
+    discard_unanswered_message,
     extract_chat_messages,
     get_source_or_404,
     get_verified_source_session,
@@ -348,7 +350,8 @@ async def stream_source_chat_response(
         state_values["model_override"] = model_override
 
         # Add user message to state
-        user_message = HumanMessage(content=message)
+        # Explicit id so a failed turn can remove it from the checkpoint.
+        user_message = HumanMessage(content=message, id=str(uuid4()))
         state_values["messages"].append(user_message)
 
         # Send user message event
@@ -363,14 +366,26 @@ async def stream_source_chat_response(
         # can't resolve overloaded callables on its own. The ignore is a langgraph
         # typing limitation: it accepts a partial state dict at runtime, but the
         # signature requires the full state type.
-        result = await asyncio.to_thread(
-            lambda: source_chat_graph.invoke(
-                input=state_values,  # type: ignore[arg-type]
-                config=RunnableConfig(
-                    configurable={"thread_id": session_id, "model_id": model_override}
-                ),
+        try:
+            result = await asyncio.to_thread(
+                lambda: source_chat_graph.invoke(
+                    input=state_values,  # type: ignore[arg-type]
+                    config=RunnableConfig(
+                        configurable={
+                            "thread_id": session_id,
+                            "model_id": model_override,
+                        }
+                    ),
+                )
             )
-        )
+        except Exception:
+            await asyncio.to_thread(
+                discard_unanswered_message,
+                source_chat_graph,
+                session_id,
+                user_message,
+            )
+            raise
 
         # Stream this turn's AI response. result["messages"] is the full
         # checkpointed history, so only the last message is new.
@@ -399,7 +414,12 @@ async def stream_source_chat_response(
     except Exception as e:
         from open_notebook.utils.error_classifier import classify_error
 
-        _, error_message = classify_error(e)
+        # Typed errors already carry a user-facing message; only raw provider
+        # exceptions need classifying.
+        if isinstance(e, OpenNotebookError):
+            error_message = str(e)
+        else:
+            _, error_message = classify_error(e)
         logger.error(f"Error in source chat streaming: {str(e)}")
         error_event = {"type": "error", "message": error_message}
         yield f"data: {json.dumps(error_event)}\n\n"

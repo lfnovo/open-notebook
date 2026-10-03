@@ -173,6 +173,7 @@ export const itIT = {
     answerModelNotFound: "Modello risposta non trovato",
     finalAnswerModelNotFound: "Modello risposta finale non trovato",
     noAnswerGenerated: "Nessuna risposta generata",
+    sourceHasNoText: "Questa fonte non ha contenuto testuale da trasformare",
     genericError: "Si è verificato un errore imprevisto",
   },
   connectionErrors: {

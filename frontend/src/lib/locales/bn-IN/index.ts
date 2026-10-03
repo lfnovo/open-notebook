@@ -173,6 +173,7 @@ export const bnIN = {
     answerModelNotFound: "Answer মডেল খুঁজে পাওয়া যায়নি",
     finalAnswerModelNotFound: "Final answer মডেল খুঁজে পাওয়া যায়নি",
     noAnswerGenerated: "কোনো উত্তর তৈরি করা যায়নি",
+    sourceHasNoText: "এই উৎসে রূপান্তর করার মতো কোনো লেখা নেই",
     genericError: "একটি অপ্রত্যাশিত ত্রুটি ঘটেছে",
   },
   connectionErrors: {

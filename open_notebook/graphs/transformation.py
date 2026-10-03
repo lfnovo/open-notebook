@@ -38,7 +38,7 @@ async def run_transformation(state: dict, config: RunnableConfig) -> dict:
             # A source whose extraction produced no text would hand the model
             # an empty input, and whatever it invents would be saved as an
             # insight.
-            raise InvalidInputError("Source has no text content to transform")
+            raise InvalidInputError("There is no text content to transform")
         # transformation.prompt is user-controlled free text. Never compile it as
         # Jinja template *source* (Prompter(template_text=...)) - pass it as a
         # plain render variable into a fixed, developer-authored template instead.

@@ -176,6 +176,7 @@ export const deDE = {
     answerModelNotFound: "Antwortmodell nicht gefunden",
     finalAnswerModelNotFound: "Modell für die finale Antwort nicht gefunden",
     noAnswerGenerated: "Es konnte keine Antwort erzeugt werden",
+    sourceHasNoText: "Diese Quelle enthält keinen Text, der transformiert werden kann",
     genericError: "Es ist ein unerwarteter Fehler aufgetreten",
   },
   connectionErrors: {

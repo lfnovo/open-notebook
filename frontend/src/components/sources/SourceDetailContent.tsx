@@ -221,7 +221,10 @@ function SourceDetailContentInner({
     } catch (err) {
       if (controller.signal.aborted) return
       console.error('Failed to create insight:', err)
-      toast.error(getApiErrorMessage(err, (key) => t(key), 'common.error'))
+      // Show the server's reason when there is one; a network error has no
+      // detail and keeps the localized generic message.
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      toast.error(getApiErrorMessage(detail ?? '', (key) => t(key), 'common.error'))
       if (insightPollingRef.current === controller) {
         insightPollingRef.current = null
       }

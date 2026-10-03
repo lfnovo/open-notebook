@@ -53,4 +53,42 @@ def test_source_with_text_is_queued(client):
         )
 
     assert response.status_code == 202
-    mock_submit.assert_called_once()
+    mock_submit.assert_called_once_with(
+        "open_notebook",
+        "run_transformation",
+        {"source_id": "source:abc", "transformation_id": "transformation:t1"},
+    )
+
+
+@pytest.mark.asyncio
+async def test_worker_fails_permanently_on_empty_source():
+    """The graph's empty-content guard ends the job as failed (re-raised, and
+    in stop_on so it is not retried), instead of retrying it 5 times."""
+    from commands.source_commands import (
+        RunTransformationInput,
+        run_transformation_command,
+    )
+    from open_notebook.exceptions import InvalidInputError
+
+    with (
+        patch(
+            "commands.source_commands.Source.get",
+            new=AsyncMock(return_value=SimpleNamespace(full_text="")),
+        ),
+        patch(
+            "commands.source_commands.Transformation.get",
+            new=AsyncMock(return_value=SimpleNamespace(model_id=None)),
+        ),
+        patch(
+            "commands.source_commands.transform_graph.ainvoke",
+            new=AsyncMock(
+                side_effect=InvalidInputError("There is no text content to transform")
+            ),
+        ),
+    ):
+        with pytest.raises(InvalidInputError):
+            await run_transformation_command(
+                RunTransformationInput(
+                    source_id="source:abc", transformation_id="transformation:t1"
+                )
+            )

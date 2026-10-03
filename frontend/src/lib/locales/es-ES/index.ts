@@ -173,6 +173,7 @@ export const esES = {
     answerModelNotFound: "Modelo de respuesta no encontrado",
     finalAnswerModelNotFound: "Modelo de respuesta final no encontrado",
     noAnswerGenerated: "No se pudo generar una respuesta",
+    sourceHasNoText: "Esta fuente no tiene contenido de texto para transformar",
     genericError: "Ocurrió un error inesperado",
   },
   connectionErrors: {

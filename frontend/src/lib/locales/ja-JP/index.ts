@@ -173,6 +173,7 @@ export const jaJP = {
     answerModelNotFound: "回答モデルが見つかりません",
     finalAnswerModelNotFound: "最終回答モデルが見つかりません",
     noAnswerGenerated: "回答を生成できませんでした",
+    sourceHasNoText: "このソースには変換するテキストがありません",
     genericError: "予期しないエラーが発生しました",
   },
   connectionErrors: {

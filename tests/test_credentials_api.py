@@ -946,3 +946,88 @@ class TestEndpointOverrideProvisioningAndMigration:
         assert saved == []
         assert "siliconflow" not in result["migrated"]
         assert any(e.startswith("siliconflow:") for e in result["errors"])
+
+
+class TestMiniMaxCredentialDiscovery:
+    """Credential-based MiniMax discovery seeds its TTS models (#1438)."""
+
+    @pytest.mark.asyncio
+    async def test_seeds_tts_models(self, monkeypatch):
+        class FakeAsyncClient:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return None
+
+            async def get(self, url, headers=None, timeout=None, extensions=None):
+                return httpx.Response(
+                    200,
+                    json={"data": [{"id": "MiniMax-M3"}]},
+                    request=httpx.Request("GET", url, headers=headers or {}),
+                )
+
+        monkeypatch.setattr(credentials_service.httpx, "AsyncClient", FakeAsyncClient)
+
+        models = await credentials_service.discover_with_config(
+            "minimax", {"api_key": "mm-test"}
+        )
+
+        # Pinned independently of the seed constant.
+        assert [m["name"] for m in models] == [
+            "MiniMax-M3",
+            "speech-2.8-hd",
+            "speech-2.8-turbo",
+        ]
+
+
+class TestMiniMaxRegionalBaseUrl:
+    """MiniMax declares MINIMAX_BASE_URL (ADR-012): mainland-China keys list
+    their models at the regional endpoint (#1438)."""
+
+    def test_registry_declares_override(self):
+        from open_notebook.ai.provider_registry import PROVIDERS
+
+        assert PROVIDERS["minimax"].base_url_env == "MINIMAX_BASE_URL"
+
+    @pytest.mark.asyncio
+    async def test_credential_discovery_honors_base_url(self, monkeypatch):
+        from open_notebook.utils.url_validation import PinnedHttpTarget
+
+        requested = []
+
+        class FakeAsyncClient:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return None
+
+            async def get(self, url, headers=None, timeout=None, extensions=None):
+                requested.append(url)
+                return httpx.Response(
+                    200,
+                    json={"data": [{"id": "MiniMax-M3"}]},
+                    request=httpx.Request("GET", url),
+                )
+
+        async def fake_prepare_pinned(url, provider):
+            return PinnedHttpTarget(url=url)
+
+        monkeypatch.setattr(credentials_service.httpx, "AsyncClient", FakeAsyncClient)
+        monkeypatch.setattr(
+            credentials_service, "prepare_pinned_http_target", fake_prepare_pinned
+        )
+
+        models = await credentials_service.discover_with_config(
+            "minimax", {"api_key": "k", "base_url": "https://api.minimax.cn/v1"}
+        )
+
+        assert requested == ["https://api.minimax.cn/v1/models"]
+        assert "speech-2.8-hd" in [m["name"] for m in models]

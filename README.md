@@ -241,7 +241,7 @@ Thanks to the [Esperanto](https://github.com/lfnovo/esperanto) library, we suppo
 | xAI          | ✅          | ❌               | ❌             | ✅             |
 | OpenRouter   | ✅          | ✅               | ✅             | ✅             |
 | DashScope (Qwen) | ✅          | ❌               | ❌             | ❌             |
-| MiniMax      | ✅          | ❌               | ❌             | ❌             |
+| MiniMax      | ✅          | ❌               | ❌             | ✅             |
 | Novita       | ✅          | ❌               | ❌             | ❌             |
 | SiliconFlow  | ✅          | ❌               | ❌             | ❌             |
 | Z.ai         | ✅          | ❌               | ❌             | ❌             |

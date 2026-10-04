@@ -171,6 +171,7 @@ SILICONFLOW_MODEL_TYPES = {
 }
 
 MINIMAX_MODEL_TYPES = {
+    "text_to_speech": ["speech-"],
     "language": ["minimax", "abab"],
 }
 
@@ -191,6 +192,18 @@ PPQ_MODEL_TYPES = {
 OPENROUTER_AUDIO_MODELS: Dict[str, List[str]] = {
     "text_to_speech": ["microsoft/mai-voice-2"],
     "speech_to_text": ["openai/whisper-1", "openai/whisper-large-v3"],
+}
+
+# MiniMax TTS (esperanto 2.27, native /v1/t2a_v2) is not listed by its /models
+# endpoint either; seed the speech models esperanto supports, newest first.
+MINIMAX_AUDIO_MODELS: Dict[str, List[str]] = {
+    "text_to_speech": ["speech-2.8-hd", "speech-2.8-turbo"],
+}
+
+# Providers whose live /models listing needs a static audio seed on top.
+PROVIDER_AUDIO_SEEDS: Dict[str, Dict[str, List[str]]] = {
+    "openrouter": OPENROUTER_AUDIO_MODELS,
+    "minimax": MINIMAX_AUDIO_MODELS,
 }
 
 
@@ -365,7 +378,6 @@ discover_mistral_models = _make_openai_compat_discoverer("mistral")
 discover_deepseek_models = _make_openai_compat_discoverer("deepseek")
 discover_xai_models = _make_openai_compat_discoverer("xai")
 discover_dashscope_models = _make_openai_compat_discoverer("dashscope")
-discover_minimax_models = _make_openai_compat_discoverer("minimax")
 discover_novita_models = _make_openai_compat_discoverer("novita")
 discover_siliconflow_models = _make_openai_compat_discoverer("siliconflow")
 discover_zai_models = _make_openai_compat_discoverer("zai")
@@ -517,6 +529,41 @@ async def discover_ollama_models() -> List[DiscoveredModel]:
     return models
 
 
+def audio_seed(provider: str) -> List[Tuple[str, str]]:
+    """The provider's static audio models as (name, model_type) pairs.
+
+    Shared by env-based and credential-based discovery so both seed the same
+    models.
+    """
+    return [
+        (name, model_type)
+        for model_type, names in PROVIDER_AUDIO_SEEDS.get(provider, {}).items()
+        for name in names
+    ]
+
+
+def _with_audio_seed(
+    provider: str, models: List[DiscoveredModel]
+) -> List[DiscoveredModel]:
+    """Append the provider's static audio seed to a live discovery result.
+
+    Only seeds when live discovery actually returned something. An empty result
+    means the /models call failed (invalid key, HTTP error, network) — seeding
+    on top of a failed discovery would make it look successful and
+    auto-register unusable audio models during sync.
+    """
+    if not models:
+        return models
+
+    seen = {(m.name, m.model_type) for m in models}
+    for name, model_type in audio_seed(provider):
+        if (name, model_type) not in seen:
+            models.append(
+                DiscoveredModel(name=name, provider=provider, model_type=model_type)
+            )
+    return models
+
+
 async def discover_openrouter_models() -> List[DiscoveredModel]:
     """Discover OpenRouter models (language/embedding + a static audio seed).
 
@@ -524,30 +571,16 @@ async def discover_openrouter_models() -> List[DiscoveredModel]:
     embedding) models but does not reliably surface its TTS/STT catalog, so we
     combine live API discovery with a small static seed of the audio model ids
     esperanto ships as defaults (see OPENROUTER_AUDIO_MODELS). Returns [] when
-    live discovery yields nothing (missing key, HTTP/network error), so the
-    audio seed is never registered on top of a failed discovery.
+    live discovery yields nothing (missing key, HTTP/network error).
     """
     models = await discover_openai_compatible_provider("openrouter")
+    return _with_audio_seed("openrouter", models)
 
-    # Only seed the static audio models when live discovery actually returned
-    # something. An empty result means the /models call failed (invalid key,
-    # HTTP error, network) — seeding on top of a failed discovery would make it
-    # look successful and auto-register unusable audio models during sync.
-    if not models:
-        return models
 
-    seen = {(m.name, m.model_type) for m in models}
-    for model_type, names in OPENROUTER_AUDIO_MODELS.items():
-        for name in names:
-            if (name, model_type) not in seen:
-                models.append(
-                    DiscoveredModel(
-                        name=name,
-                        provider="openrouter",
-                        model_type=model_type,
-                    )
-                )
-    return models
+async def discover_minimax_models() -> List[DiscoveredModel]:
+    """Discover MiniMax language models plus its TTS models (static seed)."""
+    models = await discover_openai_compatible_provider("minimax")
+    return _with_audio_seed("minimax", models)
 
 
 async def discover_voyage_models() -> List[DiscoveredModel]:

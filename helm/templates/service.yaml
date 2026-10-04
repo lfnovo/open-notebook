@@ -1,0 +1,73 @@
+{{- /*
+Copyright © 2024 Luis Novo
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/ -}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.names.fullname" . }}
+  namespace: {{ include "common.names.namespace" . }}
+  labels: {{- include "open-notebook.labels" . | nindent 4 }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.service.annotations "context" $ ) | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  sessionAffinity: {{ .Values.service.sessionAffinity }}
+  {{- if .Values.service.sessionAffinityConfig }}
+  sessionAffinityConfig: {{- include "common.tplvalues.render" (dict "value" .Values.service.sessionAffinityConfig "context" $) | nindent 4 }}
+  {{- end }}
+  ports:
+    - name: http
+      port: {{ .Values.service.ports.http }}
+      targetPort: http
+      protocol: TCP
+      {{- if and (eq .Values.service.type "NodePort") .Values.service.ports.httpNodePort }}
+      nodePort: {{ .Values.service.ports.httpNodePort }}
+      {{- end }}
+    - name: api
+      port: {{ .Values.service.ports.api }}
+      targetPort: api
+      protocol: TCP
+      {{- if and (eq .Values.service.type "NodePort") .Values.service.ports.apiNodePort }}
+      nodePort: {{ .Values.service.ports.apiNodePort }}
+      {{- end }}
+  selector: {{- include "open-notebook.selectorLabels" . | nindent 4 }}
+
+---
+{{- if .Values.surrealdb.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.names.fullname" . }}-surrealdb
+  namespace: {{ include "common.names.namespace" . }}
+  labels: {{- include "open-notebook.surrealdb.labels" . | nindent 4 }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.surrealdb.service.annotations "context" $ ) | nindent 4 }}
+spec:
+  type: {{ .Values.surrealdb.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.surrealdb.service.port }}
+      targetPort: http
+      protocol: TCP
+      {{- if and (eq .Values.surrealdb.service.type "NodePort") .Values.surrealdb.service.nodePort }}
+      nodePort: {{ .Values.surrealdb.service.nodePort }}
+      {{- end }}
+  selector: {{- include "open-notebook.surrealdb.selectorLabels" . | nindent 4 }}
+{{- end }}

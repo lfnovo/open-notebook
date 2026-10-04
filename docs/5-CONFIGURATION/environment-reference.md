@@ -343,7 +343,7 @@ If you have these variables configured from a previous installation, click the *
 | `SILICONFLOW_API_KEY` | SiliconFlow | Manage → Models → Add SiliconFlow Credential |
 | `SILICONFLOW_BASE_URL` | SiliconFlow | Endpoint override for env-based setup (`https://api.siliconflow.cn/v1` for mainland China accounts); copied into the credential's Base URL on migration. With credentials, set the Base URL in the Manage → Models credential form |
 | `ZAI_API_KEY` | Z.ai | Manage → Models → Add Z.ai Credential |
-| `ZAI_BASE_URL` | Z.ai | Endpoint override for env-based setup; copied into the credential's Base URL on migration |
+| `ZAI_BASE_URL` | Z.ai | Endpoint override for env-based setup; copied into the credential's Base URL on migration. With credentials, set the Base URL in the Manage → Models credential form |
 | `PPQ_API_KEY` | PayPerQ (PPQ) | Manage → Models → Add PayPerQ Credential |
 | `COHERE_API_KEY` | Cohere | Manage → Models → Add Cohere Credential |
 | `AZURE_OPENAI_API_KEY` | Azure OpenAI | Manage → Models → Add Azure OpenAI Credential |

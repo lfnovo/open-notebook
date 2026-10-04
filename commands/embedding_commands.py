@@ -16,7 +16,11 @@ from surreal_commands import CommandInput, CommandOutput, command, submit_comman
 from open_notebook.ai.models import model_manager
 from open_notebook.database.repository import ensure_record_id, repo_insert, repo_query
 from open_notebook.domain.notebook import Note, Source, SourceInsight
-from open_notebook.exceptions import ConfigurationError, ContextLengthExceededError
+from open_notebook.exceptions import (
+    ConfigurationError,
+    ContextLengthExceededError,
+    NotFoundError,
+)
 from open_notebook.utils.chunking import ContentType, chunk_text, detect_content_type
 from open_notebook.utils.embedding import generate_embedding, generate_embeddings
 
@@ -82,8 +86,10 @@ async def _embed_record(
         )
         return extra_fields, processing_time, None
 
-    except ValueError as e:
-        # Permanent failure - don't retry
+    except (ValueError, NotFoundError) as e:
+        # Permanent failure - don't retry. NotFoundError means the record was
+        # deleted before the job ran (ObjectModel.get raises it only for a
+        # missing record; DB failures are DatabaseOperationError and retry).
         processing_time = time.time() - start_time
         cmd_id = get_command_id(input_data)
         logger.error(f"Failed to embed {kind} {record_id} (command: {cmd_id}): {e}")

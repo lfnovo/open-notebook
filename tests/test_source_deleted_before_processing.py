@@ -171,3 +171,34 @@ async def test_source_deleted_during_processing_fails_permanently():
     command = registry.get_command("open_notebook", "process_source")
     assert command is not None
     assert NotFoundError in command.retry_config.stop_on
+
+
+@pytest.mark.asyncio
+async def test_embedding_a_deleted_source_fails_permanently():
+    """embed_source had the same gap (lfnovo's review on #1364): a record
+    deleted before the job ran is a permanent failure, not a retry."""
+    from commands.embedding_commands import EmbedSourceInput, embed_source_command
+
+    with patch(
+        "commands.embedding_commands.Source.get",
+        new=AsyncMock(
+            side_effect=NotFoundError("source with id source:gone not found")
+        ),
+    ):
+        result = await embed_source_command(EmbedSourceInput(source_id="source:gone"))
+
+    assert result.success is False
+    assert "not found" in (result.error_message or "")
+
+
+@pytest.mark.asyncio
+async def test_embedding_db_failure_stays_retryable():
+    from commands.embedding_commands import EmbedSourceInput, embed_source_command
+    from open_notebook.exceptions import DatabaseOperationError
+
+    with patch(
+        "commands.embedding_commands.Source.get",
+        new=AsyncMock(side_effect=DatabaseOperationError("Failed to fetch")),
+    ):
+        with pytest.raises(DatabaseOperationError):
+            await embed_source_command(EmbedSourceInput(source_id="source:abc"))

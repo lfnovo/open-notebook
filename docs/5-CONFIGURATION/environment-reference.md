@@ -142,7 +142,9 @@ services:
       - CCORE_YOUTUBE_COOKIES_FILE=/app/data/youtube-cookies.txt
     volumes:
       - ./notebook_data:/app/data   # put youtube-cookies.txt in ./notebook_data
-``` See [Content Processing Engines](../3-USER-GUIDE/content-processing-engines.md) for how these engines are selected in the UI.
+```
+
+See [Content Processing Engines](../3-USER-GUIDE/content-processing-engines.md) for how these engines are selected in the UI.
 
 ---
 

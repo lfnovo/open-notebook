@@ -381,7 +381,7 @@ export const esES = {
     invalidUrlsDetected: "URLs inválidas detectadas:",
     lineLabel: "Línea {{line}}",
     fixInvalidUrls: "Por favor, corrige o elimina las URLs inválidas para continuar",
-    selectMultipleFilesHint: "Selecciona múltiples archivos para importar por lotes. Soportados: Documentos (PDF, DOC, DOCX, PPT, XLS, EPUB, ODT, ODS, ODP, TXT, MD), Multimedia (MP4, MP3, WAV, M4A), Imágenes (JPG, PNG), Archivos comprimidos (ZIP)",
+    selectMultipleFilesHint: "Selecciona múltiples archivos para importar por lotes. Soportados: Documentos (PDF, DOC, DOCX, PPT, XLS, EPUB, ODT, ODS, ODP, HTML, HTM, TXT, MD), Multimedia (MP4, MP3, WAV, M4A), Imágenes (JPG, PNG), Archivos comprimidos (ZIP)",
     selectedFiles: "Archivos seleccionados:",
     textPlaceholder: "Pega o escribe tu contenido aquí...",
     htmlDetected: "Contenido HTML detectado. Se convertirá a Markdown después del procesamiento.",

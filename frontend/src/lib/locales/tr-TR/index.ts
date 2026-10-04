@@ -381,7 +381,7 @@ export const trTR = {
     invalidUrlsDetected: "Geçersiz URL'ler tespit edildi:",
     lineLabel: "Satır {{line}}",
     fixInvalidUrls: "Devam etmek için geçersiz URL'leri düzeltin veya kaldırın",
-    selectMultipleFilesHint: "Toplu içe aktarma için birden fazla dosya seçin. Desteklenenler: Belgeler (PDF, DOC, DOCX, PPT, XLS, EPUB, ODT, ODS, ODP, TXT, MD), Medya (MP4, MP3, WAV, M4A), Görseller (JPG, PNG), Arşivler (ZIP)",
+    selectMultipleFilesHint: "Toplu içe aktarma için birden fazla dosya seçin. Desteklenenler: Belgeler (PDF, DOC, DOCX, PPT, XLS, EPUB, ODT, ODS, ODP, HTML, HTM, TXT, MD), Medya (MP4, MP3, WAV, M4A), Görseller (JPG, PNG), Arşivler (ZIP)",
     selectedFiles: "Seçilen dosyalar:",
     textPlaceholder: "İçeriğinizi buraya yapıştırın veya yazın...",
     htmlDetected: "HTML içeriği tespit edildi. İşlendikten sonra Markdown'a dönüştürülecek.",

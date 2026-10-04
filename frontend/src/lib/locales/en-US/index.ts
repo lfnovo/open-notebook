@@ -379,7 +379,7 @@ export const enUS = {
     invalidUrlsDetected: "Invalid URLs detected:",
     lineLabel: "Line {{line}}",
     fixInvalidUrls: "Please fix or remove invalid URLs to continue",
-    selectMultipleFilesHint: "Select multiple files to batch import. Supported: Documents (PDF, DOC, DOCX, PPT, XLS, EPUB, ODT, ODS, ODP, TXT, MD), Media (MP4, MP3, WAV, M4A), Images (JPG, PNG), Archives (ZIP)",
+    selectMultipleFilesHint: "Select multiple files to batch import. Supported: Documents (PDF, DOC, DOCX, PPT, XLS, EPUB, ODT, ODS, ODP, HTML, HTM, TXT, MD), Media (MP4, MP3, WAV, M4A), Images (JPG, PNG), Archives (ZIP)",
     selectedFiles: "Selected files:",
     textPlaceholder: "Paste or type your content here...",
     htmlDetected: "HTML content detected. It will be converted to Markdown after processing.",

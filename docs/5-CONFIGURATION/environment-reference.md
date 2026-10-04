@@ -113,6 +113,9 @@ CORS_ORIGINS=https://notebook.example.com
 | `JINA_API_KEY` | No | None | Jina AI API key for web extraction |
 | `CRAWL4AI_API_URL` | No | None | Base URL of a remote Crawl4AI server. Set this to use Crawl4AI without a local install |
 | `CRAWL4AI_API_TOKEN` | No | None | Bearer token sent as `Authorization: Bearer …` to the remote Crawl4AI server. Required by Crawl4AI Docker ≥ 0.9.0, which rejects unauthenticated external connections by default. Ignored when unset |
+| `CCORE_YOUTUBE_PROXY` | No | None | Proxy URL for YouTube transcript and title requests (e.g. `http://user:pass@proxy:port`). Use a **residential** proxy; datacenter IPs are blocked by YouTube. Unset: direct connection |
+| `CCORE_YOUTUBE_COOKIES_FILE` | No | None | Path (inside the container) to a Netscape-format `cookies.txt` exported from a browser signed in to YouTube. Unblocks IP-flagged networks. A missing or unreadable file fails YouTube sources with a configuration error |
+| `CCORE_AUDIO_SEGMENT_MINUTES` | No | `10` | Length of the segments long audio/video is split into before transcription. `0` sends the file whole (for self-hosted speech-to-text without an upload size limit) |
 
 ### Optional heavy runtimes (installed on first startup)
 
@@ -128,7 +131,20 @@ These are **off by default** to keep the image lean. Setting one to `true` makes
 - Jina: https://jina.ai/
 - Crawl4AI: https://github.com/unclecode/crawl4ai
 
-The `CCORE_FIRECRAWL_*` variables are passed straight through to the content-core library (its settings are prefixed with `CCORE_`); Open Notebook itself doesn't read them. See [Content Processing Engines](../3-USER-GUIDE/content-processing-engines.md) for how these engines are selected in the UI.
+The `CCORE_*` variables are passed straight through to the content-core library (its settings are prefixed with `CCORE_`); Open Notebook itself doesn't read them. Set them on the **worker**, which runs extraction (in the single-container image, the container).
+
+YouTube cookies with Docker Compose:
+
+```yaml
+services:
+  open_notebook:
+    environment:
+      - CCORE_YOUTUBE_COOKIES_FILE=/app/data/youtube-cookies.txt
+    volumes:
+      - ./notebook_data:/app/data   # put youtube-cookies.txt in ./notebook_data
+```
+
+See [Content Processing Engines](../3-USER-GUIDE/content-processing-engines.md) for how these engines are selected in the UI.
 
 ---
 

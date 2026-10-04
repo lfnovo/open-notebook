@@ -381,7 +381,7 @@ export const caES = {
     invalidUrlsDetected: "S'han detectat URL no vàlides:",
     lineLabel: "Línia {{line}}",
     fixInvalidUrls: "Corregeix o elimina les URL no vàlides per continuar",
-    selectMultipleFilesHint: "Selecciona múltiples fitxers per a la importació per lots. Compatibles: Documents (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD), Multimèdia (MP4, MP3, WAV, M4A), Imatges (JPG, PNG), Arxius (ZIP)",
+    selectMultipleFilesHint: "Selecciona múltiples fitxers per a la importació per lots. Compatibles: Documents (PDF, DOC, DOCX, PPT, XLS, EPUB, ODT, ODS, ODP, HTML, HTM, TXT, MD), Multimèdia (MP4, MP3, WAV, M4A), Imatges (JPG, PNG), Arxius (ZIP)",
     selectedFiles: "Fitxers seleccionats:",
     textPlaceholder: "Enganxa o escriu el contingut aquí...",
     htmlDetected: "S'ha detectat contingut HTML. Es convertirà a Markdown després del processament.",

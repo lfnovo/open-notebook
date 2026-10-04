@@ -48,6 +48,7 @@ Sources are the raw materials of your research. This guide covers how to add dif
 - **PowerPoint** (.pptx) — Slides converted to text
 - **Excel** (.xlsx, .xls) — Spreadsheet data
 - **EPUB** (.epub) — eBook files
+- **OpenDocument** (.odt, .ods, .odp) — LibreOffice / OpenOffice text documents, spreadsheets (one table per sheet) and presentations (one block per slide)
 - **Markdown** (.md, .txt) — Plain text formats
 - **HTML** (.html, .htm) — Web page files
 - **Images** (.png, .jpg, .jpeg, .tiff, .bmp) — Text read via OCR (**requires Docling enabled** — see below)
@@ -210,6 +211,8 @@ Method 2: Playlist
 - Captions/subtitles (if available)
 - Transcription (if captions aren't available)
 - Basic metadata (title, channel, length)
+
+**"YouTube blocked or failed the transcript request":** YouTube blocks transcript requests from many server and cloud IPs. Give the worker a residential proxy (`CCORE_YOUTUBE_PROXY`) or a browser cookies file (`CCORE_YOUTUBE_COOKIES_FILE`) — see [Content Extraction variables](../5-CONFIGURATION/environment-reference.md#content-extraction). Datacenter proxies are usually blocked too.
 
 **Processing:**
 - 10-minute video: ~2-3 minutes

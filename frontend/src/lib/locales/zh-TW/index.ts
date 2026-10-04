@@ -381,7 +381,7 @@ export const zhTW = {
     invalidUrlsDetected: "檢測到無效的 URL：",
     lineLabel: "第 {{line}} 行",
     fixInvalidUrls: "請修正或移除無效的 URL 以繼續",
-    selectMultipleFilesHint: "選擇多個檔案進行批次導入。支援：文件 (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD)，媒體 (MP4, MP3, WAV, M4A)，圖片 (JPG, PNG)，歸檔 (ZIP)",
+    selectMultipleFilesHint: "選擇多個檔案進行批次導入。支援：文件 (PDF, DOC, DOCX, PPT, XLS, EPUB, ODT, ODS, ODP, HTML, HTM, TXT, MD)，媒體 (MP4, MP3, WAV, M4A)，圖片 (JPG, PNG)，歸檔 (ZIP)",
     selectedFiles: "已選擇檔案：",
     textPlaceholder: "在此處貼上或輸入您的內容...",
     htmlDetected: "偵測到 HTML 內容。處理後將轉換為 Markdown。",

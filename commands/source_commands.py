@@ -54,7 +54,10 @@ class SourceProcessingOutput(CommandOutput):
             ConfigurationError,
             ContextLengthExceededError,
             IncompleteGenerationError,
-        ],  # Don't retry validation/config errors or incomplete generations
+            NotFoundError,
+        ],  # Don't retry validation/config errors, incomplete generations, or a
+        # record deleted mid-processing (NotFoundError means "missing", never a
+        # DB failure: ObjectModel.get raises DatabaseOperationError for those)
         "retry_log_level": "debug",  # Avoid log noise during transaction conflicts
     },
 )
@@ -158,6 +161,13 @@ async def process_source_command(
             f"Generation failed (permanent) for source {input_data.source_id}: {e}"
         )
         raise  # Preserve failed job status; stop_on prevents automatic retries.
+    except NotFoundError as e:
+        # E.g. the source was deleted while extraction ran (save_source re-reads
+        # it). Permanent: stop_on prevents retries that would starve the queue.
+        logger.error(
+            f"Source processing failed (permanent), record no longer exists: {e}"
+        )
+        raise
     except ValueError as e:
         # Validation errors are permanent failures. Re-raise so surreal-commands
         # marks the job as `failed` (stop_on=[ValueError] already prevents

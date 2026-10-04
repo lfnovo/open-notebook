@@ -132,3 +132,42 @@ async def test_run_transformation_fails_permanently_when_source_is_gone():
     command = registry.get_command("open_notebook", "run_transformation")
     assert command is not None
     assert NotFoundError in command.retry_config.stop_on
+
+
+@pytest.mark.asyncio
+async def test_source_deleted_during_processing_fails_permanently():
+    """save_source re-reads the source after extraction; a deletion in that
+    window raises NotFoundError from inside the graph, which must not be
+    retried either."""
+    from types import SimpleNamespace
+
+    from surreal_commands import registry
+
+    from commands.source_commands import SourceProcessingInput, process_source_command
+
+    source = SimpleNamespace(id="source:abc", command=None, save=AsyncMock())
+    with (
+        patch(
+            "commands.source_commands.Source.get", new=AsyncMock(return_value=source)
+        ),
+        patch(
+            "commands.source_commands.source_graph.ainvoke",
+            new=AsyncMock(
+                side_effect=NotFoundError("source with id source:abc not found")
+            ),
+        ),
+    ):
+        with pytest.raises(NotFoundError):
+            await process_source_command(
+                SourceProcessingInput(
+                    source_id="source:abc",
+                    content_state={"file_path": "/tmp/x.md"},
+                    notebook_ids=[],
+                    transformations=[],
+                    embed=False,
+                )
+            )
+
+    command = registry.get_command("open_notebook", "process_source")
+    assert command is not None
+    assert NotFoundError in command.retry_config.stop_on

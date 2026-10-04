@@ -716,6 +716,20 @@ class TestRegionalBaseUrl:
         assert cred.api_key is not None
         assert cred.api_key.get_secret_value() == "sf-key"
 
+    def test_siliconflow_non_chat_models_are_not_language(self):
+        from open_notebook.ai.model_discovery import classify_model_type
+
+        assert classify_model_type("BAAI/bge-m3", "siliconflow") == "embedding"
+        assert (
+            classify_model_type("FunAudioLLM/SenseVoiceSmall", "siliconflow")
+            == "speech_to_text"
+        )
+        assert (
+            classify_model_type("FunAudioLLM/CosyVoice2-0.5B", "siliconflow")
+            == "text_to_speech"
+        )
+        assert classify_model_type("Qwen/Qwen3-8B", "siliconflow") == "language"
+
     def test_env_migration_without_base_url(self, monkeypatch):
         monkeypatch.setenv("ZAI_API_KEY", "zai-key")
         monkeypatch.delenv("ZAI_BASE_URL", raising=False)
@@ -746,15 +760,27 @@ class TestRegionalBaseUrl:
                     request=httpx.Request("GET", url),
                 )
 
+        from open_notebook.utils.url_validation import PinnedHttpTarget
+
+        pinned = []
+
+        async def fake_prepare_pinned(url, provider):
+            pinned.append(url)
+            return PinnedHttpTarget(url=url)
+
         monkeypatch.setenv("SILICONFLOW_API_KEY", "sf-key")
         monkeypatch.setenv("SILICONFLOW_BASE_URL", "https://api.siliconflow.cn/v1/")
         monkeypatch.setattr(model_discovery.httpx, "AsyncClient", FakeAsyncClient)
+        monkeypatch.setattr(
+            model_discovery, "prepare_pinned_http_target", fake_prepare_pinned
+        )
 
         models = await model_discovery.discover_openai_compatible_provider(
             "siliconflow"
         )
 
         assert requested == ["https://api.siliconflow.cn/v1/models"]
+        assert pinned == ["https://api.siliconflow.cn/v1/models"]
         assert [m.name for m in models] == ["Qwen/Qwen3-8B"]
 
     @pytest.mark.asyncio

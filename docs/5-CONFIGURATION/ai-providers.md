@@ -446,7 +446,7 @@ Heavy use: Depends on models chosen
 6. Click **Discover Models** → **Register Models**
 
 **Notes:**
-- Z.ai's GLM models (for example `glm-5.2`, also used for the connection test, and `glm-4.5-flash`) through an OpenAI-compatible API (`https://api.z.ai/api/paas/v4`). Register the models you want after **Discover Models**.
+- Z.ai's GLM models (for example `glm-5.2`, also used for the connection test, and `glm-4.5-flash`) are available through an OpenAI-compatible API (`https://api.z.ai/api/paas/v4`). Register the models you want after **Discover Models**.
 - Language models only.
 - Env-based setup: `ZAI_API_KEY`, plus `ZAI_BASE_URL` to point at a different Z.ai endpoint (migrated into the credential's Base URL).
 

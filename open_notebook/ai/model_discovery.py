@@ -8,7 +8,7 @@ AI providers and automatically register them in the database.
 import asyncio
 import os
 from dataclasses import dataclass
-from typing import Awaitable, Callable, Dict, List, Optional, Tuple
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
 import httpx
 from loguru import logger
@@ -161,6 +161,14 @@ DASHSCOPE_MODEL_TYPES = {
     "language": ["qwen"],
 }
 
+# SiliconFlow's /models catalog mixes chat models with embedding, rerank and
+# audio models; keep those out of the language slot.
+SILICONFLOW_MODEL_TYPES = {
+    "embedding": ["bge-", "bce-embedding", "embedding"],
+    "speech_to_text": ["sensevoice", "telespeech"],
+    "text_to_speech": ["cosyvoice", "fish-speech", "moss-tts"],
+}
+
 MINIMAX_MODEL_TYPES = {
     "language": ["minimax", "abab"],
 }
@@ -205,6 +213,7 @@ def classify_model_type(model_name: str, provider: str) -> str:
         "elevenlabs": ELEVENLABS_MODEL_TYPES,
         "deepgram": DEEPGRAM_MODEL_TYPES,
         "dashscope": DASHSCOPE_MODEL_TYPES,
+        "siliconflow": SILICONFLOW_MODEL_TYPES,
         "minimax": MINIMAX_MODEL_TYPES,
         "ppq": PPQ_MODEL_TYPES,
     }
@@ -287,19 +296,26 @@ async def discover_openai_compatible_provider(provider: str) -> List[DiscoveredM
         return []
 
     url = spec.url
+    headers = {"Authorization": f"Bearer {api_key}"}
+    extensions: Dict[str, Any] = {}
     base_url = os.environ.get(spec.base_url_env) if spec.base_url_env else None
-    if base_url:
-        trimmed = base_url.rstrip("/")
-        url = trimmed if trimmed.endswith("/models") else f"{trimmed}/models"
 
     models = []
     try:
+        if base_url:
+            # Endpoint override from the environment: validate and pin it like
+            # any other user-supplied URL (DNS-rebinding safe).
+            trimmed = base_url.rstrip("/")
+            override = trimmed if trimmed.endswith("/models") else f"{trimmed}/models"
+            target = await prepare_pinned_http_target(override, provider)
+            url = target.url
+            headers.update(target.headers)
+            extensions = target.extensions
         async with httpx.AsyncClient() as client:
-            response = await client.get(
-                url,
-                headers={"Authorization": f"Bearer {api_key}"},
-                timeout=30.0,
-            )
+            get_kwargs: Dict[str, Any] = {"headers": headers, "timeout": 30.0}
+            if extensions:
+                get_kwargs["extensions"] = extensions
+            response = await client.get(url, **get_kwargs)
             response.raise_for_status()
             data = response.json()
 

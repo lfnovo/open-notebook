@@ -944,6 +944,9 @@ async def migrate_from_env() -> dict:
 
             logger.info(f"[{provider}] Creating credential from env vars")
             cred = create_credential_from_env(provider)
+            # Same URL checks as credentials created through the API.
+            if cred.base_url:
+                await validate_url(cred.base_url, provider)
             await cred.save()
             logger.info(f"[{provider}] Credential saved successfully (id={cred.id})")
 

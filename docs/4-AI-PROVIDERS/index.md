@@ -87,6 +87,20 @@ Open Notebook supports 17+ AI providers. This guide helps you **choose the right
 - Best for: Open-weight LLMs behind one OpenAI-compatible key
 - Advantage: Broad open-model catalog
 
+**SiliconFlow**
+- Cost: Pay-per-model (competitive)
+- Speed: Fast
+- Quality: Varies by model
+- Best for: Hosted DeepSeek / Qwen / GLM / Kimi, including mainland China accounts
+- Advantage: Global and mainland China endpoints
+
+**Z.ai**
+- Cost: Pay-per-token
+- Speed: Fast
+- Quality: Good (GLM family)
+- Best for: GLM models from their maker
+- Advantage: Current GLM releases first
+
 **PayPerQ (PPQ)**
 - Cost: Pay-as-you-go across providers
 - Speed: Varies by routed model
@@ -152,6 +166,8 @@ Open Notebook supports 17+ AI providers. This guide helps you **choose the right
 | **MiniMax** | Fast | $$ | Good | Low | 5 min | 204K |
 | **Cohere** | Fast | $$ | Good | Low | 5 min | 128K |
 | **Novita** | Fast | $ | Varies | Low | 5 min | Varies |
+| **SiliconFlow** | Fast | $ | Varies | Low | 5 min | Varies |
+| **Z.ai** | Fast | $$ | Good | Low | 5 min | Varies |
 | **PayPerQ (PPQ)** | Varies | Varies | Varies | Low | 5 min | Varies |
 | **Ollama** | Slow-Medium | Free | Good | Max | 10 min | Varies |
 | **oMLX** | Fast (MLX) | Free | Good | Max | 10 min | Varies |

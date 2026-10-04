@@ -79,6 +79,12 @@ PROVIDER_CONFIG = {
     "novita": {
         "env_var": "NOVITA_API_KEY",
     },
+    "siliconflow": {
+        "env_var": "SILICONFLOW_API_KEY",
+    },
+    "zai": {
+        "env_var": "ZAI_API_KEY",
+    },
     "ppq": {
         "env_var": "PPQ_API_KEY",
     },

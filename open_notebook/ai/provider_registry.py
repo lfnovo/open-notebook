@@ -168,6 +168,26 @@ _PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
         openai_compat_discovery_url="https://api.novita.ai/openai/models",
     ),
     ProviderSpec(
+        name="siliconflow",
+        display_name="SiliconFlow",
+        modalities=_LANGUAGE_ONLY,
+        required_env=("SILICONFLOW_API_KEY",),
+        # esperanto's default for the profile; mainland China accounts set
+        # the credential's base URL to https://api.siliconflow.cn/v1.
+        test_model="deepseek-ai/DeepSeek-V3.1-Terminus",
+        docs_url="https://cloud.siliconflow.com/account/ak",
+        openai_compat_discovery_url="https://api.siliconflow.com/v1/models",
+    ),
+    ProviderSpec(
+        name="zai",
+        display_name="Z.ai",
+        modalities=_LANGUAGE_ONLY,
+        required_env=("ZAI_API_KEY",),
+        test_model="glm-5.2",
+        docs_url="https://z.ai/manage-apikey/apikey-list",
+        openai_compat_discovery_url="https://api.z.ai/api/paas/v4/models",
+    ),
+    ProviderSpec(
         name="ppq",
         display_name="PayPerQ",
         modalities=_ALL_MODALITIES,

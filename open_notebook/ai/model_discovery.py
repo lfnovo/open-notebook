@@ -338,6 +338,8 @@ discover_xai_models = _make_openai_compat_discoverer("xai")
 discover_dashscope_models = _make_openai_compat_discoverer("dashscope")
 discover_minimax_models = _make_openai_compat_discoverer("minimax")
 discover_novita_models = _make_openai_compat_discoverer("novita")
+discover_siliconflow_models = _make_openai_compat_discoverer("siliconflow")
+discover_zai_models = _make_openai_compat_discoverer("zai")
 discover_ppq_models = _make_openai_compat_discoverer("ppq")
 
 
@@ -878,6 +880,8 @@ PROVIDER_DISCOVERY_FUNCTIONS = {
     "dashscope": discover_dashscope_models,
     "minimax": discover_minimax_models,
     "novita": discover_novita_models,
+    "siliconflow": discover_siliconflow_models,
+    "zai": discover_zai_models,
     "ppq": discover_ppq_models,
     "cohere": discover_cohere_models,
     "azure": None,  # Azure requires credential-based discovery (different auth)

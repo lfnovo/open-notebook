@@ -55,6 +55,8 @@ class TestOpenAICompatTable:
             "dashscope",
             "minimax",
             "novita",
+            "siliconflow",
+            "zai",
             "ppq",
         }
 
@@ -78,6 +80,8 @@ class TestOpenAICompatTable:
             "dashscope",
             "minimax",
             "novita",
+            "siliconflow",
+            "zai",
             "ppq",
             "cohere",
             "azure",

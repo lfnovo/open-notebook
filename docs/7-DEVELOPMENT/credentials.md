@@ -38,7 +38,7 @@ CRUD plus lifecycle operations: `POST /credentials/{id}/test` (connection check)
 
 **Supported providers (17)** are defined once in the provider registry (`open_notebook/ai/provider_registry.py` `PROVIDERS`) — env vars, modalities, test models, discovery URLs and docs links all live there, and `connection_tester.TEST_MODELS`, `credentials_service.PROVIDER_ENV_CONFIG`/`PROVIDER_MODALITIES` and `model_discovery.OPENAI_COMPAT_PROVIDERS` are derived from it. `GET /api/providers` exposes the registry to clients — the frontend fetches it at runtime (`useProviders()` in `frontend/src/lib/hooks/use-providers.ts`) and renders providers in response order (the registry declaration order). One manual copy remains, enforced by `tests/test_credential_provider_validation.py`: the `SupportedProvider` Literal in `api/models.py` (typing can't be derived at runtime):
 
-- Simple API key: openai, anthropic, google, groq, mistral, deepseek, xai, openrouter, voyage, elevenlabs, deepgram, dashscope, minimax
+- Simple API key: openai, anthropic, google, groq, mistral, deepseek, xai, openrouter, voyage, elevenlabs, deepgram, dashscope, minimax, novita, siliconflow, zai
 - URL-based: ollama
 - Multi-field: azure, vertex, openai_compatible
 

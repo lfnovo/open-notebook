@@ -162,6 +162,66 @@ class TestCredentialModelDiscovery:
         ]
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "provider,base_url,expected_url",
+        [
+            # Regional override: mainland-China SiliconFlow accounts (#1409)
+            (
+                "siliconflow",
+                "https://api.siliconflow.cn/v1",
+                "https://api.siliconflow.cn/v1/models",
+            ),
+            ("siliconflow", None, "https://api.siliconflow.com/v1/models"),
+            ("zai", None, "https://api.z.ai/api/paas/v4/models"),
+        ],
+    )
+    async def test_registry_provider_discovery_honors_base_url(
+        self, monkeypatch, provider, base_url, expected_url
+    ):
+        """Profile providers list models at the credential's base URL when it
+        overrides the default endpoint (pinned like other user URLs)."""
+        from open_notebook.utils.url_validation import PinnedHttpTarget
+
+        requested = []
+        pinned = []
+
+        class FakeAsyncClient:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return None
+
+            async def get(self, url, headers=None, timeout=None, extensions=None):
+                requested.append(url)
+                return httpx.Response(
+                    200,
+                    json={"data": [{"id": "model-a"}]},
+                    request=httpx.Request("GET", url, headers=headers or {}),
+                )
+
+        async def fake_prepare_pinned(url, provider):
+            pinned.append(url)
+            return PinnedHttpTarget(url=url)
+
+        monkeypatch.setattr(credentials_service.httpx, "AsyncClient", FakeAsyncClient)
+        monkeypatch.setattr(
+            credentials_service, "prepare_pinned_http_target", fake_prepare_pinned
+        )
+
+        config = {"api_key": "sk-test"}
+        if base_url:
+            config["base_url"] = base_url
+        models = await credentials_service.discover_with_config(provider, config)
+
+        assert [m["name"] for m in models] == ["model-a"]
+        assert requested == [expected_url]
+        assert pinned == ([expected_url] if base_url else [])
+
+    @pytest.mark.asyncio
     async def test_model_discovery_base_url_can_include_models_path(self, monkeypatch):
         """Model discovery should not append /models twice."""
         from open_notebook.utils.url_validation import PinnedHttpTarget

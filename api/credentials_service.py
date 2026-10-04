@@ -684,7 +684,10 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
     # Standard OpenAI-style API discovery
     discovery_url = url_map.get(provider)
     user_supplied_url = False
-    if provider == "openai" and base_url:
+    # A credential's base URL override (e.g. a regional endpoint such as
+    # SiliconFlow's mainland-China api.siliconflow.cn) is also where its
+    # models are listed.
+    if base_url and discovery_url:
         discovery_url = models_endpoint(base_url)
         user_supplied_url = True
     if not discovery_url or not api_key:

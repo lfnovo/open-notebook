@@ -399,6 +399,63 @@ Heavy use: Depends on models chosen
 
 ---
 
+### SiliconFlow
+
+**Cost:** Pay-per-model (competitive; some small models are free)
+
+**Get Your API Key:**
+1. Go to https://cloud.siliconflow.com/account/ak (mainland China accounts: https://cloud.siliconflow.cn/account/ak)
+2. Create an account (if needed)
+3. Create a new API key
+
+**Configure in Open Notebook:**
+1. Go to **Manage** → **Models**
+2. Click **Add Credential**
+3. Select provider: **SiliconFlow**
+4. Give it a name, paste your API key
+5. **Mainland China account?** Set **Base URL** to `https://api.siliconflow.cn/v1` (the default is the global `https://api.siliconflow.com/v1`)
+6. Click **Save**, then **Test Connection**
+7. Click **Discover Models** → **Register Models**
+
+**Notes:**
+- Hosted DeepSeek, Qwen, GLM and Kimi models behind one OpenAI-compatible key.
+- Language models only for now. Embedding, speech-to-text and text-to-speech through SiliconFlow need support in Esperanto first.
+- Env-based setup: `SILICONFLOW_API_KEY`, plus `SILICONFLOW_BASE_URL` for a mainland China account.
+
+**Troubleshooting:**
+- "Invalid API key" → Check that the key matches the endpoint: keys from `siliconflow.cn` don't work against the global `.com` endpoint, and vice versa
+- "Model not available" → Re-discover models from the credential
+
+---
+
+### Z.ai
+
+**Cost:** Pay-per-token
+
+**Get Your API Key:**
+1. Go to https://z.ai/manage-apikey/apikey-list
+2. Create an account (if needed)
+3. Create a new API key
+
+**Configure in Open Notebook:**
+1. Go to **Manage** → **Models**
+2. Click **Add Credential**
+3. Select provider: **Z.ai**
+4. Give it a name, paste your API key
+5. Click **Save**, then **Test Connection**
+6. Click **Discover Models** → **Register Models**
+
+**Notes:**
+- Z.ai's GLM models (default `glm-5.2`) through an OpenAI-compatible API (`https://api.z.ai/api/paas/v4`).
+- Language models only.
+- Env-based setup: `ZAI_API_KEY`, plus `ZAI_BASE_URL` to point at a different Z.ai endpoint.
+
+**Troubleshooting:**
+- "Invalid API key" → Check the key in the Z.ai console
+- "Model not available" → Re-discover models from the credential
+
+---
+
 ### PayPerQ (PPQ)
 
 **Cost:** Pay-as-you-go across the providers it routes to

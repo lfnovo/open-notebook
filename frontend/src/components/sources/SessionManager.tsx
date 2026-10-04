@@ -200,7 +200,7 @@ export function SessionManager({
                     ) : (
                       <>
                         <div className="flex items-start justify-between mb-1">
-                          <h4 className="font-medium text-sm" dir="auto">
+                          <h4 className="font-medium text-sm">
                             {session.title}
                           </h4>
                           <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>

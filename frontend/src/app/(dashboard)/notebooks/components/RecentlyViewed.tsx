@@ -108,7 +108,7 @@ export function RecentlyViewed({ limit = 12 }: RecentlyViewedProps) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex min-w-0 items-center gap-2">
-                    <p className="truncate text-sm font-medium" dir="auto">{item.title}</p>
+                    <p className="truncate text-sm font-medium">{item.title}</p>
                     <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                       {typeLabel}
                     </span>

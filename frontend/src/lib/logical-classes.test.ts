@@ -21,8 +21,9 @@ const BANNED_TOKENS = [
   /^rounded-[lr]-/,        // rounded-l-*, rounded-r-*
 ]
 
-// Artifacts of the buggy sweep: `border-l` → `bs`, `border-r` → `be`.
-const INVALID_TOKENS = /^(be|bs)(-\d+)?$/
+// Artifacts of the buggy sweep: `border-l` → `bs`, `border-r` → `be`, and the
+// invented `inset-inline-*` classes (Tailwind v4 only generates start-*/end-*).
+const INVALID_TOKENS = [/^(be|bs)(-\d+)?$/, /inset-inline-/]
 
 function sourceClassStrings(): { file: string; line: number; text: string }[] {
   const srcDir = path.resolve(__dirname, '..')
@@ -71,7 +72,7 @@ describe('logical Tailwind classes (RTL layout ADR)', () => {
     const violations: string[] = []
     for (const entry of sourceClassStrings()) {
       for (const token of quotedTokens(entry.text)) {
-        if (INVALID_TOKENS.test(token)) {
+        if (INVALID_TOKENS.some(re => re.test(token))) {
           violations.push(`${entry.file}:${entry.line} — ${token}`)
         }
       }

@@ -229,7 +229,7 @@ export function CommandPalette() {
                 onSelect={() => handleNavigate(`/notebooks/${notebook.id}`)}
               >
                 <Book className="h-4 w-4" />
-                <span dir="auto">{notebook.name}</span>
+                <span>{notebook.name}</span>
               </CommandItem>
             ))
           ) : null}

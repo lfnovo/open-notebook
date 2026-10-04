@@ -57,7 +57,6 @@ export function NotebookRow({ notebook }: NotebookRowProps) {
               href={`/notebooks/${encodeURIComponent(notebook.id)}`}
               onClick={(e) => e.stopPropagation()}
               className="font-medium truncate rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              dir="auto"
             >
               {notebook.name}
             </Link>
@@ -68,7 +67,7 @@ export function NotebookRow({ notebook }: NotebookRowProps) {
             )}
           </div>
           {notebook.description && (
-            <p className="text-sm text-muted-foreground truncate" dir="auto">
+            <p className="text-sm text-muted-foreground truncate">
               {notebook.description}
             </p>
           )}

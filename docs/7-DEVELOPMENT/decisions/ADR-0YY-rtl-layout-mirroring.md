@@ -1,7 +1,7 @@
 # ADR-0YY: RTL layout mirroring, stacked on the language/direction plumbing
 
 - **Status**: Accepted
-- **Date**: 2026-10-03
+- **Date**: 2026-10
 - **Related**: PR #1367 (language/direction plumbing + ar-SA locale), Discussion #1338
 
 ## Context
@@ -33,6 +33,6 @@ The original implementation surfaced these real constraints:
 
 ## Consequences
 
-- **Positive:** RTL users get a fully mirrored layout and correct keyboard navigation/placement through the Radix context, without reloads.
+- **Positive:** RTL users get mirrored spacing, alignment, and direction-aware controls (sidebar, progress, toasts, icons) driven by the Radix context, without reloads.
 - **Positive:** The guard test makes the logical-properties policy self-enforcing.
 - **Negative / deferred:** mixed-language content isolation, toast position mirroring, and non-Latin font subsets remain open follow-ups. New components must use logical utilities and, where needed, the directional icon vocabulary.

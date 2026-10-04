@@ -51,7 +51,7 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
                 <span aria-hidden className="mb-2 block h-2 w-2 rounded-[3px] bg-teal" />
-                <CardTitle className="text-base truncate" dir="auto">
+                <CardTitle className="text-base truncate">
                   {notebook.name}
                 </CardTitle>
                 {notebook.archived && (

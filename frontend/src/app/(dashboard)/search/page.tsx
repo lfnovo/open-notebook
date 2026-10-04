@@ -477,7 +477,6 @@ export default function SearchPage() {
                                   <button
                                     onClick={() => openModal(modalType, id)}
                                     className="text-primary hover:underline font-medium"
-                                    dir="auto"
                                   >
                                     {result.title}
                                   </button>
@@ -495,7 +494,7 @@ export default function SearchPage() {
                                   </CollapsibleTrigger>
                                   <CollapsibleContent className="mt-2 space-y-1">
                                     {result.matches.map((match, i) => (
-                                      <div key={i} className="text-sm ps-6 py-1 border-s-2 border-muted" dir="auto">
+                                      <div key={i} className="text-sm ps-6 py-1 border-s-2 border-muted">
                                         {match}
                                       </div>
                                     ))}

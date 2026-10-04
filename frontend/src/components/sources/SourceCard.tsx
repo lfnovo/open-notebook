@@ -259,7 +259,6 @@ function SourceCardImpl({
               <h4
                 className="text-sm font-medium leading-tight line-clamp-2 break-all"
                 title={title}
-                dir="auto"
               >
                 {title}
               </h4>
@@ -314,7 +313,7 @@ function SourceCardImpl({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="absolute top-1.5 inset-inline-end-1.5 h-7 w-7 p-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-1.5 end-1.5 h-7 w-7 p-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <MoreVertical className="h-4 w-4" />

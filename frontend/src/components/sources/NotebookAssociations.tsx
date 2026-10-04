@@ -167,7 +167,7 @@ export function NotebookAssociations({
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-sm truncate" dir="auto">
+                        <h4 className="font-medium text-sm truncate">
                           {notebook.name}
                         </h4>
                         {isCurrentlyLinked && !hasChanges && (
@@ -175,7 +175,7 @@ export function NotebookAssociations({
                         )}
                       </div>
                       {notebook.description && (
-                        <p className="text-xs text-muted-foreground line-clamp-1" dir="auto">
+                        <p className="text-xs text-muted-foreground line-clamp-1">
                           {notebook.description}
                         </p>
                       )}

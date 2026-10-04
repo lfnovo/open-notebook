@@ -201,7 +201,7 @@ export function ContentSelectionPanel({
                                       htmlFor={`source-selection-${source.id}`}
                                       className="flex flex-1 flex-col gap-1 cursor-pointer"
                                     >
-                                      <span className="text-sm font-medium text-foreground" dir="auto">
+                                      <span className="text-sm font-medium text-foreground">
                                         {source.title || t('podcasts.untitledSource')}
                                       </span>
                                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -280,7 +280,7 @@ export function ContentSelectionPanel({
                                       htmlFor={`note-selection-${note.id}`}
                                       className="flex flex-1 flex-col cursor-pointer"
                                     >
-                                      <span className="text-sm font-medium text-foreground" dir="auto">
+                                      <span className="text-sm font-medium text-foreground">
                                         {note.title || t('podcasts.untitledNote')}
                                       </span>
                                       <span className="text-xs text-muted-foreground">

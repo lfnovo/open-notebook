@@ -215,7 +215,7 @@ export function CredentialFormDialog({
                 <button
                   type="button"
                   onClick={() => setShowApiKey(!showApiKey)}
-                  className="absolute inset-inline-end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+                  className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
                   tabIndex={-1}
                 >
                   {showApiKey ? 'Hide' : 'Show'}

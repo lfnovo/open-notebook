@@ -199,7 +199,7 @@ export function AddExistingSourceDialog({
         <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
           {/* Search Input */}
           <div className="relative">
-            <Search className="absolute inset-inline-start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder={t('sources.searchPlaceholder')}
               value={searchQuery}
@@ -207,7 +207,7 @@ export function AddExistingSourceDialog({
               className="ps-10"
             />
             {isSearching && (
-              <LoaderIcon className="absolute inset-inline-end-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+              <LoaderIcon className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
             )}
           </div>
 
@@ -247,7 +247,7 @@ export function AddExistingSourceDialog({
                           <div className="shrink-0 mt-0.5">
                             {getSourceIcon(source)}
                           </div>
-                          <h4 className="font-medium text-sm break-words line-clamp-2 flex-1 min-w-0" dir="auto">
+                          <h4 className="font-medium text-sm break-words line-clamp-2 flex-1 min-w-0">
                             {source.title}
                           </h4>
                           {isAlreadyLinked && (

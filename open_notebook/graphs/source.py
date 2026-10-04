@@ -17,6 +17,11 @@ from open_notebook.domain.transformation import Transformation
 from open_notebook.graphs.transformation import graph as transform_graph
 from open_notebook.utils.runtime_capabilities import engine_runtime_missing
 
+# content-core >= 2.1 disables its own Loguru logging for library consumers.
+# Both the API and the worker import this module before extracting anything,
+# so re-enable it here to keep extraction logs in their output.
+logger.enable("content_core")
+
 # Default preferred languages for YouTube transcript selection, used when
 # ContentSettings.youtube_preferred_languages is unset. content-core's own
 # default is only ["en", "es", "pt"]; we keep the broader list Open Notebook has

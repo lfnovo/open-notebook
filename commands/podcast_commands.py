@@ -83,11 +83,12 @@ def explain_generation_failure(error_msg: str) -> Optional[str]:
     if "Invalid json output" in error_msg or "Expecting value" in error_msg:
         return (
             "The model's response could not be parsed as JSON. Two common "
-            "causes: (1) the response was truncated - podcast-creator caps a "
-            "transcript segment at 5000 output tokens unless the episode "
-            "profile sets max_tokens, which is tight for long segments or "
-            "token-expensive languages, so raise max_tokens or use fewer and "
-            "shorter segments; (2) a model using extended thinking (e.g. "
+            "causes: (1) the response was truncated - podcast-creator requests "
+            "up to 8192 output tokens per outline or transcript step unless the "
+            "episode profile sets max_tokens; if the model stops earlier (a "
+            "lower output limit, or a token-expensive language), set max_tokens "
+            "to its limit or use fewer and shorter segments; (2) a model using "
+            "extended thinking (e.g. "
             "GPT-5) put all of its output inside <think> tags, leaving nothing "
             "to parse - try gpt-4o, gpt-4o-mini or gpt-4-turbo instead."
         )

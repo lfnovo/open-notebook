@@ -195,9 +195,7 @@ class TestNoEnglishSampleInANonEnglishRun:
         assert "Let's pick up where we left off" not in rendered
         assert "Setting the scene" not in rendered
         # No JSON object literal is shown at all.
-        assert not [
-            line for line in rendered.splitlines() if line.startswith('{"')
-        ]
+        assert not [line for line in rendered.splitlines() if line.startswith('{"')]
 
     def test_transcript_still_states_the_structure_in_prose(self):
         rendered = render_transcript(turns=6, language="Hebrew")
@@ -304,9 +302,7 @@ class TestNoDriftFromBundledTemplates:
     def _variables(cls, path: Path) -> set:
         text = path.read_text()
         used = set(re.findall(r"\{\{-?\s*([a-zA-Z_][a-zA-Z0-9_]*)", text))
-        used |= set(
-            re.findall(r"\{%-?\s*(?:if|elif)\s+([a-zA-Z_][a-zA-Z0-9_]*)", text)
-        )
+        used |= set(re.findall(r"\{%-?\s*(?:if|elif)\s+([a-zA-Z_][a-zA-Z0-9_]*)", text))
         loop_locals = set(re.findall(r"\{%-?\s*for\s+([a-zA-Z_][a-zA-Z0-9_]*)", text))
         return used - loop_locals - cls.JINJA_KEYWORDS
 

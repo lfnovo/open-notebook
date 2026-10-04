@@ -13,6 +13,7 @@ from open_notebook.exceptions import (
     ContextLengthExceededError,
     IncompleteGenerationError,
     InvalidInputError,
+    NotFoundError,
 )
 
 try:
@@ -53,7 +54,10 @@ class SourceProcessingOutput(CommandOutput):
             ConfigurationError,
             ContextLengthExceededError,
             IncompleteGenerationError,
-        ],  # Don't retry validation/config errors or incomplete generations
+            NotFoundError,
+        ],  # Don't retry validation/config errors, incomplete generations, or a
+        # record deleted mid-processing (NotFoundError means "missing", never a
+        # DB failure: ObjectModel.get raises DatabaseOperationError for those)
         "retry_log_level": "debug",  # Avoid log noise during transaction conflicts
     },
 )
@@ -75,7 +79,11 @@ async def process_source_command(
         transformations = []
         for trans_id in input_data.transformations:
             logger.info(f"Loading transformation: {trans_id}")
-            transformation = await Transformation.get(trans_id)
+            try:
+                transformation = await Transformation.get(trans_id)
+            except NotFoundError as e:
+                # Same as a deleted source below: permanent, not transient.
+                raise ValueError(f"Transformation '{trans_id}' no longer exists") from e
             if not transformation:
                 raise ValueError(f"Transformation '{trans_id}' not found")
             transformations.append(transformation)
@@ -83,7 +91,18 @@ async def process_source_command(
         logger.info(f"Loaded {len(transformations)} transformations")
 
         # 2. Get existing source record to update its command field
-        source = await Source.get(input_data.source_id)
+        try:
+            source = await Source.get(input_data.source_id)
+        except NotFoundError as e:
+            # The source was removed after this job was queued (e.g. a sync tool
+            # deleted it, or the record was cleaned up). The job can never
+            # succeed: raise a permanent error (ValueError is in `stop_on`) so
+            # surreal-commands marks it failed instead of spending 15 retries
+            # with exponential backoff, which starves every job behind it.
+            raise ValueError(
+                f"Source '{input_data.source_id}' no longer exists "
+                "(deleted before processing?)"
+            ) from e
         if not source:
             raise ValueError(f"Source '{input_data.source_id}' not found")
 
@@ -142,6 +161,13 @@ async def process_source_command(
             f"Generation failed (permanent) for source {input_data.source_id}: {e}"
         )
         raise  # Preserve failed job status; stop_on prevents automatic retries.
+    except NotFoundError as e:
+        # E.g. the source was deleted while extraction ran (save_source re-reads
+        # it). Permanent: stop_on prevents retries that would starve the queue.
+        logger.error(
+            f"Source processing failed (permanent), record no longer exists: {e}"
+        )
+        raise
     except ValueError as e:
         # Validation errors are permanent failures. Re-raise so surreal-commands
         # marks the job as `failed` (stop_on=[ValueError] already prevents
@@ -193,7 +219,9 @@ class RunTransformationOutput(CommandOutput):
             ContextLengthExceededError,
             IncompleteGenerationError,
             InvalidInputError,
-        ],  # Don't retry validation/config errors or incomplete generations
+            NotFoundError,
+        ],  # Don't retry validation/config errors, incomplete generations, or
+        # a source/transformation deleted before the job ran
         "retry_log_level": "warning",
     },
 )
@@ -257,7 +285,7 @@ async def run_transformation_command(
             processing_time=processing_time,
         )
 
-    except (IncompleteGenerationError, InvalidInputError) as e:
+    except (IncompleteGenerationError, InvalidInputError, NotFoundError) as e:
         # e.g. the source has no text to transform
         logger.error(
             f"Generation failed (permanent) for transformation "

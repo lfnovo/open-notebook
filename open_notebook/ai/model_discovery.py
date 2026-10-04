@@ -529,6 +529,19 @@ async def discover_ollama_models() -> List[DiscoveredModel]:
     return models
 
 
+def audio_seed(provider: str) -> List[Tuple[str, str]]:
+    """The provider's static audio models as (name, model_type) pairs.
+
+    Shared by env-based and credential-based discovery so both seed the same
+    models.
+    """
+    return [
+        (name, model_type)
+        for model_type, names in PROVIDER_AUDIO_SEEDS.get(provider, {}).items()
+        for name in names
+    ]
+
+
 def _with_audio_seed(
     provider: str, models: List[DiscoveredModel]
 ) -> List[DiscoveredModel]:
@@ -543,12 +556,11 @@ def _with_audio_seed(
         return models
 
     seen = {(m.name, m.model_type) for m in models}
-    for model_type, names in PROVIDER_AUDIO_SEEDS.get(provider, {}).items():
-        for name in names:
-            if (name, model_type) not in seen:
-                models.append(
-                    DiscoveredModel(name=name, provider=provider, model_type=model_type)
-                )
+    for name, model_type in audio_seed(provider):
+        if (name, model_type) not in seen:
+            models.append(
+                DiscoveredModel(name=name, provider=provider, model_type=model_type)
+            )
     return models
 
 

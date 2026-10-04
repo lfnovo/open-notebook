@@ -861,8 +861,6 @@ class TestMiniMaxCredentialDiscovery:
 
     @pytest.mark.asyncio
     async def test_seeds_tts_models(self, monkeypatch):
-        from open_notebook.ai.model_discovery import MINIMAX_AUDIO_MODELS
-
         class FakeAsyncClient:
             def __init__(self, *args, **kwargs):
                 pass
@@ -966,7 +964,9 @@ class TestEndpointOverrideProvisioningAndMigration:
             "minimax", {"api_key": "mm-test"}
         )
 
-        names = [m["name"] for m in models]
-        assert names[0] == "MiniMax-M3"
-        for name in MINIMAX_AUDIO_MODELS["text_to_speech"]:
-            assert name in names
+        # Pinned independently of the seed constant.
+        assert [m["name"] for m in models] == [
+            "MiniMax-M3",
+            "speech-2.8-hd",
+            "speech-2.8-turbo",
+        ]

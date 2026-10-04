@@ -209,7 +209,9 @@ class RunTransformationOutput(CommandOutput):
             ContextLengthExceededError,
             IncompleteGenerationError,
             InvalidInputError,
-        ],  # Don't retry validation/config errors or incomplete generations
+            NotFoundError,
+        ],  # Don't retry validation/config errors, incomplete generations, or
+        # a source/transformation deleted before the job ran
         "retry_log_level": "warning",
     },
 )
@@ -273,7 +275,7 @@ async def run_transformation_command(
             processing_time=processing_time,
         )
 
-    except (IncompleteGenerationError, InvalidInputError) as e:
+    except (IncompleteGenerationError, InvalidInputError, NotFoundError) as e:
         # e.g. the source has no text to transform
         logger.error(
             f"Generation failed (permanent) for transformation "

@@ -106,3 +106,29 @@ async def test_transient_db_failure_stays_retryable():
     ):
         with pytest.raises(DatabaseOperationError):
             await process_source_command(input_data)
+
+
+@pytest.mark.asyncio
+async def test_run_transformation_fails_permanently_when_source_is_gone():
+    """run_transformation had the same deletion-before-processing gap."""
+    from surreal_commands import registry
+
+    from commands.source_commands import (
+        RunTransformationInput,
+        run_transformation_command,
+    )
+
+    with patch(
+        "commands.source_commands.Source.get",
+        new=AsyncMock(side_effect=NotFoundError("source not found")),
+    ):
+        with pytest.raises(NotFoundError):
+            await run_transformation_command(
+                RunTransformationInput(
+                    source_id="source:gone", transformation_id="transformation:t1"
+                )
+            )
+
+    command = registry.get_command("open_notebook", "run_transformation")
+    assert command is not None
+    assert NotFoundError in command.retry_config.stop_on

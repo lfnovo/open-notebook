@@ -12,10 +12,12 @@ import pytest
 from open_notebook.ai import model_discovery
 from open_notebook.ai.model_discovery import (
     ANTHROPIC_FALLBACK_MODELS,
+    MINIMAX_AUDIO_MODELS,
     OPENAI_COMPAT_PROVIDERS,
     OPENROUTER_AUDIO_MODELS,
     PROVIDER_DISCOVERY_FUNCTIONS,
     discover_anthropic_models,
+    discover_minimax_models,
     discover_openai_compatible_provider,
     discover_openrouter_models,
 )
@@ -232,6 +234,51 @@ class TestOpenRouterDiscovery:
             for name in names:
                 assert (name, model_type) in by_type
         assert all(m.provider == "openrouter" for m in models)
+
+
+class TestMiniMaxDiscovery:
+    """MiniMax TTS (esperanto 2.27) is seeded on top of live discovery (#1438)."""
+
+    @pytest.mark.asyncio
+    async def test_missing_key_returns_empty(self, monkeypatch):
+        monkeypatch.delenv("MINIMAX_API_KEY", raising=False)
+        assert await discover_minimax_models() == []
+
+    @pytest.mark.asyncio
+    async def test_seeds_tts_models_alongside_language_models(self, monkeypatch):
+        def handler(url, headers, params, timeout):
+            return json_response(url, {"data": [{"id": "MiniMax-M3"}]})
+
+        monkeypatch.setenv("MINIMAX_API_KEY", "mm-test")
+        monkeypatch.setattr(
+            model_discovery.httpx, "AsyncClient", make_fake_client(handler)
+        )
+
+        models = await discover_minimax_models()
+        by_type = {(m.name, m.model_type) for m in models}
+
+        assert ("MiniMax-M3", "language") in by_type
+        for name in MINIMAX_AUDIO_MODELS["text_to_speech"]:
+            assert (name, "text_to_speech") in by_type
+        assert all(m.provider == "minimax" for m in models)
+
+    @pytest.mark.asyncio
+    async def test_failed_discovery_seeds_nothing(self, monkeypatch):
+        def handler(url, headers, params, timeout):
+            return json_response(url, {"error": "unauthorized"}, status_code=401)
+
+        monkeypatch.setenv("MINIMAX_API_KEY", "bad")
+        monkeypatch.setattr(
+            model_discovery.httpx, "AsyncClient", make_fake_client(handler)
+        )
+
+        assert await discover_minimax_models() == []
+
+    def test_speech_models_classify_as_tts(self):
+        from open_notebook.ai.model_discovery import classify_model_type
+
+        assert classify_model_type("speech-2.8-hd", "minimax") == "text_to_speech"
+        assert classify_model_type("MiniMax-M3", "minimax") == "language"
 
 
 class TestAnthropicDiscovery:

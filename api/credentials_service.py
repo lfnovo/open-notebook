@@ -18,7 +18,7 @@ from api.models import CredentialResponse, validate_url_key_provider_required_fi
 from open_notebook.ai.connection_tester import normalize_anthropic_compatible_base_url
 from open_notebook.ai.model_discovery import (
     ANTHROPIC_FALLBACK_MODELS,
-    OPENROUTER_AUDIO_MODELS,
+    PROVIDER_AUDIO_SEEDS,
     classify_model_type,
     fetch_anthropic_model_ids,
 )
@@ -734,11 +734,11 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
                 for m in data.get("data", [])
                 if m.get("id")
             ]
-            # OpenRouter's /models listing does not reliably surface its TTS/STT
-            # catalog, so seed the audio model ids esperanto ships as defaults.
-            if provider == "openrouter":
+            # Some /models listings (OpenRouter, MiniMax) don't surface their
+            # TTS/STT catalog, so seed the audio model ids esperanto supports.
+            if provider in PROVIDER_AUDIO_SEEDS and discovered:
                 seen = {m["name"] for m in discovered}
-                for names in OPENROUTER_AUDIO_MODELS.values():
+                for names in PROVIDER_AUDIO_SEEDS[provider].values():
                     for name in names:
                         if name not in seen:
                             discovered.append({"name": name, "provider": provider})

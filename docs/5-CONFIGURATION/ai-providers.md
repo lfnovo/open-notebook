@@ -325,20 +325,28 @@ Heavy use: Depends on models chosen
 6. Click **Discover Models** → **Register Models**
 
 **Available Models:**
-- `MiniMax-M2.5` — Most capable, 204K context
-- `MiniMax-M2.5-highspeed` — Faster variant, 204K context
+- Language: `MiniMax-M3` (1M-token context), `MiniMax-M2.5` and `MiniMax-M2.5-highspeed` (204K)
+- Text-to-speech: `speech-2.8-hd` (quality) and `speech-2.8-turbo` (faster). Discover Models lists both
 
 **Recommended:**
-- For quality: `MiniMax-M2.5` (best overall)
-- For speed: `MiniMax-M2.5-highspeed` (faster responses)
+- Chat and transformations: `MiniMax-M3`
+- Podcasts: `speech-2.8-hd` as the speaker profile's voice model
+
+**Text-to-speech voices:**
+In a speaker profile, set the **Voice ID** to a MiniMax voice id, for example `English_Graceful_Lady`. System voices, and voices you cloned or generated in your MiniMax account, all work. The ids are listed in the MiniMax platform's voice library.
+
+**Region:**
+MiniMax API keys are region-specific. Mainland China keys need the credential's **Base URL** set to `https://api.minimax.cn/v1`. The default is the international `https://api.minimax.io/v1`, and the same Base URL is used for chat and text-to-speech.
 
 **Advantages:**
-- Very long context (204K tokens)
+- Very long context (1M tokens on M3)
+- Chat and podcast voices from one key
 - Competitive pricing
 
 **Troubleshooting:**
-- "Invalid API key" → Check the key in the MiniMax platform
+- "Invalid API key" → Check the key in the MiniMax platform, and that its region matches the Base URL
 - "Model not available" → Re-discover models from the credential
+- Podcast fails with a voice error → Check the speaker's Voice ID against your account's voices
 
 ---
 

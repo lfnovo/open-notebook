@@ -855,6 +855,14 @@ class TestRegionalBaseUrl:
     async def test_providers_without_override_keep_registry_url(self, monkeypatch):
         requested = []
 
+
+class TestMiniMaxCredentialDiscovery:
+    """Credential-based MiniMax discovery seeds its TTS models (#1438)."""
+
+    @pytest.mark.asyncio
+    async def test_seeds_tts_models(self, monkeypatch):
+        from open_notebook.ai.model_discovery import MINIMAX_AUDIO_MODELS
+
         class FakeAsyncClient:
             def __init__(self, *args, **kwargs):
                 pass
@@ -871,6 +879,12 @@ class TestRegionalBaseUrl:
                     200,
                     json={"data": [{"id": "m"}]},
                     request=httpx.Request("GET", url),
+
+
+                return httpx.Response(
+                    200,
+                    json={"data": [{"id": "MiniMax-M3"}]},
+                    request=httpx.Request("GET", url, headers=headers or {}),
                 )
 
         monkeypatch.setattr(credentials_service.httpx, "AsyncClient", FakeAsyncClient)
@@ -946,3 +960,13 @@ class TestEndpointOverrideProvisioningAndMigration:
         assert saved == []
         assert "siliconflow" not in result["migrated"]
         assert any(e.startswith("siliconflow:") for e in result["errors"])
+
+
+        models = await credentials_service.discover_with_config(
+            "minimax", {"api_key": "mm-test"}
+        )
+
+        names = [m["name"] for m in models]
+        assert names[0] == "MiniMax-M3"
+        for name in MINIMAX_AUDIO_MODELS["text_to_speech"]:
+            assert name in names

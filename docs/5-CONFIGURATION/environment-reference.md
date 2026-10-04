@@ -59,7 +59,7 @@ Comprehensive list of all environment variables available in Open Notebook.
 
 | Variable | Required? | Default | Description |
 |----------|-----------|---------|-------------|
-| `ESPERANTO_LLM_TIMEOUT` | No | 60 | LLM inference timeout in seconds |
+| `ESPERANTO_LLM_TIMEOUT` | No | 180 | LLM inference timeout in seconds, applied to every provider including Ollama. Open Notebook sets 180 when unset (esperanto's own default is 60). Keep it below `API_CLIENT_TIMEOUT` |
 | `ESPERANTO_SSL_VERIFY` | No | true | Verify SSL certificates (false = development only) |
 | `ESPERANTO_SSL_CA_BUNDLE` | No | None | Path to custom CA certificate bundle |
 

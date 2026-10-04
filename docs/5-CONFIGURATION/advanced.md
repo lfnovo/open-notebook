@@ -43,16 +43,18 @@ For high-concurrency deployments, use `exponential_jitter` to prevent thundering
 # Client timeout (default: 300 seconds)
 API_CLIENT_TIMEOUT=300
 
-# LLM timeout (default: 60 seconds)
-ESPERANTO_LLM_TIMEOUT=60
+# LLM timeout (default: 180 seconds)
+ESPERANTO_LLM_TIMEOUT=180
 ```
+
+`ESPERANTO_LLM_TIMEOUT` limits each model call (chat, Ask, transformations, podcast outline and transcript) and applies to every provider, including Ollama. Open Notebook sets it to 180 seconds when you don't; set it yourself to change it. Speech-to-text and text-to-speech have their own, longer timeouts.
 
 **Guideline:** Set `API_CLIENT_TIMEOUT` > `ESPERANTO_LLM_TIMEOUT` + buffer
 
 ```
-Example:
-  ESPERANTO_LLM_TIMEOUT=120
-  API_CLIENT_TIMEOUT=180  # 120 + 60 second buffer
+Example (slow local models):
+  ESPERANTO_LLM_TIMEOUT=420
+  API_CLIENT_TIMEOUT=600  # 420 + 180 second buffer
 ```
 
 ---

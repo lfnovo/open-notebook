@@ -209,7 +209,7 @@ tar -xzf backup-20240101.tar.gz
 ```bash
 # In .env:
 API_CLIENT_TIMEOUT=600  # 10 minutes for slow setups
-ESPERANTO_LLM_TIMEOUT=180  # 3 minutes for model inference
+ESPERANTO_LLM_TIMEOUT=420  # 7 minutes for model inference (default: 180)
 ```
 
 ### Recommended timeouts by setup:

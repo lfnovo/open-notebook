@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-10-04
+
 ### Added
 - **OpenDocument uploads and YouTube unblocking options.** `.odt`, `.ods` and `.odp` files (and `.htm`) can be uploaded as sources (content-core 2.2). New content-core settings are documented: `CCORE_YOUTUBE_PROXY` and `CCORE_YOUTUBE_COOKIES_FILE` get YouTube transcripts through when YouTube blocks the server's IP, and `CCORE_AUDIO_SEGMENT_MINUTES` controls how long audio is split for transcription (#1439)
 - **SiliconFlow and Z.ai providers.** Both are available in Manage → Models with credential setup, connection test and model discovery (language models). SiliconFlow serves hosted DeepSeek, Qwen, GLM and Kimi models; mainland China accounts set the credential's Base URL to `https://api.siliconflow.cn/v1`. Z.ai serves the GLM family. Model discovery honors their Base URL override (from the credential or `SILICONFLOW_BASE_URL` / `ZAI_BASE_URL`), as it already did for OpenAI (#1409, #1437)

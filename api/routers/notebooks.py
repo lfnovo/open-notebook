@@ -2,6 +2,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
+from surrealdb import RecordID
 
 from api.models import (
     NotebookCreate,
@@ -235,6 +236,26 @@ async def get_notebook_delete_preview(notebook_id: str):
         )
 
 
+def _notebook_record_id(notebook_id: str) -> RecordID:
+    """Parse a notebook id, raising InvalidInputError (mapped to 400) if malformed.
+
+    `ensure_record_id` lets SurrealDB's parse error escape, and the catch-all
+    below would report it as a 500 leaking a driver message. A malformed id is a
+    client error, so raise the typed error the sibling single-record endpoints
+    already produce through `ObjectModel.get`; the `except OpenNotebookError`
+    arm re-raises it and the global handler answers 400.
+    """
+    try:
+        return ensure_record_id(notebook_id)
+    except Exception as e:
+        # Parsing is pure, so any failure here means "not a record id". A
+        # parseable id is left alone: unknown records still 404.
+        raise InvalidInputError(
+            f"Invalid notebook id: '{notebook_id}' "
+            "(expected the format 'notebook:<id>')"
+        ) from e
+
+
 @router.get("/notebooks/{notebook_id}", response_model=NotebookResponse)
 async def get_notebook(notebook_id: str):
     """Get a specific notebook by ID."""
@@ -246,7 +267,9 @@ async def get_notebook(notebook_id: str):
             count(<-artifact.in) as note_count
             FROM $notebook_id
         """
-        result = await repo_query(query, {"notebook_id": ensure_record_id(notebook_id)})
+        result = await repo_query(
+            query, {"notebook_id": _notebook_record_id(notebook_id)}
+        )
 
         if not result:
             raise HTTPException(status_code=404, detail="Notebook not found")

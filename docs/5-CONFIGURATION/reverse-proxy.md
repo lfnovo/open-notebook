@@ -590,7 +590,7 @@ If you still experience timeouts after configuring your proxy, you can also adju
 ```bash
 # In .env file:
 API_CLIENT_TIMEOUT=600      # API client timeout (default: 300s)
-ESPERANTO_LLM_TIMEOUT=180   # LLM inference timeout (default: 60s)
+ESPERANTO_LLM_TIMEOUT=420   # LLM inference timeout (default: 180s)
 ```
 
 See [Advanced Configuration](advanced.md) for more timeout options.

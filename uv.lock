@@ -19,7 +19,6 @@ constraints = [
     { name = "urllib3", specifier = ">=2.8.0" },
     { name = "virtualenv", specifier = ">=21.14.5" },
 ]
-overrides = [{ name = "pillow", specifier = ">=12.2.0" }]
 
 [[package]]
 name = "ai-prompter"
@@ -189,15 +188,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/35/5d/752690df9ef5b76e169e68d6a129fa6d08a7100ca7f754c89495db3c6019/appnope-0.1.4.tar.gz", hash = "sha256:1de3860566df9caf38f01f86f65e0e13e379af54f9e4bee1e66b48f2efffd1ee", size = 4170, upload-time = "2024-02-06T09:43:11.258Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/81/29/5ecc3a15d5a33e31b26c11426c45c501e439cb865d0bff96315d86443b78/appnope-0.1.4-py2.py3-none-any.whl", hash = "sha256:502575ee11cd7a28c0205f379b525beefebab9d161b7c964670864014ed7213c", size = 4321, upload-time = "2024-02-06T09:43:09.663Z" },
-]
-
-[[package]]
-name = "asciidoc"
-version = "10.2.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/1d/e7/315a82f2d256e9270977aa3c15e8fe281fd7c40b8e2a0b97e0cb61ca8fa0/asciidoc-10.2.1.tar.gz", hash = "sha256:d9f13c285981b3c7eb660d02ca0a2779981e88d48105de81bb40445e60dddb83", size = 230179, upload-time = "2024-07-17T03:12:52.681Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/75/1f/87941eaa96e86aa22086064f67e4187e2710fb76c147312979ea29278dac/asciidoc-10.2.1-py2.py3-none-any.whl", hash = "sha256:3f277a636b617c9ce7e0b87bcaea51f144500e9a5c8a6488421ee24594850d40", size = 272433, upload-time = "2024-07-17T03:12:49.012Z" },
 ]
 
 [[package]]
@@ -414,14 +404,11 @@ wheels = [
 
 [[package]]
 name = "click"
-version = "8.3.1"
+version = "8.5.0"
 source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/3d/fa/656b739db8587d7b5dfa22e22ed02566950fbfbcdc20311993483657a5c0/click-8.3.1.tar.gz", hash = "sha256:12ff4785d337a1bb490bb7e9c2b1ee5da3112e94a8622f26a6c77f5d2fc6842a", size = 295065, upload-time = "2025-11-15T20:45:42.706Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c7/0e/7fa0ef50764b67090eca4114772a2abf8b6148198475e54c660b97caeee6/click-8.5.0.tar.gz", hash = "sha256:ba0d2089de75ea0310e2dde03160e6ca10009947fb95a182f9b54021bb272e34", size = 382235, upload-time = "2026-08-26T13:33:14.56Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/98/78/01c019cdb5d6498122777c1a43056ebb3ebfeef2076d9d026bfe15583b2b/click-8.3.1-py3-none-any.whl", hash = "sha256:981153a64e25f12d547d3426c367a4857371575ee7ad18df2a6183ab0545b2a6", size = 108274, upload-time = "2025-11-15T20:45:41.139Z" },
+    { url = "https://files.pythonhosted.org/packages/58/50/6c0d534c5f134586a8e1ba4e330569e32f057e33372ae556463212fb4cd3/click-8.5.0-py3-none-any.whl", hash = "sha256:255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360", size = 125251, upload-time = "2026-08-26T13:33:12.928Z" },
 ]
 
 [[package]]
@@ -444,12 +431,11 @@ wheels = [
 
 [[package]]
 name = "content-core"
-version = "2.0.7"
+version = "2.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ai-prompter" },
     { name = "aiohttp" },
-    { name = "asciidoc" },
     { name = "bs4" },
     { name = "click" },
     { name = "esperanto" },
@@ -460,6 +446,7 @@ dependencies = [
     { name = "langdetect" },
     { name = "loguru" },
     { name = "markdownify" },
+    { name = "odfpy" },
     { name = "openpyxl" },
     { name = "pandas" },
     { name = "pdfplumber" },
@@ -470,13 +457,14 @@ dependencies = [
     { name = "python-pptx" },
     { name = "pytubefix" },
     { name = "readability-lxml" },
+    { name = "requests" },
     { name = "tenacity" },
     { name = "validators" },
     { name = "youtube-transcript-api" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/59/d4/85fcbe4cfefe0dc5c5bba7b9225b3c6bcebb73a432ab6cdf2bc22c08689a/content_core-2.0.7.tar.gz", hash = "sha256:926d7e5029acf3ec3502dc3cd2856fee355106314ba5b6d8819cde25764975d5", size = 19183270, upload-time = "2026-09-02T14:08:52.142Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/66/42/ce40e8bb98300fe25585d8bb0c2a13228e25031673e0d61cb7adcc7642f1/content_core-2.2.0.tar.gz", hash = "sha256:fbc0303dff75d328abfe794681c374c37cbf708d6b2682b4f13a56e0ded65199", size = 19302996, upload-time = "2026-10-03T19:56:34.209Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ec/f8/c265051ded9b2f0e5caeb0e05c5faa6a0f8a2817ab38d67c99de77252be7/content_core-2.0.7-py3-none-any.whl", hash = "sha256:bb05890e7142ddb16774e9a1b795256a0492c212b92f6e704a50b8196c818def", size = 59976, upload-time = "2026-09-02T14:08:50.308Z" },
+    { url = "https://files.pythonhosted.org/packages/e7/df/06365b4e1352ee2f6dd392a13e2b41d380d8734b45aec60362d5f2f45e33/content_core-2.2.0-py3-none-any.whl", hash = "sha256:564aece59c2f4d60f34827bf1c4a49a4c2f71e5a49853a042253efabd1cd44ea", size = 71467, upload-time = "2026-10-03T19:56:32.443Z" },
 ]
 
 [[package]]
@@ -685,15 +673,15 @@ wheels = [
 
 [[package]]
 name = "esperanto"
-version = "2.26.0"
+version = "2.28.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3c/00/9f5197dfe620cc6e70bf31dc768a1d6cc5308d9f5b84cc66d0a7b35c448b/esperanto-2.26.0.tar.gz", hash = "sha256:21d33542b9c4805f41f7dd3c14bccc186b7b39dadd2489556719794b985facb3", size = 768871, upload-time = "2026-07-30T01:35:21.463Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8c/bf/89f89700131292acc85f3af2440c6edab97dea810943c16a9ffdbbc504ca/esperanto-2.28.0.tar.gz", hash = "sha256:af85313ba114aaa585f09c31e916537510f32fc4221f965769e38c9af59ac0f7", size = 832215, upload-time = "2026-10-03T21:04:29.727Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ed/2e/81c692d47fc5fbba46a3e3f2addd1e46e0b64ed7aabff469fbaf7e86f63a/esperanto-2.26.0-py3-none-any.whl", hash = "sha256:1337ab83c78a836f671ed10fcd649bb8286991ee4ee55c9ef2c40d436539e8bc", size = 262587, upload-time = "2026-07-30T01:35:19.816Z" },
+    { url = "https://files.pythonhosted.org/packages/6a/e0/ffb4d35377f768f351dd0f5e75a0220727037a16232d279b6541e61b7883/esperanto-2.28.0-py3-none-any.whl", hash = "sha256:08f024b1f7e9557d1977365c8d370536c07d5bce56c154b9ed5c0c44c75778a1", size = 271100, upload-time = "2026-10-03T21:04:28.173Z" },
 ]
 
 [[package]]
@@ -1046,19 +1034,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/82/77/7b3966d0b9d1d31a36ddf1746926a11dface89a83409bf1483f0237aa758/idna-3.15.tar.gz", hash = "sha256:ca962446ea538f7092a95e057da437618e886f4d349216d2b1e294abfdb65fdc", size = 199245, upload-time = "2026-05-12T22:45:57.011Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d2/23/408243171aa9aaba178d3e2559159c24c1171a641aa83b67bdd3394ead8e/idna-3.15-py3-none-any.whl", hash = "sha256:048adeaf8c2d788c40fee287673ccaa74c24ffd8dcf09ffa555a2fbb59f10ac8", size = 72340, upload-time = "2026-05-12T22:45:55.733Z" },
-]
-
-[[package]]
-name = "imageio"
-version = "2.37.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "numpy" },
-    { name = "pillow" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/a3/6f/606be632e37bf8d05b253e8626c2291d74c691ddc7bcdf7d6aaf33b32f6a/imageio-2.37.2.tar.gz", hash = "sha256:0212ef2727ac9caa5ca4b2c75ae89454312f440a756fcfc8ef1993e718f50f8a", size = 389600, upload-time = "2025-11-04T14:29:39.898Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/fb/fe/301e0936b79bcab4cacc7548bf2853fc28dced0a578bab1f7ef53c9aa75b/imageio-2.37.2-py3-none-any.whl", hash = "sha256:ad9adfb20335d718c03de457358ed69f141021a333c40a53e57273d8a5bd0b9b", size = 317646, upload-time = "2025-11-04T14:29:37.948Z" },
 ]
 
 [[package]]
@@ -1874,24 +1849,6 @@ wheels = [
 ]
 
 [[package]]
-name = "moviepy"
-version = "2.2.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "decorator" },
-    { name = "imageio" },
-    { name = "imageio-ffmpeg" },
-    { name = "numpy" },
-    { name = "pillow" },
-    { name = "proglog" },
-    { name = "python-dotenv" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/de/61/15f9476e270f64c78a834e7459ca045d669f869cec24eed26807b8cd479d/moviepy-2.2.1.tar.gz", hash = "sha256:c80cb56815ece94e5e3e2d361aa40070eeb30a09d23a24c4e684d03e16deacb1", size = 58431438, upload-time = "2025-05-21T19:31:52.601Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/9a/73/7d3b2010baa0b5eb1e4dfa9e4385e89b6716be76f2fa21a6c0fe34b68e5a/moviepy-2.2.1-py3-none-any.whl", hash = "sha256:6b56803fec2ac54b557404126ac1160e65448e03798fa282bd23e8fab3795060", size = 129871, upload-time = "2025-05-21T19:31:50.11Z" },
-]
-
-[[package]]
 name = "multidict"
 version = "6.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2044,6 +2001,15 @@ wheels = [
 ]
 
 [[package]]
+name = "odfpy"
+version = "1.4.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "defusedxml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/97/73/8ade73f6749177003f7ce3304f524774adda96e6aaab30ea79fd8fda7934/odfpy-1.4.1.tar.gz", hash = "sha256:db766a6e59c5103212f3cc92ec8dd50a0f3a02790233ed0b52148b70d3c438ec", size = 717045, upload-time = "2020-01-18T16:55:48.852Z" }
+
+[[package]]
 name = "ollama"
 version = "0.6.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2110,8 +2076,8 @@ notebooks = [
 requires-dist = [
     { name = "ai-prompter", specifier = ">=0.4,<1" },
     { name = "babel", specifier = ">=2.18.0" },
-    { name = "content-core", specifier = ">=2.0.7,<3" },
-    { name = "esperanto", specifier = ">=2.25.1,<3" },
+    { name = "content-core", specifier = ">=2.2.0,<3" },
+    { name = "esperanto", specifier = ">=2.28.0,<3" },
     { name = "fastapi", specifier = ">=0.104.0" },
     { name = "httpx", extras = ["socks"], specifier = ">=0.27.0" },
     { name = "langchain", specifier = ">=1.3.9,<2" },
@@ -2127,7 +2093,7 @@ requires-dist = [
     { name = "langgraph-checkpoint-sqlite", specifier = ">=3.1.1,<4" },
     { name = "loguru", specifier = ">=0.7.2" },
     { name = "numpy", specifier = ">=2.4.1" },
-    { name = "podcast-creator", specifier = ">=0.12.0,<1" },
+    { name = "podcast-creator", specifier = ">=0.13.0,<1" },
     { name = "pycountry", specifier = ">=26.2.16" },
     { name = "pydantic", specifier = ">=2.9.2" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
@@ -2437,16 +2403,16 @@ wheels = [
 
 [[package]]
 name = "podcast-creator"
-version = "0.12.0"
+version = "0.13.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ai-prompter" },
     { name = "click" },
     { name = "content-core" },
     { name = "esperanto" },
+    { name = "imageio-ffmpeg" },
     { name = "langgraph" },
     { name = "loguru" },
-    { name = "moviepy" },
     { name = "nest-asyncio" },
     { name = "pycountry" },
     { name = "pydub" },
@@ -2455,9 +2421,9 @@ dependencies = [
     { name = "tenacity" },
     { name = "tiktoken" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/95/e3/d7112e86ec4194c14f6024dd0a0d1509b5ef70c76bf41c8359db22c6a9d9/podcast_creator-0.12.0.tar.gz", hash = "sha256:16efbafb3103fecf7f37f434e8dcaf2e5e2929c505b9be833faa25287bc8d9ad", size = 486668, upload-time = "2026-03-03T13:43:18.993Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3c/23/e3e5ba947a672cd39dab0b0a726dfd8ce76638bf71d1ffbfc356cb3b9733/podcast_creator-0.13.0.tar.gz", hash = "sha256:d9bab87506d9b42605c6b18f0ab3035ccd1fde744d1736e3cdb3cf5d283296bb", size = 497734, upload-time = "2026-10-04T01:02:24.06Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2f/6c/f9ed9d1e313183506d5774e4490a36ca6c0f231899055d658e283b26aaed/podcast_creator-0.12.0-py3-none-any.whl", hash = "sha256:605080b5841710733b7bcb6ff2fcb05b6a77f2aabd3c7bec617b58b03250fb47", size = 79295, upload-time = "2026-03-03T13:43:17.797Z" },
+    { url = "https://files.pythonhosted.org/packages/21/92/7cfa0b0c7992ea91ee1398d2ebe84a566159219f773402bef600055915c6/podcast_creator-0.13.0-py3-none-any.whl", hash = "sha256:e67d30fa8f4049fa3b4653b009cab6f69a3d5ed5ec551decae0901ab1be5b665", size = 82119, upload-time = "2026-10-04T01:02:22.522Z" },
 ]
 
 [[package]]
@@ -2474,18 +2440,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/40/f1/6d86a29246dfd2e9b6237f0b5823717f60cad94d47ddc26afa916d21f525/pre_commit-4.5.1.tar.gz", hash = "sha256:eb545fcff725875197837263e977ea257a402056661f09dae08e4b149b030a61", size = 198232, upload-time = "2025-12-16T21:14:33.552Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5d/19/fd3ef348460c80af7bb4669ea7926651d1f95c23ff2df18b9d24bab4f3fa/pre_commit-4.5.1-py2.py3-none-any.whl", hash = "sha256:3b3afd891e97337708c1674210f8eba659b52a38ea5f822ff142d10786221f77", size = 226437, upload-time = "2025-12-16T21:14:32.409Z" },
-]
-
-[[package]]
-name = "proglog"
-version = "0.1.12"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "tqdm" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/c2/af/c108866c452eda1132f3d6b3cb6be2ae8430c97e9309f38ca9dbd430af37/proglog-0.1.12.tar.gz", hash = "sha256:361ee074721c277b89b75c061336cb8c5f287c92b043efa562ccf7866cda931c", size = 8794, upload-time = "2025-05-09T14:36:18.316Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c1/1b/f7ea6cde25621cd9236541c66ff018f4268012a534ec31032bcb187dc5e7/proglog-0.1.12-py3-none-any.whl", hash = "sha256:ccaafce51e80a81c65dc907a460c07ccb8ec1f78dc660cfd8f9ec3a22f01b84c", size = 6337, upload-time = "2025-05-09T14:36:16.798Z" },
 ]
 
 [[package]]

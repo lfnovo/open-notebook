@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Security
+- Bumped esperanto to 2.28.0, content-core to 2.2.0 and podcast-creator to 0.13.0. podcast-creator no longer depends on moviepy, so the `pillow>=12.2.0` override is gone (content-core now floors `pillow>=12.3.0` itself); content-core's extraction logs, which it disables for library consumers since 2.1, are re-enabled in the API and worker (#1408)
 - Dependency security update: `next` 16.3.8 (critical RCE advisory in `next/og` `ImageResponse`; the app does not use `next/og`), `axios` 1.20.0, and the npm overrides for `postcss` (8.5.23) and `brace-expansion` (1.1.21); Python `anyio` 4.14.2, `pyjwt` 2.15.1, `tornado` 6.5.10, `urllib3` 2.8.0 and `virtualenv` 21.14.5. Remaining `npm audit` findings are moderate and limited to the test runner (`vitest`/`@vitest/mocker`, `fflate`). Dependabot now skips odd-numbered (non-LTS) Node majors for the image base
 
 ### Fixed

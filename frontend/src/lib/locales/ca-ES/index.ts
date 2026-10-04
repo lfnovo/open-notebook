@@ -678,7 +678,7 @@ export const caES = {
     segments: "Segments",
     maxTokens: "Tokens màxims de sortida",
     maxTokensPlaceholder: "Deixa-ho en blanc per als valors per defecte",
-    maxTokensHelp: "Opcional. Limita quants tokens pot generar cada pas de generació — l'esquema i la transcripció completa —, no és un límit per torn ni per conversa. Deixa-ho en blanc per fer servir els valors per defecte integrats (3000 per a l'esquema, 5000 per a la transcripció). Augmenta'l per a episodis més llargs; un valor massa baix pot deixar la transcripció incompleta.",
+    maxTokensHelp: "Opcional. Limita quants tokens pot generar cada pas de generació — l'esquema i la transcripció completa —, no és un límit per torn ni per conversa. Deixa-ho en blanc per fer servir els valors per defecte integrats (8192 per a l'esquema, 8192 per a la transcripció). Augmenta'l per a episodis més llargs; un valor massa baix pot deixar la transcripció incompleta.",
     defaultBriefingTitle: "Presentació per defecte",
     created: "Creat el {{time}}",
     details: "Detalls",

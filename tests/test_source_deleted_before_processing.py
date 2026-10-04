@@ -63,3 +63,46 @@ async def test_missing_transformation_raises_permanent_error():
     ):
         with pytest.raises(ValueError, match="no longer exists"):
             await process_source_command(input_data)
+
+
+@pytest.mark.asyncio
+async def test_object_get_reports_db_failures_as_database_errors():
+    """ObjectModel.get used to wrap every exception (e.g. a retriable SurrealDB
+    transaction conflict) as NotFoundError, so the fix above would have made
+    transient failures permanent. Only a missing record is NotFoundError."""
+    from open_notebook.domain.notebook import Source
+    from open_notebook.exceptions import DatabaseOperationError
+
+    with patch(
+        "open_notebook.domain.base.repo_query",
+        new=AsyncMock(side_effect=RuntimeError("Transaction conflict: retry")),
+    ):
+        with pytest.raises(DatabaseOperationError):
+            await Source.get("source:abc")
+
+    with patch("open_notebook.domain.base.repo_query", new=AsyncMock(return_value=[])):
+        with pytest.raises(NotFoundError):
+            await Source.get("source:abc")
+
+
+@pytest.mark.asyncio
+async def test_transient_db_failure_stays_retryable():
+    """A database failure while loading the source is re-raised as is (not
+    ValueError), so the worker's retry policy still applies."""
+    from commands.source_commands import SourceProcessingInput, process_source_command
+    from open_notebook.exceptions import DatabaseOperationError
+
+    input_data = SourceProcessingInput(
+        source_id="source:abc",
+        content_state={"file_path": "/tmp/whatever.md"},
+        notebook_ids=["notebook:whatever"],
+        transformations=[],
+        embed=True,
+    )
+
+    with patch(
+        "commands.source_commands.Source.get",
+        new=AsyncMock(side_effect=DatabaseOperationError("Failed to fetch")),
+    ):
+        with pytest.raises(DatabaseOperationError):
+            await process_source_command(input_data)

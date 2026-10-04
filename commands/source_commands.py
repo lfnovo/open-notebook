@@ -80,9 +80,7 @@ async def process_source_command(
                 transformation = await Transformation.get(trans_id)
             except NotFoundError as e:
                 # Same as a deleted source below: permanent, not transient.
-                raise ValueError(
-                    f"Transformation '{trans_id}' no longer exists: {e}"
-                ) from e
+                raise ValueError(f"Transformation '{trans_id}' no longer exists") from e
             if not transformation:
                 raise ValueError(f"Transformation '{trans_id}' not found")
             transformations.append(transformation)
@@ -100,7 +98,7 @@ async def process_source_command(
             # with exponential backoff, which starves every job behind it.
             raise ValueError(
                 f"Source '{input_data.source_id}' no longer exists "
-                f"(deleted before processing?): {e}"
+                "(deleted before processing?)"
             ) from e
         if not source:
             raise ValueError(f"Source '{input_data.source_id}' not found")

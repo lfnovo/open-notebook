@@ -173,6 +173,11 @@ class TestCredentialModelDiscovery:
             ),
             ("siliconflow", None, "https://api.siliconflow.com/v1/models"),
             ("zai", None, "https://api.z.ai/api/paas/v4/models"),
+            (
+                "zai",
+                "https://open.bigmodel.cn/api/paas/v4",
+                "https://open.bigmodel.cn/api/paas/v4/models",
+            ),
         ],
     )
     async def test_registry_provider_discovery_honors_base_url(
@@ -730,11 +735,23 @@ class TestRegionalBaseUrl:
         )
         assert classify_model_type("Qwen/Qwen3-8B", "siliconflow") == "language"
 
-    def test_env_migration_without_base_url(self, monkeypatch):
+    @pytest.mark.parametrize("value", [None, "", "   "])
+    def test_env_migration_without_base_url(self, monkeypatch, value):
         monkeypatch.setenv("ZAI_API_KEY", "zai-key")
-        monkeypatch.delenv("ZAI_BASE_URL", raising=False)
+        if value is None:
+            monkeypatch.delenv("ZAI_BASE_URL", raising=False)
+        else:
+            monkeypatch.setenv("ZAI_BASE_URL", value)
 
         assert credentials_service.create_credential_from_env("zai").base_url is None
+
+    def test_env_migration_reads_zai_base_url(self, monkeypatch):
+        monkeypatch.setenv("ZAI_API_KEY", "zai-key")
+        monkeypatch.setenv("ZAI_BASE_URL", " https://open.bigmodel.cn/api/paas/v4 ")
+
+        cred = credentials_service.create_credential_from_env("zai")
+
+        assert cred.base_url == "https://open.bigmodel.cn/api/paas/v4"
 
     @pytest.mark.asyncio
     async def test_env_discovery_uses_base_url(self, monkeypatch):
@@ -782,6 +799,55 @@ class TestRegionalBaseUrl:
         assert requested == ["https://api.siliconflow.cn/v1/models"]
         assert pinned == ["https://api.siliconflow.cn/v1/models"]
         assert [m.name for m in models] == ["Qwen/Qwen3-8B"]
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "env_value,expected",
+        [
+            (
+                "https://open.bigmodel.cn/api/paas/v4",
+                "https://open.bigmodel.cn/api/paas/v4/models",
+            ),
+            ("   ", "https://api.z.ai/api/paas/v4/models"),
+        ],
+    )
+    async def test_zai_env_discovery_override(self, monkeypatch, env_value, expected):
+        from open_notebook.ai import model_discovery
+        from open_notebook.utils.url_validation import PinnedHttpTarget
+
+        requested = []
+
+        class FakeAsyncClient:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return None
+
+            async def get(self, url, headers=None, timeout=None, **kwargs):
+                requested.append(url)
+                return httpx.Response(
+                    200,
+                    json={"data": [{"id": "glm-5.2"}]},
+                    request=httpx.Request("GET", url),
+                )
+
+        async def fake_prepare_pinned(url, provider):
+            return PinnedHttpTarget(url=url)
+
+        monkeypatch.setenv("ZAI_API_KEY", "zai-key")
+        monkeypatch.setenv("ZAI_BASE_URL", env_value)
+        monkeypatch.setattr(model_discovery.httpx, "AsyncClient", FakeAsyncClient)
+        monkeypatch.setattr(
+            model_discovery, "prepare_pinned_http_target", fake_prepare_pinned
+        )
+
+        await model_discovery.discover_openai_compatible_provider("zai")
+
+        assert requested == [expected]
 
     @pytest.mark.asyncio
     async def test_providers_without_override_keep_registry_url(self, monkeypatch):

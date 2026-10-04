@@ -298,7 +298,9 @@ async def discover_openai_compatible_provider(provider: str) -> List[DiscoveredM
     url = spec.url
     headers = {"Authorization": f"Bearer {api_key}"}
     extensions: Dict[str, Any] = {}
-    base_url = os.environ.get(spec.base_url_env) if spec.base_url_env else None
+    base_url = (
+        os.environ.get(spec.base_url_env, "").strip() if spec.base_url_env else ""
+    )
 
     models = []
     try:

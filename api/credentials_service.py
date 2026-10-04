@@ -200,7 +200,9 @@ def create_credential_from_env(provider: str) -> Credential:
             provider=provider,
             modalities=modalities,
             api_key=SecretStr(api_key) if api_key else None,
-            base_url=(os.environ.get(base_url_env) or None) if base_url_env else None,
+            base_url=(os.environ.get(base_url_env, "").strip() or None)
+            if base_url_env
+            else None,
         )
 
 

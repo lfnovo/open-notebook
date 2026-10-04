@@ -339,6 +339,7 @@ If you have these variables configured from a previous installation, click the *
 | `OPENAI_COMPATIBLE_API_KEY_TTS` | OpenAI-Compatible | Configure per-service key in credential |
 | `DASHSCOPE_API_KEY` | DashScope (Qwen) | Manage → Models → Add DashScope Credential |
 | `MINIMAX_API_KEY` | MiniMax | Manage → Models → Add MiniMax Credential |
+| `MINIMAX_BASE_URL` | MiniMax | Endpoint override (`https://api.minimax.cn/v1` for mainland China keys); copied into the credential's Base URL on migration. With credentials, set the Base URL in the Manage → Models credential form |
 | `NOVITA_API_KEY` | Novita | Manage → Models → Add Novita Credential |
 | `SILICONFLOW_API_KEY` | SiliconFlow | Manage → Models → Add SiliconFlow Credential |
 | `SILICONFLOW_BASE_URL` | SiliconFlow | Endpoint override for env-based setup (`https://api.siliconflow.cn/v1` for mainland China accounts); copied into the credential's Base URL on migration. With credentials, set the Base URL in the Manage → Models credential form |

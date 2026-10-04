@@ -336,7 +336,7 @@ Heavy use: Depends on models chosen
 In a speaker profile, set the **Voice ID** to a MiniMax voice id, for example `English_Graceful_Lady`. System voices, and voices you cloned or generated in your MiniMax account, all work. The ids are listed in the MiniMax platform's voice library.
 
 **Region:**
-MiniMax API keys are region-specific. Mainland China keys need the credential's **Base URL** set to `https://api.minimax.cn/v1`. The default is the international `https://api.minimax.io/v1`, and the same Base URL is used for chat and text-to-speech.
+MiniMax API keys are region-specific. Mainland China keys need the credential's **Base URL** set to `https://api.minimax.cn/v1`. The default is the international `https://api.minimax.io/v1`, and the same Base URL is used for chat and text-to-speech. Env-based setups use `MINIMAX_BASE_URL` (migrated into the credential's Base URL).
 
 **Advantages:**
 - Very long context (1M tokens on M3)

@@ -163,6 +163,9 @@ _PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
         display_name="MiniMax",
         modalities=("language", "text_to_speech"),
         required_env=("MINIMAX_API_KEY",),
+        # Keys are region-specific; mainland China uses https://api.minimax.cn/v1
+        # (esperanto reads MINIMAX_BASE_URL for both chat and TTS).
+        optional_env=("MINIMAX_BASE_URL",),
         test_model="MiniMax-M3",
         docs_url="https://platform.minimaxi.com/document/Guides",
         openai_compat_discovery_url="https://api.minimax.io/v1/models",

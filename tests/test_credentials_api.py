@@ -713,6 +713,7 @@ class TestRegionalBaseUrl:
         cred = credentials_service.create_credential_from_env("siliconflow")
 
         assert cred.base_url == "https://api.siliconflow.cn/v1"
+        assert cred.api_key is not None
         assert cred.api_key.get_secret_value() == "sf-key"
 
     def test_env_migration_without_base_url(self, monkeypatch):

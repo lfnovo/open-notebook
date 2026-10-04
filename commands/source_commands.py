@@ -76,7 +76,13 @@ async def process_source_command(
         transformations = []
         for trans_id in input_data.transformations:
             logger.info(f"Loading transformation: {trans_id}")
-            transformation = await Transformation.get(trans_id)
+            try:
+                transformation = await Transformation.get(trans_id)
+            except NotFoundError as e:
+                # Same as a deleted source below: permanent, not transient.
+                raise ValueError(
+                    f"Transformation '{trans_id}' no longer exists: {e}"
+                ) from e
             if not transformation:
                 raise ValueError(f"Transformation '{trans_id}' not found")
             transformations.append(transformation)

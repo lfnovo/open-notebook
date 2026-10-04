@@ -31,7 +31,9 @@ async def test_missing_source_raises_permanent_error():
 
     with patch(
         "commands.source_commands.Source.get",
-        new=AsyncMock(side_effect=NotFoundError("source with id source:does-not-exist not found")),
+        new=AsyncMock(
+            side_effect=NotFoundError("source with id source:does-not-exist not found")
+        ),
     ):
         with pytest.raises(ValueError) as excinfo:
             await process_source_command(input_data)
@@ -40,3 +42,24 @@ async def test_missing_source_raises_permanent_error():
     # The retry policy keys off the exception type: ValueError is in `stop_on`,
     # NotFoundError is not — that difference is the whole fix.
     assert not isinstance(excinfo.value, NotFoundError)
+
+
+@pytest.mark.asyncio
+async def test_missing_transformation_raises_permanent_error():
+    """A transformation deleted before the job runs is just as permanent."""
+    from commands.source_commands import SourceProcessingInput, process_source_command
+
+    input_data = SourceProcessingInput(
+        source_id="source:abc",
+        content_state={"file_path": "/tmp/whatever.md"},
+        notebook_ids=["notebook:whatever"],
+        transformations=["transformation:gone"],
+        embed=True,
+    )
+
+    with patch(
+        "commands.source_commands.Transformation.get",
+        new=AsyncMock(side_effect=NotFoundError("transformation not found")),
+    ):
+        with pytest.raises(ValueError, match="no longer exists"):
+            await process_source_command(input_data)

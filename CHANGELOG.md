@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- Bumped esperanto to 2.28.0, content-core to 2.2.0 and podcast-creator to 0.13.0. podcast-creator no longer depends on moviepy, so the `pillow>=12.2.0` override is gone (content-core now floors `pillow>=12.3.0` itself); content-core's extraction logs, which it disables for library consumers since 2.1, are re-enabled in the API and worker (#1408)
+- Dependency security update: `next` 16.3.8 (critical RCE advisory in `next/og` `ImageResponse`; the app does not use `next/og`), `axios` 1.20.0, and the npm overrides for `postcss` (8.5.23) and `brace-expansion` (1.1.21); Python `anyio` 4.14.2, `pyjwt` 2.15.1, `tornado` 6.5.10, `urllib3` 2.8.0 and `virtualenv` 21.14.5. Remaining `npm audit` findings are moderate and limited to the test runner (`vitest`/`@vitest/mocker`, `fflate`). Dependabot now skips odd-numbered (non-LTS) Node majors for the image base
+
+### Fixed
+- **The worker no longer stalls when a source is deleted before it is processed.** `Source.get()` raises `NotFoundError` for a missing record, so the job was retried as a transient failure (up to 15 attempts with backoff) and every job behind it waited; a missing source or transformation now fails the job immediately (#1363)
+- **Model calls default to a 180-second timeout.** esperanto 2.28 now enforces `ESPERANTO_LLM_TIMEOUT` on every provider (60 s by default); before, most providers used their SDK default and Ollama waited indefinitely. Open Notebook now sets 180 s when the variable is unset, so long answers and slower models aren't cut off at 60 s. **Ollama and other slow local setups** that relied on unlimited waits should set `ESPERANTO_LLM_TIMEOUT` (and `API_CLIENT_TIMEOUT` above it) explicitly (#1434)
+- Batch large embedding inserts into groups of 50 records and reuse one database connection across batches to reduce oversized WebSocket payloads and repeated sign-ins.
+- `GET /api/notebooks` now normalizes `order_by` through the shared `_validate_order_by()` guard, keeping its stricter `name`/`created`/`updated` allowlist on top, so the two ORDER BY validators can no longer drift (#1416)
+- **Source chat no longer repeats earlier answers in the streamed reply.** The stream sent every AI message in the checkpointed history, so the second and later answers arrived concatenated with all previous ones; it now sends only the new answer. The context badge ("1 Sources") is also restored from the saved session after a page refresh (#1393)
+
 ### Added
 - **OpenDocument uploads and YouTube unblocking options.** `.odt`, `.ods` and `.odp` files (and `.htm`) can be uploaded as sources (content-core 2.2). New content-core settings are documented: `CCORE_YOUTUBE_PROXY` and `CCORE_YOUTUBE_COOKIES_FILE` get YouTube transcripts through when YouTube blocks the server's IP, and `CCORE_AUDIO_SEGMENT_MINUTES` controls how long audio is split for transcription (#1439)
 - **SiliconFlow and Z.ai providers.** Both are available in Manage → Models with credential setup, connection test and model discovery (language models). SiliconFlow serves hosted DeepSeek, Qwen, GLM and Kimi models; mainland China accounts set the credential's Base URL to `https://api.siliconflow.cn/v1`. Z.ai serves the GLM family. Model discovery honors their Base URL override (from the credential or `SILICONFLOW_BASE_URL` / `ZAI_BASE_URL`), as it already did for OpenAI (#1409, #1437)

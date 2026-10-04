@@ -678,7 +678,7 @@ export const frFR = {
     segments: "Segments",
     maxTokens: "Jetons de sortie maximum",
     maxTokensPlaceholder: "Laisser vide pour les valeurs par défaut",
-    maxTokensHelp: "Facultatif. Limite le nombre de jetons que chaque étape de génération peut produire — le plan et la transcription complète —, ce n'est pas une limite par tour de parole ni par conversation. Laisser vide pour utiliser les valeurs par défaut intégrées (8192 pour le plan, 8192 pour la transcription). Augmentez-la pour des épisodes plus longs ; une valeur trop basse peut tronquer la transcription.",
+    maxTokensHelp: "Facultatif. Limite le nombre de tokens que chaque étape de génération peut produire — le plan et la transcription complète —, et non par réplique ou par conversation. Laissez vide pour utiliser la valeur par défaut (8192 pour les deux). Diminuez-la pour les modèles dont la limite de sortie est inférieure à 8192 ; une valeur trop basse peut tronquer la transcription.",
     defaultBriefingTitle: "Briefing par défaut",
     created: "Créé à {{time}}",
     details: "Détails",

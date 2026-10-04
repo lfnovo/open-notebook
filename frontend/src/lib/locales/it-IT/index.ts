@@ -678,7 +678,7 @@ export const itIT = {
     segments: "Segmenti",
     maxTokens: "Token massimi di output",
     maxTokensPlaceholder: "Lascia vuoto per i valori predefiniti",
-    maxTokensHelp: "Facoltativo. Limita quanti token può produrre ogni fase di generazione — la scaletta e la trascrizione completa —, non è un limite per singolo turno o per conversazione. Lascia vuoto per usare i valori predefiniti integrati (8192 per la scaletta, 8192 per la trascrizione). Aumentalo per episodi più lunghi; un valore troppo basso può troncare la trascrizione.",
+    maxTokensHelp: "Facoltativo. Limita quanti token può produrre ogni fase di generazione — la scaletta e la trascrizione completa —, non è un limite per battuta o per conversazione. Lascia vuoto per usare il valore predefinito (8192 per entrambi). Riducilo per i modelli con un limite di output inferiore a 8192; un valore troppo basso può troncare la trascrizione.",
     defaultBriefingTitle: "Briefing predefinito",
     created: "Creato il {{time}}",
     details: "Dettagli",

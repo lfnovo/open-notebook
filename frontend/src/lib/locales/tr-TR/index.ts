@@ -678,7 +678,7 @@ export const trTR = {
     segments: "Segmentler",
     maxTokens: "Maksimum çıktı token sayısı",
     maxTokensPlaceholder: "Varsayılanlar için boş bırakın",
-    maxTokensHelp: "İsteğe bağlı. Her üretim adımının — taslak ve tam transkript — üretebileceği token sayısını sınırlar; her konuşma sırası veya sohbet başına bir sınır değildir. Yerleşik varsayılanları kullanmak için boş bırakın (taslak için 8192, transkript için 8192). Daha uzun bölümler için artırın; çok düşük bir değer transkripti yarıda kesebilir.",
+    maxTokensHelp: "İsteğe bağlı. Her üretim adımının — taslak ve tam transkript — üretebileceği token sayısını sınırlar; konuşma sırası veya sohbet başına bir sınır değildir. Varsayılanı kullanmak için boş bırakın (ikisi için de 8192). Çıktı sınırı 8192'nin altında olan modeller için düşürün; çok düşük bir değer transkripti kesebilir.",
     defaultBriefingTitle: "Varsayılan brifing",
     created: "{{time}} tarihinde oluşturuldu",
     details: "Ayrıntılar",

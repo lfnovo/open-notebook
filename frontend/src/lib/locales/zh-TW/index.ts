@@ -678,7 +678,7 @@ export const zhTW = {
     segments: "分段數量",
     maxTokens: "最大輸出權杖數",
     maxTokensPlaceholder: "留空以使用預設值",
-    maxTokensHelp: "選填。限制每個生成步驟（大綱與完整逐字稿）可生成的權杖數，而非每輪對話或整段對話的限制。留空則使用內建預設值（大綱為8192，逐字稿為8192）。製作較長的節目時可調高；數值過低可能會使逐字稿被截斷。",
+    maxTokensHelp: "選填。限制每個生成步驟（大綱與完整逐字稿）可產生的 token 數，而非每輪或整段對話的上限。留空即使用預設值（兩者皆為 8192）。若模型的輸出上限低於 8192，請調低此值；數值過低可能導致逐字稿被截斷。",
     defaultBriefingTitle: "預設簡報",
     created: "建立於 {{time}}",
     details: "詳情",

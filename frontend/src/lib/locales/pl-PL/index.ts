@@ -678,7 +678,7 @@ export const plPL = {
     segments: "Segmenty",
     maxTokens: "Maksymalna liczba tokenów wyjściowych",
     maxTokensPlaceholder: "Pozostaw puste, aby użyć wartości domyślnych",
-    maxTokensHelp: "Opcjonalne. Ogranicza liczbę tokenów, które może wygenerować każdy krok generowania — konspekt i pełny transkrypt —, a nie jest to limit na pojedynczą wypowiedź ani na całą rozmowę. Pozostaw puste, aby użyć wbudowanych wartości domyślnych (8192 dla konspektu, 8192 dla transkryptu). Zwiększ dla dłuższych odcinków; zbyt niska wartość może uciąć transkrypt.",
+    maxTokensHelp: "Opcjonalne. Określa, ile tokenów może wygenerować każdy etap — konspekt i pełna transkrypcja — a nie pojedyncza wypowiedź czy rozmowa. Pozostaw puste, aby użyć wartości domyślnej (8192 dla obu). Zmniejsz ją dla modeli, których limit wyjścia jest niższy niż 8192; zbyt niska wartość może uciąć transkrypcję.",
     defaultBriefingTitle: "Domyślny briefing",
     created: "Utworzono {{time}}",
     details: "Szczegóły",

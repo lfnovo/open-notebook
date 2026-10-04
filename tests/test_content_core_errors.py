@@ -82,14 +82,43 @@ async def test_typed_errors_become_permanent_user_facing_failures(
 
 
 @pytest.mark.asyncio
-async def test_detail_is_included_and_truncated():
-    long_detail = "x" * 500
+async def test_raw_detail_stays_out_of_the_user_message():
+    """content-core's text can carry proxy credentials or local paths; it goes
+    to the log and the exception chain, not the client-visible message."""
+    secret = "proxy http://user:hunter2@10.0.0.5:3128 failed for /app/data/x.pdf"
     with pytest.raises(ValueError) as excinfo:
-        await _run({"url": PAGE}, AsyncMock(side_effect=cc.NetworkError(long_detail)))
+        await _run({"url": PAGE}, AsyncMock(side_effect=cc.NetworkError(secret)))
 
     message = str(excinfo.value)
-    assert "Details: xxx" in message
-    assert len(message) < 400
+    assert "hunter2" not in message
+    assert "/app/data" not in message
+    assert str(excinfo.value.__cause__) == secret
+
+
+@pytest.mark.parametrize(
+    "url,expected",
+    [
+        ("https://www.youtube.com/watch?v=abc", True),
+        ("https://youtube.com/shorts/abc", True),
+        ("https://m.youtube.com/watch?v=abc", True),
+        ("https://youtu.be/abc", True),
+        ("https://notyoutube.com/watch?v=abc", False),
+        ("https://example.com/youtube.com/abc", False),
+        ("", False),
+    ],
+)
+def test_is_youtube_url_matches_hostnames(url, expected):
+    assert source_graph._is_youtube_url(url) is expected
+
+
+@pytest.mark.asyncio
+async def test_blocked_non_youtube_url_gets_generic_service_message():
+    with pytest.raises(ValueError, match="service failed") as excinfo:
+        await _run(
+            {"url": "https://notyoutube.com/watch?v=abc"},
+            AsyncMock(side_effect=cc.ExternalServiceError("blocked")),
+        )
+    assert "CCORE_YOUTUBE_PROXY" not in str(excinfo.value)
 
 
 @pytest.mark.asyncio

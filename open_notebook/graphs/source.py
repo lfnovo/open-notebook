@@ -1,6 +1,7 @@
 import operator
 import os
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
 
 import content_core as cc
 from content_core import ContentCoreConfig, extract_content
@@ -82,7 +83,9 @@ def _usable_engine(engine: str, kind: str) -> str:
 
 
 def _is_youtube_url(url: str) -> bool:
-    return "youtube.com" in url or "youtu.be" in url
+    """Whether ``url`` points at YouTube (by hostname, not substring)."""
+    host = (urlparse(url).hostname or "").lower()
+    return host in ("youtube.com", "youtu.be") or host.endswith(".youtube.com")
 
 
 _YOUTUBE_NO_TRANSCRIPT_MESSAGE = (
@@ -102,11 +105,11 @@ def _extraction_error(error: "cc.ContentCoreError", url: str) -> ValueError:
     including NetworkError, and our worker's 15 attempts exist for SurrealDB
     transaction conflicts, not for re-fetching an unreachable page. A failed
     source can still be retried from the UI.
+
+    The message is fixed per type: content-core's own text can carry proxy
+    credentials, local paths or configuration details, so it only goes to the
+    worker log (logged by the caller, and kept as the exception's cause).
     """
-    detail = str(error).strip()
-    if len(detail) > 200:
-        detail = detail[:200].rstrip() + "…"
-    suffix = f" Details: {detail}" if detail else ""
 
     if isinstance(error, cc.NoTranscriptFound):
         return ValueError(_YOUTUBE_NO_TRANSCRIPT_MESSAGE)
@@ -114,32 +117,35 @@ def _extraction_error(error: "cc.ContentCoreError", url: str) -> ValueError:
         return ValueError(
             "YouTube blocked or failed the transcript request. If this keeps "
             "happening, set CCORE_YOUTUBE_PROXY (a residential proxy) or "
-            "CCORE_YOUTUBE_COOKIES_FILE for the worker." + suffix
+            "CCORE_YOUTUBE_COOKIES_FILE for the worker."
         )
     if isinstance(error, cc.NotFoundError):
         return ValueError(
-            "The page was not found (it may have been removed or moved). "
-            "Check the URL." + suffix
+            "The page was not found (it may have been removed or moved). Check the URL."
         )
     if isinstance(error, cc.NetworkError):
         return ValueError(
             "Could not reach this address (connection, timeout or DNS error). "
-            "Check the URL and try again." + suffix
+            "Check the URL and try again."
         )
     if isinstance(error, cc.InvalidInputError):
-        return ValueError("This URL or input is not valid." + suffix)
+        return ValueError("This URL or input is not valid.")
     if isinstance(error, cc.UnsupportedTypeException):
-        return ValueError("This file type is not supported." + suffix)
+        return ValueError("This file type is not supported.")
     if isinstance(error, cc.FileOperationError):
         return ValueError(
             "The file could not be read. It may be corrupted or in an "
-            "unsupported format." + suffix
+            "unsupported format."
         )
     if isinstance(error, cc.ConfigurationError):
-        return ValueError("Content extraction is not configured correctly." + suffix)
+        return ValueError(
+            "Content extraction is not configured correctly. Check the content "
+            "processing engine and speech-to-text settings; the worker log has "
+            "the details."
+        )
     if isinstance(error, cc.ExternalServiceError):
-        return ValueError("The content extraction service failed." + suffix)
-    return ValueError("Could not extract content from this source." + suffix)
+        return ValueError("The content extraction service failed.")
+    return ValueError("Could not extract content from this source.")
 
 
 async def content_process(state: SourceState) -> dict:
@@ -224,6 +230,7 @@ async def content_process(state: SourceState) -> dict:
             config=config,
         )
     except cc.ContentCoreError as e:
+        logger.warning(f"content-core extraction failed ({type(e).__name__}): {e}")
         raise _extraction_error(e, url) from e
 
     # Since content-core 2.2, empty content means the source was genuinely

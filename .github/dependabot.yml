@@ -49,6 +49,12 @@ updates:
         applies-to: security-updates
         patterns:
           - "*"
+    ignore:
+      # The direct katex dependency only provides katex.min.css; rendering is
+      # done by rehype-katex with its own katex (^0.16). The stylesheet must
+      # match the renderer's version, so katex moves when rehype-katex does.
+      - dependency-name: "katex"
+        versions: [">=0.17.0"]
 
   - package-ecosystem: "docker"
     directory: "/"

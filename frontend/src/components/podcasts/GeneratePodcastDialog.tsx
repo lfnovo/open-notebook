@@ -116,7 +116,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
   const fetchingNotebookIds = useMemo(() => {
     const ids = new Set<string>()
     notebooks.forEach((notebook, index) => {
-      if (sourcesQueries[index]?.isFetching) {
+      if (fetchingKey[index] === '1') {
         ids.add(notebook.id)
       }
     })

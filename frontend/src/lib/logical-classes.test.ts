@@ -22,8 +22,15 @@ const BANNED_TOKENS = [
 ]
 
 // Artifacts of the buggy sweep: `border-l` → `bs`, `border-r` → `be`, and the
-// invented `inset-inline-*` classes (Tailwind v4 only generates start-*/end-*).
-const INVALID_TOKENS = [/^(be|bs)(-\d+)?$/, /inset-inline-/]
+// invented `inset-inline-start/end-*` classes — Tailwind v4 only generates
+// `start-*`/`end-*`. Valid arbitrary-property usage (e.g. `[inset-inline-start:0]`)
+// must stay allowed, so match only the malformed utility forms: a bare or
+// variant-prefixed class name, and the broken negative-arbitrary syntax.
+const INVALID_TOKENS = [
+  /^(be|bs)(-\d+)?$/,
+  /(^|:)inset-inline-(start|end)-/,
+  /-\[inset-inline/,
+]
 
 function sourceClassStrings(): { file: string; line: number; text: string }[] {
   const srcDir = path.resolve(__dirname, '..')

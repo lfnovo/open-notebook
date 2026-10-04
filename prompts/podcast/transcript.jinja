@@ -29,7 +29,7 @@ The podcast features the following speakers:
 </speakers>
 {% if language %}
 
-IMPORTANT LANGUAGE INSTRUCTION: You MUST generate ALL dialogue and content in {{ language }}. Every speaker's dialogue must be written entirely in {{ language }}. Do not use English unless quoting specific English terms. The entire transcript must be in {{ language }}.
+IMPORTANT LANGUAGE INSTRUCTION: You MUST generate ALL dialogue and content in {{ language }}. Every speaker's dialogue must be written entirely in {{ language }}. Do not use English unless quoting specific English terms. The entire transcript must be in {{ language }}, except the JSON contract below: keep the keys ("transcript", "speaker", "dialogue") in English and copy each speaker name exactly as listed.
 
 {% endif %}
 Next, examine the outline produced by our director:
@@ -79,7 +79,7 @@ Follow these format requirements strictly:
 
 
 Return exactly one JSON object with a single root key "transcript" whose value is a list of at least {{ turns }} entries. Each entry has exactly two keys, "speaker" and "dialogue", both strings.
-{% if not language %}
+{% if not language or language|lower == 'english' %}
 The line below is a {% if speakers|length == 1 %}one-entry{% else %}two-entry{% endif %} EXCERPT showing that structure with sample dialogue - keep the structure, write your own words for this segment, and return at least {{ turns }} entries rather than the {% if speakers|length == 1 %}one{% else %}two{% endif %} shown:
 
 {% if speakers|length == 1 %}
@@ -91,7 +91,7 @@ The line below is a {% if speakers|length == 1 %}one-entry{% else %}two-entry{% 
 
    - Every "speaker" value must be copied character-for-character from this list: {{ speaker_names|join(', ') }}
    - Every "dialogue" value must be the finished words the speaker says out loud; it is sent straight to a text-to-speech engine.
-{%- if not language %}
+{%- if not language or language|lower == 'english' %}
    - The sample dialogue above shows the structure only - write dialogue for this segment instead of reusing it.
 {%- endif %}
    - Never emit placeholder or elided content: no "..." or "…", no "[like this]", no "<like this>", no "TODO", no empty strings, no trailing commas.

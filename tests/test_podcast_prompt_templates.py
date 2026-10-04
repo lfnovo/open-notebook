@@ -19,7 +19,6 @@ Note the outline template receives `speakers` but NOT `speaker_names`.
 """
 
 import json
-import re
 from pathlib import Path
 
 import pytest
@@ -211,6 +210,21 @@ class TestNoEnglishSampleInANonEnglishRun:
         assert "exactly 6 entries" in rendered
         assert '"size" must be exactly one of "short", "medium" or "long"' in rendered
 
+    @pytest.mark.parametrize(
+        "renderer", [render_transcript, render_outline], ids=["transcript", "outline"]
+    )
+    def test_english_language_keeps_the_sample(self, renderer):
+        """English locales resolve to "English"; the sample is English, so it
+        stays for them."""
+        assert "EXCERPT" in renderer(language="English")
+
+    @pytest.mark.parametrize(
+        "renderer", [render_transcript, render_outline], ids=["transcript", "outline"]
+    )
+    def test_language_instruction_keeps_the_json_contract_in_english(self, renderer):
+        rendered = renderer(language="Hebrew")
+        assert "except the JSON contract below" in rendered
+
 
 class TestNoCopyableSkeletons:
     """Whatever the model copies from the prompt must be valid output."""
@@ -300,11 +314,13 @@ class TestNoDriftFromBundledTemplates:
 
     @classmethod
     def _variables(cls, path: Path) -> set:
-        text = path.read_text()
-        used = set(re.findall(r"\{\{-?\s*([a-zA-Z_][a-zA-Z0-9_]*)", text))
-        used |= set(re.findall(r"\{%-?\s*(?:if|elif)\s+([a-zA-Z_][a-zA-Z0-9_]*)", text))
-        loop_locals = set(re.findall(r"\{%-?\s*for\s+([a-zA-Z_][a-zA-Z0-9_]*)", text))
-        return used - loop_locals - cls.JINJA_KEYWORDS
+        # Jinja's own parser finds every variable the template reads, including
+        # `for` iterables and filter arguments; loop locals and `set` targets
+        # are declared, so they are excluded.
+        from jinja2 import Environment, meta
+
+        ast = Environment().parse(path.read_text())
+        return set(meta.find_undeclared_variables(ast)) - cls.JINJA_KEYWORDS
 
     def test_jinja_keywords_are_not_treated_as_variables(self):
         """`{% if not language %}` names no variable called "not" - counting it
@@ -331,3 +347,10 @@ class TestNoDriftFromBundledTemplates:
             f"but ignores {sorted(missing)}. Either use them or delete the "
             "app template so the library's is used."
         )
+
+
+def test_drift_check_sees_for_iterables(tmp_path):
+    """A variable used only as a `for` iterable still counts (cubic, #1334)."""
+    template = tmp_path / "t.jinja"
+    template.write_text("{% for item in new_input %}{{ item }}{% endfor %}")
+    assert TestNoDriftFromBundledTemplates._variables(template) == {"new_input"}

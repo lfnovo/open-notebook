@@ -27,7 +27,7 @@ The podcast will feature the following speakers:
 </speakers>
 {% if language %}
 
-IMPORTANT LANGUAGE INSTRUCTION: You MUST generate ALL content in {{ language }}. This includes segment names, descriptions, and all text in your response. Do not use English unless the content itself contains English terms. The entire output must be written in {{ language }}.
+IMPORTANT LANGUAGE INSTRUCTION: You MUST generate ALL content in {{ language }}. This includes segment names, descriptions, and all text in your response. Do not use English unless the content itself contains English terms. The entire output must be written in {{ language }}, except the JSON contract below: keep the keys ("segments", "name", "description", "size") and the "size" values ("short", "medium", "long") exactly as written, in English.
 
 {% endif %}
 Please create an outline based on this briefing. Your outline should consist of {{ num_segments }} main segments for the podcast episode, along with a description of each segment. Follow these guidelines:
@@ -42,14 +42,14 @@ Please create an outline based on this briefing. Your outline should consist of 
 8. Include an introduction segment at the beginning and a conclusion or wrap-up segment at the end.
 
 Return exactly one JSON object with a single root key "segments" whose value is a list of exactly {{ num_segments }} entries. Each entry has exactly three keys: "name" and "description" (strings) and "size".
-{% if not language %}
+{% if not language or language|lower == 'english' %}
 The line below is a two-entry EXCERPT showing that structure with sample values - keep the structure, write your own segments from the briefing, and return all {{ num_segments }} of them rather than the two shown:
 
 {"segments": [{"name": "Setting the scene", "description": "Introduce the subject and the questions this episode sets out to answer.", "size": "short"}, {"name": "Working through the detail", "description": "Take the main points from the briefing in turn, with the specifics that matter most.", "size": "medium"}]}
 {% endif %}
 
    - "size" must be exactly one of "short", "medium" or "long".
-{%- if not language %}
+{%- if not language or language|lower == 'english' %}
    - The sample values above show the structure only - write segments drawn from the briefing instead of reusing them.
 {%- endif %}
    - Never emit placeholder or elided content: no "..." or "…", no "[like this]", no "<like this>", no "TODO", no empty strings, no trailing commas.

@@ -113,7 +113,16 @@ def _extraction_error(error: "cc.ContentCoreError", url: str) -> ValueError:
 
     if isinstance(error, cc.NoTranscriptFound):
         return ValueError(_YOUTUBE_NO_TRANSCRIPT_MESSAGE)
-    if isinstance(error, cc.ExternalServiceError) and url and _is_youtube_url(url):
+    # content-core reports a failure of both YouTube transcript paths (e.g.
+    # IpBlocked) as "YouTube transcript extraction failed ..."; other
+    # ExternalServiceErrors on a YouTube URL (speech-to-text provider, fetch
+    # engine) get the generic message below.
+    if (
+        isinstance(error, cc.ExternalServiceError)
+        and url
+        and _is_youtube_url(url)
+        and "youtube transcript" in str(error).lower()
+    ):
         return ValueError(
             "YouTube blocked or failed the transcript request. If this keeps "
             "happening, set CCORE_YOUTUBE_PROXY (a residential proxy) or "

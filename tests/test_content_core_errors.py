@@ -48,7 +48,18 @@ async def _run(state, extract):
     "state,error,expected",
     [
         ({"url": YOUTUBE}, cc.NoTranscriptFound("none"), "Speech-to-Text model"),
-        ({"url": YOUTUBE}, cc.ExternalServiceError("IpBlocked"), "CCORE_YOUTUBE_PROXY"),
+        (
+            {"url": YOUTUBE},
+            cc.ExternalServiceError(
+                "YouTube transcript extraction failed for video abc123: IpBlocked()"
+            ),
+            "CCORE_YOUTUBE_PROXY",
+        ),
+        (
+            {"url": YOUTUBE},
+            cc.ExternalServiceError("STT provider failed after retries"),
+            "service failed",
+        ),
         ({"url": PAGE}, cc.NotFoundError("HTTP 404"), "page was not found"),
         ({"url": PAGE}, cc.NetworkError("DNS failure"), "Could not reach"),
         ({"url": "nota url"}, cc.InvalidInputError("malformed"), "not valid"),

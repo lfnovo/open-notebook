@@ -420,7 +420,7 @@ Heavy use: Depends on models chosen
 **Notes:**
 - Hosted DeepSeek, Qwen, GLM and Kimi models behind one OpenAI-compatible key.
 - Language models only for now. Embedding, speech-to-text and text-to-speech through SiliconFlow need support in Esperanto first.
-- Env-based setup: `SILICONFLOW_API_KEY`, plus `SILICONFLOW_BASE_URL` for a mainland China account.
+- Env-based setup: `SILICONFLOW_API_KEY`, plus `SILICONFLOW_BASE_URL` for a mainland China account (migrated into the credential's Base URL).
 
 **Troubleshooting:**
 - "Invalid API key" → Check that the key matches the endpoint: keys from `siliconflow.cn` don't work against the global `.com` endpoint, and vice versa
@@ -446,12 +446,13 @@ Heavy use: Depends on models chosen
 6. Click **Discover Models** → **Register Models**
 
 **Notes:**
-- Z.ai's GLM models (default `glm-5.2`) through an OpenAI-compatible API (`https://api.z.ai/api/paas/v4`).
+- Z.ai's GLM models (for example `glm-5.2`, also used for the connection test, and `glm-4.5-flash`) through an OpenAI-compatible API (`https://api.z.ai/api/paas/v4`). Register the models you want after **Discover Models**.
 - Language models only.
-- Env-based setup: `ZAI_API_KEY`, plus `ZAI_BASE_URL` to point at a different Z.ai endpoint.
+- Env-based setup: `ZAI_API_KEY`, plus `ZAI_BASE_URL` to point at a different Z.ai endpoint (migrated into the credential's Base URL).
 
 **Troubleshooting:**
 - "Invalid API key" → Check the key in the Z.ai console
+- A model is missing from Discover Models → Type its id (e.g. `glm-4.5-flash`) in the search box and use **Add**
 - "Model not available" → Re-discover models from the credential
 
 ---

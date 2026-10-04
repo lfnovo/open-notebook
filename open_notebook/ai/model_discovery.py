@@ -248,6 +248,9 @@ class ProviderDiscoverySpec:
     # and no description.
     classify: Optional[Callable[[dict], str]] = None
     description: Optional[Callable[[dict], Optional[str]]] = None
+    # Env var with an endpoint override (regional base URL); when set, models
+    # are listed at <base_url>/models instead of `url`.
+    base_url_env: Optional[str] = None
 
 
 # Per-provider quirk hooks that can't live in the (pure data) registry.
@@ -269,6 +272,7 @@ OPENAI_COMPAT_PROVIDERS: Dict[str, ProviderDiscoverySpec] = {
         env_var=spec.required_env[0],
         classify=_COMPAT_CLASSIFY.get(name),
         description=_COMPAT_DESCRIPTION.get(name),
+        base_url_env=spec.base_url_env,
     )
     for name, spec in PROVIDERS.items()
     if spec.openai_compat_discovery_url
@@ -282,11 +286,17 @@ async def discover_openai_compatible_provider(provider: str) -> List[DiscoveredM
     if not api_key:
         return []
 
+    url = spec.url
+    base_url = os.environ.get(spec.base_url_env) if spec.base_url_env else None
+    if base_url:
+        trimmed = base_url.rstrip("/")
+        url = trimmed if trimmed.endswith("/models") else f"{trimmed}/models"
+
     models = []
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                spec.url,
+                url,
                 headers={"Authorization": f"Bearer {api_key}"},
                 timeout=30.0,
             )

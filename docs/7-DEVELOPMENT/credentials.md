@@ -36,11 +36,11 @@ Settings UI ──► /credentials API ──► Credential record (encrypted, S
 
 CRUD plus lifecycle operations: `POST /credentials/{id}/test` (connection check), `/discover` (list available models), `/register-models` (create Model records from discovery), and three migration endpoints (`/migrate-from-env`, `/migrate-from-provider-config`, `/migrate-encryption`). Swagger at `/docs` documents the shapes.
 
-**Supported providers (17)** are defined once in the provider registry (`open_notebook/ai/provider_registry.py` `PROVIDERS`) — env vars, modalities, test models, discovery URLs and docs links all live there, and `connection_tester.TEST_MODELS`, `credentials_service.PROVIDER_ENV_CONFIG`/`PROVIDER_MODALITIES` and `model_discovery.OPENAI_COMPAT_PROVIDERS` are derived from it. `GET /api/providers` exposes the registry to clients — the frontend fetches it at runtime (`useProviders()` in `frontend/src/lib/hooks/use-providers.ts`) and renders providers in response order (the registry declaration order). One manual copy remains, enforced by `tests/test_credential_provider_validation.py`: the `SupportedProvider` Literal in `api/models.py` (typing can't be derived at runtime):
+**Supported providers (24)** are defined once in the provider registry (`open_notebook/ai/provider_registry.py` `PROVIDERS`) — env vars, modalities, test models, discovery URLs and docs links all live there, and `connection_tester.TEST_MODELS`, `credentials_service.PROVIDER_ENV_CONFIG`/`PROVIDER_MODALITIES` and `model_discovery.OPENAI_COMPAT_PROVIDERS` are derived from it. `GET /api/providers` exposes the registry to clients — the frontend fetches it at runtime (`useProviders()` in `frontend/src/lib/hooks/use-providers.ts`) and renders providers in response order (the registry declaration order). One manual copy remains, enforced by `tests/test_credential_provider_validation.py`: the `SupportedProvider` Literal in `api/models.py` (typing can't be derived at runtime):
 
-- Simple API key: openai, anthropic, google, groq, mistral, deepseek, xai, openrouter, voyage, elevenlabs, deepgram, dashscope, minimax, novita, siliconflow, zai
-- URL-based: ollama
-- Multi-field: azure, vertex, openai_compatible
+- Simple API key: openai, anthropic, google, groq, mistral, deepseek, xai, openrouter, dashscope, minimax, novita, siliconflow, zai, ppq, cohere, voyage, elevenlabs, deepgram (siliconflow and zai also accept an optional `*_BASE_URL` endpoint override)
+- URL-based: ollama, omlx
+- Multi-field: azure, vertex, openai_compatible, anthropic_compatible
 
 **Security properties**:
 

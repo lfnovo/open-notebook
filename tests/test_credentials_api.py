@@ -699,3 +699,90 @@ class TestCredentialUpdateClearsFields:
         response = self._put(client, cred, {"credentials_path": None})
         assert response.status_code == 200
         assert cred.credentials_path is None
+
+
+class TestRegionalBaseUrl:
+    """Providers that declare a *_BASE_URL override (SiliconFlow, Z.ai) honor it
+    in env migration and env-based discovery; other providers ignore a stored
+    base URL for discovery (#1409, #1437)."""
+
+    def test_env_migration_reads_base_url(self, monkeypatch):
+        monkeypatch.setenv("SILICONFLOW_API_KEY", "sf-key")
+        monkeypatch.setenv("SILICONFLOW_BASE_URL", "https://api.siliconflow.cn/v1")
+
+        cred = credentials_service.create_credential_from_env("siliconflow")
+
+        assert cred.base_url == "https://api.siliconflow.cn/v1"
+        assert cred.api_key.get_secret_value() == "sf-key"
+
+    def test_env_migration_without_base_url(self, monkeypatch):
+        monkeypatch.setenv("ZAI_API_KEY", "zai-key")
+        monkeypatch.delenv("ZAI_BASE_URL", raising=False)
+
+        assert credentials_service.create_credential_from_env("zai").base_url is None
+
+    @pytest.mark.asyncio
+    async def test_env_discovery_uses_base_url(self, monkeypatch):
+        from open_notebook.ai import model_discovery
+
+        requested = []
+
+        class FakeAsyncClient:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return None
+
+            async def get(self, url, headers=None, timeout=None, **kwargs):
+                requested.append(url)
+                return httpx.Response(
+                    200,
+                    json={"data": [{"id": "Qwen/Qwen3-8B"}]},
+                    request=httpx.Request("GET", url),
+                )
+
+        monkeypatch.setenv("SILICONFLOW_API_KEY", "sf-key")
+        monkeypatch.setenv("SILICONFLOW_BASE_URL", "https://api.siliconflow.cn/v1/")
+        monkeypatch.setattr(model_discovery.httpx, "AsyncClient", FakeAsyncClient)
+
+        models = await model_discovery.discover_openai_compatible_provider(
+            "siliconflow"
+        )
+
+        assert requested == ["https://api.siliconflow.cn/v1/models"]
+        assert [m.name for m in models] == ["Qwen/Qwen3-8B"]
+
+    @pytest.mark.asyncio
+    async def test_providers_without_override_keep_registry_url(self, monkeypatch):
+        requested = []
+
+        class FakeAsyncClient:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return None
+
+            async def get(self, url, headers=None, timeout=None, extensions=None):
+                requested.append(url)
+                return httpx.Response(
+                    200,
+                    json={"data": [{"id": "m"}]},
+                    request=httpx.Request("GET", url),
+                )
+
+        monkeypatch.setattr(credentials_service.httpx, "AsyncClient", FakeAsyncClient)
+
+        await credentials_service.discover_with_config(
+            "ppq", {"api_key": "k", "base_url": "https://elsewhere.example/v1"}
+        )
+
+        # ppq's registry URL carries a provider-specific query string.
+        assert requested == ["https://api.ppq.ai/v1/models?type=all"]

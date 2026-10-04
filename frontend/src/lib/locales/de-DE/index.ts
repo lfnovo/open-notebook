@@ -681,7 +681,7 @@ export const deDE = {
     segments: "Segmente",
     maxTokens: "Maximale Ausgabe-Tokens",
     maxTokensPlaceholder: "Für Standardwerte leer lassen",
-    maxTokensHelp: "Optional. Begrenzt, wie viele Tokens jeder Generierungsschritt erzeugen darf — die Gliederung und das vollständige Transkript —, kein Limit pro Beitrag oder Unterhaltung. Leer lassen, um den Standardwert zu verwenden (8192 für beide). Für Modelle mit einem Ausgabelimit unter 8192 niedriger einstellen; ein zu niedriger Wert kann das Transkript abschneiden.",
+    maxTokensHelp: "Optional. Begrenzt, wie viele Tokens jeder Generierungsschritt erzeugen darf — die Gliederung und das vollständige Transkript —, kein Limit pro Gesprächsrunde oder Unterhaltung. Leer lassen, um den Standardwert zu verwenden (8192 für beide). Für Modelle mit einem Ausgabelimit unter 8192 niedriger einstellen; ein zu niedriger Wert kann das Transkript abschneiden.",
     defaultBriefingTitle: "Standard-Briefing",
     created: "Erstellt am {{time}}",
     details: "Details",

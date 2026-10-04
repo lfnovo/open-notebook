@@ -133,6 +133,10 @@ How to set:
 4. System uses your profile for outline generation
 ```
 
+**Max output tokens:** leave it blank to use the default of 8192 tokens for the outline and for each transcript generation step. Set it lower if your outline or transcript model has a smaller output limit (some older or local models stop at 4096); the provider rejects requests above its limit.
+
+**Pacing:** generated episodes have a short pause (about 400 ms) between speaker turns, so the dialogue sounds less rushed.
+
 ### Step 5: Create or Select Speakers
 
 Speakers are the "voice" of your podcast.
@@ -481,8 +485,12 @@ Rule: 3-5 sources per podcast
 2. Try again (might be temporary issue)
 3. Use local TTS (doesn't need internet)
 4. Reduce source count (less to process)
-5. Contact support if persistent
+5. "max_tokens" or output-limit error: set the episode profile's
+   Max output tokens below your model's limit (e.g. 4096)
+6. Contact support if persistent
 ```
+
+Outlines and transcripts are requested as schema-validated JSON. Models or endpoints that don't support JSON schema output (some OpenAI-compatible servers) automatically fall back to plain JSON mode; the worker log notes the fallback.
 
 ---
 

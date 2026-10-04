@@ -676,7 +676,7 @@ export const enUS = {
     segments: "Segments",
     maxTokens: "Max output tokens",
     maxTokensPlaceholder: "Leave blank for defaults",
-    maxTokensHelp: "Optional. Caps how many tokens each generation step can produce — the outline and the full transcript — not a per-turn or conversation limit. Leave blank to use the built-in defaults (3000 for the outline, 5000 for the transcript). Raise it for longer episodes; a value that is too low can cut the transcript short.",
+    maxTokensHelp: "Optional. Caps how many tokens each generation step can produce — the outline and the full transcript — not a per-turn or conversation limit. Leave blank to use the built-in default (8192 for both). Lower it for models whose output limit is below 8192; a value that is too low can cut the transcript short.",
     defaultBriefingTitle: "Default briefing",
     created: "Created at {{time}}",
     details: "Details",

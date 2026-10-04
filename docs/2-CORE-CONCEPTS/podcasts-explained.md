@@ -184,6 +184,7 @@ When podcast generation fails (e.g., wrong model configured, API key expired, pr
 | Invalid API key | Check Settings -> Credentials for the TTS and language model providers |
 | Model not found | Verify the model exists in the model registry and has valid credentials configured |
 | Rate limit exceeded | Wait a few minutes and retry |
+| Output limit / `max_tokens` too large | Set the episode profile's Max output tokens below the model's limit (the default is 8192) |
 | Provider unavailable | Check provider status page; retry later |
 
 ---

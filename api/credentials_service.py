@@ -696,8 +696,8 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
     # their registry URL, which may carry provider-specific query params.
     spec = PROVIDERS.get(provider)
     honors_base_url = provider == "openai" or bool(spec and spec.base_url_env)
-    if base_url and discovery_url and honors_base_url:
-        discovery_url = models_endpoint(base_url)
+    if base_url and base_url.strip() and discovery_url and honors_base_url:
+        discovery_url = models_endpoint(base_url.strip())
         user_supplied_url = True
     if not discovery_url or not api_key:
         return []

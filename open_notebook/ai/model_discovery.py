@@ -18,6 +18,7 @@ from open_notebook.ai.models import Model
 from open_notebook.ai.provider_registry import PROVIDERS
 from open_notebook.database.repository import repo_query
 from open_notebook.domain.credential import Credential
+from open_notebook.utils.ssl_config import httpx_verify_setting
 from open_notebook.utils.url_validation import prepare_pinned_http_target
 
 
@@ -313,7 +314,7 @@ async def discover_openai_compatible_provider(provider: str) -> List[DiscoveredM
             url = target.url
             headers.update(target.headers)
             extensions = target.extensions
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(verify=httpx_verify_setting()) as client:
             get_kwargs: Dict[str, Any] = {"headers": headers, "timeout": 30.0}
             if extensions:
                 get_kwargs["extensions"] = extensions

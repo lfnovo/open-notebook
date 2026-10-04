@@ -1,10 +1,12 @@
 """Tests for the credentials API endpoint."""
 
+import os
 from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import SecretStr
 
 from api import credentials_service
 
@@ -879,3 +881,68 @@ class TestRegionalBaseUrl:
 
         # ppq's registry URL carries a provider-specific query string.
         assert requested == ["https://api.ppq.ai/v1/models?type=all"]
+
+
+class TestEndpointOverrideProvisioningAndMigration:
+    """ADR-012: provisioning exposes the registry override name, and env
+    migration validates the override before saving."""
+
+    @pytest.mark.asyncio
+    async def test_provisioning_sets_registry_base_url_env(self, monkeypatch):
+        from types import SimpleNamespace
+
+        from open_notebook.ai import key_provider
+
+        # setenv registers an undo, so the values the code writes are removed
+        # after the test.
+        for var in (
+            "SILICONFLOW_BASE_URL",
+            "SILICONFLOW_API_KEY",
+            "SILICONFLOW_API_BASE",
+        ):
+            monkeypatch.setenv(var, "")
+        cred = SimpleNamespace(
+            api_key=SecretStr("sf-key"), base_url="https://api.siliconflow.cn/v1"
+        )
+        monkeypatch.setattr(
+            key_provider, "_get_default_credential", AsyncMock(return_value=cred)
+        )
+
+        assert await key_provider._provision_simple_provider("siliconflow") is True
+        assert os.environ["SILICONFLOW_BASE_URL"] == "https://api.siliconflow.cn/v1"
+        assert os.environ["SILICONFLOW_API_KEY"] == "sf-key"
+
+    @pytest.mark.asyncio
+    async def test_migration_rejects_invalid_base_url(self, monkeypatch):
+        from open_notebook.exceptions import InvalidInputError
+
+        monkeypatch.setattr(
+            credentials_service,
+            "check_env_configured",
+            lambda provider: provider == "siliconflow",
+        )
+        monkeypatch.setattr(credentials_service, "require_encryption_key", lambda: None)
+        monkeypatch.setenv("SILICONFLOW_API_KEY", "sf-key")
+        monkeypatch.setenv("SILICONFLOW_BASE_URL", "http://169.254.169.254/latest")
+
+        async def fake_validate(url, provider):
+            raise InvalidInputError("link-local address not allowed")
+
+        saved = []
+        monkeypatch.setattr(credentials_service, "validate_url", fake_validate)
+        monkeypatch.setattr(
+            credentials_service.Credential,
+            "get_by_provider",
+            AsyncMock(return_value=[]),
+        )
+
+        async def fake_save(self):
+            saved.append(self)
+
+        monkeypatch.setattr(credentials_service.Credential, "save", fake_save)
+
+        result = await credentials_service.migrate_from_env()
+
+        assert saved == []
+        assert "siliconflow" not in result["migrated"]
+        assert any(e.startswith("siliconflow:") for e in result["errors"])

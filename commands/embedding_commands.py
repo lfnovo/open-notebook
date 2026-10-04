@@ -25,8 +25,8 @@ from open_notebook.utils.chunking import ContentType, chunk_text, detect_content
 from open_notebook.utils.embedding import generate_embedding, generate_embeddings
 
 # NOTE: `stop_on` below can never trigger in practice — each command catches
-# ValueError internally and returns success=False instead of raising, so the
-# retry layer never sees it. Kept as-is on purpose; to be revisited in a
+# ValueError (and NotFoundError) internally and returns success=False instead
+# of raising, so the retry layer never sees it. Kept as-is on purpose; to be revisited in a
 # dedicated error-handling PR.
 EMBED_RETRY_CONFIG = {
     "max_attempts": 5,
@@ -70,7 +70,8 @@ async def _embed_record(
     Returns:
         (extra_output_fields, processing_time, error_message)
         extra_output_fields is None and error_message is set on permanent
-        (ValueError) failure. Transient failures re-raise so the retry layer
+        (ValueError, or NotFoundError for a record deleted before the job ran)
+        failure. Transient failures re-raise so the retry layer
         can handle them.
     """
     start_time = time.time()
@@ -239,7 +240,8 @@ async def embed_note_command(input_data: EmbedNoteInput) -> EmbedNoteOutput:
     Retry Strategy:
     - Retries up to 5 times for transient failures (network, timeout, etc.)
     - Uses exponential-jitter backoff (1-60s)
-    - Does NOT retry permanent failures (ValueError for validation errors)
+    - Does NOT retry permanent failures (ValueError for validation errors,
+      NotFoundError for a record deleted before the job ran)
     """
 
     async def embed() -> Tuple[Dict[str, Any], str]:
@@ -281,7 +283,8 @@ async def embed_insight_command(input_data: EmbedInsightInput) -> EmbedInsightOu
     Retry Strategy:
     - Retries up to 5 times for transient failures (network, timeout, etc.)
     - Uses exponential-jitter backoff (1-60s)
-    - Does NOT retry permanent failures (ValueError for validation errors)
+    - Does NOT retry permanent failures (ValueError for validation errors,
+      NotFoundError for a record deleted before the job ran)
     """
 
     async def embed() -> Tuple[Dict[str, Any], str]:
@@ -326,7 +329,8 @@ async def embed_source_command(input_data: EmbedSourceInput) -> EmbedSourceOutpu
     Retry Strategy:
     - Retries up to 5 times for transient failures (network, timeout, etc.)
     - Uses exponential-jitter backoff (1-60s)
-    - Does NOT retry permanent failures (ValueError for validation errors)
+    - Does NOT retry permanent failures (ValueError for validation errors,
+      NotFoundError for a record deleted before the job ran)
     """
 
     async def embed() -> Tuple[Dict[str, Any], str]:
@@ -446,7 +450,8 @@ async def create_insight_command(
     Retry Strategy:
     - Retries up to 5 times for transient failures (network, timeout, etc.)
     - Uses exponential-jitter backoff (1-60s)
-    - Does NOT retry permanent failures (ValueError for validation errors)
+    - Does NOT retry permanent failures (ValueError for validation errors,
+      NotFoundError for a record deleted before the job ran)
     """
     start_time = time.time()
 

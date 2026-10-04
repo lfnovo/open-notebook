@@ -381,7 +381,7 @@ export const ruRU = {
     invalidUrlsDetected: "Обнаружены недопустимые URL:",
     lineLabel: "Строка {{line}}",
     fixInvalidUrls: "Исправьте или удалите недопустимые URL для продолжения",
-    selectMultipleFilesHint: "Выберите несколько файлов для пакетного импорта. Поддерживаются: Документы (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD), Медиа (MP4, MP3, WAV, M4A), Изображения (JPG, PNG), Архивы (ZIP)",
+    selectMultipleFilesHint: "Выберите несколько файлов для пакетного импорта. Поддерживаются: Документы (PDF, DOC, DOCX, PPT, XLS, EPUB, ODT, ODS, ODP, TXT, MD), Медиа (MP4, MP3, WAV, M4A), Изображения (JPG, PNG), Архивы (ZIP)",
     selectedFiles: "Выбранные файлы:",
     textPlaceholder: "Вставьте или введите содержимое здесь...",
     htmlDetected: "Обнаружено HTML-содержимое. После обработки оно будет преобразовано в Markdown.",

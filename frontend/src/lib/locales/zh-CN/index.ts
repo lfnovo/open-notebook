@@ -381,7 +381,7 @@ export const zhCN = {
     invalidUrlsDetected: "检测到无效的 URL：",
     lineLabel: "第 {{line}} 行",
     fixInvalidUrls: "请修正或移除无效的 URL 以继续",
-    selectMultipleFilesHint: "选择多个文件进行批量导入。支持：文档 (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD)，媒体 (MP4, MP3, WAV, M4A)，图片 (JPG, PNG)，归档 (ZIP)",
+    selectMultipleFilesHint: "选择多个文件进行批量导入。支持：文档 (PDF, DOC, DOCX, PPT, XLS, EPUB, ODT, ODS, ODP, TXT, MD)，媒体 (MP4, MP3, WAV, M4A)，图片 (JPG, PNG)，归档 (ZIP)",
     selectedFiles: "已选择文件：",
     textPlaceholder: "在此处粘贴或输入您的内容...",
     htmlDetected: "检测到 HTML 内容。处理后将转换为 Markdown。",

@@ -381,7 +381,7 @@ export const itIT = {
     invalidUrlsDetected: "URL non validi rilevati:",
     lineLabel: "Riga {{line}}",
     fixInvalidUrls: "Correggi o rimuovi gli URL non validi per continuare",
-    selectMultipleFilesHint: "Seleziona più file per importazione batch. Supportati: Documenti (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD), Media (MP4, MP3, WAV, M4A), Immagini (JPG, PNG), Archivi (ZIP)",
+    selectMultipleFilesHint: "Seleziona più file per importazione batch. Supportati: Documenti (PDF, DOC, DOCX, PPT, XLS, EPUB, ODT, ODS, ODP, TXT, MD), Media (MP4, MP3, WAV, M4A), Immagini (JPG, PNG), Archivi (ZIP)",
     selectedFiles: "File selezionati:",
     textPlaceholder: "Incolla o digita il contenuto qui...",
     htmlDetected: "Rilevato contenuto HTML. Verrà convertito in Markdown dopo l'elaborazione.",

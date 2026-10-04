@@ -381,7 +381,7 @@ export const jaJP = {
     invalidUrlsDetected: "無効なURLが検出されました:",
     lineLabel: "{{line}}行目",
     fixInvalidUrls: "無効なURLを修正または削除してください",
-    selectMultipleFilesHint: "複数ファイルを選択して一括インポート。対応形式：ドキュメント（PDF、DOC、DOCX、PPT、XLS、EPUB、TXT、MD）、メディア（MP4、MP3、WAV、M4A）、画像（JPG、PNG）、アーカイブ（ZIP）",
+    selectMultipleFilesHint: "複数ファイルを選択して一括インポート。対応形式：ドキュメント（PDF、DOC、DOCX、PPT、XLS、EPUB、ODT、ODS、ODP、TXT、MD）、メディア（MP4、MP3、WAV、M4A）、画像（JPG、PNG）、アーカイブ（ZIP）",
     selectedFiles: "選択されたファイル:",
     textPlaceholder: "コンテンツを貼り付けまたは入力...",
     htmlDetected: "HTMLコンテンツが検出されました。処理後にMarkdownに変換されます。",

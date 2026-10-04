@@ -52,5 +52,6 @@ What this makes easier, what it makes harder, what to watch. (bullets)
 | [ADR-008](ADR-008-notebook-scoped-search.md) | Notebook scope is an optional filter on the existing search functions | Accepted |
 | [ADR-009](ADR-009-pbkdf2-credential-encryption.md) | PBKDF2 credential key derivation with versioned ciphertext | Accepted |
 | [ADR-011](ADR-011-design-token-system.md) | Visual identity is a token contract in globals.css, reviewed through /dev/design | Accepted |
+| [ADR-012](ADR-012-provider-endpoint-overrides.md) | Provider endpoint overrides are declared in the registry | Accepted |
 | [PDR-001](PDR-001-single-user-first.md) | Single-user first; don't preclude multi-user | Accepted |
 | [PDR-002](PDR-002-provider-agnostic-core.md) | Provider-agnostic core by default | Accepted |

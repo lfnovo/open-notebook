@@ -53,6 +53,15 @@ class ProviderSpec:
     # the discovery URL. Drives OPENAI_COMPAT_PROVIDERS in model_discovery.
     openai_compat_discovery_url: Optional[str] = None
 
+    @property
+    def base_url_env(self) -> Optional[str]:
+        """Optional env var overriding the provider's endpoint (`*_BASE_URL`).
+
+        Declared through `optional_env`; providers that have one accept a
+        user-supplied base URL for discovery (e.g. regional endpoints).
+        """
+        return next((v for v in self.optional_env if v.endswith("_BASE_URL")), None)
+
     def env_config(self) -> Dict[str, List[str]]:
         """Env var config in the legacy PROVIDER_ENV_CONFIG dict shape."""
         config: Dict[str, List[str]] = {}
@@ -166,6 +175,28 @@ _PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
         test_model="moonshotai/kimi-k2.5",
         docs_url="https://novita.ai/settings/key-management",
         openai_compat_discovery_url="https://api.novita.ai/openai/models",
+    ),
+    ProviderSpec(
+        name="siliconflow",
+        display_name="SiliconFlow",
+        modalities=_LANGUAGE_ONLY,
+        required_env=("SILICONFLOW_API_KEY",),
+        optional_env=("SILICONFLOW_BASE_URL",),
+        # esperanto's default for the profile; mainland China accounts set
+        # the credential's base URL to https://api.siliconflow.cn/v1.
+        test_model="deepseek-ai/DeepSeek-V3.1-Terminus",
+        docs_url="https://cloud.siliconflow.com/account/ak",
+        openai_compat_discovery_url="https://api.siliconflow.com/v1/models",
+    ),
+    ProviderSpec(
+        name="zai",
+        display_name="Z.ai",
+        modalities=_LANGUAGE_ONLY,
+        required_env=("ZAI_API_KEY",),
+        optional_env=("ZAI_BASE_URL",),
+        test_model="glm-5.2",
+        docs_url="https://z.ai/manage-apikey/apikey-list",
+        openai_compat_discovery_url="https://api.z.ai/api/paas/v4/models",
     ),
     ProviderSpec(
         name="ppq",

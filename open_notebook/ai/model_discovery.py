@@ -8,7 +8,7 @@ AI providers and automatically register them in the database.
 import asyncio
 import os
 from dataclasses import dataclass
-from typing import Awaitable, Callable, Dict, List, Optional, Tuple
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
 import httpx
 from loguru import logger
@@ -18,6 +18,7 @@ from open_notebook.ai.models import Model
 from open_notebook.ai.provider_registry import PROVIDERS
 from open_notebook.database.repository import repo_query
 from open_notebook.domain.credential import Credential
+from open_notebook.utils.ssl_config import httpx_verify_setting
 from open_notebook.utils.url_validation import prepare_pinned_http_target
 
 
@@ -161,6 +162,14 @@ DASHSCOPE_MODEL_TYPES = {
     "language": ["qwen"],
 }
 
+# SiliconFlow's /models catalog mixes chat models with embedding, rerank and
+# audio models; keep those out of the language slot.
+SILICONFLOW_MODEL_TYPES = {
+    "embedding": ["bge-", "bce-embedding", "embedding"],
+    "speech_to_text": ["sensevoice", "telespeech"],
+    "text_to_speech": ["cosyvoice", "fish-speech", "moss-tts"],
+}
+
 MINIMAX_MODEL_TYPES = {
     "language": ["minimax", "abab"],
 }
@@ -205,6 +214,7 @@ def classify_model_type(model_name: str, provider: str) -> str:
         "elevenlabs": ELEVENLABS_MODEL_TYPES,
         "deepgram": DEEPGRAM_MODEL_TYPES,
         "dashscope": DASHSCOPE_MODEL_TYPES,
+        "siliconflow": SILICONFLOW_MODEL_TYPES,
         "minimax": MINIMAX_MODEL_TYPES,
         "ppq": PPQ_MODEL_TYPES,
     }
@@ -248,6 +258,9 @@ class ProviderDiscoverySpec:
     # and no description.
     classify: Optional[Callable[[dict], str]] = None
     description: Optional[Callable[[dict], Optional[str]]] = None
+    # Env var with an endpoint override (regional base URL); when set, models
+    # are listed at <base_url>/models instead of `url`.
+    base_url_env: Optional[str] = None
 
 
 # Per-provider quirk hooks that can't live in the (pure data) registry.
@@ -269,6 +282,7 @@ OPENAI_COMPAT_PROVIDERS: Dict[str, ProviderDiscoverySpec] = {
         env_var=spec.required_env[0],
         classify=_COMPAT_CLASSIFY.get(name),
         description=_COMPAT_DESCRIPTION.get(name),
+        base_url_env=spec.base_url_env,
     )
     for name, spec in PROVIDERS.items()
     if spec.openai_compat_discovery_url
@@ -282,14 +296,29 @@ async def discover_openai_compatible_provider(provider: str) -> List[DiscoveredM
     if not api_key:
         return []
 
+    url = spec.url
+    headers = {"Authorization": f"Bearer {api_key}"}
+    extensions: Dict[str, Any] = {}
+    base_url = (
+        os.environ.get(spec.base_url_env, "").strip() if spec.base_url_env else ""
+    )
+
     models = []
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                spec.url,
-                headers={"Authorization": f"Bearer {api_key}"},
-                timeout=30.0,
-            )
+        if base_url:
+            # Endpoint override from the environment: validate and pin it like
+            # any other user-supplied URL (DNS-rebinding safe).
+            trimmed = base_url.rstrip("/")
+            override = trimmed if trimmed.endswith("/models") else f"{trimmed}/models"
+            target = await prepare_pinned_http_target(override, provider)
+            url = target.url
+            headers.update(target.headers)
+            extensions = target.extensions
+        async with httpx.AsyncClient(verify=httpx_verify_setting()) as client:
+            get_kwargs: Dict[str, Any] = {"headers": headers, "timeout": 30.0}
+            if extensions:
+                get_kwargs["extensions"] = extensions
+            response = await client.get(url, **get_kwargs)
             response.raise_for_status()
             data = response.json()
 
@@ -338,6 +367,8 @@ discover_xai_models = _make_openai_compat_discoverer("xai")
 discover_dashscope_models = _make_openai_compat_discoverer("dashscope")
 discover_minimax_models = _make_openai_compat_discoverer("minimax")
 discover_novita_models = _make_openai_compat_discoverer("novita")
+discover_siliconflow_models = _make_openai_compat_discoverer("siliconflow")
+discover_zai_models = _make_openai_compat_discoverer("zai")
 discover_ppq_models = _make_openai_compat_discoverer("ppq")
 
 
@@ -878,6 +909,8 @@ PROVIDER_DISCOVERY_FUNCTIONS = {
     "dashscope": discover_dashscope_models,
     "minimax": discover_minimax_models,
     "novita": discover_novita_models,
+    "siliconflow": discover_siliconflow_models,
+    "zai": discover_zai_models,
     "ppq": discover_ppq_models,
     "cohere": discover_cohere_models,
     "azure": None,  # Azure requires credential-based discovery (different auth)

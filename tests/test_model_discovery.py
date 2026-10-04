@@ -25,6 +25,10 @@ def make_fake_client(handler):
     """Build a fake httpx.AsyncClient class whose .get() delegates to handler."""
 
     class FakeAsyncClient:
+        def __init__(self, *args, **kwargs):
+            # Accept httpx.AsyncClient kwargs (e.g. verify=...)
+            pass
+
         async def __aenter__(self):
             return self
 
@@ -55,6 +59,8 @@ class TestOpenAICompatTable:
             "dashscope",
             "minimax",
             "novita",
+            "siliconflow",
+            "zai",
             "ppq",
         }
 
@@ -78,6 +84,8 @@ class TestOpenAICompatTable:
             "dashscope",
             "minimax",
             "novita",
+            "siliconflow",
+            "zai",
             "ppq",
             "cohere",
             "azure",

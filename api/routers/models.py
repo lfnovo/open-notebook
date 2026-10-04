@@ -409,6 +409,8 @@ async def get_provider_availability():
             "dashscope": "DASHSCOPE_API_KEY",
             "minimax": "MINIMAX_API_KEY",
             "novita": "NOVITA_API_KEY",
+            "siliconflow": "SILICONFLOW_API_KEY",
+            "zai": "ZAI_API_KEY",
             "ppq": "PPQ_API_KEY",
             "cohere": "COHERE_API_KEY",
         }

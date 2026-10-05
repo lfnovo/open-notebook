@@ -1,274 +1,140 @@
-# AI Providers - Comparison & Selection Guide
+# AI Providers
 
-Open Notebook supports 17+ AI providers. This guide helps you **choose the right provider** for your needs.
+Open Notebook talks to AI models through providers. You connect a provider once in **Manage → Models**, pick which of its models to use, and choose a default model for each job (chat, embeddings, podcasts, transcription).
 
-> 💡 **Just want to set up a provider?** Skip to the [Configuration Guide](../5-CONFIGURATION/ai-providers.md) for detailed setup instructions.
+This page has three parts:
 
----
+1. [Connect a provider](#connect-a-provider): the steps every install guide links to
+2. [Supported providers](#supported-providers): what each provider can do
+3. [Choosing providers](#choosing-providers): which combination fits your setup
 
-## Quick Decision: Which Provider?
-
-### Cloud Providers (Easiest)
-
-**OpenAI (Recommended)**
-- Cost: ~$0.03-0.15 per 1K tokens
-- Speed: Very fast
-- Quality: Excellent
-- Best for: Most users (best quality/price balance)
-
-→ [Setup Guide](../5-CONFIGURATION/ai-providers.md#openai)
-
-**Anthropic (Claude)**
-- Cost: ~$0.80-3.00 per 1M tokens
-- Speed: Fast
-- Quality: Excellent
-- Best for: Long context (200K tokens), reasoning, latest AI
-- Advantage: Superior long-context handling
-
-→ [Setup Guide](../5-CONFIGURATION/ai-providers.md#anthropic-claude)
-
-**Google Gemini**
-- Cost: ~$0.075-0.30 per 1K tokens
-- Speed: Very fast
-- Quality: Good to excellent
-- Best for: Multimodal (images, audio, video)
-- Advantage: Longest context (up to 2M tokens)
-
-→ [Setup Guide](../5-CONFIGURATION/ai-providers.md#google-gemini)
-
-**Groq (Ultra-Fast)**
-- Cost: ~$0.05 per 1M tokens (cheapest)
-- Speed: Ultra-fast (fastest available)
-- Quality: Good
-- Best for: Budget-conscious, transformations, speed-critical tasks
-- Disadvantage: Limited model selection
-
-→ [Setup Guide](../5-CONFIGURATION/ai-providers.md#groq)
-
-**OpenRouter (100+ Models)**
-- Cost: Pay-per-model (varies widely)
-- Speed: Varies by model
-- Quality: Varies by model
-- Best for: Model comparison, testing, unified billing
-- Advantage: One API key for 100+ models from different providers, plus
-  text-to-speech and speech-to-text models
-
-→ [Setup Guide](../5-CONFIGURATION/ai-providers.md#openrouter)
-
-**DashScope (Qwen)**
-- Cost: ~$0.01-0.06 per 1K tokens
-- Speed: Fast
-- Quality: Good
-- Best for: Users in Asia, Alibaba Cloud ecosystem
-- Advantage: Competitive pricing, strong multilingual support
-
-→ [Setup Guide](../5-CONFIGURATION/ai-providers.md#dashscope-qwen)
-
-**MiniMax**
-- Cost: Varies by model
-- Speed: Fast
-- Quality: Good
-- Best for: Long context tasks (204K tokens)
-- Advantage: Very long context window
-
-→ [Setup Guide](../5-CONFIGURATION/ai-providers.md#minimax)
-
-**Cohere**
-- Cost: Usage-based
-- Speed: Fast
-- Quality: Good (Command family)
-- Best for: Enterprise RAG, multilingual embeddings
-- Advantage: Language **and** embedding models from one key (`embed-v4.0`); reranking is not yet wired in
-
-**Novita**
-- Cost: Pay-per-model (competitive)
-- Speed: Fast
-- Quality: Varies by model
-- Best for: Open-weight LLMs behind one OpenAI-compatible key
-- Advantage: Broad open-model catalog
-
-**SiliconFlow**
-- Cost: Pay-per-model (competitive)
-- Speed: Fast
-- Quality: Varies by model
-- Best for: Hosted DeepSeek / Qwen / GLM / Kimi, including mainland China accounts
-- Advantage: Global and mainland China endpoints
-
-**Z.ai**
-- Cost: Pay-per-token
-- Speed: Fast
-- Quality: Good (GLM family)
-- Best for: GLM models from their maker
-- Advantage: Current GLM releases first
-
-**PayPerQ (PPQ)**
-- Cost: Pay-as-you-go across providers
-- Speed: Varies by routed model
-- Quality: Varies by routed model
-- Best for: One key spanning language, embedding, speech-to-text and text-to-speech
-- Advantage: Multi-modality OpenAI-compatible gateway (`https://api.ppq.ai/v1`)
-
-### Local / Self-Hosted (Free)
-
-**Ollama (Recommended for Local)**
-- Cost: Free (electricity only)
-- Speed: Depends on hardware (slow on CPU, fast on GPU)
-- Quality: Good (open-source models)
-- Setup: 10 minutes
-- Best for: Privacy-first, offline use
-- Privacy: 100% local, nothing leaves your machine
-
-→ [Setup Guide](../5-CONFIGURATION/ai-providers.md#ollama-recommended-for-local)
-
-**oMLX (Apple Silicon)**
-- Cost: Free (electricity only)
-- Speed: Fast on M-series GPUs (MLX)
-- Quality: Good (bring-your-own MLX models)
-- Setup: 10 minutes
-- Best for: macOS Apple Silicon, private local inference
-- Privacy: 100% local; default URL `http://localhost:11435/v1` (avoids SurrealDB on 8000)
-
-→ [Setup Guide](../5-CONFIGURATION/omlx.md)
-
-**LM Studio (Alternative)**
-- Cost: Free (electricity only)
-- Speed: Depends on hardware
-- Quality: Good (same models as Ollama)
-- Setup: 15 minutes (GUI interface)
-- Best for: Non-technical users who prefer GUI over CLI
-- Privacy: 100% local
-
-→ [Setup Guide](../5-CONFIGURATION/ai-providers.md#lm-studio-local-alternative)
-
-### Enterprise
-
-**Azure OpenAI**
-- Cost: Same as OpenAI (usage-based)
-- Speed: Very fast
-- Quality: Excellent (same models as OpenAI)
-- Setup: 10 minutes (more complex)
-- Best for: Enterprise, compliance (HIPAA, SOC2), VPC integration
-
-→ [Setup Guide](../5-CONFIGURATION/ai-providers.md#azure-openai)
+Per-provider details (where to get a key, base URLs, regional endpoints) are in the [AI Providers Configuration Guide](../5-CONFIGURATION/ai-providers.md).
 
 ---
 
-## Comparison Table
+## Connect a provider
 
-| Provider | Speed | Cost | Quality | Privacy | Setup | Context |
-|----------|-------|------|---------|---------|-------|---------|
-| **OpenAI** | Very Fast | $$ | Excellent | Low | 5 min | 128K |
-| **Anthropic** | Fast | $$ | Excellent | Low | 5 min | 200K |
-| **Google** | Very Fast | $$ | Good-Excellent | Low | 5 min | 2M |
-| **Groq** | Ultra Fast | $ | Good | Low | 5 min | 32K |
-| **OpenRouter** | Varies | Varies | Varies | Low | 5 min | Varies |
-| **DashScope** | Fast | $ | Good | Low | 5 min | Varies |
-| **MiniMax** | Fast | $$ | Good | Low | 5 min | 204K |
-| **Cohere** | Fast | $$ | Good | Low | 5 min | 128K |
-| **Novita** | Fast | $ | Varies | Low | 5 min | Varies |
-| **SiliconFlow** | Fast | $ | Varies | Low | 5 min | Varies |
-| **Z.ai** | Fast | $$ | Good | Low | 5 min | Varies |
-| **PayPerQ (PPQ)** | Varies | Varies | Varies | Low | 5 min | Varies |
-| **Ollama** | Slow-Medium | Free | Good | Max | 10 min | Varies |
-| **oMLX** | Fast (MLX) | Free | Good | Max | 10 min | Varies |
-| **LM Studio** | Slow-Medium | Free | Good | Max | 15 min | Varies |
-| **Azure** | Very Fast | $$ | Excellent | High | 10 min | 128K |
+Do this after Open Notebook is running and you can open the UI. It ends with a working chat.
 
----
+> **Before you start:** `OPEN_NOTEBOOK_ENCRYPTION_KEY` must be set (every install guide sets it). If it isn't, the Models page shows "Encryption key not configured" and won't store keys.
 
-## Choosing Your Provider
+### 1. Add a configuration
 
-### I want the easiest setup
-→ **OpenAI** — Most popular, best community support
+1. In the left sidebar, under **Manage**, click **Models**.
+2. Find your provider in the list and click **Add Configuration**.
+3. Fill in the form:
+   - **Configuration Name**: any label, for example `Personal`.
+   - **API Key**: the key from your provider. Local providers such as Ollama and oMLX don't need one (the field is marked optional).
+   - **Base URL**: leave empty for cloud providers. Local and self-hosted providers need it (for example `http://ollama:11434` for the Ollama container).
+   - **Google Vertex AI** uses a different form: **GCP Project ID** and **Region** (required) and an optional **Service Account JSON Path** instead of an API key. Without the JSON path, the server's default Google Cloud credentials are used.
+4. Click **Add Configuration**.
 
-### I have unlimited budget
-→ **OpenAI** — Best quality
+### 2. Test the connection
 
-### I want to save money
-→ **Groq** — Cheapest cloud ($0.05 per 1M tokens)
+On the new configuration, click **Test** (tooltip: *Test Connection*). A green check means Open Notebook reached the provider with your key. A red cross means the key, the base URL or the network is wrong; see [Troubleshooting](#troubleshooting).
 
-### I want privacy/offline
-→ **Ollama** — Free, local, private
+### 3. Add models
 
-### I have an Apple Silicon Mac
-→ **oMLX** — Free, local MLX inference ([setup](../5-CONFIGURATION/omlx.md))
+1. On the same configuration, click **Models** (tooltip: *Sync Models*). The **Discover Models** dialog lists the models the provider offers.
+2. Set **Model Type** first: `Language`, `Embedding`, `TTS` or `STT`. The list isn't filtered by type, so pick the type, then tick only models of that type.
+3. Tick the models you want (or type a name in the search box to add one that isn't listed) and click **Add (N)**.
+4. Open the dialog again for each other type you need. At minimum add one **Language** model and one **Embedding** model.
 
-### I want a GUI (not CLI)
-→ **LM Studio** — Desktop app
+### 4. Set default models
 
-### I'm in an enterprise
-→ **Azure OpenAI** — Compliance, support
+Scroll down to **Default Model Assignments** on the same page.
 
-### I need long context (200K+ tokens)
-→ **Anthropic** — Best long-context model
+- While a required default is missing, a notice lists it with an **Auto-assign Defaults** button. Click it to fill **Chat Model** and **Embedding Model** from the models you added.
+- Or pick each default from its dropdown. Changes save immediately.
 
-### I need multimodal (images, audio, video)
-→ **Google Gemini** — Best multimodal support
+| Default | Required | Used for |
+|---|---|---|
+| **Chat Model** | Yes | Notebook and source chat |
+| **Embedding Model** | Yes | Vector search and Ask |
+| **Text-to-Speech Model** | No | Podcasts |
+| **Speech-to-Text Model** | No | Transcribing audio and video sources |
+| **Transformation Model** | No (uses the chat model) | Transformations and insights |
+| **Tools Model** | No (uses the chat model) | Ask (search planning) |
+| **Large Context Model** | No (uses the chat model) | Any prompt over ~105K tokens is sent here automatically |
 
-### I want access to many models with one API key
-→ **OpenRouter** — 100+ models, unified billing
+**Auto-assign Defaults** only fills Chat Model and Embedding Model. Set Text-to-Speech and Speech-to-Text by hand if you want podcasts or audio/video transcription.
 
----
+### 5. Check that chat works
 
-## Ready to Set Up Your Provider?
+1. In the sidebar, click **Notebooks** → **New Notebook**, enter a name and click **Create New Notebook**.
+2. In the notebook, click the **Add Source** button and pick **Add Source** from its menu (the other entry, **Add Existing Sources**, reuses sources you already have). Choose **Enter Text**, paste a paragraph, give it a title, then click **Next** through the remaining steps and **Done**.
+3. Wait for the source to finish processing, then type a question in the chat panel and send it with **Ctrl+Enter** (**⌘+Enter** on macOS).
 
-Now that you've chosen a provider, follow the detailed setup instructions:
+If you get an answer, you're done. Add more providers the same way at any time; each one gets its own configurations and models.
 
-→ **[AI Providers Configuration Guide](../5-CONFIGURATION/ai-providers.md)**
+### Troubleshooting
 
-This guide includes:
-- Step-by-step setup instructions for each provider via the Settings UI
-- How to add credentials, test connections, and discover models
-- Model selection and recommendations
-- Provider-specific troubleshooting
-- Hardware requirements (for local providers)
-- Cost optimization tips
+- **Test fails on a cloud provider**: check the key on the provider's website and that the account has credit. Edit the configuration to replace the key.
+- **Test fails on a local provider**: the base URL must be reachable *from the Open Notebook container*, not from your browser. `localhost` inside the container is the container itself. See [Ollama](../5-CONFIGURATION/ollama.md).
+- **Chat says "No model configured…"**: a default is empty. Go back to step 4.
+- **Source stays queued forever**: the background worker isn't running. In Docker it runs inside the `open_notebook` container (check `docker compose logs open_notebook`); from source you start it yourself.
+- **"Decryption Error" on a configuration**: `OPEN_NOTEBOOK_ENCRYPTION_KEY` changed since the key was saved. Delete the configuration and add it again.
+- More: [AI & Chat Issues](../6-TROUBLESHOOTING/ai-chat-issues.md).
 
 ---
 
-## Cost Estimator
+## Supported providers
 
-### OpenAI
-```
-Light use (10 chats/day): $1-5/month
-Medium use (50 chats/day): $10-30/month
-Heavy use (all-day use): $50-100+/month
-```
+Open Notebook supports 24 providers. The table lists the model types each provider offers when you add a configuration. What you can actually add depends on the models in your provider account.
 
-### Anthropic
-```
-Light use: $1-3/month
-Medium use: $5-20/month
-Heavy use: $20-50+/month
-```
+| Provider | Language | Embedding | Speech-to-Text | Text-to-Speech | Setup |
+|---|:-:|:-:|:-:|:-:|---|
+| OpenAI | ✅ | ✅ | ✅ | ✅ | [guide](../5-CONFIGURATION/ai-providers.md#openai) |
+| Anthropic | ✅ | | | | [guide](../5-CONFIGURATION/ai-providers.md#anthropic-claude) |
+| Google AI (Gemini) | ✅ | ✅ | ✅ | ✅ | [guide](../5-CONFIGURATION/ai-providers.md#google-gemini) |
+| Groq | ✅ | | ✅ | | [guide](../5-CONFIGURATION/ai-providers.md#groq) |
+| Mistral AI | ✅ | ✅ | ✅ | ✅ | |
+| DeepSeek | ✅ | | | | |
+| xAI (Grok) | ✅ | | | ✅ | |
+| OpenRouter | ✅ | ✅ | ✅ | ✅ | [guide](../5-CONFIGURATION/ai-providers.md#openrouter) |
+| DashScope (Qwen) | ✅ | | | | [guide](../5-CONFIGURATION/ai-providers.md#dashscope-qwen) |
+| MiniMax | ✅ | | | ✅ | [guide](../5-CONFIGURATION/ai-providers.md#minimax) |
+| Novita | ✅ | | | | [guide](../5-CONFIGURATION/ai-providers.md#novita) |
+| SiliconFlow | ✅ | | | | [guide](../5-CONFIGURATION/ai-providers.md#siliconflow) |
+| Z.ai | ✅ | | | | [guide](../5-CONFIGURATION/ai-providers.md#zai) |
+| PayPerQ (PPQ) | ✅ | ✅ | ✅ | ✅ | [guide](../5-CONFIGURATION/ai-providers.md#payperq-ppq) |
+| Cohere | ✅ | ✅ | | | [guide](../5-CONFIGURATION/ai-providers.md#cohere) |
+| Voyage AI | | ✅ | | | |
+| ElevenLabs | | | ✅ | ✅ | |
+| Deepgram | | | ✅ | ✅ | |
+| Ollama (local) | ✅ | ✅ | | | [guide](../5-CONFIGURATION/ollama.md) |
+| oMLX (local, Apple Silicon) | ✅ | ✅ | | | [guide](../5-CONFIGURATION/omlx.md) |
+| Azure OpenAI | ✅ | ✅ | ✅ | ✅ | [guide](../5-CONFIGURATION/ai-providers.md#azure-openai) |
+| Google Vertex AI | ✅ | ✅ | | ✅ | |
+| OpenAI Compatible | ✅ | ✅ | ✅ | ✅ | [guide](../5-CONFIGURATION/openai-compatible.md) |
+| Anthropic Compatible | ✅ | | | | [guide](../5-CONFIGURATION/ai-providers.md#anthropic-compatible) |
 
-### Groq
-```
-Light use: $0-1/month
-Medium use: $2-5/month
-Heavy use: $5-20/month
-```
-
-### Ollama
-```
-Any use: Free (electricity only)
-8GB GPU running 24/7: ~$10/month electricity
-```
-
----
-
-## Next Steps
-
-1. **You've chosen a provider** (from this comparison guide)
-2. **Follow the setup guide**: [AI Providers Configuration](../5-CONFIGURATION/ai-providers.md)
-3. **Add your credential** in Manage → Models
-4. **Test your connection** and discover models
-5. **Start using Open Notebook!**
+**OpenAI Compatible** covers any server that speaks the OpenAI API: LM Studio, vLLM, LocalAI, and self-hosted speech servers ([local TTS](../5-CONFIGURATION/local-tts.md), [local STT](../5-CONFIGURATION/local-stt.md)). LM Studio has no provider of its own; add it as OpenAI Compatible.
 
 ---
 
-## Need Help?
+## Choosing providers
 
-- **Setup issues?** See [AI Providers Configuration](../5-CONFIGURATION/ai-providers.md) for detailed troubleshooting per provider
-- **General problems?** Check [Troubleshooting Guide](../6-TROUBLESHOOTING/index.md)
-- **Questions?** Join [Discord community](https://discord.gg/37XJPXfz2w)
+Open Notebook needs at least a **language** model (for chat) and an **embedding** model (for search and Ask). Podcasts also need **text-to-speech**.
+
+**One provider for everything.** OpenAI, Google AI, Mistral AI, OpenRouter, PayPerQ and Azure OpenAI offer all four model types under one key. This is the simplest setup.
+
+**Language-only providers need a partner.** Anthropic, DeepSeek, DashScope, Novita, SiliconFlow, Z.ai and Anthropic Compatible offer only language models. Add a second provider for embeddings (and for text-to-speech if you want podcasts), for example OpenAI, Google AI, Mistral AI, Voyage AI or a local Ollama.
+
+**Fully local.** Ollama and oMLX provide language and embedding models on your own hardware. For podcasts and transcription without the cloud, add a local speech server through OpenAI Compatible ([local TTS](../5-CONFIGURATION/local-tts.md), [local STT](../5-CONFIGURATION/local-stt.md)). Local models are slower on CPU; a GPU or Apple Silicon helps.
+
+**Mixing is normal.** Each default model can come from a different provider, for example a cloud chat model with local embeddings.
+
+**Changing the embedding model later** means rebuilding existing embeddings. The UI asks before switching and links to the rebuild on the **Advanced** page.
+
+Prices, context windows and model line-ups change often, so this guide doesn't list them. Check each provider's own pricing and model pages.
+
+---
+
+## Next steps
+
+- [AI Providers Configuration Guide](../5-CONFIGURATION/ai-providers.md): per-provider keys, base URLs and regional endpoints
+- [Ollama](../5-CONFIGURATION/ollama.md): local models, networking and timeouts
+- [User Guide](../3-USER-GUIDE/index.md): adding sources, chat, podcasts
+
+**Need help?** Join the [Discord community](https://discord.gg/37XJPXfz2w).

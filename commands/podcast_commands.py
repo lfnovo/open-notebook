@@ -63,7 +63,7 @@ def explain_generation_failure(error_msg: str) -> Optional[str]:
     if "Voice name" in error_msg and "not supported" in error_msg:
         return (
             "The speaker profile's voice_id is not valid for its TTS model. "
-            "Check the voices in Settings -> Speaker Profiles against the ones "
+            "Check the speaker profile voices in Podcasts -> Profiles against the ones "
             "your voice model provides (the profiles seeded on install use "
             "OpenAI voice names)."
         )

@@ -1,195 +1,159 @@
 # From Source Installation
 
-Clone the repository and run locally. **For developers and contributors.**
+Clone the repository and run each part yourself. **For developers and contributors.** To just use Open Notebook, [Docker Compose](docker-compose.md) is simpler.
+
+A source install runs four processes, each in its own terminal:
+
+| Process | Command | Port |
+|---|---|---|
+| SurrealDB (in Docker) | `make database` | 8000 |
+| API | `make api` | 5055 |
+| Background worker | `make worker` | none |
+| Frontend (Next.js dev server) | `npm run dev` in `frontend/` | 3000 |
 
 ## Prerequisites
 
-- **Python 3.11+** - [Download](https://www.python.org/)
-- **Node.js 18+** - [Download](https://nodejs.org/)
-- **Git** - [Download](https://git-scm.com/)
-- **Docker** (for SurrealDB) - [Download](https://docker.com/)
-- **uv** (Python package manager) - `curl -LsSf https://astral.sh/uv/install.sh | sh`
-- API key from OpenAI or similar (or use Ollama for free)
+- **Python 3.11 or 3.12.** 3.13 and later are not supported yet (`pyproject.toml` requires `>=3.11,<3.13`). uv can install a matching Python for you.
+- **uv**: `curl -LsSf https://astral.sh/uv/install.sh | sh` ([other install methods](https://docs.astral.sh/uv/getting-started/installation/))
+- **Node.js 20.9 or later** (22 LTS recommended; CI uses 22). Next.js 16 refuses older versions.
+- **Git**
+- **Docker**, to run SurrealDB
+- **ffmpeg**, for audio and video sources and podcasts (`brew install ffmpeg`, `sudo apt install ffmpeg`, or `winget install Gyan.FFmpeg`)
 
-## Quick Setup (10 minutes)
-
-### 1. Clone Repository
+## 1. Clone the repository
 
 ```bash
 git clone https://github.com/lfnovo/open-notebook.git
 cd open-notebook
+```
 
-# If you forked it:
+If you plan to contribute, clone your fork instead and add `upstream`:
+
+```bash
 git clone https://github.com/YOUR_USERNAME/open-notebook.git
 cd open-notebook
 git remote add upstream https://github.com/lfnovo/open-notebook.git
 ```
 
-### 2. Install Python Dependencies
+## 2. Install Python dependencies
 
 ```bash
 uv sync
-uv pip install python-magic
 ```
 
-#### 2.1 Alternative: Conda Setup (Optional)
-
-If you prefer using **Conda** to manage your environments, follow these steps instead of the standard `uv sync`:
+<details>
+<summary>Using Conda instead</summary>
 
 ```bash
-# Create and activate the environment
-conda create -n open-notebook python=3.11 -y
+conda create -n open-notebook python=3.12 -y
 conda activate open-notebook
-
-# Install uv inside conda to maintain compatibility with the Makefile
 conda install -c conda-forge uv nodejs -y
-
-# Sync dependencies
 uv sync
 ```
 
-> **Note**: Installing `uv` inside your Conda environment ensures that commands like `make start-all` and `make api` continue to work seamlessly.
+Installing `uv` inside the Conda environment keeps the `make` targets working.
+</details>
 
-### 3. Start SurrealDB
-
-```bash
-# Terminal 1
-make database
-# or: docker compose up surrealdb
-```
-
-### 4. Set Environment Variables
+## 3. Create your `.env`
 
 ```bash
 cp .env.example .env
-# Edit .env and set:
-# OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
 ```
 
-After starting the app, configure AI providers via the **Manage → Models** UI in the browser.
+Generate an encryption key (works on every platform once `uv sync` has run):
 
-### 5. Start API
+```bash
+uv run python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+Edit `.env` and change two lines, pasting the generated value as the key (never an example value):
+
+```env
+OPEN_NOTEBOOK_ENCRYPTION_KEY=<the value you generated>
+SURREAL_URL=ws://127.0.0.1:8000/rpc
+```
+
+The example file points `SURREAL_URL` at `surrealdb`, a host name that only exists inside Docker Compose. A process running on your machine reaches the database at `127.0.0.1` (the database port is bound to IPv4 `127.0.0.1`; `localhost` can resolve to IPv6 `::1` first). Keep the key: if it changes, saved API keys can't be decrypted.
+
+## 4. Start SurrealDB
+
+```bash
+make database
+```
+
+This runs `docker compose up -d surrealdb` with the repository's `docker-compose.yml`. Docker Compose reads `SURREAL_USER` and `SURREAL_PASSWORD` from your `.env`, so the database and the API use the same credentials.
+
+## 5. Start the API
 
 ```bash
 # Terminal 2
 make api
-# or: uv run --env-file .env uvicorn api.main:app --host 0.0.0.0 --port 5055
 ```
 
-### 6. Start Worker
+The API listens on `http://localhost:5055` and runs database migrations on startup. Interactive API docs: http://localhost:5055/docs.
 
-Source and note processing (content extraction, embedding, insights) is dispatched
-as background jobs that a **separate worker** process consumes. Without it, every
-source stays stuck at `Source processing status: CommandStatus.NEW` forever.
+## 6. Start the worker
 
 ```bash
 # Terminal 3
 make worker
-# or: uv run --env-file .env surreal-commands-worker --import-modules commands
 ```
 
-> `make start-all` starts Database + API + Worker + Frontend together; the steps
-> above run them individually so you can see each process's logs.
+Source processing, embeddings, insights and podcasts run as background jobs that this worker picks up. Without it, new sources stay queued forever.
 
-### 7. Start Frontend
+## 7. Start the frontend
 
 ```bash
 # Terminal 4
-cd frontend && npm install && npm run dev
+cd frontend
+npm install
+npm run dev
 ```
 
-### 8. Access
+Open **http://localhost:3000**.
 
-- **Frontend**: http://localhost:3000
-- **API Docs**: http://localhost:5055/docs
-- **Database**: http://localhost:8000
+> Once everything works, `make start-all` starts the database, API, worker and frontend from one terminal (stop them with `make stop-all`). Separate terminals make each process's logs easier to read.
 
-### 9. Configure AI Provider
+## 8. Connect a provider
 
-1. Open http://localhost:3000
-2. Go to **Manage** → **Models**
-3. Click **Add Credential** → Select your provider → Paste API key
-4. Click **Save**, then **Test Connection**
-5. Click **Discover Models** → **Register Models**
+Follow [Connect a provider](../4-AI-PROVIDERS/index.md#connect-a-provider). It ends with a test chat. Chat won't work until the default models are set.
+
+If you use Ollama on the same machine, its base URL is `http://127.0.0.1:11434`; there is no container in between.
 
 ---
 
-## Development Workflow
-
-### Code Quality
+## Development commands
 
 ```bash
-# Format and lint Python
-make ruff
-# or: ruff check . --fix
-
-# Type checking
-make lint
-# or: uv run python -m mypy .
+uv run pytest tests/          # tests
+make ruff                     # ruff check . --fix
+uv run ruff format .          # format
+make lint                     # mypy
+make clean-cache              # remove __pycache__, .mypy_cache, etc.
 ```
 
-### Run Tests
-
-```bash
-uv run pytest tests/
-```
-
-### Common Commands
-
-```bash
-# Start everything
-make start-all
-
-# View API docs
-open http://localhost:5055/docs
-
-# Check database migrations
-# (Auto-run on API startup)
-
-# Clean up
-make clean
-```
+The development workflow is described in the [Development Setup](../7-DEVELOPMENT/development-setup.md) guide.
 
 ---
 
 ## Troubleshooting
 
-### Python version too old
+**Wrong Python version.** `uv sync --python 3.12` installs and uses a supported version.
 
-```bash
-python --version  # Check version
-uv sync --python 3.11  # Use specific version
-```
+**`npm run dev` fails with an engine or syntax error.** Your Node.js is older than 20.9. Check with `node --version`.
 
-### npm: command not found
+**API can't connect to the database.** Check that `SURREAL_URL` in `.env` uses `127.0.0.1`, and that the database is running: `docker compose ps` and `docker compose logs surrealdb`.
 
-Install Node.js from https://nodejs.org/
+**Sources stay queued.** The worker isn't running, or it crashed; check its terminal.
 
-### Database connection errors
-
-```bash
-docker ps  # Check SurrealDB running
-docker logs surrealdb  # View logs
-```
-
-### Port 5055 already in use
-
-```bash
-# Use different port
-uv run uvicorn api.main:app --port 5056
-```
+**Port 5055 already in use.** Something else is on that port. Set `API_PORT` in `.env` to move the API. The frontend then needs both `API_URL=http://localhost:<port>` (used by the browser) and `INTERNAL_API_URL=http://localhost:<port>` (used by the Next.js server to proxy `/api` requests) in its environment, for example in `frontend/.env.local`.
 
 ---
 
-## Next Steps
+## Next steps
 
-1. Read [Development Guide](../7-DEVELOPMENT/quick-start.md)
-2. See [Architecture Overview](../7-DEVELOPMENT/architecture.md)
-3. Check [Contributing Guide](../7-DEVELOPMENT/contributing.md)
+- [Development quick start](../7-DEVELOPMENT/quick-start.md)
+- [Architecture](../7-DEVELOPMENT/architecture.md)
+- [Contributing](../7-DEVELOPMENT/contributing.md)
 
----
-
-## Getting Help
-
-- **Discord**: [Community](https://discord.gg/37XJPXfz2w)
-- **Issues**: [GitHub Issues](https://github.com/lfnovo/open-notebook/issues)
+**Need help?** [Discord](https://discord.gg/37XJPXfz2w) · [GitHub Issues](https://github.com/lfnovo/open-notebook/issues)

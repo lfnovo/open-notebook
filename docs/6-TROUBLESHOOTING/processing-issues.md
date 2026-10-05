@@ -78,7 +78,7 @@ See [Local Speech-to-Text → When transcription fails](../5-CONFIGURATION/local
 
 ### "Request body exceeds the maximum allowed upload size" (413)
 
-The file is larger than `OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB` (default 100). Uploads through the UI are also capped at 100 MB by the frontend's proxy, whatever that variable says; larger files must be sent to the API on port 5055 directly. Behind a reverse proxy, its own body limit applies first and the browser may report a CORS error with status 413. See [Reverse Proxy → Upload size](../5-CONFIGURATION/reverse-proxy.md#upload-size-413-errors).
+The file is larger than `OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB` (default 100). By default the browser uploads straight to the API, so raising that variable is enough. If `API_URL` points at the frontend's own address, uploads go through the frontend's proxy instead, which is capped at 100 MB whatever that variable says. Behind a reverse proxy, its own body limit applies first and the browser may report a CORS error with status 413. See [Reverse Proxy → Upload size](../5-CONFIGURATION/reverse-proxy.md#upload-size-413-errors).
 
 ### "… (detected type: …)" (415)
 

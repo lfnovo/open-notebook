@@ -37,7 +37,7 @@ You can't save provider credentials until `OPEN_NOTEBOOK_ENCRYPTION_KEY` is set 
 ## #4: "Cannot process file" or "Unsupported format"
 
 - Rejected on upload with "… (detected type: …)": the file type can't be extracted. Convert it (PDF, DOCX, TXT…). Images and scanned PDFs need `OPEN_NOTEBOOK_ENABLE_DOCLING=true`.
-- Rejected with "Request body exceeds the maximum allowed upload size": the file is over 100 MB (`OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB`; uploads through the UI are capped at 100 MB regardless).
+- Rejected with "Request body exceeds the maximum allowed upload size": the file is over `OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB` (default 100 MB). Raise it; if `API_URL` points at the frontend's own address, the frontend proxy also caps uploads at 100 MB.
 - Uploaded, then **Failed**: the reason is in the worker log and the source's status. → [Processing Issues → Failed sources](processing-issues.md#failed-sources)
 
 ---

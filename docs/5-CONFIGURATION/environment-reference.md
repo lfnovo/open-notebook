@@ -79,7 +79,7 @@ With Docker Compose, `SURREAL_USER` and `SURREAL_PASSWORD` are the two values yo
 | `API_RELOAD` | `true` | API (from source only) | Auto-reload on code changes when started with `run_api.py` |
 | `FRONTEND_BIND_HOST` | `0.0.0.0` | Container | Interface the Next.js server binds to inside the container. Replaces `HOSTNAME`, which runtimes such as Podman overwrite |
 | `NEXT_ALLOWED_DEV_ORIGINS` | none | Frontend (dev server only) | Comma-separated hostnames allowed to reach `npm run dev` from another machine (LAN IP, custom hostname) |
-| `OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB` | `100` | API | Largest request body the API accepts. Larger requests get `413 Request body exceeds the maximum allowed upload size`. Uploads from the UI also pass through the Next.js proxy, which is capped at 100 MB in the build, so raising this above 100 only helps clients that call port 5055 directly. A reverse proxy's own limit (nginx `client_max_body_size`) also applies |
+| `OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB` | `100` | API | Largest request body the API accepts. Larger requests get `413 Request body exceeds the maximum allowed upload size`. By default the browser uploads straight to the API (port 5055), so this is the app's only limit. When `API_URL` points at the frontend's own URL, uploads go through the Next.js `/api/*` forwarding instead, which is capped at 100 MB in the build. A reverse proxy's own limit (nginx `client_max_body_size`) also applies |
 
 ### Outbound proxy
 

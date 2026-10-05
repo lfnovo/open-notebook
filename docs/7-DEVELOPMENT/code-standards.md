@@ -1,375 +1,106 @@
 # Code Standards
 
-This document outlines coding standards and best practices for Open Notebook contributions. All code should follow these guidelines to ensure consistency, readability, and maintainability.
+How code in this repo is written. The hard rules for each area are in the AGENTS files ([backend](../../open_notebook/AGENTS.md), [frontend](../../frontend/AGENTS.md)); this page explains the conventions behind them and must not contradict them. Security rules (query parameters, templates, file paths) are in [security.md](security.md) and are mandatory.
 
-## Python Standards
+## Python
 
-### Code Formatting
+### Tooling
 
-We follow **PEP 8** with some specific guidelines:
+| Tool | Config | Run |
+|---|---|---|
+| ruff (lint) | `pyproject.toml`: rules `E`, `F`, `I` (import order) | `uv run ruff check .` (`--fix` to apply fixes) |
+| ruff (format) | line length 88 | `uv run ruff format .` (CI runs `--check`) |
+| mypy | `mypy.ini`, with a burn-down list of modules still exempt | `uv run python -m mypy .` |
 
-- Use **Ruff** for linting and formatting
-- Maximum line length: **88 characters**
-- Use **double quotes** for strings
-- Use **trailing commas** in multi-line structures
+CI fails on any of the three. Don't add modules to the mypy exemption list; remove them when you fix one.
 
-### Type Hints
+### Style
 
-Always use type hints for function parameters and return values:
+- Type hints on function signatures. Pydantic v2 for data: `BaseModel`, `Field`, `field_validator` (not the v1 `@validator`).
+- Log with `loguru` (`from loguru import logger`). Never log secrets or API key values.
+- Docstrings explain intent and non-obvious behavior; skip them where the name says it all. When code works around a bug or an issue, reference the issue number.
+- Keep changes scoped: don't reformat or refactor code you aren't otherwise changing.
 
-```python
-from typing import List, Optional, Dict, Any
-from pydantic import BaseModel
+### Async
 
-async def process_content(
-    content: str,
-    options: Optional[Dict[str, Any]] = None
-) -> ProcessedContent:
-    """Process content with optional configuration."""
-    # Implementation
-```
+Everything that touches the database, a model or the network is `async` and awaited:
 
-### Async/Await Patterns
+- Database: `repo_query`, `repo_create`, `repo_update`, `repo_relate`, … in `open_notebook/database/repository.py`, or domain methods (`await Notebook.get(id)`, `await source.save()`).
+- Outgoing HTTP: `httpx.AsyncClient`. User-supplied URLs go through `validate_url()` first.
+- Models: `provision_langchain_model()` for graph nodes, `model_manager` for embedding and speech models.
 
-Use async/await consistently throughout the codebase:
+Don't call blocking I/O from async code; wrap unavoidable sync calls in `asyncio.to_thread`. The only sanctioned sync-to-async bridge is the one in the checkpointed chat graphs (see [change-playbooks.md](change-playbooks.md#playbook-new-langgraph-workflow)).
 
-```python
-# Good
-async def fetch_data(url: str) -> Dict[str, Any]:
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
-            return await response.json()
+### Database access
 
-# Bad - mixing sync and async
-def fetch_data(url: str) -> Dict[str, Any]:
-    loop = asyncio.get_event_loop()
-    return loop.run_until_complete(async_fetch(url))
-```
+- Pass values as bind parameters (`$id`), never by f-string interpolation ([security.md](security.md#database-queries-surrealql-injection)). Convert IDs with `ensure_record_id()`.
+- Record IDs are `table:id` strings (`source:abc123`). `ObjectModel.get()` picks the subclass from the table prefix.
+- Relationships are graph edges, not foreign-key columns: `reference` (source → notebook), `artifact` (note → notebook), `refers_to` (chat session → notebook or source). Query them as `SELECT in AS source FROM reference WHERE out = $id`.
+- There is no connection pool. Each `repo_*` call opens and closes a connection (`db_connection()`).
 
-### Error Handling
+### Errors in the domain and graphs
 
-Use structured error handling with custom exceptions:
+Raise typed exceptions from `open_notebook/exceptions.py`, never bare `Exception` or `ValueError` for conditions the API or a job should understand:
 
-```python
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
+| Situation | Raise |
+|---|---|
+| Record doesn't exist | `NotFoundError` |
+| Bad user input | `InvalidInputError` |
+| Model or provider not configured | `ConfigurationError` |
+| Database failure | `DatabaseOperationError` |
+| Provider failure | whatever `classify_error()` returns (see below) |
 
-async def create_notebook(name: str, description: str) -> Notebook:
-    """Create a new notebook with validation."""
-    if not name.strip():
-        raise InvalidInputError("Notebook name cannot be empty")
+`ObjectModel.get()` raises `NotFoundError` **only** when the record is missing, and `DatabaseOperationError` for any other database failure, such as a transaction conflict ([ADR-013](decisions/ADR-013-objectmodel-get-error-contract.md)). The API maps those to 404 and 500, and background jobs treat `NotFoundError` as permanent and the database error as retryable.
 
-    try:
-        notebook = Notebook(name=name, description=description)
-        await notebook.save()
-        return notebook
-    except Exception as e:
-        raise DatabaseOperationError(f"Failed to create notebook: {str(e)}")
-```
-
-### Documentation (Google-style Docstrings)
-
-Use Google-style docstrings for all functions, classes, and modules:
+Graph nodes wrap model calls so provider errors become typed, user-readable exceptions:
 
 ```python
-async def vector_search(
-    query: str,
-    limit: int = 10,
-    minimum_score: float = 0.2
-) -> List[SearchResult]:
-    """Perform vector search across embedded content.
-
-    Args:
-        query: Search query string
-        limit: Maximum number of results to return
-        minimum_score: Minimum similarity score for results
-
-    Returns:
-        List of search results sorted by relevance score
-
-    Raises:
-        InvalidInputError: If query is empty or limit is invalid
-        DatabaseOperationError: If search operation fails
-    """
-    # Implementation
-```
-
-#### Module Docstrings
-```python
-"""
-Notebook domain model and operations.
-
-This module contains the core Notebook class and related operations for
-managing research notebooks within the Open Notebook system.
-"""
-```
-
-#### Class Docstrings
-```python
-class Notebook(BaseModel):
-    """A research notebook containing sources, notes, and chat sessions.
-
-    Notebooks are the primary organizational unit in Open Notebook, allowing
-    users to group related research materials and maintain separate contexts
-    for different projects.
-
-    Attributes:
-        name: The notebook's display name
-        description: Optional description of the notebook's purpose
-        archived: Whether the notebook is archived (default: False)
-        created: Timestamp of creation
-        updated: Timestamp of last update
-    """
-```
-
-#### Function Docstrings
-```python
-async def create_notebook(
-    name: str,
-    description: str = "",
-    user_id: Optional[str] = None
-) -> Notebook:
-    """Create a new notebook with validation.
-
-    Args:
-        name: The notebook name (required, non-empty)
-        description: Optional notebook description
-        user_id: Optional user ID for multi-user deployments
-
-    Returns:
-        The created notebook instance
-
-    Raises:
-        InvalidInputError: If name is empty or invalid
-        DatabaseOperationError: If creation fails
-
-    Example:
-        ```python
-        notebook = await create_notebook(
-            name="AI Research",
-            description="Research on AI applications"
-        )
-        ```
-    """
-```
-
-## FastAPI Standards
-
-### Router Organization
-
-Organize endpoints by domain:
-
-```python
-# api/routers/notebooks.py
-from fastapi import APIRouter, HTTPException, Query
-from typing import List, Optional
-
-router = APIRouter()
-
-@router.get("/notebooks", response_model=List[NotebookResponse])
-async def get_notebooks(
-    archived: Optional[bool] = Query(None, description="Filter by archived status"),
-    order_by: str = Query("updated desc", description="Order by field and direction"),
-):
-    """Get all notebooks with optional filtering and ordering."""
-    # Implementation
-```
-
-### Request/Response Models
-
-Use Pydantic models for validation:
-
-```python
-from pydantic import BaseModel, Field
-from typing import Optional
-
-class NotebookCreate(BaseModel):
-    name: str = Field(..., description="Name of the notebook", min_length=1)
-    description: str = Field(default="", description="Description of the notebook")
-
-class NotebookResponse(BaseModel):
-    id: str
-    name: str
-    description: str
-    archived: bool
-    created: str
-    updated: str
-```
-
-### Error Handling
-
-Use consistent error responses:
-
-```python
-from fastapi import HTTPException
-from loguru import logger
-
 try:
-    result = await some_operation()
-    return result
-except InvalidInputError as e:
-    raise HTTPException(status_code=400, detail=str(e))
-except DatabaseOperationError as e:
-    logger.error(f"Database error: {str(e)}")
-    raise HTTPException(status_code=500, detail="Internal server error")
+    ...
+except Exception as e:
+    exc_class, message = classify_error(e)
+    raise exc_class(message) from e
 ```
 
-### API Documentation
+### Errors in the API
 
-Use FastAPI's automatic documentation features:
+Global handlers in `api/main.py` map the exception types to status codes (`NotFoundError`→404, `InvalidInputError`→400, `AuthenticationError`→401, `UnsupportedTypeException`→415, `ConfigurationError`→422, `RateLimitError`→429, `NetworkError`/`ExternalServiceError`→502, any other `OpenNotebookError`→500). So in a router:
+
+- **Let typed exceptions propagate.** Don't catch a domain error just to re-raise it as `HTTPException`.
+- Raise `HTTPException` only for HTTP-level conditions the router itself checks (a malformed form field, an unsupported query parameter).
+- Most routers end with a catch-all that turns unexpected errors into a sanitized 500. It must come **after** the arms that re-raise typed and HTTP errors, or it swallows them:
 
 ```python
-@router.post(
-    "/notebooks",
-    response_model=NotebookResponse,
-    summary="Create a new notebook",
-    description="Create a new notebook with the specified name and description.",
-    responses={
-        201: {"description": "Notebook created successfully"},
-        400: {"description": "Invalid input data"},
-        500: {"description": "Internal server error"}
-    }
-)
-async def create_notebook(notebook: NotebookCreate):
-    """Create a new notebook."""
-    # Implementation
+try:
+    ...
+except HTTPException:
+    raise
+except OpenNotebookError:
+    raise                      # reaches the global handler with its real status
+except Exception as e:
+    logger.exception(f"Error updating notebook: {e}")
+    raise HTTPException(status_code=500, detail="Error updating notebook")
 ```
 
-## Database Standards
+`tests/test_typed_exceptions_reach_handlers.py` and `tests/test_error_message_sanitization.py` enforce both halves. Older routers still have `except NotFoundError: raise HTTPException(404, ...)` arms; they're equivalent, and new code doesn't need them.
 
-### SurrealDB Patterns
+### Background commands
 
-Use the repository pattern consistently:
+A command signals a permanent failure by raising an exception listed in its `retry["stop_on"]`; anything else is retried. See the [command playbook](change-playbooks.md#playbook-new-background-command).
 
-```python
-from open_notebook.database.repository import repo_create, repo_query, repo_update
+## TypeScript / frontend
 
-# Create records
-async def create_notebook(data: Dict[str, Any]) -> Dict[str, Any]:
-    """Create a new notebook record."""
-    return await repo_create("notebook", data)
+- `npm run lint` (ESLint over `src/`) and `npm run build` (which type-checks) must pass; CI runs both plus `npm run test`.
+- The rules that matter most, all in [frontend/AGENTS.md](../../frontend/AGENTS.md): every UI string through `t()` in every locale; colors through design tokens, never raw Tailwind palette classes; every request through `apiClient`; server state through TanStack Query hooks in `src/lib/hooks/`.
+- Show errors with `getApiErrorMessage()` and a toast; the backend's messages are already user-facing.
 
-# Query with parameters
-async def find_notebooks_by_user(user_id: str) -> List[Dict[str, Any]]:
-    """Find notebooks for a specific user."""
-    return await repo_query(
-        "SELECT * FROM notebook WHERE user_id = $user_id",
-        {"user_id": user_id}
-    )
+## Review checklist
 
-# Update records
-async def update_notebook(notebook_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
-    """Update a notebook record."""
-    return await repo_update("notebook", notebook_id, data)
-```
-
-### Schema Management
-
-Use migrations for schema changes:
-
-```surrealql
--- migrations/8.surrealql
-DEFINE TABLE IF NOT EXISTS new_feature SCHEMAFULL;
-DEFINE FIELD IF NOT EXISTS name ON TABLE new_feature TYPE string;
-DEFINE FIELD IF NOT EXISTS description ON TABLE new_feature TYPE option<string>;
-DEFINE FIELD IF NOT EXISTS created ON TABLE new_feature TYPE datetime DEFAULT time::now();
-DEFINE FIELD IF NOT EXISTS updated ON TABLE new_feature TYPE datetime DEFAULT time::now();
-```
-
-## TypeScript Standards
-
-### Basic Guidelines
-
-Follow TypeScript best practices:
-
-- Use strict mode enabled in `tsconfig.json`
-- Use proper type annotations for all variables and functions
-- Avoid using `any` type unless absolutely necessary
-- Use `interface` for object shapes, `type` for unions and other advanced types
-
-### Component Structure
-
-- Use functional components with hooks
-- Keep components focused and single-responsibility
-- Extract reusable logic into custom hooks
-- Use proper TypeScript types for props
-
-### Error Handling
-
-- Handle errors explicitly
-- Provide meaningful error messages
-- Log errors appropriately
-- Don't suppress errors silently
-
-## Code Quality Tools
-
-We use these tools to maintain code quality:
-
-- **Ruff**: Linting and code formatting
-  - Run with: `uv run ruff check . --fix`
-  - Format with: `uv run ruff format .`
-
-- **MyPy**: Static type checking
-  - Run with: `uv run python -m mypy .`
-
-- **Pytest**: Testing framework
-  - Run with: `uv run pytest`
-
-## Common Patterns
-
-### Async Database Operations
-
-```python
-async def get_notebook_with_sources(notebook_id: str) -> Notebook:
-    """Retrieve notebook with all related sources."""
-    notebook_data = await repo_query(
-        "SELECT * FROM notebook WHERE id = $id",
-        {"id": notebook_id}
-    )
-    if not notebook_data:
-        raise InvalidInputError(f"Notebook {notebook_id} not found")
-
-    sources_data = await repo_query(
-        "SELECT * FROM source WHERE notebook_id = $notebook_id",
-        {"notebook_id": notebook_id}
-    )
-
-    return Notebook(
-        **notebook_data[0],
-        sources=[Source(**s) for s in sources_data]
-    )
-```
-
-### Model Validation
-
-```python
-from pydantic import BaseModel, validator
-
-class NotebookInput(BaseModel):
-    name: str
-    description: str = ""
-
-    @validator('name')
-    def name_not_empty(cls, v):
-        if not v.strip():
-            raise ValueError('Name cannot be empty')
-        return v.strip()
-```
-
-## Code Review Checklist
-
-Before submitting code for review, ensure:
-
-- [ ] Code follows PEP 8 / TypeScript best practices
-- [ ] Type hints are present for all functions
-- [ ] Docstrings are complete and accurate
-- [ ] Error handling is appropriate
-- [ ] Tests are included and passing
-- [ ] No debug code (console.logs, print statements) left behind
-- [ ] Commit messages are clear and follow conventions
-- [ ] Documentation is updated if needed
-
----
-
-**See also:**
-- [Testing Guide](testing.md) - How to write tests
-- [Contributing Guide](contributing.md) - Overall contribution workflow
+- [ ] CI checks pass locally ([contributing.md](contributing.md#before-you-open-a-pr))
+- [ ] Tests cover the change, including the failure path
+- [ ] Typed exceptions, not `HTTPException`, for domain errors
+- [ ] No f-string interpolation of user input into SurrealQL; user URLs go through `validate_url()`
+- [ ] No API key values in responses or logs
+- [ ] New UI strings in every locale; no raw palette classes
+- [ ] Migration registered in `AsyncMigrationManager`, with a down file
+- [ ] CHANGELOG entry under `[Unreleased]`; docs updated

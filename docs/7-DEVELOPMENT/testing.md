@@ -1,423 +1,85 @@
-# Testing Guide
+# Testing
 
-This document provides guidelines for writing tests in Open Notebook. Testing is critical to maintaining code quality and preventing regressions.
+How the test suites are laid out, how to run them, and the patterns to copy when you add a test.
 
-## Testing Philosophy
+## Running the tests
 
-### What to Test
+```bash
+# Backend (repo root)
+uv run pytest tests/                                   # what CI runs (plus coverage flags)
+uv run pytest tests/test_sources_api.py                # one file
+uv run pytest tests/test_sources_api.py -k retry       # tests matching a name
+uv run pytest tests/ --cov=open_notebook --cov=api     # with coverage
 
-Focus on testing the things that matter most:
+# Frontend (inside frontend/)
+npm run test              # vitest run, once
+npm run test:watch        # watch mode
+npm run test:coverage     # what CI runs
+```
 
-- **Business Logic** - Core domain models and their operations
-- **API Contracts** - HTTP endpoint behavior and error handling
-- **Critical Workflows** - End-to-end flows that users depend on
-- **Data Persistence** - Database operations and data integrity
-- **Error Conditions** - How the system handles failures gracefully
+The backend suite needs **no running SurrealDB, worker or AI provider**. CI runs it with nothing but `uv sync`. Database calls, models and HTTP requests are mocked.
 
-### What NOT to Test
+## Backend layout (`tests/`)
 
-Don't waste time testing framework code:
+`tests/` is flat: one `test_<topic>.py` per feature or regression (about 70 files), for example `test_sources_api.py`, `test_credentials_api.py`, `test_ask_graph.py`, `test_crud_404.py`. There are no `unit/` or `integration/` subfolders. Name a new file after what it covers, or add to the existing file for that area.
 
-- Framework functionality (FastAPI, React, etc.)
-- Third-party library implementation
-- Simple getters/setters without logic
-- View/presentation layer rendering (unless it contains logic)
+`tests/conftest.py` has no shared fixtures. It only:
 
-## Test Structure
+- sets `OPEN_NOTEBOOK_PASSWORD=""` before anything is imported, so the auth middleware is disabled in tests;
+- loads the repo's `.env` if it exists;
+- puts the repo root on `sys.path`.
 
-We use **pytest** with async support for all Python tests:
+pytest-asyncio runs in its default (strict) mode, so async tests need `@pytest.mark.asyncio`.
+
+## Backend patterns
+
+**API tests** use FastAPI's `TestClient` with a per-file fixture, and patch the domain call the router makes:
 
 ```python
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from httpx import AsyncClient
-from open_notebook.domain.notebook import Notebook
+from fastapi.testclient import TestClient
 
-@pytest.mark.asyncio
-async def test_create_notebook():
-    """Test notebook creation."""
-    notebook = Notebook(name="Test Notebook", description="Test description")
-    await notebook.save()
+from open_notebook.exceptions import NotFoundError
 
-    assert notebook.id is not None
-    assert notebook.name == "Test Notebook"
-    assert notebook.created is not None
-
-@pytest.mark.asyncio
-async def test_api_create_notebook():
-    """Test notebook creation via API."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
-        response = await client.post(
-            "/api/notebooks",
-            json={"name": "Test Notebook", "description": "Test description"}
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert data["name"] == "Test Notebook"
-```
-
-## Test Categories
-
-### 1. Unit Tests
-
-Test individual functions and methods in isolation:
-
-```python
-@pytest.mark.asyncio
-async def test_notebook_validation():
-    """Test that notebook name validation works."""
-    with pytest.raises(InvalidInputError):
-        Notebook(name="", description="test")
-
-@pytest.mark.asyncio
-async def test_notebook_archive():
-    """Test notebook archiving."""
-    notebook = Notebook(name="Test", description="")
-    notebook.archive()
-    assert notebook.archived is True
-```
-
-**Location**: `tests/unit/`
-
-### 2. Integration Tests
-
-Test component interactions and database operations:
-
-```python
-@pytest.mark.asyncio
-async def test_create_notebook_with_sources():
-    """Test creating a notebook and adding sources."""
-    notebook = await create_notebook(name="Research", description="")
-    source = await add_source(notebook_id=notebook.id, url="https://example.com")
-
-    retrieved = await get_notebook_with_sources(notebook.id)
-    assert len(retrieved.sources) == 1
-    assert retrieved.sources[0].id == source.id
-```
-
-**Location**: `tests/integration/`
-
-### 3. API Tests
-
-Test HTTP endpoints and error responses:
-
-```python
-@pytest.mark.asyncio
-async def test_get_notebooks_endpoint():
-    """Test GET /notebooks endpoint."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
-        response = await client.get("/api/notebooks")
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
-
-@pytest.mark.asyncio
-async def test_create_notebook_validation():
-    """Test that invalid input is rejected."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
-        response = await client.post(
-            "/api/notebooks",
-            json={"name": "", "description": ""}
-        )
-        assert response.status_code == 400
-```
-
-**Location**: `tests/api/`
-
-### 4. Database Tests
-
-Test data persistence and query correctness:
-
-```python
-@pytest.mark.asyncio
-async def test_save_and_retrieve_notebook():
-    """Test saving and retrieving a notebook from database."""
-    notebook = Notebook(name="Test", description="desc")
-    await notebook.save()
-
-    retrieved = await Notebook.get(notebook.id)
-    assert retrieved.name == "Test"
-    assert retrieved.description == "desc"
-
-@pytest.mark.asyncio
-async def test_query_by_criteria():
-    """Test querying notebooks by criteria."""
-    await create_notebook("Active", "")
-    await create_notebook("Archived", "")
-
-    active = await repo_query(
-        "SELECT * FROM notebook WHERE archived = false"
-    )
-    assert len(active) >= 1
-```
-
-**Location**: `tests/database/`
-
-## Running Tests
-
-### Run All Tests
-
-```bash
-uv run pytest
-```
-
-### Run Specific Test File
-
-```bash
-uv run pytest tests/test_notebooks.py
-```
-
-### Run Specific Test Function
-
-```bash
-uv run pytest tests/test_notebooks.py::test_create_notebook
-```
-
-### Run with Coverage Report
-
-```bash
-uv run pytest --cov=open_notebook
-```
-
-### Run Only Unit Tests
-
-```bash
-uv run pytest tests/unit/
-```
-
-### Run Only Integration Tests
-
-```bash
-uv run pytest tests/integration/
-```
-
-### Run Tests in Verbose Mode
-
-```bash
-uv run pytest -v
-```
-
-### Run Tests with Output
-
-```bash
-uv run pytest -s
-```
-
-## Test Fixtures
-
-Use pytest fixtures for common setup and teardown:
-
-```python
-import pytest
 
 @pytest.fixture
-async def test_notebook():
-    """Create a test notebook."""
-    notebook = Notebook(name="Test Notebook", description="Test description")
-    await notebook.save()
-    yield notebook
-    await notebook.delete()
+def client():
+    from api.main import app
 
-@pytest.fixture
-async def api_client():
-    """Create an API test client."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
-        yield client
+    return TestClient(app)
 
-@pytest.fixture
-async def test_notebook_with_sources(test_notebook):
-    """Create a test notebook with sample sources."""
-    source1 = Source(notebook_id=test_notebook.id, url="https://example.com")
-    source2 = Source(notebook_id=test_notebook.id, url="https://example.org")
-    await source1.save()
-    await source2.save()
 
-    test_notebook.sources = [source1, source2]
-    yield test_notebook
-
-    # Cleanup
-    await source1.delete()
-    await source2.delete()
+@patch("api.routers.notebooks.Notebook.get", new_callable=AsyncMock)
+def test_delete_notebook_missing_returns_404(mock_get, client):
+    mock_get.side_effect = NotFoundError("not found")
+    assert client.delete("/api/notebooks/notebook:gone").status_code == 404
 ```
 
-## Best Practices
+(Adapted from `tests/test_crud_404.py`.) Paths include the `/api` prefix. To assert on a 500 instead of having the exception raised into the test, create the client with `TestClient(app, raise_server_exceptions=False)` (see `tests/test_typed_exceptions_reach_handlers.py`).
 
-### 1. Write Descriptive Test Names
+**Patch where the name is used**, not where it's defined: `api.routers.notebooks.Notebook.get`, `open_notebook.graphs.ask.provision_langchain_model`, and so on. Async functions need `new_callable=AsyncMock` (or an `AsyncMock` as the replacement).
 
-```python
-# Good - clearly describes what is being tested
-async def test_create_notebook_with_valid_name_succeeds():
-    ...
+**Graph tests** patch `provision_langchain_model` in the graph module and return a fake model, then call the node function or `await graph.ainvoke(...)` (see `tests/test_ask_graph.py`, `tests/test_graphs.py`).
 
-# Bad - vague about what's being tested
-async def test_notebook():
-    ...
-```
+**Command tests** call the command function directly with its `CommandInput` and patched dependencies (see `tests/test_source_deleted_before_processing.py`, `tests/test_embed_source_partial_cleanup.py`).
 
-### 2. Use Docstrings
+**Things that leak between tests:**
 
-```python
-@pytest.mark.asyncio
-async def test_vector_search_returns_sorted_results():
-    """Test that vector search results are sorted by relevance score."""
-    # Implementation
-```
+- `RecordModel` subclasses (`DefaultModels`, `ContentSettings`, …) are singletons. Call `clear_instance()` in setup/teardown when a test touches one (see `tests/test_domain.py`).
+- `provision_provider_keys()` writes to `os.environ`. Use pytest's `monkeypatch.setenv` / `delenv` so environment changes are undone.
 
-### 3. Test Edge Cases
+**Migrations** can be tested as text, without a database, by reading the `.surrealql` file (see `tests/test_insight_timestamps.py`).
 
-```python
-@pytest.mark.asyncio
-async def test_search_with_empty_query():
-    """Test that empty query raises error."""
-    with pytest.raises(InvalidInputError):
-        await vector_search("")
+## Frontend layout
 
-@pytest.mark.asyncio
-async def test_search_with_very_long_query():
-    """Test that very long query is handled."""
-    long_query = "x" * 10000
-    results = await vector_search(long_query)
-    assert isinstance(results, list)
+Tests are colocated with the code as `*.test.ts` / `*.test.tsx` (for example `src/lib/locales/index.test.ts`, `src/components/common/ConfirmDialog.test.tsx`). `frontend/src/test/` holds only the shared setup (`setup.ts`: jest-dom matchers and mocks for `next/navigation` and `matchMedia`).
 
-@pytest.mark.asyncio
-async def test_search_with_special_characters():
-    """Test that special characters are handled."""
-    results = await vector_search("@#$%^&*()")
-    assert isinstance(results, list)
-```
+Vitest runs in `jsdom` with globals enabled and the `@/` alias (`frontend/vitest.config.ts`). Use Testing Library to render components; mock API modules rather than the network.
 
-### 4. Use Assertions Effectively
+## What to test
 
-```python
-# Good - specific assertions
-assert notebook.name == "Test"
-assert len(notebook.sources) == 3
-assert notebook.created is not None
-
-# Less good - too broad
-assert notebook is not None
-assert notebook  # ambiguous what's being tested
-```
-
-### 5. Test Both Success and Failure Cases
-
-```python
-@pytest.mark.asyncio
-async def test_create_notebook_success():
-    """Test successful notebook creation."""
-    notebook = await create_notebook(name="Research", description="AI")
-    assert notebook.id is not None
-    assert notebook.name == "Research"
-
-@pytest.mark.asyncio
-async def test_create_notebook_empty_name_fails():
-    """Test that empty name raises error."""
-    with pytest.raises(InvalidInputError):
-        await create_notebook(name="", description="")
-
-@pytest.mark.asyncio
-async def test_create_notebook_duplicate_fails():
-    """Test that duplicate names are handled."""
-    await create_notebook(name="Research", description="")
-    with pytest.raises(DuplicateError):
-        await create_notebook(name="Research", description="")
-```
-
-### 6. Keep Tests Independent
-
-```python
-# Good - test is self-contained
-@pytest.mark.asyncio
-async def test_archive_notebook():
-    notebook = Notebook(name="Test", description="")
-    await notebook.save()
-    await notebook.archive()
-    assert notebook.archived is True
-
-# Bad - depends on another test's state
-@pytest.mark.asyncio
-async def test_archive_existing_notebook():
-    # Assumes test_create_notebook ran first
-    await notebook.archive()  # notebook undefined
-```
-
-### 7. Use Fixtures for Reusable Setup
-
-```python
-# Instead of repeating setup:
-@pytest.fixture
-async def client_with_auth(api_client, mock_auth):
-    """Client with authentication set up."""
-    api_client.headers.update({"Authorization": f"Bearer {mock_auth.token}"})
-    yield api_client
-
-@pytest.mark.asyncio
-async def test_protected_endpoint(client_with_auth):
-    """Test protected endpoint."""
-    response = await client_with_auth.get("/api/protected")
-    assert response.status_code == 200
-```
-
-## Coverage Goals
-
-- Aim for 70%+ overall coverage
-- 90%+ coverage for critical business logic
-- Don't obsess over 100% - focus on meaningful tests
-- Use `--cov` flag to check coverage: `uv run pytest --cov=open_notebook`
-
-## Async Test Patterns
-
-### Testing Async Functions
-
-```python
-@pytest.mark.asyncio
-async def test_async_operation():
-    """Test async function."""
-    result = await some_async_function()
-    assert result is not None
-```
-
-### Testing Concurrent Operations
-
-```python
-@pytest.mark.asyncio
-async def test_concurrent_notebook_creation():
-    """Test creating multiple notebooks concurrently."""
-    tasks = [
-        create_notebook(f"Notebook {i}", "")
-        for i in range(10)
-    ]
-    notebooks = await asyncio.gather(*tasks)
-    assert len(notebooks) == 10
-    assert all(n.id for n in notebooks)
-```
-
-## Common Testing Errors
-
-### Error: "event loop is closed"
-
-Solution: Use the async fixture properly:
-```python
-@pytest.fixture
-async def notebook():  # Use async fixture
-    notebook = Notebook(name="Test", description="")
-    await notebook.save()
-    yield notebook
-    await notebook.delete()
-```
-
-### Error: "object is not awaitable"
-
-Solution: Make sure you're using await:
-```python
-# Wrong
-result = create_notebook("Test", "")
-
-# Right
-result = await create_notebook("Test", "")
-```
-
----
-
-**See also:**
-- [Code Standards](code-standards.md) - Code formatting and style
-- [Contributing Guide](contributing.md) - Overall contribution workflow
+- A bug fix comes with a test that fails without the fix. Name it after the behavior (`test_delete_notebook_missing_returns_404`) and reference the issue in the docstring.
+- API changes: status codes, validation errors and the error mapping, not only the happy path.
+- Don't test third-party libraries (Esperanto, content-core, LangGraph) or make real provider calls.

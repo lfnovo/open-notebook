@@ -1,224 +1,107 @@
 # API Reference
 
-Complete REST API for Open Notebook. All endpoints are served from the API backend (default: `http://localhost:5055`).
+Everything the UI does goes through the REST API, so anything you can do in the app you can also script.
 
-**Base URL**: `http://localhost:5055` (development) or environment-specific production URL
+**The live OpenAPI schema is the reference.** The running API serves it, generated from the code, so it is always current:
 
-**Interactive Docs**: Use FastAPI's built-in Swagger UI at `http://localhost:5055/docs` for live testing and exploration. This is the primary reference for all endpoints, request/response schemas, and real-time testing.
+- Swagger UI: `http://localhost:5055/docs` (try requests in the browser)
+- ReDoc: `http://localhost:5055/redoc`
+- Raw schema: `http://localhost:5055/openapi.json` (for client generators)
 
----
+This page covers what the schema doesn't tell you: the prefix, auth, async jobs, streaming and errors. It deliberately doesn't list every endpoint.
 
-## Quick Start
+## Base URL and prefix
 
-### 1. Authentication
+All application endpoints are under **`/api`** (every router is mounted with `prefix="/api"` in `api/main.py`). The API listens on port 5055.
 
-Simple password-based (development only):
+- Direct: `http://localhost:5055/api/notebooks`
+- Through the frontend: the Next.js server proxies `/api/*` to the API, so `http://localhost:3000/api/notebooks` (or port 8502 in the Docker image) works too.
 
-```bash
-curl http://localhost:5055/api/notebooks \
-  -H "Authorization: Bearer your_password"
-```
-
-**⚠️ Production**: Replace with OAuth/JWT. See [Security Configuration](../5-CONFIGURATION/security.md) for details.
-
-### 2. Base API Flow
-
-Most operations follow this pattern:
-1. Create a **Notebook** (container for research)
-2. Add **Sources** (PDFs, URLs, text)
-3. Query via **Chat** or **Search**
-4. View results and **Notes**
-
-### 3. Testing Endpoints
-
-Instead of memorizing endpoints, use the interactive API docs:
-- Navigate to `http://localhost:5055/docs`
-- Try requests directly in the browser
-- See request/response schemas in real-time
-- Test with your own data
-
----
-
-## API Endpoints Overview
-
-### Main Resource Types
-
-**Notebooks** - Research projects containing sources and notes
-- `GET/POST /notebooks` - List and create
-- `GET/PUT/DELETE /notebooks/{id}` - Read, update, delete
-
-**Sources** - Content items (PDFs, URLs, text)
-- `GET/POST /sources` - List and add content
-- `GET /sources/{id}` - Fetch source details
-- `POST /sources/{id}/retry` - Retry failed processing
-- `GET /sources/{id}/download` - Download original file
-
-**Notes** - User-created or AI-generated research notes
-- `GET/POST /notes` - List and create
-- `GET/PUT/DELETE /notes/{id}` - Read, update, delete
-
-**Chat** - Conversational AI interface
-- `GET/POST /chat/sessions` - Manage chat sessions
-- `POST /chat/execute` - Send message and get response
-- `POST /chat/context` - Prepare context for chat
-
-**Search** - Find content by text or semantic similarity
-- `POST /search` - Full-text or vector search
-- `POST /search/ask` - Ask a question (search + synthesize)
-- Both accept an optional `notebook_ids` list (or a single `notebook_id`) to scope results to specific notebooks; omit for the whole knowledge base
-
-**Transformations** - Custom prompts for extracting insights
-- `GET/POST /transformations` - Create custom extraction rules
-- `POST /sources/{id}/insights` - Apply transformation to source
-
-**Models** - Configure AI providers
-- `GET /models` - Available models
-- `GET /models/defaults` - Current defaults
-- `POST /models/config` - Set defaults
-
-**Credentials** - Manage AI provider credentials
-- `GET/POST /credentials` - List and create credentials
-- `GET/PUT/DELETE /credentials/{id}` - CRUD operations
-- `POST /credentials/{id}/test` - Test connection
-- `POST /credentials/{id}/discover` - Discover models from provider
-- `POST /credentials/{id}/register-models` - Register discovered models
-- `GET /credentials/status` - Provider status overview
-- `GET /credentials/env-status` - Environment variable status
-- `POST /credentials/migrate-from-env` - Migrate env vars to credentials
-
-**Health & Status**
-- `GET /health` - Health check
-- `GET /commands/{id}` - Track async operations
-
----
+Outside `/api`: `GET /health` returns `{"status": "healthy"}`, and `GET /` returns a short status message.
 
 ## Authentication
 
-### Current (Development)
+If `OPEN_NOTEBOOK_PASSWORD` (or `OPEN_NOTEBOOK_PASSWORD_FILE`) is set, every request needs:
 
-All requests require password header:
-
-```bash
-curl -H "Authorization: Bearer your_password" http://localhost:5055/api/notebooks
+```
+Authorization: Bearer <password>
 ```
 
-Password configured via `OPEN_NOTEBOOK_PASSWORD` environment variable.
-
-> **📖 See [Security Configuration](../5-CONFIGURATION/security.md)** for complete authentication setup, API examples, and production hardening.
-
-### Production
-
-**⚠️ Not secure.** Replace with:
-- OAuth 2.0 (recommended)
-- JWT tokens
-- API keys
-
-See [Security Configuration](../5-CONFIGURATION/security.md) for production setup.
-
----
-
-## Common Patterns
-
-### Pagination
-
 ```bash
-# List sources with limit/offset
-curl 'http://localhost:5055/sources?limit=20&offset=10'
+curl http://localhost:5055/api/notebooks -H "Authorization: Bearer $OPEN_NOTEBOOK_PASSWORD"
 ```
 
-### Filtering & Sorting
+- If no password is set, auth is disabled and all requests pass.
+- These paths never need auth: `/`, `/health`, `/docs`, `/redoc`, `/openapi.json`, `/api/auth/status`, `/api/config`. `OPTIONS` (CORS preflight) requests also pass.
+- A missing, malformed or wrong header returns `401`.
+- Non-ASCII passwords are supported; send them UTF-8 encoded.
+
+This is a single shared password (`api/auth.py`), not user accounts. See [security.md](security.md).
+
+## Resource map
+
+Use `/docs` for request and response shapes. This map shows where things are:
+
+| Area | Paths |
+|---|---|
+| Notebooks | `/api/notebooks`, `/api/notebooks/{id}/sources/{source_id}` (link/unlink), `/api/recently-viewed` |
+| Sources | `/api/sources` (multipart create with optional file upload), `/api/sources/json`, `/api/sources/{id}/status`, `/api/sources/{id}/retry`, `/api/sources/{id}/insights`, `/api/sources/{id}/download` |
+| Notes, insights | `/api/notes`, `/api/insights/{id}`, `/api/insights/{id}/save-as-note` |
+| Chat | `/api/chat/sessions`, `/api/chat/execute`, `/api/chat/context`; source chat under `/api/sources/{id}/chat/sessions` |
+| Search and Ask | `/api/search`, `/api/search/ask` (streaming), `/api/search/ask/simple` |
+| Transformations | `/api/transformations`, `/api/transformations/execute`, `/api/transformations/default-prompt` |
+| Models and providers | `/api/models`, `/api/models/defaults`, `/api/models/sync`, `/api/models/auto-assign`, `/api/providers` |
+| Credentials | `/api/credentials`, `/api/credentials/{id}/test`, `/discover`, `/register-models`, `/api/credentials/migrate-*` |
+| Podcasts | `/api/podcasts/generate`, `/api/podcasts/episodes`, `/api/episode-profiles`, `/api/speaker-profiles` |
+| Background jobs | `/api/commands/jobs`, `/api/commands/jobs/{job_id}` |
+| Embeddings | `/api/embed`, `/api/embeddings/rebuild` |
+| Settings and config | `/api/settings`, `/api/config`, `/api/capabilities`, `/api/languages`, `/api/auth/status` |
+
+## Async operations
+
+Source processing, embedding and podcast generation run on the background worker (see [architecture.md](architecture.md#background-jobs)). The endpoint that starts them returns right away with a record and/or a job id:
+
+- Creating a source returns the source; poll `GET /api/sources/{id}/status` until it is `completed` or `failed`.
+- `POST /api/podcasts/generate` returns a job id; poll `GET /api/podcasts/jobs/{job_id}` or list `GET /api/podcasts/episodes`.
+- Any job: `GET /api/commands/jobs/{job_id}`.
+
+If the worker isn't running, jobs stay queued.
+
+## Streaming
+
+`POST /api/search/ask` and the source-chat message endpoint return Server-Sent Events (`text/event-stream`). Each event is a `data: {json}` line with a `type` field. For Ask, the types are `strategy`, `answer`, `final_answer`, `complete` and `error`.
 
 ```bash
-# Filter by notebook, sort by date
-curl 'http://localhost:5055/sources?notebook_id=notebook:abc&sort_by=created&sort_order=asc'
-```
-
-### Async Operations
-
-Some operations (source processing, podcast generation) return immediately with a command ID:
-
-```bash
-# Submit async operation
-curl -X POST http://localhost:5055/sources -F async_processing=true
-# Response: {"id": "source:src001", "command_id": "command:cmd123"}
-
-# Poll status
-curl http://localhost:5055/commands/command:cmd123
-```
-
-### Streaming Responses
-
-The `/ask` endpoint streams responses as Server-Sent Events:
-
-```bash
-curl -N 'http://localhost:5055/ask' \
+curl -N http://localhost:5055/api/search/ask \
   -H "Content-Type: application/json" \
-  -d '{"question": "What is AI?"}'
-
-# Outputs: data: {"type":"strategy",...}
-#          data: {"type":"answer",...}
-#          data: {"type":"final_answer",...}
+  -d '{"question": "What are the main findings?", "strategy_model": "model:...", "answer_model": "model:...", "final_answer_model": "model:..."}'
 ```
 
-### Multipart File Upload
+Check `/docs` for the exact request fields.
+
+## Errors
+
+Errors return JSON with a `detail` message. Domain errors map to status codes in `api/main.py`:
+
+| Status | Meaning (exception) |
+|---|---|
+| 400 | Invalid input (`InvalidInputError`) |
+| 401 | Missing or wrong password, or a provider rejected the API key (`AuthenticationError`) |
+| 404 | Record not found (`NotFoundError`) |
+| 413 | Request body over `OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB` (default 100) |
+| 415 | Unsupported file type (`UnsupportedTypeException`) |
+| 422 | Request validation failed, or a model or provider isn't configured (`ConfigurationError`) |
+| 429 | Provider rate limit (`RateLimitError`) |
+| 502 | Provider unreachable or failed (`NetworkError`, `ExternalServiceError`) |
+| 500 | Anything else, including database failures (`DatabaseOperationError`; see [ADR-013](decisions/ADR-013-objectmodel-get-error-contract.md)) |
+
+## Credential encryption migration
+
+After upgrading to 1.15 or later, existing stored API keys can be rewritten into the new encryption format with one call (there is no UI button):
 
 ```bash
-curl -X POST http://localhost:5055/sources \
-  -F "type=upload" \
-  -F "notebook_id=notebook:abc" \
-  -F "file=@document.pdf"
+curl -X POST http://localhost:5055/api/credentials/migrate-encryption \
+  -H "Authorization: Bearer $OPEN_NOTEBOOK_PASSWORD"
 ```
 
----
-
-## Error Handling
-
-All errors return JSON with status code:
-
-```json
-{"detail": "Notebook not found"}
-```
-
-### Common Status Codes
-
-| Code | Meaning | Example |
-|------|---------|---------|
-| 200 | Success | Operation completed |
-| 400 | Bad Request | Invalid input |
-| 404 | Not Found | Resource doesn't exist |
-| 409 | Conflict | Resource already exists |
-| 500 | Server Error | Database/processing error |
-
----
-
-## Tips for Developers
-
-1. **Start with interactive docs** (`http://localhost:5055/docs`) - this is the definitive reference
-2. **Enable logging** for debugging (check API logs: `docker logs`)
-3. **Streaming endpoints** require special handling (Server-Sent Events, not standard JSON)
-4. **Async operations** return immediately; always poll status before assuming completion
-5. **Vector search** requires embedding model configured (check `/models`)
-6. **Model overrides** are per-request; set in body, not config
-7. **CORS enabled** in development; configure for production
-
----
-
-## Learning Path
-
-1. **Authentication**: Add `X-Password` header to all requests
-2. **Create a notebook**: `POST /notebooks` with name and description
-3. **Add a source**: `POST /sources` with file, URL, or text
-4. **Query your content**: `POST /chat/execute` to ask questions
-5. **Explore advanced features**: Search, transformations, streaming
-
----
-
-## Production Considerations
-
-- Replace password auth with OAuth/JWT (see [Security](../5-CONFIGURATION/security.md))
-- Add rate limiting via reverse proxy (Nginx, CloudFlare, Kong)
-- Enable CORS restrictions (currently allows all origins)
-- Use HTTPS via reverse proxy (see [Reverse Proxy](../5-CONFIGURATION/reverse-proxy.md))
-- Set up API versioning strategy (currently implicit)
-
-See [Security Configuration](../5-CONFIGURATION/security.md) and [Reverse Proxy Setup](../5-CONFIGURATION/reverse-proxy.md) for complete production setup.
+It is idempotent and only rewrites a key it can decrypt. **Back up the database first:** versions before 1.15 can't read the new format. Details: [credentials.md](credentials.md#migration-paths) and [ADR-009](decisions/ADR-009-pbkdf2-credential-encryption.md).

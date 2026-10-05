@@ -111,70 +111,56 @@ A large share of contributions — including our own — are written with coding
 
 Disclosure of AI assistance is appreciated but optional — responsibility for the result is what matters, and it's yours either way.
 
-## Git Commit Messages
-
-- Use the present tense ("Add feature" not "Added feature")
-- Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
-- Limit the first line to 72 characters or less
-- Reference issues and pull requests liberally after the first line
-
 ## Development Workflow
 
-### Branch Strategy
+Set up your environment with [development-setup.md](development-setup.md). Then:
 
-We use a **feature branch workflow**:
+1. **Branch from an up-to-date `main`**, named after the change type: `feat/...`, `fix/...`, `docs/...`, `refactor/...`.
+2. **Make the change** following [code-standards.md](code-standards.md) and, for common change types, the matching [playbook](change-playbooks.md).
+3. **Add tests** ([testing.md](testing.md)) and update the docs your change affects.
+4. **Add a CHANGELOG entry** (see below).
+5. **Run the CI checks locally** (see below), then push to your fork and open a PR against `main`.
 
-1. **Main Branch**: `main` - production-ready code
-2. **Feature Branches**: `feature/description` - new features
-3. **Bug Fixes**: `fix/description` - bug fixes
-4. **Documentation**: `docs/description` - documentation updates
+To update your branch: `git fetch upstream && git rebase upstream/main`.
 
-### Making Changes
+### Commit messages and PR titles
 
-1. **Create a feature branch**:
-```bash
-git checkout -b feature/amazing-new-feature
+We use [Conventional Commits](https://www.conventionalcommits.org/), with a scope when one fits:
+
+```text
+fix(podcasts): unconfigured speaker profiles no longer break generation (#1454)
+feat(providers): add SiliconFlow and Z.ai (#1443)
+docs: fix the encryption anchor in credentials.md
 ```
 
-2. **Make your changes** following our coding standards
+Common types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `build`, `ci`, `perf`. Keep the first line under about 72 characters and describe the user-visible effect. PRs are squash-merged, so the PR title becomes the commit on `main`: give it the same format.
 
-3. **Test your changes**:
+### CHANGELOG
+
+Every PR with a user-visible change adds an entry to `CHANGELOG.md` under `## [Unreleased]`. The file follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/):
+
+- Put the entry in the section for its type: `### Added`, `### Changed`, `### Fixed` or `### Security`. There is **one section per type** under Unreleased. If the section already exists, add to it; don't create a second `### Fixed`.
+- Write it for users and operators: what changed and what they need to do, not which functions moved. End with the issue or PR number, e.g. `(#1438)`.
+- Purely internal changes (refactors, tests, CI) usually need no entry.
+
+### Before you open a PR
+
+CI (`.github/workflows/test.yml`) runs these checks on every PR. Run them locally first:
+
 ```bash
-# Run tests
-uv run pytest
-
-# Run linting
+# Backend (repo root)
 uv run ruff check .
+uv run ruff format --check .     # CI fails on unformatted code; fix with: uv run ruff format .
+uv run python -m mypy .
+uv run pytest tests/
 
-# Run formatting
-uv run ruff format .
+# Frontend (inside frontend/), if you touched it
+npm run lint
+npm run test
+npm run build
 ```
 
-4. **Commit your changes**:
-```bash
-git add .
-git commit -m "feat: add amazing new feature"
-```
-
-5. **Push and create PR**:
-```bash
-git push origin feature/amazing-new-feature
-# Then create a Pull Request on GitHub
-```
-
-### Keeping Your Fork Updated
-
-```bash
-# Fetch upstream changes
-git fetch upstream
-
-# Switch to main and merge
-git checkout main
-git merge upstream/main
-
-# Push to your fork
-git push origin main
-```
+`make ruff` runs `ruff check . --fix` (it does **not** format) and `make lint` runs mypy. A separate workflow checks that relative Markdown links resolve (`python3 scripts/check_md_links.py`); run it if you edited docs.
 
 ## Pull Request Process
 
@@ -193,15 +179,9 @@ When you create a pull request:
 - Address review comments with clarity and respect
 - Ask questions if feedback is unclear
 
-## Current Priority Areas
+## Where the Project Is Heading
 
-We're actively looking for contributions in these areas:
-
-1. **Frontend Enhancement** - Help improve the Next.js/React UI with real-time updates and better UX
-2. **Testing** - Expand test coverage across all components
-3. **Performance** - Async processing improvements and caching
-4. **Documentation** - API examples and user guides
-5. **Integrations** - New content sources and AI providers
+Current priorities and what is out of scope live in [VISION.md](../../VISION.md) (see "Current Posture"). Issues labeled `good first issue` or `help wanted` are ready to pick up.
 
 ## Getting Help
 

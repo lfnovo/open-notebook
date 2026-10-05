@@ -15,7 +15,7 @@ All contribution guidelines have been consolidated into the new development docu
 - **Want to understand what we're building?** → [Vision & Principles](VISION.md)
 - **Want to understand our engineering practices?** → [Design Principles](docs/7-DEVELOPMENT/design-principles.md)
 - **Are you a maintainer?** → [Maintainer Guide](docs/7-DEVELOPMENT/maintainer-guide.md)
-- **New developer?** → [Quick Start](docs/7-DEVELOPMENT/quick-start.md)
+- **Setting up locally?** → [Development Setup](docs/7-DEVELOPMENT/development-setup.md)
 
 ---
 

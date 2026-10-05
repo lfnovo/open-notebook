@@ -1,480 +1,130 @@
-# Local Development Setup
+# Development Setup
 
-This guide walks you through setting up Open Notebook for local development. Follow these steps to get the full stack running on your machine.
+This is the one page for running Open Notebook from a source checkout. Other pages (README.dev.md, the contributing guide, the quick start) link here instead of repeating it.
+
+The stack has four processes. Start them in this order, because each one depends on the one before it:
+
+| # | Process | Port | Command |
+|---|---|---|---|
+| 1 | SurrealDB | 8000 | `make database` |
+| 2 | API (FastAPI) | 5055 | `make api` |
+| 3 | Background worker | — | `make worker-start` |
+| 4 | Frontend (Next.js) | 3000 | `make frontend` |
+
+The worker is not optional. Source processing, embeddings and podcasts are background jobs; without a worker they stay queued forever and nothing reports an error.
 
 ## Prerequisites
 
-Before you start, ensure you have the following installed:
+- **Python 3.11 or 3.12** (`pyproject.toml` requires `>=3.11,<3.13`; `.python-version` pins 3.12, which uv picks up)
+- **[uv](https://docs.astral.sh/uv/)** for Python dependencies
+- **Node.js 20.9 or newer** (Next.js 16 requires it; CI and the Docker image use Node 22)
+- **Docker** with the Compose plugin, for SurrealDB
+- **ffmpeg** if you work on podcasts or audio/video sources (the Docker image installs it)
 
-- **Python 3.11+** - Check with: `python --version`
-- **uv** (recommended) or **pip** - Install from: https://github.com/astral-sh/uv
-- **SurrealDB** - Via Docker or binary (see below)
-- **Docker** (optional) - For containerized database
-- **Node.js 18+** (optional) - For frontend development
-- **Git** - For version control
-
-## Step 1: Clone and Initial Setup
+## 1. Clone and install
 
 ```bash
-# Clone the repository
-git clone https://github.com/lfnovo/open-notebook.git
+git clone https://github.com/<your-user>/open-notebook.git   # your fork
 cd open-notebook
-
-# Add upstream remote for keeping your fork updated
 git remote add upstream https://github.com/lfnovo/open-notebook.git
+
+uv sync                          # Python deps, including the dev group (pytest, ruff, mypy)
+cd frontend && npm install && cd ..
 ```
 
-## Step 2: Install Python Dependencies
+## 2. Create `.env`
 
 ```bash
-# Using uv (recommended)
-uv sync
-
-# Or using pip
-pip install -e .
-```
-
-## Step 3: Environment Variables
-
-Create a `.env` file in the project root with your configuration:
-
-```bash
-# Copy from example
 cp .env.example .env
 ```
 
-Edit `.env` with your settings:
+Then edit two values in `.env`:
 
 ```bash
-# Database
+# .env.example points at the Docker Compose hostname "surrealdb", which does not
+# resolve from your host. The API and worker run on the host, so use localhost:
 SURREAL_URL=ws://localhost:8000/rpc
-SURREAL_USER=root
-SURREAL_PASSWORD=password
-SURREAL_NAMESPACE=open_notebook
-SURREAL_DATABASE=development
 
-# Credential encryption (required for storing API keys)
-OPEN_NOTEBOOK_ENCRYPTION_KEY=my-dev-secret-key
-
-# Application
-OPEN_NOTEBOOK_PASSWORD=  # Optional password protection
-DEBUG=true
-LOG_LEVEL=DEBUG
+# Required to store provider credentials. Any string works; there is no default.
+OPEN_NOTEBOOK_ENCRYPTION_KEY=some-local-dev-secret
 ```
 
-### AI Provider Configuration
+Leave `SURREAL_USER` / `SURREAL_PASSWORD` as they are (`root` / `root`). `make database` starts SurrealDB through `docker-compose.yml`, which reads the same `.env`, so the database and the API always use the same credentials.
 
-After starting the API and frontend, configure your AI provider via the Settings UI:
+`OPEN_NOTEBOOK_PASSWORD` is unset by default, which disables the API password. Set it if you want to test the login flow.
 
-1. Open **http://localhost:3000** → **Manage** → **Models**
-2. Click **Add Credential** → Select your provider
-3. Enter your API key (get from provider dashboard)
-4. Click **Save**, then **Test Connection**
-5. Click **Discover Models** → **Register Models**
+The API loads `.env` itself (`load_dotenv()` in `api/main.py`); `make api` and `make worker-start` also pass `--env-file .env`.
 
-Popular providers:
-- **OpenAI** - https://platform.openai.com/api-keys
-- **Anthropic (Claude)** - https://console.anthropic.com/
-- **Google** - https://ai.google.dev/
-- **Groq** - https://console.groq.com/
+## 3. Start the stack
 
-For local development, you can also use:
-- **Ollama** - Run locally without API keys (see "Local Ollama" below)
-
-> **Note:** API key environment variables (e.g., `OPENAI_API_KEY`) are deprecated. Use the Settings UI to manage credentials instead.
-
-## Step 4: Start SurrealDB
-
-### Option A: Using Docker (Recommended)
+All at once, in one terminal:
 
 ```bash
-# Start SurrealDB in memory (publish the port on localhost only — the
-# database uses default credentials, so never publish it on 0.0.0.0)
-docker run -d --name surrealdb -p 127.0.0.1:8000:8000 \
-  surrealdb/surrealdb:v2 start \
-  --user root --pass password \
-  memory
-
-# Or with persistent storage
-docker run -d --name surrealdb -p 127.0.0.1:8000:8000 \
-  -v surrealdb_data:/data \
-  surrealdb/surrealdb:v2 start \
-  --user root --pass password \
-  file:/data/surreal.db
+make start-all    # SurrealDB, API, worker, then the frontend in the foreground
+make status       # which of the four are running
+make stop-all     # stops all four (also runs `docker compose down`)
 ```
 
-### Option B: Using Make
+Or one terminal per process, which makes logs easier to read:
 
 ```bash
-make database
+make database       # terminal 1: SurrealDB in Docker (data in ./surreal_data)
+make api            # terminal 2: API on 127.0.0.1:5055, auto-reload on
+make worker-start   # terminal 3: surreal-commands worker
+make frontend       # terminal 4: Next.js dev server on :3000
 ```
 
-### Option C: Using Docker Compose
+`make api` runs `run_api.py`, which reads `API_HOST` (default `127.0.0.1`), `API_PORT` (default `5055`) and `API_RELOAD` (default `true`). There is no `python -m api.main` entry point.
+
+The frontend proxies `/api/*` to `INTERNAL_API_URL` (default `http://localhost:5055`, see `frontend/next.config.ts`), so it needs no `.env` of its own.
+
+## 4. Check that it works
 
 ```bash
-docker compose up -d surrealdb
+curl http://localhost:5055/health        # {"status":"healthy"}
+open http://localhost:5055/docs          # Swagger UI for every endpoint
+open http://localhost:3000               # the app
 ```
 
-### Verify SurrealDB is Running
+Database migrations run automatically when the API starts. The API log shows one of:
 
-```bash
-# Should show server information
-curl http://localhost:8000/
+```
+Current database version: N
+Database is already at the latest version. No migrations needed.
 ```
 
-## Step 5: Run Database Migrations
+or, on a fresh or outdated database:
 
-Database migrations run automatically when you start the API. The first startup will apply any pending migrations.
-
-To verify migrations manually:
-
-```bash
-# API will run migrations on startup
-uv run python -m api.main
+```
+Database migrations are pending. Running migrations...
+Running migration N
+Migrations completed successfully. Database is now at version N
 ```
 
-Check the logs - you should see messages like:
-```
-Running migration 001_initial_schema
-Running migration 002_add_vectors
-...
-Migrations completed successfully
-```
+To use AI features, add a provider credential and models in the app under **Manage → Models**. See [AI Providers](../4-AI-PROVIDERS/index.md) for per-provider instructions.
 
-## Step 6: Start the API Server
+## Before you open a PR
 
-In a new terminal window:
+Run what CI runs. The list lives in [contributing.md](contributing.md#before-you-open-a-pr) so it is maintained in one place.
 
-```bash
-# Terminal 2: Start API (port 5055)
-uv run --env-file .env uvicorn api.main:app --host 0.0.0.0 --port 5055
+Optional: `uv run pre-commit install` installs git hooks (`.pre-commit-config.yaml`) that run ruff, ruff format and mypy on each commit.
 
-# Or using the shortcut
-make api
-```
+## Docker-based workflows
 
-You should see:
-```
-INFO:     Application startup complete
-INFO:     Uvicorn running on http://0.0.0.0:5055
-```
+| Command | What it does | Use it for |
+|---|---|---|
+| `make dev` | Builds the image from your checkout with `examples/docker-compose-dev.yml` (reads `docker.env`) | Checking that a change works in the container |
+| `make full` | Same, with `examples/docker-compose-full-local.yml` | Fully local stack in Docker |
+| `make docker-build-local` | Builds the production image for your platform, no push | PRs that touch the `Dockerfile` |
 
-### Verify API is Running
-
-```bash
-# Check health endpoint
-curl http://localhost:5055/health
-
-# View API documentation
-open http://localhost:5055/docs
-```
-
-## Step 7: Start the Frontend (Optional)
-
-If you want to work on the frontend, start Next.js in another terminal:
-
-```bash
-# Terminal 3: Start Next.js frontend (port 3000)
-cd frontend
-npm install  # First time only
-npm run dev
-```
-
-You should see:
-```
-> next dev
-  ▲ Next.js 16.x
-  - Local:        http://localhost:3000
-```
-
-### Access the Frontend
-
-Open your browser to: http://localhost:3000
-
-## Verification Checklist
-
-After setup, verify everything is working:
-
-- [ ] **SurrealDB**: `curl http://localhost:8000/` returns content
-- [ ] **API**: `curl http://localhost:5055/health` returns `{"status": "ok"}`
-- [ ] **API Docs**: `open http://localhost:5055/docs` works
-- [ ] **Database**: API logs show migrations completing
-- [ ] **Frontend** (optional): `http://localhost:3000` loads
-
-## Development Workflows: When to Use What?
-
-| Workflow | Use Case | Speed | Production Parity |
-|----------|----------|-------|-------------------|
-| **Local Services** (`make start-all`) | Day-to-day development, fastest iteration | ⚡⚡⚡ Fast | Medium |
-| **Docker Compose** (`make dev`) | Testing containerized setup | ⚡⚡ Medium | High |
-| **Local Docker Build** (`make docker-build-local`) | Testing Dockerfile changes | ⚡ Slow | Very High |
-| **Multi-platform Build** (`make docker-push`) | Publishing releases (see [Release Process](../../.github/RELEASE_PROCESS.md)) | 🐌 Very Slow | Exact |
-
-Local services give hot reload, direct log access and easy debugging; Docker Compose (`examples/docker-compose-dev.yml` via `make dev`, `examples/docker-compose-full-local.yml` via `make full`) is closer to production. Use `make docker-build-local` before touching anything Docker-related in a PR.
-
-## Starting Services Together
-
-### Quick Start All Services
-
-```bash
-make start-all    # SurrealDB + API + worker + frontend
-make status       # see what's running
-make stop-all     # stop everything
-```
-
-### Individual Terminals (Recommended for Development)
-
-**Terminal 1 - Database:**
-```bash
-make database
-```
-
-**Terminal 2 - API:**
-```bash
-make api
-```
-
-**Terminal 3 - Background worker** (required for podcasts, embeddings, source processing):
-```bash
-make worker-start
-```
-
-**Terminal 4 - Frontend:**
-```bash
-cd frontend && npm run dev
-```
-
-### Performance Tips
-
-1. Use `make start-all` instead of Docker for daily work
-2. Keep SurrealDB running between sessions (`make database`)
-3. Use `make docker-build-local` only when testing Dockerfile changes
-4. Skip multi-platform builds until ready to publish
-5. Clean caches when things get weird: `make clean-cache`, `docker system prune -a`
-
-## Development Tools Setup
-
-### Pre-commit Hooks (Optional but Recommended)
-
-Pre-commit hooks run configured checks automatically before each commit,
-mirroring the CI gates so local commits fail for the same reasons PRs
-would. The config at `.pre-commit-config.yaml` wires up:
-
-| Tool | What it checks | CI equivalent |
-|------|----------------|---------------|
-| **ruff** (lint) | Python lint rules (`E`, `F`, `I`) | `ruff check .` |
-| **ruff** (format) | Python formatting (line-length 88) | `ruff format --check .` |
-| **mypy** | Python type correctness | `python -m mypy .` |
-| **pre-commit-hooks** | Large files, merge conflicts, YAML/TOML syntax, trailing whitespace, EOF newlines | — |
-
-Pre-commit is already included in the project's dev dependencies. Install
-the hooks and they'll run on every `git commit`:
-
-```bash
-uv run pre-commit install
-```
-
-**Running manually:**
-
-```bash
-# Check all files (useful after changing hook config)
-uv run pre-commit run --all-files
-
-# Run a specific hook only
-uv run pre-commit run ruff --all-files
-```
-
-**Skipping hooks temporarily:**
-
-```bash
-# Skip all hooks for a single commit
-git commit --no-verify
-
-# Skip a specific hook (e.g. slow mypy run)
-SKIP=mypy git commit
-```
-
-**Updating hook versions:**
-
-```bash
-uv run pre-commit autoupdate
-```
-
-Keep the `rev:` pins in `.pre-commit-config.yaml` in sync with the
-versions listed in `pyproject.toml` under `[dependency-groups] dev`.
-
-### Code Quality Commands
-
-```bash
-# Lint Python code (auto-fix)
-make ruff
-# or: ruff check . --fix
-
-# Type check Python code
-make lint
-# or: uv run python -m mypy .
-
-# Run tests
-uv run pytest
-
-# Run tests with coverage
-uv run pytest --cov=open_notebook
-```
-
-## Common Development Tasks
-
-### Running Tests
-
-```bash
-# Run all tests
-uv run pytest
-
-# Run specific test file
-uv run pytest tests/test_notebooks.py
-
-# Run with coverage report
-uv run pytest --cov=open_notebook --cov-report=html
-```
-
-### Creating a Feature Branch
-
-```bash
-# Create and switch to new branch
-git checkout -b feature/my-feature
-
-# Make changes, then commit
-git add .
-git commit -m "feat: add my feature"
-
-# Push to your fork
-git push origin feature/my-feature
-```
-
-### Updating from Upstream
-
-```bash
-# Fetch latest changes
-git fetch upstream
-
-# Rebase your branch
-git rebase upstream/main
-
-# Push updated branch
-git push origin feature/my-feature -f
-```
+Publishing images is a maintainer task: see [.github/RELEASE_PROCESS.md](../../.github/RELEASE_PROCESS.md).
 
 ## Troubleshooting
 
-### "Connection refused" on SurrealDB
+**Sources stay "Queued", embeddings or podcasts never finish.** The worker isn't running. Start it with `make worker-start` and check its log.
 
-**Problem**: API can't connect to SurrealDB
+**The API can't connect to SurrealDB.** Check that `SURREAL_URL` in `.env` uses `localhost`, not `surrealdb`, and that the container is up (`docker compose ps surrealdb`). The API retries the connection on startup, so it may log a few failures while SurrealDB starts.
 
-**Solutions**:
-1. Check if SurrealDB is running: `docker ps | grep surrealdb`
-2. Verify URL in `.env`: Should be `ws://localhost:8000/rpc`
-3. Restart SurrealDB: `docker stop surrealdb && docker rm surrealdb`
-4. Then restart with: `docker run -d --name surrealdb -p 127.0.0.1:8000:8000 surrealdb/surrealdb:v2 start --user root --pass password memory`
+**A port is already in use.** Another project may own 3000, 5055 or 8000. Run the frontend on another port with `PORT=3001 npm run dev` (inside `frontend/`), or the API with `API_PORT=5056 make api` (then set `INTERNAL_API_URL=http://localhost:5056` for the frontend).
 
-### "Address already in use"
-
-**Problem**: Port 5055 or 3000 is already in use
-
-**Solutions**:
-```bash
-# Find process using port
-lsof -i :5055  # Check port 5055
-
-# Kill process (macOS/Linux)
-kill -9 <PID>
-
-# Or use different port
-uvicorn api.main:app --port 5056
-```
-
-### Module not found errors
-
-**Problem**: Import errors when running API
-
-**Solutions**:
-```bash
-# Reinstall dependencies
-uv sync
-
-# Or with pip
-pip install -e .
-```
-
-### Database migration failures
-
-**Problem**: API fails to start with migration errors
-
-**Solutions**:
-1. Check SurrealDB is running: `curl http://localhost:8000/`
-2. Check credentials in `.env` match your SurrealDB setup
-3. Check logs for specific migration error: `make api 2>&1 | grep -i migration`
-4. Verify database exists: Check SurrealDB console at http://localhost:8000/
-
-### Migrations not applying
-
-**Problem**: Database schema seems outdated
-
-**Solutions**:
-1. Restart API - migrations run on startup: `make api`
-2. Check logs show "Migrations completed successfully"
-3. Verify `/migrations/` folder exists and has files
-4. Check SurrealDB is writable and not in read-only mode
-
-## Optional: Local Ollama Setup
-
-For testing with local AI models:
-
-```bash
-# Install Ollama from https://ollama.ai
-
-# Pull a model (e.g., Mistral 7B)
-ollama pull mistral
-```
-
-Then configure via the Settings UI:
-1. Go to **Manage** → **Models** → **Add Credential** → **Ollama**
-2. Enter base URL: `http://localhost:11434`
-3. Click **Save**, then **Test Connection**
-4. Click **Discover Models** → **Register Models**
-
-## Optional: Docker Development Environment
-
-Run entire stack in Docker:
-
-```bash
-# Start all services
-docker compose --profile multi up
-
-# Logs
-docker compose logs -f
-
-# Stop services
-docker compose down
-```
-
-## Next Steps
-
-After setup is complete:
-
-1. **Read the Contributing Guide** - [contributing.md](contributing.md)
-2. **Explore the Architecture** - Check the documentation
-3. **Find an Issue** - Look for "good first issue" on GitHub
-4. **Set Up Pre-commit** - Install git hooks for code quality
-5. **Join Discord** - https://discord.gg/37XJPXfz2w
-
-## Getting Help
-
-If you get stuck:
-
-- **Discord**: [Join our server](https://discord.gg/37XJPXfz2w) for real-time help
-- **GitHub Issues**: Check existing issues for similar problems
-- **GitHub Discussions**: Ask questions in discussions
-- **Documentation**: See [code-standards.md](code-standards.md) and [testing.md](testing.md)
-
----
-
-**Ready to contribute?** Go to [contributing.md](contributing.md) for the contribution workflow.
+**Import errors after pulling.** Run `uv sync` and `npm install` again; dependencies change often.

@@ -159,7 +159,7 @@ Open Notebook runs in a container, so `localhost` there is the container, not yo
 
 2. Make Ollama reachable from containers:
 
-   - **macOS and Windows (Docker Desktop):** Docker Desktop forwards `host.docker.internal` to the host, so Ollama's default setup usually works as is. If the connection test fails, make Ollama listen on all interfaces and restart it: on macOS run `launchctl setenv OLLAMA_HOST "0.0.0.0:11434"`; on Windows add a user environment variable `OLLAMA_HOST` = `0.0.0.0:11434`. See Ollama's [documentation](https://github.com/ollama/ollama/tree/main/docs) (FAQ, "How do I configure Ollama server?").
+   - **macOS and Windows (Docker Desktop):** Docker Desktop forwards `host.docker.internal` to the host, so Ollama's default setup usually works as is. If the connection test fails, make Ollama listen on all interfaces: on macOS run `launchctl setenv OLLAMA_HOST "0.0.0.0:11434"`, then quit and reopen the Ollama app (this setting is lost when you log out or reboot, so run it again after each login, or follow Ollama's FAQ for a permanent setup); on Windows add a user environment variable `OLLAMA_HOST` = `0.0.0.0:11434`, then quit and restart Ollama. See Ollama's [documentation](https://github.com/ollama/ollama/tree/main/docs) (FAQ, "How do I configure Ollama server?").
    - **Linux:** Ollama listens on `127.0.0.1` by default, which containers can't reach. For the systemd service, run `sudo systemctl edit ollama`, add these lines, save, then run `sudo systemctl restart ollama`:
 
      ```ini

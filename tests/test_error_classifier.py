@@ -42,7 +42,8 @@ def test_connection_refused_is_a_connection_problem():
 
 
 def test_os_connection_timed_out_is_a_connection_problem():
-    _, message = classify_error(OSError("[Errno 110] Connection timed out"))
+    exc_class, message = classify_error(OSError("[Errno 110] Connection timed out"))
+    assert exc_class is NetworkError
     assert "Could not connect" in message
 
 

@@ -16,7 +16,7 @@ An open-source, self-hosted research assistant in the spirit of Google's Noteboo
 - **You choose the models.** 24 providers are supported, from OpenAI and Anthropic to Ollama on your own machine. See [AI Providers](../5-CONFIGURATION/ai-providers.md).
 - **It's open source.** You can read, change and extend it.
 
-What leaves your machine is what you send to the AI providers you configure: when you chat, transform or generate a podcast, the relevant source content goes to that provider. With local models (Ollama, LM Studio, Speaches) nothing leaves your network.
+What leaves your machine is what you send to the AI providers you configure: when you chat, transform or generate a podcast, the relevant source content goes to that provider. When Ollama, LM Studio or Speaches runs on your own hardware, that content stays there; a remote endpoint receives it like any other provider.
 
 ### Can I use it offline?
 

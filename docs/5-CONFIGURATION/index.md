@@ -23,15 +23,17 @@ docker compose up -d
 services:
   open_notebook:
     environment:
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=a-long-random-string
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=<generated-key>
       - API_URL=https://notebook.example.com
 ```
+
+Replace `<generated-key>` with a value you generate yourself, for example with `openssl rand -hex 32` (on Windows, see [Set your encryption key](../1-INSTALLATION/docker-compose.md#step-2-set-your-encryption-key)). Don't reuse an example value.
 
 The shipped `docker-compose.yml` doesn't load an env file into the container. A `.env` file next to it only fills the `${...}` placeholders in the compose file (`SURREAL_USER`, `SURREAL_PASSWORD`), so a variable that exists only in `.env` never reaches Open Notebook. To keep settings in a file, add `env_file: .env` to the `open_notebook` service.
 
 ### From source
 
-Put them in `.env` in the project root (start from `.env.example`) and restart the API and the worker. The exception is `OPEN_NOTEBOOK_WORKER_MAX_TASKS`, which `make worker-start` reads from your shell: `export` it first.
+Put them in `.env` in the project root (start from `.env.example`) and restart the API, the worker and the frontend. The exception is `OPEN_NOTEBOOK_WORKER_MAX_TASKS`, which `make worker-start` reads from your shell: `export` it first.
 
 ---
 
@@ -40,10 +42,10 @@ Put them in `.env` in the project root (start from `.env.example`) and restart t
 ### Encryption key (required)
 
 ```yaml
-- OPEN_NOTEBOOK_ENCRYPTION_KEY=a-long-random-string
+- OPEN_NOTEBOOK_ENCRYPTION_KEY=<generated-key>
 ```
 
-Encrypts the provider API keys you save in Manage → Models. Without it you can't save credentials. Replace the `change-me-to-a-secret-string` placeholder from the shipped file, and don't change the value later: credentials saved with the old key become unreadable. See [Security](security.md#api-key-encryption).
+Encrypts the provider API keys you save in Manage → Models. Generate the value yourself, for example with `openssl rand -hex 32`. Without it you can't save credentials. Replace the `change-me-to-a-secret-string` placeholder from the shipped file, and don't change the value later: credentials saved with the old key become unreadable. See [Security](security.md#api-key-encryption).
 
 ### Database
 
@@ -59,11 +61,7 @@ The shipped compose file already sets these. The hostname in `SURREAL_URL` depen
 
 ### AI providers (in the UI)
 
-1. Open **Manage → Models**.
-2. In your provider's section, click **Add Configuration**, enter the API key (and Base URL if needed), and save.
-3. Click **Test** on the new configuration to check the connection.
-4. Click **Models** to open **Discover Models**, pick a model type, select models and click **Add Selected**.
-5. Under **Default Model Assignments**, choose the models for chat, embeddings and so on, or click **Auto-assign Defaults**.
+Providers are connected in **Manage → Models**: add a configuration, test it, add models and set the default models. Follow [Connect a provider](../4-AI-PROVIDERS/index.md#connect-a-provider) for the steps.
 
 Details for each provider: [AI Providers](ai-providers.md). Local options: [Ollama](ollama.md), [oMLX](omlx.md), [OpenAI-Compatible](openai-compatible.md) (LM Studio, vLLM, llama.cpp…), [Local speech with Speaches](local-tts.md).
 
@@ -102,7 +100,7 @@ Set `OPEN_NOTEBOOK_PASSWORD` for anything reachable beyond your own machine. Wit
 |---------|---------|-----|
 | Variable added to `.env` only (Docker) | Setting has no effect | Put it under `open_notebook` → `environment:` |
 | `docker compose restart` after editing | Old values still used | `docker compose up -d` |
-| No encryption key | "Encryption key not configured" on the Models page | Set `OPEN_NOTEBOOK_ENCRYPTION_KEY` |
+| No encryption key | "Encryption key not configured" in **Manage → Models** | Set `OPEN_NOTEBOOK_ENCRYPTION_KEY` |
 | Encryption key changed | "Decryption Error" on saved credentials | Restore the old key, or delete and re-create the credentials |
 | No default chat model | Chat fails with "No model configured for default for type=chat" | Manage → Models → Default Model Assignments |
 | Port 5055 not reachable from the browser | "Unable to Connect to API Server" | Publish 5055, or set `API_URL` behind a proxy |

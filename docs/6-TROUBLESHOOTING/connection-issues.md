@@ -59,14 +59,14 @@ Check what the container received with `docker compose exec open_notebook printe
 
 ## "Database Connection Failed"
 
-Full overlay text: **Database Connection Failed** — "The API server is running, but the database is not accessible".
+Full overlay text: **Database Connection Failed** — "The API server is running, but the database is not accessible". You see it when the database becomes unreachable while the API is running.
 
-At startup the API log shows `Database is not reachable yet (attempt n/12)` while it waits, and `Database did not become reachable after 12 attempts` followed by `CRITICAL: Database migration failed` when it gives up.
+If the database is unreachable when the API **starts**, the API doesn't come up at all: its log shows `Database is not reachable yet (attempt n/12)` while it waits, then `Database did not become reachable after 12 attempts` and `CRITICAL: Database migration failed`. The browser then can't reach the API (**Unable to Connect to API Server**), or in the Docker image the UI doesn't load at all, because it waits for the API. The causes and fixes are the same.
 
 ```bash
 docker compose ps surrealdb
 docker compose logs --tail 50 surrealdb
-docker compose exec open_notebook printenv SURREAL_URL SURREAL_USER SURREAL_NAMESPACE SURREAL_DATABASE
+docker compose exec open_notebook printenv SURREAL_URL SURREAL_USER SURREAL_NAMESPACE SURREAL_DATABASE   # no passwords
 ```
 
 | Cause | Fix |

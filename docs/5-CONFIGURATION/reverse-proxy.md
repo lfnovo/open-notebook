@@ -86,8 +86,8 @@ services:
     image: lfnovo/open_notebook:v1-latest
     environment:
       - API_URL=https://notebook.example.com
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=a-long-random-string
-      - OPEN_NOTEBOOK_PASSWORD=another-long-random-string
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=<generated-key>
+      - OPEN_NOTEBOOK_PASSWORD=<generated-password>
       # plus the SURREAL_* variables from the shipped file
     ports:
       - "127.0.0.1:8502:8502"   # local access only; nginx uses the compose network
@@ -105,6 +105,8 @@ services:
     depends_on:
       - open_notebook
 ```
+
+Replace `<generated-key>` and `<generated-password>` with values you generate yourself, for example with `openssl rand -hex 32` (on Windows, see [Set your encryption key](../1-INSTALLATION/docker-compose.md#step-2-set-your-encryption-key)). Don't reuse an example value.
 
 ---
 
@@ -200,10 +202,12 @@ Serve the UI at `notebook.example.com` and the API at `api.notebook.example.com`
 On a LAN you can skip the proxy. Publish both ports (the shipped compose file does) and open `http://<server-ip>:8502`. Auto-detection sends API calls to `http://<server-ip>:5055`, so port 5055 must be reachable from the client:
 
 ```bash
-# On the server, if a firewall is active
-sudo ufw allow 8502
-sudo ufw allow 5055
+# On the server, if a firewall is active: allow only your LAN (adjust the subnet)
+sudo ufw allow from 192.168.1.0/24 to any port 8502 proto tcp
+sudo ufw allow from 192.168.1.0/24 to any port 5055 proto tcp
 ```
+
+Without a reverse proxy, traffic is plain HTTP, including the password header. Only do this on a network you trust, set `OPEN_NOTEBOOK_PASSWORD`, and never open these ports to the internet. Docker publishes ports through its own iptables rules, which can bypass UFW; to keep a port private, bind it to `127.0.0.1` in `docker-compose.yml` instead.
 
 If you changed the host side of the API port mapping (for example `"5056:5055"`), auto-detection still assumes 5055: set `API_URL=http://<server-ip>:5056`.
 
@@ -229,7 +233,7 @@ Three limits apply to uploads from the UI, and the smallest wins:
 
 When the proxy rejects a file, the response doesn't come from Open Notebook, so it has no CORS headers and the browser reports a CORS error with status 413. When the API rejects it, the message is `Request body exceeds the maximum allowed upload size`. To upload files larger than 100 MB, raise `OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB` and send them to the API directly (port 5055, or a `/api/` location routed to 5055 as above).
 
-Traefik example:
+Traefik example (dynamic file configuration):
 
 ```yaml
 http:
@@ -238,6 +242,15 @@ http:
       buffering:
         maxRequestBodyBytes: 104857600  # 100 MB
 ```
+
+A middleware does nothing until a router uses it. Attach it to the router from the [Traefik](#traefik) example:
+
+```yaml
+    labels:
+      - "traefik.http.routers.notebook.middlewares=large-body@file"
+```
+
+(Or define it with labels too: `traefik.http.middlewares.large-body.buffering.maxRequestBodyBytes=104857600` plus `traefik.http.routers.notebook.middlewares=large-body`.)
 
 Kubernetes ingress-nginx: annotation `nginx.ingress.kubernetes.io/proxy-body-size: "100m"`.
 

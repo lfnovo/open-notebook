@@ -2,7 +2,7 @@
 
 Problems with background work: sources that don't finish, uploads that are rejected, search without results, podcasts that fail. Each entry starts with what you see.
 
-All of this work runs in the **worker**, a background process. With Docker it runs inside the `open_notebook` container next to the API; from source you start it yourself with `make worker-start`.
+Source processing, embeddings, insights, transformations and podcasts run in the **worker**, a background process. Upload checks and searches run in the API. With Docker it runs inside the `open_notebook` container next to the API; from source you start it yourself with `make worker-start`.
 
 ---
 
@@ -24,7 +24,7 @@ docker compose logs open_notebook | grep -E "spawned: 'worker'|worker entered|ex
 ```
 
 - `success: worker entered RUNNING state` → it's running; see the next check.
-- `exited: worker` repeating, or `gave up: worker entered FATAL state` → it crashes on start. The lines just before show why; common causes are a wrong `SURREAL_*` setting and a failed first-start install of an optional runtime (`[entrypoint] WARNING: ... install FAILED`).
+- `exited: worker` repeating, or `gave up: worker entered FATAL state` → it crashes on start. The lines just before show why; a wrong `SURREAL_*` setting is a common cause.
 
 **Running but still nothing happens:** the API and the worker must use the same database. Make sure all five `SURREAL_*` variables are set explicitly (the shipped compose file does): the job queue falls back to namespace and database `test` when they're missing, while the API uses `open_notebook`. See [Database](../5-CONFIGURATION/database.md).
 
@@ -95,7 +95,7 @@ Also shown on the search page as "Vector search requires an embedding model. Onl
 ### Vector search finds nothing
 
 - Sources added before you assigned an embedding model, or with embedding turned off, have no embeddings. Rebuild them from the **Advanced** page.
-- After changing the embedding model, old and new vectors don't match. The Models page warns about this ("Important: Rebuild Required"); rebuild from the **Advanced** page.
+- After changing the embedding model, old and new vectors don't match. **Manage → Models** warns about this ("Important: Rebuild Required"); rebuild from the **Advanced** page.
 - Check that the sources are **Completed**, not Queued or Failed.
 
 ### Ask fails with "The strategy model returned no search terms for this question."
@@ -129,7 +129,7 @@ A failed episode shows **Failed** with the error message on the episode card in 
 | "Episode profile 'X' has no outline model configured. Please update the profile to select an outline model." (same for "transcript model") | Pick the models in the episode profile |
 | "Speaker profile 'X' has no voice model configured. Please update the profile to select a voice model." | Edit the speaker profile and choose a text-to-speech model. The speaker profiles that ship with Open Notebook have no voice model until you set one |
 
-If no text-to-speech model exists at all, the Models page shows "Not set — audio generation unavailable until configured" next to the Text-to-Speech Model. Add a provider with TTS (OpenAI, Google, ElevenLabs, MiniMax, a local [Speaches](../5-CONFIGURATION/local-tts.md) server…).
+If no text-to-speech model is assigned, **Manage → Models** shows "Not set — audio generation unavailable until configured" next to the Text-to-Speech Model. Add a provider with TTS (OpenAI, Google, ElevenLabs, MiniMax, a local [Speaches](../5-CONFIGURATION/local-tts.md) server…).
 
 ### Errors with a NOTE
 

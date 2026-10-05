@@ -24,7 +24,7 @@ If the API answers locally but not from the browser: port 5055 must be reachable
 
 ## #2: Chat fails with "No model configured for default for type=chat"
 
-No models are assigned yet. In **Manage → Models**: add a configuration for your provider (**Add Configuration**), click **Models** on it and **Add Selected**, then **Auto-assign Defaults** under Default Model Assignments. → [AI & Chat Issues](ai-chat-issues.md#no-model-configured-for-default-for-typechat)
+No models are assigned yet. Follow [Connect a provider](../4-AI-PROVIDERS/index.md#connect-a-provider) in **Manage → Models** through step 4 (**Auto-assign Defaults** under Default Model Assignments). → [AI & Chat Issues](ai-chat-issues.md#no-model-configured-for-default-for-typechat)
 
 ---
 
@@ -89,14 +89,16 @@ Open **Podcasts → Episodes**; the failed episode shows the error and a **Retry
 You edited `.env` (not read by the container), or ran `docker compose restart` (keeps the old environment). Put the variable under `open_notebook` → `environment:` and run `docker compose up -d`. Check what the container sees:
 
 ```bash
-docker compose exec open_notebook printenv | grep -E "OPEN_NOTEBOOK|API_URL|ESPERANTO"
+# Names only, so no secrets end up on screen
+docker compose exec open_notebook sh -c 'printenv | cut -d= -f1 | grep -E "OPEN_NOTEBOOK|API_URL|ESPERANTO"'
+docker compose exec open_notebook printenv API_URL ESPERANTO_LLM_TIMEOUT   # values of non-secret settings
 ```
 
 ---
 
 ## #10: Ollama can't be reached
 
-Test shows "Cannot connect to Ollama. Check if Ollama server is running." From Docker, the Base URL must be `http://host.docker.internal:11434` (Linux also needs `extra_hosts`), and Ollama must listen on `0.0.0.0`. → [Ollama](../5-CONFIGURATION/ollama.md#which-base-url-to-use)
+Test shows "Cannot connect to Ollama. Check if Ollama server is running." From Docker, the Base URL must be `http://host.docker.internal:11434` (Linux also needs `extra_hosts`), and on Linux Ollama must listen on `0.0.0.0`. That exposes its unauthenticated API on every interface, so allow port 11434 only from this host and its Docker networks. → [Ollama](../5-CONFIGURATION/ollama.md#which-base-url-to-use)
 
 ---
 

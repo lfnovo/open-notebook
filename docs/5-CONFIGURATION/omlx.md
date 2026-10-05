@@ -61,12 +61,13 @@ http://localhost:11435/v1
 
 ## Configure Open Notebook
 
-1. Go to **Manage** → **Models** and, in the **oMLX** section, click **Add Configuration**
-2. Keep **Base URL** `http://localhost:11435/v1` (prefilled), or use `http://host.docker.internal:11435/v1` if Open Notebook runs in Docker
-3. Optionally set an **API Key** if you started oMLX with `--api-key`
-4. Click **Add Configuration**, then **Test** on the new configuration
-5. Click **Models** to open **Discover Models**, add your models with **Model Type** **Language**, then again with **Embedding**
-6. Choose them under **Default Model Assignments**
+Follow [Connect a provider](../4-AI-PROVIDERS/index.md#connect-a-provider) and pick **oMLX**. In the form:
+
+- **Configuration Name** (required), e.g. "oMLX"
+- **Base URL**: keep `http://localhost:11435/v1` (prefilled), or use `http://host.docker.internal:11435/v1` if Open Notebook runs in Docker
+- **API Key**: only if you started oMLX with `--api-key`
+
+In **Discover Models**, add your models with **Model Type** `Language`, then again with `Embedding`.
 
 ### Legacy env vars (deprecated fallback)
 

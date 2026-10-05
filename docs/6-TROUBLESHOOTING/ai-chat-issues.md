@@ -14,7 +14,7 @@ Full message: `No model configured for default for type=chat. Please go to Manag
 
 **Cause:** no model is assigned to that role. A fresh install has none.
 
-**Fix:** **Manage → Models → Default Model Assignments**: choose a model for each role, or click **Auto-assign Defaults**. If the lists are empty, you haven't registered models yet: on your provider's configuration click **Models**, then **Add Selected** in Discover Models (see [AI Providers](../5-CONFIGURATION/ai-providers.md#setting-up-any-provider)).
+**Fix:** **Manage → Models → Default Model Assignments**: choose a model for each role, or click **Auto-assign Defaults**. If the lists are empty, you haven't registered models yet: follow [Connect a provider](../4-AI-PROVIDERS/index.md#connect-a-provider).
 
 ### "Model is not a LanguageModel: …"
 
@@ -67,9 +67,9 @@ Shown immediately (not after a long wait), the provider can't be reached at all.
 
 The **Test** button on the configuration gives a more specific reason ("Cannot connect to server. Check the URL is correct.", "Connection timed out. Check if server is accessible.").
 
-### "Authentication failed. Please check your API key in Settings -> Credentials."
+### "Authentication failed. Please check your API key in Manage -> Models."
 
-**Cause:** the provider rejected the key (wrong, revoked, or for another region or project). The "Settings -> Credentials" path in the message is outdated: credentials are in **Manage → Models**.
+**Cause:** the provider rejected the key (wrong, revoked, or for another region or project). v1.15.0 shows the same message with the outdated path "Settings -> Credentials".
 
 **Fix:** in Manage → Models, click **Test** on the provider's configuration. If it reports "Invalid API key", create a new key with the provider and edit the configuration (leave the key field blank to keep the old one; type a new one to replace it). For MiniMax and SiliconFlow, check that the key's region matches the **Base URL** ([AI Providers](../5-CONFIGURATION/ai-providers.md#minimax)).
 
@@ -113,14 +113,16 @@ The model answered with no text. Common with reasoning models that use their who
 
 ### "Encryption key not configured"
 
-Shown on the Models page and as a banner: "Set the OPEN_NOTEBOOK_ENCRYPTION_KEY environment variable…". Saving a credential fails with `Encryption key not configured. Set OPEN_NOTEBOOK_ENCRYPTION_KEY to enable storing API keys.`, and the API log shows `OPEN_NOTEBOOK_ENCRYPTION_KEY not set. API key encryption will fail until this is configured.`
+Shown in **Manage → Models** and as a banner: "Set the OPEN_NOTEBOOK_ENCRYPTION_KEY environment variable…". Saving a credential fails with `Encryption key not configured. Set OPEN_NOTEBOOK_ENCRYPTION_KEY to enable storing API keys.`, and the API log shows `OPEN_NOTEBOOK_ENCRYPTION_KEY not set. API key encryption will fail until this is configured.`
 
 **Fix:** add the key to the `open_notebook` service and run `docker compose up -d`:
 
 ```yaml
 environment:
-  - OPEN_NOTEBOOK_ENCRYPTION_KEY=a-long-random-string
+  - OPEN_NOTEBOOK_ENCRYPTION_KEY=<generated-key>
 ```
+
+Generate the value yourself, for example with `openssl rand -hex 32` (on Windows, see [Set your encryption key](../1-INSTALLATION/docker-compose.md#step-2-set-your-encryption-key)). Don't reuse an example value.
 
 If you set it only in `.env`, it never reaches the container: the shipped compose file doesn't load `.env` into it. Don't keep the `change-me-to-a-secret-string` placeholder. See [Security](../5-CONFIGURATION/security.md#api-key-encryption).
 

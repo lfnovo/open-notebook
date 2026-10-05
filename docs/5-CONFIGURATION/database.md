@@ -43,9 +43,11 @@ The shipped compose file publishes SurrealDB on `127.0.0.1:8000` only, so other 
 With the shipped compose file, put the new values in a `.env` file next to `docker-compose.yml`:
 
 ```env
-SURREAL_USER=notebook_admin
-SURREAL_PASSWORD=a-long-random-password
+SURREAL_USER=<your-db-user>
+SURREAL_PASSWORD=<generated-password>
 ```
+
+Generate the password yourself, for example with `openssl rand -hex 32`. Don't reuse an example value.
 
 The compose file passes them to both the `surrealdb` command and the `open_notebook` environment, so they stay in sync. Apply with `docker compose up -d`.
 
@@ -59,6 +61,6 @@ A SurrealDB server can hold many namespaces, and each namespace many databases. 
 
 ## When the API can't reach the database
 
-While waiting for SurrealDB, the API logs `Database is not reachable yet (attempt n/12)` and retries. After the last attempt it logs `Database did not become reachable after 12 attempts` and stops, and the UI shows **Database Connection Failed**. See [Connection Issues → Database Connection Failed](../6-TROUBLESHOOTING/connection-issues.md#database-connection-failed).
+While waiting for SurrealDB, the API logs `Database is not reachable yet (attempt n/12)` and retries. After the last attempt it logs `Database did not become reachable after 12 attempts` and `CRITICAL: Database migration failed`, and the API doesn't start, so the browser can't reach it (**Unable to Connect to API Server**, or the UI doesn't load at all in the Docker image, where the UI waits for the API). If the database goes away later, while the API is running, the UI shows **Database Connection Failed**. See [Connection Issues → Database Connection Failed](../6-TROUBLESHOOTING/connection-issues.md#database-connection-failed).
 
 Backups: [Advanced → Backup & Restore](advanced.md#backup--restore).

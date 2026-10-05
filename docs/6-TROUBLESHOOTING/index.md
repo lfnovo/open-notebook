@@ -21,7 +21,7 @@ Find your problem by the message you see, then follow the link. If you don't hav
 | "Model is not a LanguageModel: …" | [AI & Chat Issues](ai-chat-issues.md#model-is-not-a-languagemodel-) |
 | "The AI provider took too long to respond…" | [AI & Chat Issues](ai-chat-issues.md#the-ai-provider-took-too-long-to-respond) |
 | "Could not connect to the AI provider…" | [AI & Chat Issues](ai-chat-issues.md#could-not-connect-to-the-ai-provider-please-check-your-network-connection-and-provider-url) (on v1.15.0 this can also be a timeout) |
-| "Authentication failed. Please check your API key…" | [AI & Chat Issues](ai-chat-issues.md#authentication-failed-please-check-your-api-key-in-settings---credentials) |
+| "Authentication failed. Please check your API key…" | [AI & Chat Issues](ai-chat-issues.md#authentication-failed-please-check-your-api-key-in-manage---models) |
 | "Rate limit exceeded…" | [AI & Chat Issues](ai-chat-issues.md#rate-limit-exceeded-please-wait-a-moment-and-try-again) |
 | "Content too large for the selected model…" | [AI & Chat Issues](ai-chat-issues.md#content-too-large-for-the-selected-model) |
 | "The AI provider is temporarily unavailable…" | [AI & Chat Issues](ai-chat-issues.md#the-ai-provider-is-temporarily-unavailable-please-try-again-in-a-few-minutes) |
@@ -79,8 +79,10 @@ docker compose ps                                  # surrealdb and open_notebook
 curl -s http://localhost:5055/health               # {"status":"healthy"}
 curl -s http://localhost:5055/api/config           # "dbStatus": "online"
 docker compose logs --since 10m open_notebook | grep -iE "error|warning|critical"
-docker compose exec open_notebook printenv | grep -E "OPEN_NOTEBOOK|SURREAL|API_URL|ESPERANTO"
+docker compose exec open_notebook sh -c 'printenv | cut -d= -f1 | grep -E "OPEN_NOTEBOOK|SURREAL|API_URL|ESPERANTO"'   # names only
 ```
+
+When you share output in an issue or a chat, never include the values of `OPEN_NOTEBOOK_ENCRYPTION_KEY`, `OPEN_NOTEBOOK_PASSWORD` or `SURREAL_PASSWORD`.
 
 Settings belong under the `open_notebook` service's `environment:` block and take effect with `docker compose up -d`; `docker compose restart` keeps the old environment, and a variable that is only in `.env` doesn't reach the container. All variables: [Environment Reference](../5-CONFIGURATION/environment-reference.md).
 

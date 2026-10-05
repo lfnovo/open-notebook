@@ -30,15 +30,18 @@ If Open Notebook runs in Docker or on another machine, Ollama must listen on mor
 OLLAMA_HOST=0.0.0.0:11434 ollama serve
 ```
 
-(For the systemd service on Linux, set `Environment="OLLAMA_HOST=0.0.0.0:11434"` with `sudo systemctl edit ollama` and restart it.) Ollama has no authentication, so only do this on a trusted network.
+For the systemd service on Linux, run `sudo systemctl edit ollama`, add these lines, save, then run `sudo systemctl restart ollama`:
+
+```ini
+[Service]
+Environment="OLLAMA_HOST=0.0.0.0:11434"
+```
+
+`OLLAMA_HOST=0.0.0.0` exposes Ollama's API, which has no authentication, on every network interface. Allow port 11434 only from this host and its Docker networks (for example with your firewall), never from untrusted networks. On macOS and Windows with Docker Desktop, try without this first: `host.docker.internal` usually reaches Ollama's default setup. See [Docker Compose installation](../1-INSTALLATION/docker-compose.md) for the per-platform steps.
 
 ### 3. Add the credential
 
-1. Open **Manage → Models** and, in the **Ollama** section, click **Add Configuration**.
-2. Set **Base URL** (see the table below) and click **Add Configuration**. No API key is needed.
-3. Click **Test** on the new configuration.
-4. Click **Models** to open **Discover Models**. Set **Model Type** to **Language**, tick your chat model and click **Add Selected**. Repeat with **Embedding** for the embedding model.
-5. Under **Default Model Assignments**, choose the Chat Model and Embedding Model (or click **Auto-assign Defaults**).
+Follow [Connect a provider](../4-AI-PROVIDERS/index.md#connect-a-provider) and pick **Ollama**. No API key is needed; set **Base URL** from the table below. In **Discover Models**, add your chat model with **Model Type** `Language` and your embedding model with `Embedding`.
 
 ---
 
@@ -85,6 +88,13 @@ services:
 Use Base URL `http://ollama:11434`, and pull models inside the container: `docker compose exec ollama ollama pull qwen3`. The repository's `examples/docker-compose-ollama.yml` is a complete version of this setup.
 
 ---
+
+## GPU acceleration
+
+- **Ollama in Docker with an NVIDIA GPU:** install the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) on the host and add the `deploy.resources.reservations.devices` block shown in [Ollama in the same compose file](#ollama-in-the-same-compose-file). Without it, the container runs on CPU only.
+- **Ollama installed on the host:** it uses a supported GPU (NVIDIA CUDA, Apple Silicon Metal, AMD ROCm) on its own; nothing to configure in Open Notebook.
+
+`ollama ps` shows whether a loaded model runs on the GPU or the CPU.
 
 ## Model names
 
@@ -138,12 +148,12 @@ services:
 ### Test shows "Cannot connect to Ollama. Check if Ollama server is running."
 
 1. Is Ollama running? `curl http://localhost:11434/api/tags` on the Ollama machine.
-2. Is it listening beyond localhost? Start it with `OLLAMA_HOST=0.0.0.0:11434`.
+2. Is it listening beyond localhost? See [step 2](#2-let-open-notebook-reach-ollama) (and its exposure warning).
 3. Can the container reach it?
    ```bash
    docker compose exec open_notebook curl -s http://host.docker.internal:11434/api/tags
    ```
-   On Linux, add the `extra_hosts` entry shown above. Check the firewall: `sudo ufw allow 11434`.
+   On Linux, add the `extra_hosts` entry shown above. If a firewall blocks the container, allow port 11434 only from the Docker networks, for example `sudo ufw allow from 172.16.0.0/12 to any port 11434 proto tcp` (check your Docker subnets with `docker network inspect`), never from everywhere.
 
 ### "Connection timed out. Check if Ollama server is accessible."
 
@@ -173,7 +183,7 @@ Timeout. See [Timeouts with slow models](#timeouts-with-slow-models).
 
 ## Legacy environment variable
 
-`OLLAMA_API_BASE` still works as a deprecated fallback when no Ollama credential exists. Use the credential instead; **Migrate to Database** on the Models page converts it. See the [Environment Reference](environment-reference.md#legacy-ai-provider-variables-deprecated).
+`OLLAMA_API_BASE` still works as a deprecated fallback when no Ollama credential exists. Use the credential instead; **Migrate to Database** in **Manage → Models** converts it. See the [Environment Reference](environment-reference.md#legacy-ai-provider-variables-deprecated).
 
 ---
 

@@ -8,14 +8,13 @@ Open Notebook supports 24 AI providers. You connect them in the web UI under **M
 
 ## Setting up any provider
 
-The steps are the same for every provider:
+The step-by-step procedure (Add Configuration → Test → Models → Default Model Assignments) is in [Connect a provider](../4-AI-PROVIDERS/index.md#connect-a-provider). What differs between providers is the form:
 
-1. Get an API key from the provider (links in the table below; the form also shows a **Get API Key** link).
-2. Open **Manage → Models**. Find the provider's section and click **Add Configuration**.
-3. Fill in **Configuration Name**, **API Key** and, only if you need a non-default endpoint, **Base URL**. Click **Add Configuration**.
-4. On the new configuration, click **Test** (Test Connection). A failure shows the reason, for example "Invalid API key" or "Cannot connect to server. Check the URL is correct."
-5. Click **Models** (Sync Models). In the **Discover Models** dialog, choose a **Model Type**, tick the models you want and click **Add Selected**. The types are Language, Embedding, TTS and STT; add each type in a separate pass. A model that isn't listed can be added by typing its exact id in the search box and clicking **Add "…"**.
-6. Under **Default Model Assignments**, pick a model for each role (Chat Model, Embedding Model, Text-to-Speech Model…), or click **Auto-assign Defaults**.
+- **API-key providers** (most cloud providers): get a key from the link in the table below (the form also shows a **Get API Key** link). Leave **Base URL** empty unless you need a regional or self-hosted endpoint.
+- **Google Vertex AI**: no API key; the form asks for a project, a region and an optional service-account file. See [Google Vertex AI](#google-vertex-ai).
+- **Ollama, oMLX and OpenAI Compatible**: the API key is optional; **Base URL** is what matters. See [Ollama](ollama.md), [oMLX](omlx.md) and [OpenAI-Compatible](openai-compatible.md).
+
+When **Test** fails, it shows the reason, for example "Invalid API key" or "Cannot connect to server. Check the URL is correct." (see [AI & Chat Issues → Test fails](../6-TROUBLESHOOTING/ai-chat-issues.md#test-fails)). In the **Discover Models** dialog, a model that isn't listed can be added by typing its exact id in the search box and clicking **Add "…"**.
 
 Chat fails until a **Chat Model** is assigned, and search, Ask and embedding need an **Embedding Model**. Podcasts need a text-to-speech model on each speaker profile.
 
@@ -190,13 +189,13 @@ The form has no field for the API version or for per-modality endpoints. Model c
 
 ## Legacy: Environment Variables (Deprecated)
 
-Provider keys in environment variables (`OPENAI_API_KEY` and so on) still work as a fallback: the database is checked first, then the environment. They are deprecated and may stop working. If any are set, the Models page shows **Environment Variables Detected** with a **Migrate to Database** button that copies them into configurations. Which variables are copied is listed in the [Environment Reference](environment-reference.md#legacy-ai-provider-variables-deprecated).
+Provider keys in environment variables (`OPENAI_API_KEY` and so on) still work as a fallback: the database is checked first, then the environment. They are deprecated and may stop working. If any are set, **Manage → Models** shows **Environment Variables Detected** with a **Migrate to Database** button that copies them into configurations. Which variables are copied is listed in the [Environment Reference](environment-reference.md#legacy-ai-provider-variables-deprecated).
 
 ---
 
 ## Related
 
-- [API Configuration](../3-USER-GUIDE/api-configuration.md) — the Models page in detail
+- [API Configuration](../3-USER-GUIDE/api-configuration.md) — credentials in **Manage → Models** in detail
 - [Environment Reference](environment-reference.md) — all variables
 - [Ollama](ollama.md), [oMLX](omlx.md), [OpenAI-Compatible](openai-compatible.md), [Local speech](local-tts.md)
 - [AI & Chat Issues](../6-TROUBLESHOOTING/ai-chat-issues.md) — when provider calls fail

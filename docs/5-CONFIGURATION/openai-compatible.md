@@ -9,14 +9,11 @@ For Ollama and oMLX, prefer their native providers: [Ollama](ollama.md), [oMLX](
 ## Setup
 
 1. Start your server and note its address, including the API path (usually `/v1`).
-2. Open **Manage → Models** and, in the **OpenAI Compatible** section, click **Add Configuration**.
-3. Fill in:
+2. Follow [Connect a provider](../4-AI-PROVIDERS/index.md#connect-a-provider) and pick **OpenAI Compatible**. In the form:
    - **Configuration Name**, e.g. "LM Studio"
    - **API Key**: optional. Leave it empty if the server doesn't check keys; some servers want any non-empty value
    - **Base URL**: the server's API root, e.g. `http://host.docker.internal:1234/v1`
-4. Click **Add Configuration**, then **Test** on the new configuration. The test asks the server for its model list.
-5. Click **Models** to open **Discover Models**, choose the **Model Type**, tick the models and click **Add Selected**. If the server doesn't list a model, type its exact id in the search box and click **Add "…"**.
-6. Assign the models under **Default Model Assignments**.
+3. **Test** asks the server for its model list (`GET <Base URL>/models`). If the server doesn't list a model, type its exact id in the **Discover Models** search box and click **Add "…"**.
 
 One configuration has one Base URL. To use different servers for different jobs (LM Studio for chat, Speaches for speech), add one OpenAI Compatible configuration per server. Each model you register remembers which configuration it came from.
 
@@ -34,7 +31,7 @@ One configuration has one Base URL. To use different servers for different jobs 
 | On another machine | `http://<server-ip>:<port>/v1` |
 | Open Notebook from source, server on the same machine | `http://localhost:<port>/v1` |
 
-The server must listen on an address the container can reach (often `0.0.0.0` rather than `127.0.0.1`).
+The server must listen on an address the container can reach, often `0.0.0.0` rather than `127.0.0.1`. Binding to `0.0.0.0` exposes the server, usually without authentication, on every network interface: allow its port only from this host and its Docker networks (for example with your firewall), never from untrusted networks.
 
 Check from inside the container:
 
@@ -80,7 +77,7 @@ Base URL `http://vllm:8000/v1` (the container port; no host port needs to be pub
 ## llama.cpp server
 
 ```bash
-llama-server -m model.gguf --host 0.0.0.0 --port 8080
+llama-server -m model.gguf --host 0.0.0.0 --port 8080   # restrict port 8080 as described above
 ```
 
 Base URL `http://host.docker.internal:8080/v1`. If embeddings fail with null values on very short chunks, see `OPEN_NOTEBOOK_MIN_CHUNK_SIZE` in the [Environment Reference](environment-reference.md#embeddings-and-chunking).
@@ -100,9 +97,9 @@ For local text-to-speech and speech-to-text with Speaches, see [Local speech wit
 | Message from **Test** | Cause | Fix |
 |-----------------------|-------|-----|
 | "Cannot connect to server. Check the URL is correct." | Nothing answers at that address, or TLS verification failed | Check the Base URL from inside the container (curl above). For HTTPS with a private CA, set `ESPERANTO_SSL_CA_BUNDLE` ([Advanced → SSL](advanced.md#ssl-for-self-signed-providers)) |
-| "Connection timed out. Check if server is accessible." | Firewall, wrong IP, or the server is busy loading a model | Check reachability; retry once the model is loaded |
+| "Connection timed out. Check if server is accessible." | The `/models` request got no answer within 10 seconds: firewall dropping packets, wrong IP, or an unresponsive server | Check reachability from the container and the server's logs |
 | "Invalid API key" | The server checks keys and the one saved doesn't match | Edit the configuration and set the key |
-| "Server returned status 404" | Base URL is missing the API path | Add `/v1` (or whatever path your server uses) |
+| "Server returned status 404" | `<Base URL>/models` doesn't exist: the API path (usually `/v1`) is missing, or the server doesn't support listing models | Check the API path. If the server can't list models, the test can't pass, but you can still add models by id |
 
 During use:
 

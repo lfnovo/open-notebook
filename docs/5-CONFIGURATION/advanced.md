@@ -229,7 +229,7 @@ Restore with the same image version you backed up from, or a newer one. Database
 
 ### Moving to another server
 
-Copy the backup archive and your `docker-compose.yml` (with the same `OPEN_NOTEBOOK_ENCRYPTION_KEY`), extract the archive next to it, and run `docker compose up -d`.
+Copy the backup archive, your `docker-compose.yml` (with the same `OPEN_NOTEBOOK_ENCRYPTION_KEY`), and the `.env` file next to it or any other environment overrides (custom `SURREAL_USER`/`SURREAL_PASSWORD` live there; without them the stack falls back to `root`/`root` and can't sign in to your database). Extract the archive next to them and run `docker compose up -d`.
 
 ---
 

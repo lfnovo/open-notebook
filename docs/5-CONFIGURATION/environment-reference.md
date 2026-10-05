@@ -12,9 +12,11 @@ The complete list of environment variables Open Notebook and its libraries read.
 services:
   open_notebook:
     environment:
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=a-long-random-string
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=<generated-key>
       - ESPERANTO_LLM_TIMEOUT=300
 ```
+
+Replace `<generated-key>` with a value you generate yourself, for example with `openssl rand -hex 32` (on Windows, see [Set your encryption key](../1-INSTALLATION/docker-compose.md#step-2-set-your-encryption-key)). Don't reuse an example value.
 
 The shipped `docker-compose.yml` does not load an env file into the container. A `.env` file next to it only fills the `${...}` placeholders in the compose file (`SURREAL_USER`, `SURREAL_PASSWORD`). If you prefer a file, add `env_file: .env` to the `open_notebook` service yourself.
 
@@ -37,7 +39,7 @@ The shipped `docker-compose.yml` does not load an env file into the container. A
 
 | Variable | Default | Read by | Description |
 |----------|---------|---------|-------------|
-| `OPEN_NOTEBOOK_ENCRYPTION_KEY` | none | API + Worker | Secret used to encrypt AI provider keys in the database. Any string works; it is stretched with PBKDF2-HMAC-SHA256. **Required** to save credentials in Manage → Models. If you change or lose it, stored keys can no longer be decrypted. Do not keep the `change-me-to-a-secret-string` value from the shipped compose file. See [Security](security.md#api-key-encryption) |
+| `OPEN_NOTEBOOK_ENCRYPTION_KEY` | none | API + Worker | Secret used to encrypt AI provider keys in the database. Use a unique high-entropy value you generate, for example with `openssl rand -hex 32`; the PBKDF2 stretching can't protect a guessable one. **Required** to save credentials in Manage → Models. If you change or lose it, stored keys can no longer be decrypted. Do not keep the `change-me-to-a-secret-string` value from the shipped compose file. See [Security](security.md#api-key-encryption) |
 | `OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE` | none | API + Worker | Path to a file holding the encryption key (Docker secrets). Checked before `OPEN_NOTEBOOK_ENCRYPTION_KEY` |
 | `OPEN_NOTEBOOK_PASSWORD` | none | API | Password for the UI and the REST API. Unset means authentication is off. See [Security](security.md) |
 | `OPEN_NOTEBOOK_PASSWORD_FILE` | none | API | Path to a file holding the password (Docker secrets). Checked before `OPEN_NOTEBOOK_PASSWORD` |
@@ -56,7 +58,7 @@ Set all five `SURREAL_*` variables explicitly, as the shipped compose file does.
 | `SURREAL_PASSWORD` | `root` in the API; `test` in the job queue | API + Worker | SurrealDB password. Must match `--pass`. Change it before exposing the instance |
 | `SURREAL_NAMESPACE` | `open_notebook` in the API; `test` in the job queue | API + Worker | SurrealDB namespace |
 | `SURREAL_DATABASE` | `open_notebook` in the API; `test` in the job queue | API + Worker | SurrealDB database |
-| `SURREAL_ADDRESS`, `SURREAL_PORT` | `localhost`, `8000` | API + Worker | Legacy fallback used only when `SURREAL_URL` is unset. Use `SURREAL_URL` instead (the API builds a malformed URL from these) |
+| `SURREAL_ADDRESS`, `SURREAL_PORT` | `localhost`, `8000` | API + Worker | Legacy fallback used only when `SURREAL_URL` is unset. `SURREAL_ADDRESS` may already include the port. Prefer `SURREAL_URL` |
 | `SURREAL_PASS` | none | API + Worker | Legacy alias of `SURREAL_PASSWORD` |
 
 With Docker Compose, `SURREAL_USER` and `SURREAL_PASSWORD` are the two values you can keep in `.env`: the compose file passes them to both the `surrealdb` and `open_notebook` services.
@@ -223,7 +225,7 @@ SurrealDB's own log level is the `--log` argument in the `surrealdb` service's `
 
 > **Deprecated.** Configure providers in **Manage → Models**. These variables still work as a fallback (the database is read first, then the environment), but there is no guarantee they keep working, and new automation should not be built on them. A declarative provisioning contract for headless deployments is being discussed in [#765](https://github.com/lfnovo/open-notebook/discussions/765).
 
-If you have them set, the Models page shows **Environment Variables Detected** with a **Migrate to Database** button. Migration creates a credential named "Default (Migrated from env)" per provider. It copies only the variables marked "yes" below; the others keep working only as an environment fallback and must be re-entered by hand if you remove them.
+If you have them set, **Manage → Models** shows **Environment Variables Detected** with a **Migrate to Database** button. Migration creates a credential named "Default (Migrated from env)" per provider. It copies only the variables marked "yes" below; the others keep working only as an environment fallback and must be re-entered by hand if you remove them.
 
 | Variable | Provider | Copied by Migrate to Database |
 |----------|----------|-------------------------------|
@@ -278,11 +280,13 @@ These appear in older guides, examples or forum posts. Nothing in Open Notebook 
 ## Checking what the container sees
 
 ```bash
-# One variable
+# One non-secret variable
 docker compose exec open_notebook printenv OPEN_NOTEBOOK_WORKER_MAX_TASKS
 
-# Everything Open Notebook-related
-docker compose exec open_notebook env | grep -E "OPEN_NOTEBOOK|SURREAL|API_URL|ESPERANTO|CCORE"
+# Which Open Notebook-related variables are set (names only, so no secrets are printed)
+docker compose exec open_notebook sh -c 'printenv | cut -d= -f1 | grep -E "OPEN_NOTEBOOK|SURREAL|API_URL|ESPERANTO|CCORE"'
 ```
+
+Don't print `OPEN_NOTEBOOK_ENCRYPTION_KEY`, `OPEN_NOTEBOOK_PASSWORD` or `SURREAL_PASSWORD` into output you share in an issue or a chat.
 
 Variable names are case-sensitive. In `docker-compose.yml` list syntax, don't put spaces around `=` and don't quote the value unless the quotes should be part of it.

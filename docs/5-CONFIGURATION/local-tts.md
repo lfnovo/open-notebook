@@ -1,6 +1,6 @@
 # Local Speech with Speaches (TTS and STT)
 
-Run text-to-speech (podcast voices) and speech-to-text (transcribing audio and video sources) on your own machine, with no per-minute cost and no audio leaving your network.
+Run text-to-speech (podcast voices) and speech-to-text (transcribing audio and video sources) yourself. When Speaches runs on your own hardware, there is no per-minute provider fee and the audio stays on that machine. A Speaches server or other endpoint run by someone else receives the audio you send it, like any provider, and may charge for it.
 
 [Speaches](https://github.com/speaches-ai/speaches) is an open-source server with an OpenAI-compatible speech API. One Speaches instance serves both directions; Open Notebook connects to it through the **OpenAI Compatible** provider. Any other server that implements `/v1/audio/speech` (TTS) or `/v1/audio/transcriptions` (STT) works the same way.
 
@@ -40,7 +40,9 @@ For an NVIDIA GPU, use the `latest-cuda` image and add a GPU reservation:
               capabilities: [gpu]
 ```
 
-If you add the `speaches` service to Open Notebook's own `docker-compose.yml` instead, Open Notebook reaches it at `http://speaches:8000/v1` and you don't need to publish a port.
+`"8969:8000"` publishes Speaches, which has no authentication, on every network interface of the host. Allow port 8969 only from this host and its Docker networks (for example with your firewall), never from untrusted networks.
+
+If you add the `speaches` service to Open Notebook's own `docker-compose.yml` instead, Open Notebook reaches it at `http://speaches:8000/v1` and you don't need to publish a port at all. That's the safer option.
 
 ## 2. Download models
 
@@ -64,8 +66,10 @@ curl http://localhost:8969/v1/audio/speech -s -H "Content-Type: application/json
 
 ## 3. Connect Open Notebook
 
-1. **Manage → Models** → **OpenAI Compatible** section → **Add Configuration**.
-2. **Configuration Name** "Speaches", no API key, **Base URL**:
+Follow [Connect a provider](../4-AI-PROVIDERS/index.md#connect-a-provider) and pick **OpenAI Compatible**, with these values:
+
+1. **Configuration Name** "Speaches", no API key.
+2. **Base URL**:
 
    | Open Notebook runs | Base URL |
    |--------------------|----------|
@@ -75,7 +79,7 @@ curl http://localhost:8969/v1/audio/speech -s -H "Content-Type: application/json
    | From source | `http://localhost:8969/v1` |
    | Speaches on another machine | `http://<server-ip>:8969/v1` |
 
-3. Click **Test**, then **Models**. In **Discover Models**, set **Model Type** to **TTS** and add `speaches-ai/Kokoro-82M-v1.0-ONNX`; then set it to **STT** and add your Whisper model. If a model isn't listed, type its id and click **Add "…"**.
+3. In **Discover Models**, set **Model Type** to **TTS** and add `speaches-ai/Kokoro-82M-v1.0-ONNX`; then set it to **STT** and add your Whisper model. If a model isn't listed, type its id and click **Add "…"**.
 4. Under **Default Model Assignments**, choose the **Text-to-Speech Model** and **Speech-to-Text Model**.
 
 If you also use another OpenAI-compatible server (LM Studio, vLLM) for chat, keep it as a separate configuration: each configuration has one Base URL.
@@ -90,10 +94,11 @@ Local TTS servers usually handle one request at a time. If podcast audio fails o
 
 ## Troubleshooting
 
-**Test shows "Cannot connect to server. Check the URL is correct."** Check that Speaches runs (`curl http://localhost:8969/v1/models` on the host), then from inside the container:
+**Test shows "Cannot connect to server. Check the URL is correct."** Check that Speaches runs (`curl http://localhost:8969/v1/models` on the Speaches host), then test the exact **Base URL** you configured from inside the Open Notebook container, adding `/models`:
 
 ```bash
-docker compose exec open_notebook curl -s http://host.docker.internal:8969/v1/models
+# Replace with your Base URL from the table above, e.g. http://speaches:8000/v1
+docker compose exec open_notebook curl -s <Base URL>/models
 ```
 
 **Model not found.** List what Speaches has downloaded and download the missing model:

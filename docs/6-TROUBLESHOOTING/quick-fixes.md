@@ -30,7 +30,7 @@ docker compose restart
 ```
 
 **If still broken:**
-- Check `API_URL` in .env (should match your frontend URL)
+- Check `API_URL` in the `open_notebook` service's `environment:` (`docker compose exec open_notebook printenv API_URL`); it should be the API address as your browser reaches it
 - See [Connection Issues](connection-issues.md)
 
 ---
@@ -79,8 +79,8 @@ lsof -i :8502
 # Change: - "8502:8502"
 # To:     - "8503:8502"
 
-# Then restart
-docker compose restart
+# Then recreate the container (restart keeps the old ports)
+docker compose up -d
 # Access at: http://localhost:8503
 ```
 
@@ -273,11 +273,11 @@ df -h
 **Solution (1 minute):**
 
 ```bash
-# In .env, reduce concurrency:
-SURREAL_COMMANDS_MAX_TASKS=2
+# docker-compose.yml → open_notebook → environment:
+#   - OPEN_NOTEBOOK_WORKER_MAX_TASKS=2
 
-# Then restart:
-docker compose restart
+# Apply (restart does not reload environment):
+docker compose up -d
 
 # This makes it slower but more stable
 ```

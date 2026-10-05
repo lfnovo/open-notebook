@@ -9,18 +9,18 @@ Performance tuning, debugging, and advanced features.
 ### Concurrency Control
 
 ```env
-# Max concurrent database operations (default: 5)
-# Increase: Faster processing, more conflicts
-# Decrease: Slower, fewer conflicts
-SURREAL_COMMANDS_MAX_TASKS=5
+# Max background tasks the worker runs at once (default: 5)
+# Increase: faster bulk processing, more load on your models and database
+# Decrease: slower, gentler on local models and rate limits
+OPEN_NOTEBOOK_WORKER_MAX_TASKS=5
 ```
 
 **Guidelines:**
-- CPU: 2 cores → 2-3 tasks
-- CPU: 4 cores → 5 tasks (default)
-- CPU: 8+ cores → 10-20 tasks
+- Local LLM on a single GPU → 1 (sequential)
+- Cloud providers with rate limits → 2-3
+- Cloud providers, plenty of quota → 5 (default) or more
 
-Higher concurrency = more throughput but more database conflicts (retries handle this).
+It is read when the worker starts, so restart the worker (or recreate the container) after changing it. Higher concurrency = more throughput but more database conflicts (retries handle this).
 
 ### Retry Strategy
 
@@ -40,21 +40,19 @@ For high-concurrency deployments, use `exponential_jitter` to prevent thundering
 ### Timeout Tuning
 
 ```env
-# Client timeout (default: 300 seconds)
-API_CLIENT_TIMEOUT=300
-
-# LLM timeout (default: 180 seconds)
+# Timeout for each model call (default: 180 seconds)
 ESPERANTO_LLM_TIMEOUT=180
 ```
 
 `ESPERANTO_LLM_TIMEOUT` limits each model call (chat, Ask, transformations, podcast outline and transcript) and applies to every provider, including Ollama. Open Notebook sets it to 180 seconds when you don't; set it yourself to change it. Speech-to-text and text-to-speech have their own, longer timeouts.
 
-**Guideline:** Set `API_CLIENT_TIMEOUT` > `ESPERANTO_LLM_TIMEOUT` + buffer
+The web UI waits up to 10 minutes for a response (`NEXT_PUBLIC_API_TIMEOUT_MS`, default `600000`; `0` disables it). For requests that wait for a complete answer, such as notebook chat, that is a total budget. Ask streams its answer and only gives up after 10 minutes without new output. The value is compiled into the frontend at build time, so in the published Docker images it is fixed at 10 minutes, and changing it means building the frontend yourself.
+
+**Guideline:** keep `ESPERANTO_LLM_TIMEOUT` below 600 seconds, so a slow model fails with a clear error before the UI gives up.
 
 ```
 Example (slow local models):
   ESPERANTO_LLM_TIMEOUT=420
-  API_CLIENT_TIMEOUT=600  # 420 + 180 second buffer
 ```
 
 ---
@@ -317,7 +315,7 @@ SURREAL_DATABASE
 
 ### Performance
 ```env
-SURREAL_COMMANDS_MAX_TASKS
+OPEN_NOTEBOOK_WORKER_MAX_TASKS
 SURREAL_COMMANDS_RETRY_ENABLED
 SURREAL_COMMANDS_RETRY_MAX_ATTEMPTS
 SURREAL_COMMANDS_RETRY_WAIT_STRATEGY
@@ -329,8 +327,8 @@ SURREAL_COMMANDS_RETRY_WAIT_MAX
 ```env
 API_URL
 INTERNAL_API_URL
-API_CLIENT_TIMEOUT
 ESPERANTO_LLM_TIMEOUT
+NEXT_PUBLIC_API_TIMEOUT_MS  # build time only
 ```
 
 ### Audio/TTS
@@ -382,7 +380,7 @@ python -c "import os; print(os.getenv('SURREAL_URL'))"
 
 ```env
 # Reduce concurrency
-SURREAL_COMMANDS_MAX_TASKS=2
+OPEN_NOTEBOOK_WORKER_MAX_TASKS=2
 
 # Reduce TTS batch size
 TTS_BATCH_SIZE=1
@@ -391,18 +389,18 @@ TTS_BATCH_SIZE=1
 ### High CPU Usage
 
 ```env
-# Check worker count
-SURREAL_COMMANDS_MAX_TASKS
+# Check worker concurrency
+OPEN_NOTEBOOK_WORKER_MAX_TASKS
 
 # Reduce if maxed out:
-SURREAL_COMMANDS_MAX_TASKS=5
+OPEN_NOTEBOOK_WORKER_MAX_TASKS=2
 ```
 
 ### Slow Responses
 
 ```env
-# Check timeout settings
-API_CLIENT_TIMEOUT=300
+# Give slow models more time per call (keep below 600)
+ESPERANTO_LLM_TIMEOUT=420
 
 # Check retry config
 SURREAL_COMMANDS_RETRY_MAX_ATTEMPTS=3
@@ -412,7 +410,7 @@ SURREAL_COMMANDS_RETRY_MAX_ATTEMPTS=3
 
 ```env
 # Reduce concurrency
-SURREAL_COMMANDS_MAX_TASKS=3
+OPEN_NOTEBOOK_WORKER_MAX_TASKS=3
 
 # Use jitter strategy
 SURREAL_COMMANDS_RETRY_WAIT_STRATEGY=exponential_jitter

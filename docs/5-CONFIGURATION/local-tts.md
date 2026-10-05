@@ -1,39 +1,23 @@
-# Local Text-to-Speech Setup
+# Local Speech with Speaches (TTS and STT)
 
-Run text-to-speech locally for free, private podcast generation using OpenAI-compatible TTS servers.
+Run text-to-speech (podcast voices) and speech-to-text (transcribing audio and video sources) on your own machine, with no per-minute cost and no audio leaving your network.
 
----
+[Speaches](https://github.com/speaches-ai/speaches) is an open-source server with an OpenAI-compatible speech API. One Speaches instance serves both directions; Open Notebook connects to it through the **OpenAI Compatible** provider. Any other server that implements `/v1/audio/speech` (TTS) or `/v1/audio/transcriptions` (STT) works the same way.
 
-## Why Local TTS?
+This page covers the shared setup and text-to-speech. Speech-to-text specifics (Whisper models, long recordings) are in [Local Speech-to-Text](local-stt.md).
 
-| Benefit | Description |
-|---------|-------------|
-| **Free** | No per-character costs after setup |
-| **Private** | Audio never leaves your machine |
-| **Unlimited** | No rate limits or quotas |
-| **Offline** | Works without internet |
+> **Ready-made compose files:** [docker-compose-speaches.yml](../../examples/docker-compose-speaches.yml) (Speaches + Open Notebook) and [docker-compose-full-local.yml](../../examples/docker-compose-full-local.yml) (Speaches + Ollama + Open Notebook, fully local).
 
 ---
 
-## Quick Start with Speaches
+## 1. Run Speaches
 
-[Speaches](https://github.com/speaches-ai/speaches) is an open-source, OpenAI-compatible TTS server.
-
-> **💡 Ready-made Docker Compose files available:**
-> - **[docker-compose-speaches.yml](../../examples/docker-compose-speaches.yml)** - Speaches + Open Notebook
-> - **[docker-compose-full-local.yml](../../examples/docker-compose-full-local.yml)** - Speaches + Ollama (100% local setup)
->
-> These include complete setup instructions and configuration examples. Just copy and run!
-
-### Step 1: Create Docker Compose File
-
-Create a folder and add `docker-compose.yml`:
+Standalone:
 
 ```yaml
 services:
   speaches:
     image: ghcr.io/speaches-ai/speaches:latest-cpu
-    container_name: speaches
     ports:
       - "8969:8000"
     volumes:
@@ -44,121 +28,9 @@ volumes:
   hf-hub-cache:
 ```
 
-### Step 2: Start and Download Model
-
-```bash
-# Start Speaches
-docker compose up -d
-
-# Wait for startup
-sleep 10
-
-# Download voice model (~500MB)
-docker compose exec speaches uv tool run speaches-cli model download speaches-ai/Kokoro-82M-v1.0-ONNX
-```
-
-### Step 3: Test
-
-```bash
-curl "http://localhost:8969/v1/audio/speech" -s \
-  -H "Content-Type: application/json" \
-  --output test.mp3 \
-  --data '{
-    "input": "Hello! Local TTS is working.",
-    "model": "speaches-ai/Kokoro-82M-v1.0-ONNX",
-    "voice": "af_bella"
-  }'
-```
-
-Play `test.mp3` to verify.
-
-### Step 4: Configure Open Notebook
-
-**Via Settings UI (Recommended):**
-1. Go to **Manage** → **Models**
-2. Click **Add Credential** → Select **OpenAI-Compatible**
-3. Enter base URL for TTS: `http://host.docker.internal:8969/v1` (Docker) or `http://localhost:8969/v1` (local)
-4. Click **Save**, then **Test Connection**
-
-**Legacy (Deprecated) — Environment variables:**
-```yaml
-# In your Open Notebook docker-compose.yml
-environment:
-  - OPENAI_COMPATIBLE_BASE_URL_TTS=http://host.docker.internal:8969/v1
-```
-
-```bash
-# Local development
-export OPENAI_COMPATIBLE_BASE_URL_TTS=http://localhost:8969/v1
-```
-
-### Step 5: Add Model in Open Notebook
-
-1. Go to **Manage** → **Models**
-2. Click **Add Model** in Text-to-Speech section
-3. Configure:
-   - **Provider**: `openai_compatible`
-   - **Model Name**: `speaches-ai/Kokoro-82M-v1.0-ONNX`
-   - **Display Name**: `Local TTS`
-4. Click **Save**
-5. Set as default if desired
-
----
-
-## Available Voices
-
-The Kokoro model includes multiple voices:
-
-### Female Voices
-| Voice ID | Description |
-|----------|-------------|
-| `af_bella` | Clear, professional |
-| `af_sarah` | Warm, friendly |
-| `af_nicole` | Energetic, expressive |
-
-### Male Voices
-| Voice ID | Description |
-|----------|-------------|
-| `am_adam` | Deep, authoritative |
-| `am_michael` | Friendly, conversational |
-
-### British Accents
-| Voice ID | Description |
-|----------|-------------|
-| `bf_emma` | British female, professional |
-| `bm_george` | British male, formal |
-
-### Test Different Voices
-
-```bash
-for voice in af_bella af_sarah am_adam am_michael; do
-  curl "http://localhost:8969/v1/audio/speech" -s \
-    -H "Content-Type: application/json" \
-    --output "test_${voice}.mp3" \
-    --data "{
-      \"input\": \"Hello, this is the ${voice} voice.\",
-      \"model\": \"speaches-ai/Kokoro-82M-v1.0-ONNX\",
-      \"voice\": \"${voice}\"
-    }"
-done
-```
-
----
-
-## GPU Acceleration
-
-For faster generation with NVIDIA GPUs:
+For an NVIDIA GPU, use the `latest-cuda` image and add a GPU reservation:
 
 ```yaml
-services:
-  speaches:
-    image: ghcr.io/speaches-ai/speaches:latest-cuda
-    container_name: speaches
-    ports:
-      - "8969:8000"
-    volumes:
-      - hf-hub-cache:/home/ubuntu/.cache/huggingface/hub
-    restart: unless-stopped
     deploy:
       resources:
         reservations:
@@ -166,179 +38,78 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
-
-volumes:
-  hf-hub-cache:
 ```
 
----
+If you add the `speaches` service to Open Notebook's own `docker-compose.yml` instead, Open Notebook reaches it at `http://speaches:8000/v1` and you don't need to publish a port.
 
-## Docker Networking
+## 2. Download models
 
-When configuring your OpenAI-Compatible credential in **Manage → Models**, use the appropriate TTS base URL for your setup:
+```bash
+docker compose up -d
 
-### Open Notebook in Docker (macOS/Windows)
+# Text-to-speech voice model
+docker compose exec speaches uv tool run speaches-cli model download speaches-ai/Kokoro-82M-v1.0-ONNX
 
-**TTS Base URL:** `http://host.docker.internal:8969/v1`
-
-### Open Notebook in Docker (Linux)
-
-**TTS Base URL (Option 1 — Docker bridge IP):** `http://172.17.0.1:8969/v1`
-
-**Option 2:** Use host networking mode (`docker run --network host ...`), then use: `http://localhost:8969/v1`
-
-### Remote Server
-
-Run Speaches on a different machine:
-
-**TTS Base URL:** `http://server-ip:8969/v1` (replace with your server's IP)
-
----
-
-## Multi-Speaker Podcasts
-
-Configure different voices for each speaker:
-
+# Speech-to-text model (see local-stt.md for other sizes)
+docker compose exec speaches uv tool run speaches-cli model download Systran/faster-whisper-small
 ```
-Speaker 1 (Host):
-  Model: speaches-ai/Kokoro-82M-v1.0-ONNX
-  Voice: af_bella
 
-Speaker 2 (Guest):
-  Model: speaches-ai/Kokoro-82M-v1.0-ONNX
-  Voice: am_adam
+Test text-to-speech:
 
-Speaker 3 (Narrator):
-  Model: speaches-ai/Kokoro-82M-v1.0-ONNX
-  Voice: bf_emma
+```bash
+curl http://localhost:8969/v1/audio/speech -s -H "Content-Type: application/json" \
+  --output test.mp3 \
+  --data '{"input": "Local speech is working.", "model": "speaches-ai/Kokoro-82M-v1.0-ONNX", "voice": "af_bella"}'
 ```
+
+## 3. Connect Open Notebook
+
+1. **Manage → Models** → **OpenAI Compatible** section → **Add Configuration**.
+2. **Configuration Name** "Speaches", no API key, **Base URL**:
+
+   | Open Notebook runs | Base URL |
+   |--------------------|----------|
+   | In Docker, Speaches published on the host (macOS/Windows) | `http://host.docker.internal:8969/v1` |
+   | In Docker on Linux | `http://host.docker.internal:8969/v1` with `extra_hosts: ["host.docker.internal:host-gateway"]` on the `open_notebook` service, or `http://172.17.0.1:8969/v1` |
+   | In the same compose file as Speaches | `http://speaches:8000/v1` |
+   | From source | `http://localhost:8969/v1` |
+   | Speaches on another machine | `http://<server-ip>:8969/v1` |
+
+3. Click **Test**, then **Models**. In **Discover Models**, set **Model Type** to **TTS** and add `speaches-ai/Kokoro-82M-v1.0-ONNX`; then set it to **STT** and add your Whisper model. If a model isn't listed, type its id and click **Add "…"**.
+4. Under **Default Model Assignments**, choose the **Text-to-Speech Model** and **Speech-to-Text Model**.
+
+If you also use another OpenAI-compatible server (LM Studio, vLLM) for chat, keep it as a separate configuration: each configuration has one Base URL.
+
+## 4. Use it for podcasts
+
+Podcast voices come from **speaker profiles** (Podcasts → Profiles). In each speaker profile, select the Speaches model as the voice model and set **Voice ID** to a Kokoro voice, for example `af_bella` or `am_adam`. The voice list is in the Speaches and Kokoro documentation. The speaker profiles that ship with Open Notebook use OpenAI voice names and have no voice model set, so edit them before generating.
+
+Local TTS servers usually handle one request at a time. If podcast audio fails or stalls, lower `TTS_BATCH_SIZE` (default 5) to `1` or `2`, and raise `ESPERANTO_TTS_TIMEOUT` (default 300 seconds) for long segments on CPU. Both go in the `open_notebook` environment; see the [Environment Reference](environment-reference.md#worker-and-background-jobs).
 
 ---
 
 ## Troubleshooting
 
-### Service Won't Start
+**Test shows "Cannot connect to server. Check the URL is correct."** Check that Speaches runs (`curl http://localhost:8969/v1/models` on the host), then from inside the container:
 
 ```bash
-# Check logs
-docker compose logs speaches
-
-# Verify port available
-lsof -i :8969
-
-# Restart
-docker compose down && docker compose up -d
+docker compose exec open_notebook curl -s http://host.docker.internal:8969/v1/models
 ```
 
-### Connection Refused
+**Model not found.** List what Speaches has downloaded and download the missing model:
 
 ```bash
-# Test Speaches is running
-curl http://localhost:8969/v1/models
-
-# From inside Open Notebook container
-docker exec -it open-notebook curl http://host.docker.internal:8969/v1/models
-```
-
-### Model Not Found
-
-```bash
-# List downloaded models
 docker compose exec speaches uv tool run speaches-cli model list
-
-# Download if missing
-docker compose exec speaches uv tool run speaches-cli model download speaches-ai/Kokoro-82M-v1.0-ONNX
 ```
 
-### Poor Audio Quality
+**Podcast fails with a voice error.** The speaker profile's Voice ID isn't a voice the model provides. See [Processing Issues → Podcasts](../6-TROUBLESHOOTING/processing-issues.md#podcast-failures).
 
-- Try different voices
-- Adjust speed: `"speed": 0.9` to `1.2`
-- Check model downloaded completely
-- Allocate more memory
-
-### Slow Generation
-
-| Solution | How |
-|----------|-----|
-| Use GPU | Switch to `latest-cuda` image |
-| More CPU | Allocate more cores in Docker |
-| Faster model | Use smaller/quantized models |
-| SSD storage | Move Docker volumes to SSD |
-
----
-
-## Performance Tips
-
-### Recommended Specs
-
-| Component | Minimum | Recommended |
-|-----------|---------|-------------|
-| CPU | 2 cores | 4+ cores |
-| RAM | 2 GB | 4+ GB |
-| Storage | 5 GB | 10 GB (for multiple models) |
-| GPU | None | NVIDIA (optional) |
-
-### Resource Limits
-
-```yaml
-services:
-  speaches:
-    # ... other config
-    mem_limit: 4g
-    cpus: 2
-```
-
-### Monitor Usage
-
-```bash
-docker stats speaches
-```
-
----
-
-## Comparison: Local vs Cloud
-
-| Aspect | Local (Speaches) | Cloud (OpenAI/ElevenLabs) |
-|--------|------------------|---------------------------|
-| **Cost** | Free | $0.015-0.10/min |
-| **Privacy** | Complete | Data sent to provider |
-| **Speed** | Depends on hardware | Usually faster |
-| **Quality** | Good | Excellent |
-| **Setup** | Moderate | Simple API key |
-| **Offline** | Yes | No |
-| **Voices** | Limited | Many options |
-
-### When to Use Local
-
-- Privacy-sensitive content
-- High-volume generation
-- Development/testing
-- Offline environments
-- Cost control
-
-### When to Use Cloud
-
-- Premium quality needs
-- Multiple languages
-- Time-sensitive projects
-- Limited hardware
-
----
-
-## Other Local TTS Options
-
-Any OpenAI-compatible TTS server works. The key is:
-
-1. Server implements `/v1/audio/speech` endpoint
-2. Add an OpenAI-Compatible credential in **Manage → Models** with the TTS base URL
-3. Add model with provider `openai_compatible`
+**Slow generation.** Use the `latest-cuda` image on a GPU, give the container more CPU, and keep `TTS_BATCH_SIZE` low.
 
 ---
 
 ## Related
 
-- **[Local STT Setup](local-stt.md)** - Speech-to-text with Speaches
-- **[OpenAI-Compatible Providers](openai-compatible.md)** - General compatible provider setup
-- **[AI Providers](ai-providers.md)** - All provider configuration
-- **[Creating Podcasts](../3-USER-GUIDE/creating-podcasts.md)** - Using TTS for podcasts
+- [Local Speech-to-Text](local-stt.md) — Whisper models, long audio
+- [OpenAI-Compatible Providers](openai-compatible.md)
+- [Creating Podcasts](../3-USER-GUIDE/creating-podcasts.md)

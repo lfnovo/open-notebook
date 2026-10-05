@@ -1,146 +1,78 @@
 # Ollama Setup Guide
 
-Ollama provides free, local AI models that run on your own hardware. This guide covers everything you need to know about setting up Ollama with Open Notebook, including different deployment scenarios and network configurations.
+[Ollama](https://ollama.com) runs open-weight models on your own hardware. Open Notebook can use it for chat, transformations, podcast scripts and embeddings. It doesn't provide speech models; for local podcasts and transcription, add [Speaches](local-tts.md).
 
-## Why Choose Ollama?
-
-- **🆓 Completely Free**: No API costs after initial setup
-- **🔒 Full Privacy**: Your data never leaves your local network
-- **📱 Offline Capable**: Works without internet connection
-- **🚀 Fast**: Local inference with no network latency
-- **🧠 Reasoning Models**: Support for advanced reasoning models like DeepSeek-R1
-- **💾 Model Variety**: Access to hundreds of open-source models
+---
 
 ## Quick Start
 
-### 1. Install Ollama
-
-**Linux/macOS:**
-```bash
-curl -fsSL https://ollama.ai/install.sh | sh
-```
-
-**Windows:**
-Download and install from [ollama.ai](https://ollama.ai/download)
-
-### 2. Pull Required Models
+### 1. Install Ollama and pull models
 
 ```bash
-# Language models (choose one or more)
-ollama pull qwen3              # Excellent general purpose, 7B parameters
-ollama pull gemma3            # Google's model, good performance
-ollama pull deepseek-r1       # Advanced reasoning model
-ollama pull phi4              # Microsoft's efficient model
+# Linux / macOS
+curl -fsSL https://ollama.com/install.sh | sh
+# Windows: download the installer from https://ollama.com/download
 
-# Embedding model (required for search)
-ollama pull mxbai-embed-large  # Best embedding model for Ollama
+# A language model (pick one that fits your hardware)
+ollama pull qwen3
+
+# An embedding model (needed for search, Ask and embeddings)
+ollama pull mxbai-embed-large
 ```
 
-### 3. Configure Open Notebook
+Open Notebook doesn't download Ollama models for you. Pull every model you plan to use, including the embedding model.
 
-**Via Settings UI (Recommended):**
-1. Go to **Manage** → **Models**
-2. Click **Add Credential** → Select **Ollama**
-3. Enter the base URL (see [Network Configuration](#network-configuration-guide) below for correct URL)
-4. Click **Save**, then **Test Connection**
-5. Click **Discover Models** → **Register Models**
+### 2. Let Open Notebook reach Ollama
 
-**Environment variable fallback (Deprecated):**
+If Open Notebook runs in Docker or on another machine, Ollama must listen on more than localhost:
+
 ```bash
-# For local installation:
-export OLLAMA_API_BASE=http://localhost:11434
-# For Docker installation:
-export OLLAMA_API_BASE=http://host.docker.internal:11434
+OLLAMA_HOST=0.0.0.0:11434 ollama serve
 ```
 
-> **Deprecated**: `OLLAMA_API_BASE` is a deprecated fallback. It still works today, but there is no guarantee it keeps working in future releases, and new automation should not be built on it. Configure Ollama via **Manage → Models** instead. For headless/CI/Docker setups, see the [environment reference](environment-reference.md#legacy-ai-provider-environment-variables-deprecated) and the provisioning discussion in [#765](https://github.com/lfnovo/open-notebook/discussions/765).
+(For the systemd service on Linux, set `Environment="OLLAMA_HOST=0.0.0.0:11434"` with `sudo systemctl edit ollama` and restart it.) Ollama has no authentication, so only do this on a trusted network.
 
-## Network Configuration Guide
+### 3. Add the credential
 
-When adding an Ollama credential in **Manage → Models**, you need to enter the correct base URL. The correct URL depends on your deployment scenario:
+1. Open **Manage → Models** and, in the **Ollama** section, click **Add Configuration**.
+2. Set **Base URL** (see the table below) and click **Add Configuration**. No API key is needed.
+3. Click **Test** on the new configuration.
+4. Click **Models** to open **Discover Models**. Set **Model Type** to **Language**, tick your chat model and click **Add Selected**. Repeat with **Embedding** for the embedding model.
+5. Under **Default Model Assignments**, choose the Chat Model and Embedding Model (or click **Auto-assign Defaults**).
 
-### Scenario 1: Local Installation (Same Machine)
+---
 
-When both Open Notebook and Ollama run directly on your machine:
+## Which Base URL to use
 
-**Base URL to enter in Manage → Models:** `http://localhost:11434`
+| Open Notebook runs | Ollama runs | Base URL |
+|--------------------|-------------|----------|
+| From source on the same machine | Same machine | `http://localhost:11434` |
+| In Docker | On the host | `http://host.docker.internal:11434` |
+| In Docker | In the same compose file (service `ollama`) | `http://ollama:11434` |
+| Anywhere | Another machine | `http://<ollama-ip>:11434` |
 
-Alternative: `http://127.0.0.1:11434` (use if you have DNS resolution issues with localhost)
-
-### Scenario 2: Open Notebook in Docker, Ollama on Host
-
-When Open Notebook runs in Docker but Ollama runs on your host machine:
-
-**Base URL to enter in Manage → Models:** `http://host.docker.internal:11434`
-
-**⚠️ CRITICAL: Ollama must accept external connections:**
-```bash
-# Start Ollama with external access enabled
-export OLLAMA_HOST=0.0.0.0:11434
-ollama serve
-```
-
-**⚠️ LINUX USERS: Extra configuration required!**
-
-On Linux, `host.docker.internal` doesn't resolve automatically like it does on macOS/Windows. You must add `extra_hosts` to your docker-compose.yml:
+**Linux with Docker:** `host.docker.internal` doesn't exist by default. Add it to the `open_notebook` service, then `docker compose up -d`:
 
 ```yaml
-# Add to your docker-compose.yml (requires surrealdb service, see installation guide)
 services:
   open_notebook:
-    image: lfnovo/open_notebook:v1-latest
-    # ... other settings ...
     extra_hosts:
       - "host.docker.internal:host-gateway"
 ```
 
-Without this, you'll get connection errors like:
-```
-httpcore.ConnectError: [Errno -2] Name or service not known
-```
+Without it, Test shows "Cannot connect to Ollama. Check if Ollama server is running." and the log shows `Name or service not known`.
 
-**Why `host.docker.internal`?**
-- Docker containers can't reach `localhost` on the host
-- `host.docker.internal` is Docker's special hostname for the host machine
-- Available on Docker Desktop for Mac/Windows; **requires `extra_hosts` on Linux**
+### Ollama in the same compose file
 
-**Why `OLLAMA_HOST=0.0.0.0:11434`?**
-- By default, Ollama only binds to localhost and rejects external connections
-- Docker containers are considered "external" even when running on the same machine
-- Setting `OLLAMA_HOST=0.0.0.0:11434` allows connections from Docker containers
-
-### Scenario 3: Both in Docker (Same Compose)
-
-When both Open Notebook and Ollama run in the same Docker Compose stack:
-
-**Base URL to enter in Manage → Models:** `http://ollama:11434`
-
-**Docker Compose Example:**
+Add a service next to `surrealdb` and `open_notebook` in the shipped `docker-compose.yml`:
 
 ```yaml
-# Requires surrealdb service — see full base setup:
-# https://github.com/lfnovo/open-notebook/blob/main/docker-compose.yml
 services:
-  open-notebook:
-    image: lfnovo/open_notebook:v1-latest
-    pull_policy: always
-    ports:
-      - "8502:8502"
-      - "5055:5055"
-    environment:
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
-    volumes:
-      - ./notebook_data:/app/data
-    depends_on:
-      - ollama
-
   ollama:
     image: ollama/ollama:latest
-    ports:
-      - "11434:11434"
     volumes:
-      - ollama_data:/root/.ollama
-    # Optional: GPU support
+      - ./ollama_data:/root/.ollama
+    # GPU (NVIDIA Container Toolkit required)
     deploy:
       resources:
         reservations:
@@ -148,597 +80,106 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
-
-volumes:
-  ollama_data:
 ```
 
-### Scenario 4: Remote Ollama Server
+Use Base URL `http://ollama:11434`, and pull models inside the container: `docker compose exec ollama ollama pull qwen3`. The repository's `examples/docker-compose-ollama.yml` is a complete version of this setup.
 
-When Ollama runs on a different machine in your network:
+---
 
-**Base URL to enter in Manage → Models:** `http://192.168.1.100:11434` (replace with your Ollama server's IP)
+## Model names
 
-**Security Note:** Only use this in trusted networks. Ollama doesn't have built-in authentication.
+Discover Models lists the models Ollama has installed, so the names come out right. If you type a name by hand, it must match `ollama list` exactly, tag included:
 
-### Scenario 5: Ollama with Custom Port
-
-If you've configured Ollama to use a different port:
-
-```bash
-# Start Ollama on custom port
-OLLAMA_HOST=0.0.0.0:8080 ollama serve
+```
+$ ollama list
+NAME                        SIZE
+mxbai-embed-large:latest    669 MB
+gemma3:12b                  8.1 GB
 ```
 
-**Base URL to enter in Manage → Models:** `http://localhost:8080`
+Use `gemma3:12b`, not `gemma3`. If you remove a model from Ollama, remove it from Manage → Models too and pick new defaults.
 
-## Model Recommendations
+---
 
-### Language Models
+## Context window (`num_ctx`)
 
-| Model | Size | Best For | Quality | Speed |
-|-------|------|----------|---------|-------|
-| **qwen3** | 7B | General purpose, coding | Excellent | Fast |
-| **deepseek-r1** | 7B | Reasoning, problem-solving | Exceptional | Medium |
-| **gemma3** | 7B | Balanced performance | Very Good | Fast |
-| **phi4** | 14B | Efficiency on small hardware | Good | Very Fast |
-| **llama3** | 8B | General purpose | Very Good | Medium |
+Ollama credentials have a **Context Window (num_ctx)** field. Empty means 8192 tokens, which runs on GPUs with about 8 GB of VRAM. It applies to every model used through that credential.
 
-### Embedding Models
+Ollama doesn't return an error when a prompt is longer than the window: it drops the start of the prompt and answers anyway (its server log shows a `truncating input prompt` warning). Symptoms in Open Notebook are answers that ignore your sources, chats that forget earlier messages, and transformations of long documents that only cover the end.
 
-| Model | Best For | Performance |
-|-------|----------|-------------|
-| **mxbai-embed-large** | General search | Excellent |
-| **nomic-embed-text** | Document similarity | Good |
-| **all-minilm** | Lightweight option | Fair |
+To fix it, edit the Ollama credential in Manage → Models and raise **Context Window (num_ctx)**, for example to `32768`, if your hardware has the memory for it. If Ollama then runs out of memory or becomes very slow, lower it again or use a smaller model. Including fewer sources in chat context ("Insights only" instead of "Full content") also helps.
 
-### Installation Commands
+---
 
-```bash
-# Essential models
-ollama pull qwen3                 # Primary language model
-ollama pull mxbai-embed-large     # Search embeddings
+## Timeouts with slow models
 
-# Optional reasoning model
-ollama pull deepseek-r1           # Advanced reasoning
+Every model call is limited by `ESPERANTO_LLM_TIMEOUT`, **180 seconds** by default. Before v1.15.0 Ollama calls had no time limit; now a large model on CPU, or the first request while a model loads into memory, can run out of time. When that happens, the error says:
 
-# Alternative language models
-ollama pull gemma3                # Google's model
-ollama pull phi4                  # Microsoft's efficient model
+> The AI provider took too long to respond. Try again, use a faster model, or raise ESPERANTO_LLM_TIMEOUT (180 seconds by default).
+
+(v1.15.0 shows "Could not connect to the AI provider. Please check your network connection and provider URL." for the same timeout.)
+
+Raise the limit in the `open_notebook` service, keeping it below 600 seconds (the web UI's own limit), and apply with `docker compose up -d`:
+
+```yaml
+services:
+  open_notebook:
+    environment:
+      - ESPERANTO_LLM_TIMEOUT=420
+      - OPEN_NOTEBOOK_WORKER_MAX_TASKS=1   # one job at a time on a single GPU
 ```
 
-## Hardware Requirements
+`OPEN_NOTEBOOK_WORKER_MAX_TASKS=1` stops background jobs (source processing, embeddings, insights, podcasts) from sending several requests to Ollama at once, which makes each of them slower and more likely to time out. To keep a model loaded between requests, set `OLLAMA_KEEP_ALIVE` on the Ollama server (for example `30m`).
 
-### Minimum Requirements
-- **RAM**: 8GB (for 7B models)
-- **Storage**: 10GB free space per model
-- **CPU**: Modern multi-core processor
-
-### Recommended Setup
-- **RAM**: 16GB+ (for multiple models)
-- **Storage**: SSD with 50GB+ free space
-- **GPU**: NVIDIA GPU with 8GB+ VRAM (optional but faster)
-
-### GPU Acceleration
-
-**NVIDIA GPU (CUDA):**
-```bash
-# Install NVIDIA Container Toolkit for Docker
-# Then use the Docker Compose example above with GPU support
-
-# For local installation, Ollama auto-detects CUDA
-ollama pull qwen3
-```
-
-**Apple Silicon (M1/M2/M3):**
-```bash
-# Ollama automatically uses Metal acceleration
-# No additional setup required
-ollama pull qwen3
-```
-
-**AMD GPUs:**
-```bash
-# ROCm support varies by model and system
-# Check Ollama documentation for latest compatibility
-```
+---
 
 ## Troubleshooting
 
-### Model Name Configuration (Critical)
-
-**⚠️ IMPORTANT: Model names must exactly match the output of `ollama list`**
-
-This is the most common cause of "Failed to send message" errors. Open Notebook requires the **exact model name** as it appears in Ollama.
-
-**Step 1: Get the exact model name**
-```bash
-ollama list
-```
-
-Example output:
-```
-NAME                        ID              SIZE      MODIFIED
-mxbai-embed-large:latest    468836162de7    669 MB    7 minutes ago
-gemma3:12b                  f4031aab637d    8.1 GB    2 months ago
-qwen3:32b                   030ee887880f    20 GB     9 days ago
-```
-
-**Step 2: Use the exact name when adding the model in Open Notebook**
-
-| ✅ Correct | ❌ Wrong |
-|-----------|----------|
-| `gemma3:12b` | `gemma3` (missing tag) |
-| `qwen3:32b` | `qwen3-32b` (wrong format) |
-| `mxbai-embed-large:latest` | `mxbai-embed-large` (missing tag) |
-
-**Note:** Some models use `:latest` as the default tag. If `ollama list` shows `model:latest`, you must use `model:latest` in Open Notebook, not just `model`.
-
-**Step 3: Configure in Open Notebook**
-
-1. Go to **Manage → Models**
-2. Click **Add Model**
-3. Enter the **exact name** from `ollama list`
-4. Select provider: `ollama`
-5. Select type: `language` (for chat) or `embedding` (for search)
-6. Save the model
-7. Set it as the default for the appropriate task (chat, transformation, etc.)
-
-### Common Issues
-
-**1. "Ollama unavailable" in Open Notebook**
-
-**Check Ollama is running:**
-```bash
-curl http://localhost:11434/api/tags
-```
-
-**Verify credential is configured:**
-Check **Manage → Models** for an Ollama credential with the correct base URL.
-
-**⚠️ IMPORTANT: Enable external connections (most common fix):**
-```bash
-# If Open Notebook runs in Docker or on a different machine,
-# Ollama must bind to all interfaces, not just localhost
-export OLLAMA_HOST=0.0.0.0:11434
-ollama serve
-```
-> **Why this is needed:** By default, Ollama only accepts connections from `localhost` (127.0.0.1). When Open Notebook runs in Docker or on a different machine, it can't reach Ollama unless you configure `OLLAMA_HOST=0.0.0.0:11434` to accept external connections.
-
-**Restart Ollama:**
-```bash
-# Linux/macOS
-sudo systemctl restart ollama
-# or
-ollama serve
-
-# Windows
-# Restart from system tray or Services
-```
-
-**2. Docker networking issues**
-
-**From inside Open Notebook container, test Ollama:**
-```bash
-# Get into container
-docker exec -it open-notebook bash
-
-# Test connection
-curl http://host.docker.internal:11434/api/tags
-```
-
-**If this fails on Linux** with "Name or service not known", you need to add `extra_hosts` to your docker-compose.yml. See the [Docker-Specific Troubleshooting](#docker-specific-troubleshooting) section below.
-
-**3. Models not downloading**
-
-**Check disk space:**
-```bash
-df -h
-```
-
-**Manual model pull:**
-```bash
-ollama pull qwen3 --verbose
-```
-
-**Clear failed downloads:**
-```bash
-ollama rm qwen3
-ollama pull qwen3
-```
-
-**4. Slow performance**
-
-**Check model size vs available RAM:**
-```bash
-ollama ps  # Show running models
-free -h    # Check available memory
-```
-
-**Use smaller models:**
-```bash
-ollama pull phi4         # Instead of larger models
-ollama pull gemma3:2b   # 2B parameter variant
-```
-
-**5. Port conflicts**
-
-**Check what's using port 11434:**
-```bash
-lsof -i :11434
-netstat -tulpn | grep 11434
-```
-
-**Use custom port:**
-```bash
-OLLAMA_HOST=0.0.0.0:8080 ollama serve
-```
-Then update the base URL in **Manage → Models** to `http://localhost:8080`
-
-**6. "Failed to send message" in Chat**
-
-**Symptom:** Chat shows "Failed to send message" toast notification. Logs may show:
-```
-Error executing chat: Model is not a LanguageModel: None
-```
-
-**Causes (in order of likelihood):**
-
-1. **Model name mismatch**: The model name in Open Notebook doesn't exactly match `ollama list`
-2. **No default model configured**: You haven't set a default chat model in Manage → Models
-3. **Model was deleted**: You removed the model from Ollama but didn't update Open Notebook's defaults
-4. **Model record deleted**: The model was removed from Open Notebook but is still set as default
-
-**Solutions:**
-
-**Check 1: Verify model names match exactly**
-```bash
-# Get exact model names from Ollama
-ollama list
-
-# Compare with what's configured in Open Notebook
-# Go to Manage → Models and verify the names match EXACTLY
-```
-
-**Check 2: Verify default models are set**
-1. Go to **Manage → Models**
-2. Scroll to **Default Models** section
-3. Ensure **Default Chat Model** has a value selected
-4. If empty, select an available language model
-
-**Check 3: Refresh after changes**
-If you've added/removed models in Ollama:
-1. Refresh the Open Notebook page
-2. Go to Manage → Models
-3. Re-add any missing models with exact names from `ollama list`
-4. Re-select default models if needed
-
-**Check 4: Test the model directly**
-```bash
-# Verify Ollama can use the model
-ollama run gemma3:12b "Hello, world"
-```
-
-### Docker-Specific Troubleshooting
-
-**1. Linux: `host.docker.internal` not resolving (Most Common)**
-
-If you see `Name or service not known` errors on Linux, add `extra_hosts` to your docker-compose.yml:
-
-```yaml
-# Add to your docker-compose.yml (requires surrealdb service, see installation guide)
-services:
-  open_notebook:
-    image: lfnovo/open_notebook:v1-latest
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    environment:
-    # ... rest of your config
-```
-
-Then in **Manage → Models**, use base URL: `http://host.docker.internal:11434`
-
-This maps `host.docker.internal` to your host machine's IP. macOS/Windows Docker Desktop does this automatically, but Linux requires explicit configuration.
-
-**2. Host networking on Linux (alternative):**
-```bash
-# Use host networking if host.docker.internal doesn't work
-docker run --network host lfnovo/open_notebook:v1-latest  # for quick testing only
-```
-Then in **Manage → Models**, use base URL: `http://localhost:11434`
-
-**3. Custom bridge network:**
-```yaml
-version: '3.8'
-networks:
-  ollama_network:
-    driver: bridge
-
-services:
-  open-notebook:
-    networks:
-      - ollama_network
-    environment:
-  ollama:
-    networks:
-      - ollama_network
-```
-
-Then in **Manage → Models**, use base URL: `http://ollama:11434`
-
-**4. Firewall issues:**
-```bash
-# Allow Ollama port through firewall
-sudo ufw allow 11434
-# or
-sudo firewall-cmd --add-port=11434/tcp --permanent
-```
-
-## Performance Optimization
-
-### Model Management
-
-**List installed models:**
-```bash
-ollama list
-```
-
-**Remove unused models:**
-```bash
-ollama rm model_name
-```
-
-**Show running models:**
-```bash
-ollama ps
-```
-
-**Preload models for faster startup:**
-```bash
-# Keep model in memory
-curl http://localhost:11434/api/generate -d '{
-  "model": "qwen3",
-  "prompt": "test",
-  "keep_alive": -1
-}'
-```
-
-### System Optimization
-
-**Linux: Increase file limits:**
-```bash
-echo "* soft nofile 65536" >> /etc/security/limits.conf
-echo "* hard nofile 65536" >> /etc/security/limits.conf
-```
-
-**macOS: Increase memory limits:**
-```bash
-# Add to ~/.zshrc or ~/.bash_profile
-export OLLAMA_MAX_LOADED_MODELS=2
-export OLLAMA_NUM_PARALLEL=4
-```
-
-**Docker: Resource allocation:**
-```yaml
-services:
-  ollama:
-    deploy:
-      resources:
-        limits:
-          memory: 8G
-          cpus: '4'
-```
-
-## Advanced Configuration
-
-### Environment Variables
-
-```bash
-# Ollama server configuration
-export OLLAMA_HOST=0.0.0.0:11434      # Bind to all interfaces
-export OLLAMA_KEEP_ALIVE=5m            # Keep models in memory
-export OLLAMA_MAX_LOADED_MODELS=3      # Max concurrent models
-export OLLAMA_MAX_QUEUE=512            # Request queue size
-export OLLAMA_NUM_PARALLEL=4           # Parallel request handling
-export OLLAMA_FLASH_ATTENTION=1        # Enable flash attention (if supported)
-
-# Open Notebook configuration (configure via Manage → Models instead)
-# OLLAMA_API_BASE=http://localhost:11434  # Deprecated fallback — works today, no guarantee
-```
-
-### SSL Configuration (Self-Signed Certificates)
-
-If you're running Ollama behind a reverse proxy with self-signed SSL certificates (e.g., Caddy, nginx with custom certs), you may encounter SSL verification errors:
-
-```
-[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate
-```
-
-**Solutions:**
-
-**Option 1: Use a custom CA bundle (recommended)**
-```bash
-# Point to your CA certificate file
-export ESPERANTO_SSL_CA_BUNDLE=/path/to/your/ca-bundle.pem
-```
-
-**Option 2: Disable SSL verification (development only)**
-```bash
-# WARNING: Only use in trusted development environments
-export ESPERANTO_SSL_VERIFY=false
-```
-
-**Docker Compose example with SSL configuration:**
-```yaml
-# Add to your docker-compose.yml (requires surrealdb service, see installation guide)
-services:
-  open-notebook:
-    image: lfnovo/open_notebook:v1-latest
-    pull_policy: always
-    environment:
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
-      # Option 1: Custom CA bundle (if Ollama uses self-signed SSL)
-      - ESPERANTO_SSL_CA_BUNDLE=/certs/ca-bundle.pem
-      # Option 2: Disable verification (dev only)
-      # - ESPERANTO_SSL_VERIFY=false
-    volumes:
-      - /path/to/your/ca-bundle.pem:/certs/ca-bundle.pem:ro
-```
-
-> **Security Note:** Disabling SSL verification exposes you to man-in-the-middle attacks. Always prefer using a custom CA bundle in production environments.
-
-### Custom Model Imports
-
-**Import custom models:**
-```bash
-# Create Modelfile
-cat > Modelfile << EOF
-FROM qwen3
-PARAMETER temperature 0.7
-PARAMETER top_p 0.9
-SYSTEM "You are a helpful research assistant."
-EOF
-
-# Create custom model
-ollama create my-research-model -f Modelfile
-```
-
-**Use in Open Notebook:**
-1. Go to Models
-2. Add new model: `my-research-model`
-3. Set as default for specific tasks
-
-### Monitoring and Logging
-
-**Monitor Ollama logs:**
-```bash
-# Linux (systemd)
-journalctl -u ollama -f
-
-# Docker
-docker logs -f ollama
-
-# Manual run with verbose logging
-OLLAMA_DEBUG=1 ollama serve
-```
-
-**Resource monitoring:**
-```bash
-# CPU and memory usage
-htop
-
-# GPU usage (NVIDIA)
-nvidia-smi -l 1
-
-# Model-specific metrics
-ollama ps
-```
-
-## Integration Examples
-
-### Python Script Integration
-
-```python
-import requests
-import os
-
-# Test Ollama connection
-ollama_base = os.environ.get('OLLAMA_API_BASE', 'http://localhost:11434')
-response = requests.get(f'{ollama_base}/api/tags')
-print(f"Available models: {response.json()}")
-
-# Generate text
-payload = {
-    "model": "qwen3",
-    "prompt": "Explain quantum computing",
-    "stream": False
-}
-response = requests.post(f'{ollama_base}/api/generate', json=payload)
-print(response.json()['response'])
-```
-
-### Health Check Script
-
-```bash
-#!/bin/bash
-# ollama-health-check.sh
-
-OLLAMA_API_BASE=${OLLAMA_API_BASE:-"http://localhost:11434"}
-
-echo "Checking Ollama health..."
-if curl -s "${OLLAMA_API_BASE}/api/tags" > /dev/null; then
-    echo "✅ Ollama is running"
-    echo "Available models:"
-    curl -s "${OLLAMA_API_BASE}/api/tags" | jq -r '.models[].name'
-else
-    echo "❌ Ollama is not accessible at ${OLLAMA_API_BASE}"
-    exit 1
-fi
-```
-
-## Migration from Other Providers
-
-### Coming from OpenAI
-
-**Similar performance models:**
-- GPT-4 → `qwen3` or `deepseek-r1`
-- GPT-3.5 → `gemma3` or `phi4`
-- text-embedding-ada-002 → `mxbai-embed-large`
-
-**Cost comparison:**
-- OpenAI: $0.01-0.06 per 1K tokens
-- Ollama: $0 after hardware investment
-
-### Coming from Anthropic
-
-**Claude replacement suggestions:**
-- Claude 3.5 Sonnet → `deepseek-r1` (reasoning)
-- Claude 3 Haiku → `phi4` (speed)
-
-## Best Practices
-
-### Security
-
-1. **Network Security:**
-   - Run Ollama only on trusted networks
-   - Use firewall rules to limit access
-   - Consider VPN for remote access
-
-2. **Model Verification:**
-   - Only pull models from trusted sources
-   - Verify model checksums when possible
-
-3. **Resource Limits:**
-   - Set memory and CPU limits in production
-   - Monitor resource usage regularly
-
-### Performance
-
-1. **Model Selection:**
-   - Use appropriate model size for your hardware
-   - Smaller models for simple tasks
-   - Reasoning models only when needed
-
-2. **Resource Management:**
-   - Preload frequently used models
-   - Remove unused models regularly
-   - Monitor system resources
-
-3. **Network Optimization:**
-   - Use local networks for better latency
-   - Consider SSD storage for faster model loading
-
-## Getting Help
-
-**Community Resources:**
-- [Ollama GitHub](https://github.com/jmorganca/ollama) - Official repository
-- [Ollama Discord](https://discord.gg/ollama) - Community support
-- [Open Notebook Discord](https://discord.gg/37XJPXfz2w) - Integration help
-
-**Debugging Resources:**
-- Check Ollama logs for error messages
-- Test connection with curl commands
-- Verify environment variables
-- Monitor system resources
-
-This comprehensive guide should help you successfully deploy and optimize Ollama with Open Notebook. Start with the Quick Start section and refer to specific scenarios as needed.
+### Test shows "Cannot connect to Ollama. Check if Ollama server is running."
+
+1. Is Ollama running? `curl http://localhost:11434/api/tags` on the Ollama machine.
+2. Is it listening beyond localhost? Start it with `OLLAMA_HOST=0.0.0.0:11434`.
+3. Can the container reach it?
+   ```bash
+   docker compose exec open_notebook curl -s http://host.docker.internal:11434/api/tags
+   ```
+   On Linux, add the `extra_hosts` entry shown above. Check the firewall: `sudo ufw allow 11434`.
+
+### "Connection timed out. Check if Ollama server is accessible."
+
+The address resolves but nothing answers: wrong IP, a firewall dropping packets, or a VPN between the machines.
+
+### "No model configured for default for type=chat"
+
+No Chat Model is assigned. Go to **Manage → Models → Default Model Assignments**.
+
+### "Model is not a LanguageModel: …"
+
+An embedding model is assigned to a language role (Chat, Transformation, Tools or Large Context Model). Assign a language model there; embedding models belong only in Embedding Model.
+
+### Answers ignore the sources, or long documents are cut short
+
+The prompt is bigger than the context window. See [Context window](#context-window-num_ctx).
+
+### Chat or transformations fail after a few minutes
+
+Timeout. See [Timeouts with slow models](#timeouts-with-slow-models).
+
+### Self-signed certificate on an HTTPS Ollama endpoint
+
+`[SSL: CERTIFICATE_VERIFY_FAILED]`: mount your CA bundle and set `ESPERANTO_SSL_CA_BUNDLE`, as described in [Advanced → SSL](advanced.md#ssl-for-self-signed-providers).
+
+---
+
+## Legacy environment variable
+
+`OLLAMA_API_BASE` still works as a deprecated fallback when no Ollama credential exists. Use the credential instead; **Migrate to Database** on the Models page converts it. See the [Environment Reference](environment-reference.md#legacy-ai-provider-variables-deprecated).
+
+---
+
+## Related
+
+- [AI Providers](ai-providers.md) — other providers, including embedding providers to pair with Ollama
+- [Local speech with Speaches](local-tts.md) — local TTS and STT
+- [OpenAI-Compatible](openai-compatible.md) — LM Studio, vLLM, llama.cpp
+- [AI & Chat Issues](../6-TROUBLESHOOTING/ai-chat-issues.md)

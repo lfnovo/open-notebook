@@ -1,494 +1,147 @@
 # AI Providers - Configuration Guide
 
-Complete setup instructions for each AI provider via the **Settings UI**.
+Open Notebook supports 24 AI providers. You connect them in the web UI under **Manage → Models**; their keys are stored encrypted in the database.
 
-> **New in v1.2**: All AI provider credentials are now managed through the Settings UI. Environment variables for API keys are deprecated.
-
----
-
-## How Provider Setup Works
-
-Open Notebook uses a **credential-based system** for managing AI providers:
-
-1. **Get your API key** from the provider's website
-2. Open **Manage** → **Models** → **Add Credential**
-3. **Test the connection** to verify it works
-4. **Discover & Register Models** to make them available
-5. **Start using** the provider in your notebooks
-
-> **Prerequisite**: You must set `OPEN_NOTEBOOK_ENCRYPTION_KEY` in your docker-compose.yml before storing credentials. See [API Configuration](../3-USER-GUIDE/api-configuration.md#encryption-setup) for details.
+> **Prerequisite:** `OPEN_NOTEBOOK_ENCRYPTION_KEY` must be set before you can save a provider key. See [Security](security.md#api-key-encryption).
 
 ---
 
-## Cloud Providers (Recommended for Most)
+## Setting up any provider
+
+The steps are the same for every provider:
+
+1. Get an API key from the provider (links in the table below; the form also shows a **Get API Key** link).
+2. Open **Manage → Models**. Find the provider's section and click **Add Configuration**.
+3. Fill in **Configuration Name**, **API Key** and, only if you need a non-default endpoint, **Base URL**. Click **Add Configuration**.
+4. On the new configuration, click **Test** (Test Connection). A failure shows the reason, for example "Invalid API key" or "Cannot connect to server. Check the URL is correct."
+5. Click **Models** (Sync Models). In the **Discover Models** dialog, choose a **Model Type**, tick the models you want and click **Add Selected**. The types are Language, Embedding, TTS and STT; add each type in a separate pass. A model that isn't listed can be added by typing its exact id in the search box and clicking **Add "…"**.
+6. Under **Default Model Assignments**, pick a model for each role (Chat Model, Embedding Model, Text-to-Speech Model…), or click **Auto-assign Defaults**.
+
+Chat fails until a **Chat Model** is assigned, and search, Ask and embedding need an **Embedding Model**. Podcasts need a text-to-speech model on each speaker profile.
+
+You can add several configurations per provider (for example separate keys for work and personal use). Each registered model belongs to the configuration it was discovered from.
+
+---
+
+## Providers and what they offer
+
+The modalities are what a new configuration offers by default. If your main provider has no embedding or speech models, add a second provider for those.
+
+| Provider (as shown in the UI) | Language | Embedding | Speech-to-text | Text-to-speech | Get a key |
+|-------------------------------|:-:|:-:|:-:|:-:|-----------|
+| OpenAI | ✓ | ✓ | ✓ | ✓ | [platform.openai.com](https://platform.openai.com/api-keys) |
+| Anthropic | ✓ | | | | [console.anthropic.com](https://console.anthropic.com/settings/keys) |
+| Google AI (Gemini) | ✓ | ✓ | ✓ | ✓ | [aistudio.google.com](https://aistudio.google.com/app/apikey) |
+| Google Vertex AI | ✓ | ✓ | | ✓ | [Google Cloud](https://cloud.google.com/vertex-ai/docs/start/cloud-environment) |
+| Azure OpenAI | ✓ | ✓ | ✓ | ✓ | [Azure portal](https://portal.azure.com/#view/Microsoft_Azure_ProjectOxford/CognitiveServicesHub/~/OpenAI) |
+| Groq | ✓ | | ✓ | | [console.groq.com](https://console.groq.com/keys) |
+| Mistral AI | ✓ | ✓ | ✓ | ✓ | [console.mistral.ai](https://console.mistral.ai/api-keys/) |
+| DeepSeek | ✓ | | | | [platform.deepseek.com](https://platform.deepseek.com/api_keys) |
+| xAI (Grok) | ✓ | | | ✓ | [console.x.ai](https://console.x.ai/) |
+| OpenRouter | ✓ | ✓ | ✓ | ✓ | [openrouter.ai](https://openrouter.ai/keys) |
+| DashScope (Qwen) | ✓ | | | | [Alibaba Model Studio](https://help.aliyun.com/zh/model-studio/getting-started/) |
+| MiniMax | ✓ | | | ✓ | [platform.minimaxi.com](https://platform.minimaxi.com/document/Guides) |
+| Novita | ✓ | | | | [novita.ai](https://novita.ai/settings/key-management) |
+| SiliconFlow | ✓ | | | | [cloud.siliconflow.com](https://cloud.siliconflow.com/account/ak) |
+| Z.ai | ✓ | | | | [z.ai](https://z.ai/manage-apikey/apikey-list) |
+| PayPerQ | ✓ | ✓ | ✓ | ✓ | [ppq.ai](https://ppq.ai) |
+| Cohere | ✓ | ✓ | | | [dashboard.cohere.com](https://dashboard.cohere.com/api-keys) |
+| Voyage AI | | ✓ | | | [dash.voyageai.com](https://dash.voyageai.com/api-keys) |
+| ElevenLabs | | | ✓ | ✓ | [elevenlabs.io](https://elevenlabs.io/app/settings/api-keys) |
+| Deepgram | | | ✓ | ✓ | [console.deepgram.com](https://console.deepgram.com/) |
+| Ollama | ✓ | ✓ | | | local, see [Ollama](ollama.md) |
+| oMLX | ✓ | ✓ | | | local, see [oMLX](omlx.md) |
+| OpenAI Compatible | ✓ | ✓ | ✓ | ✓ | your server, see [OpenAI-Compatible](openai-compatible.md) |
+| Anthropic Compatible | ✓ | | | | your server |
+
+This page doesn't list models or prices: they change faster than the docs. **Discover Models** shows what your key can access, and each provider's site has current pricing.
+
+---
+
+## Cloud Providers
 
 ### OpenAI
 
-**Cost:** ~$0.03-0.15 per 1K tokens (varies by model)
-
-**Get Your API Key:**
-1. Go to https://platform.openai.com/api-keys
-2. Create account (if needed)
-3. Create new API key (starts with "sk-proj-")
-4. Add $5+ credits to account
-
-**Configure in Open Notebook:**
-1. Go to **Manage** → **Models**
-2. Click **Add Credential**
-3. Select provider: **OpenAI**
-4. Give it a name (e.g., "My OpenAI Key")
-5. Paste your API key
-6. Click **Save**, then **Test Connection**
-7. Click **Discover Models** to find available models
-8. Click **Register Models** to make them available
-
-**Available Models (in Open Notebook):**
-- `gpt-4o` — Best quality, fast (latest version)
-- `gpt-4o-mini` — Fast, cheap, good for testing
-- `o1` — Advanced reasoning model (slower, more expensive)
-- `o1-mini` — Faster reasoning model
-
-**Recommended:**
-- For general use: `gpt-4o` (best balance)
-- For testing/cheap: `gpt-4o-mini` (90% cheaper)
-- For complex reasoning: `o1` (best for hard problems)
-
-**Cost Estimate:**
-```
-Light use: $1-5/month
-Medium use: $10-30/month
-Heavy use: $50-100+/month
-```
-
-**Troubleshooting:**
-- "Invalid API key" → Check key starts with "sk-proj-" and test the connection in Manage → Models
-- "Rate limit exceeded" → Wait or upgrade account
-- "Model not available" → Try gpt-4o-mini instead, or re-discover models
-
----
+Covers every modality with one key, which makes it the simplest single-provider setup: chat, embeddings, podcast voices and transcription. Keys are created at [platform.openai.com](https://platform.openai.com/api-keys); the account needs credit.
 
 ### Anthropic (Claude)
 
-**Cost:** ~$0.80-3.00 per 1M tokens (cheaper than OpenAI for long context)
-
-**Get Your API Key:**
-1. Go to https://console.anthropic.com/
-2. Create account or login
-3. Go to API keys section
-4. Create new API key (starts with "sk-ant-")
-
-**Configure in Open Notebook:**
-1. Go to **Manage** → **Models**
-2. Click **Add Credential**
-3. Select provider: **Anthropic**
-4. Give it a name, paste your API key
-5. Click **Save**, then **Test Connection**
-6. Click **Discover Models** → **Register Models**
-
-**Available Models:**
-- `claude-sonnet-4-5-20250929` — Latest, best quality (recommended)
-- `claude-3-5-sonnet-20241022` — Previous generation, still excellent
-- `claude-3-5-haiku-20241022` — Fast, cheap
-- `claude-opus-4-5-20251101` — Most powerful, expensive
-
-**Recommended:**
-- For general use: `claude-sonnet-4-5` (best overall, latest)
-- For cheap: `claude-3-5-haiku` (80% cheaper)
-- For complex: `claude-opus-4-5` (most capable)
-
-**Cost Estimate:**
-```
-Sonnet: $3-20/month (typical use)
-Haiku: $0.50-3/month
-Opus: $10-50+/month
-```
-
-**Advantages:**
-- Great long-context support (200K tokens)
-- Excellent reasoning
-- Fast processing
-
-**Troubleshooting:**
-- "Invalid API key" → Check it starts with "sk-ant-" and test in Manage → Models
-- "Overloaded" → Anthropic is busy, retry later
-- "Model unavailable" → Re-discover models from the credential
-
----
+Language models only. Pair it with another provider for embeddings (and for speech if you want podcasts or transcription).
 
 ### Anthropic Compatible
 
-Use this provider for services that implement the Anthropic Messages API at a custom URL.
-
-1. Go to **Manage** → **Models**
-2. Add an **Anthropic Compatible** credential
-3. Enter the provider's API key and base URL (the API root, with or without a trailing `/v1`)
-4. Save and test the connection
-5. Discover models, or search for and manually register a model if the endpoint does not list them
-
-Only language models are supported for Anthropic-compatible credentials.
-
----
+For services that implement the Anthropic Messages API at their own URL. Enter the API key and the **Base URL** (the API root, with or without a trailing `/v1`). Language models only. If the endpoint doesn't list models, add the model id by hand in the Discover Models dialog.
 
 ### Google Gemini
 
-**Cost:** ~$0.075-0.30 per 1K tokens (competitive with OpenAI)
+Shown as **Google AI** in the UI. Uses a Gemini API key from Google AI Studio and offers all four modalities.
 
-**Get Your API Key:**
-1. Go to https://aistudio.google.com/app/apikey
-2. Create account or login
-3. Create new API key
+### Google Vertex AI
 
-**Configure in Open Notebook:**
-1. Go to **Manage** → **Models**
-2. Click **Add Credential**
-3. Select provider: **Google Gemini**
-4. Give it a name, paste your API key
-5. Click **Save**, then **Test Connection**
-6. Click **Discover Models** → **Register Models**
-
-**Available Models:**
-- `gemini-2.5-pro` — Strongest, best for long context (1M tokens)
-- `gemini-3.5-flash` — Fast, good for general use
-- `gemini-3.1-flash-lite` — Fastest and cheapest
-- `gemini-2.5-flash` — Previous-gen stable, cheaper
-
-**Recommended:**
-- For general use: `gemini-3.5-flash` (best value, latest)
-- For cheap: `gemini-3.1-flash-lite` (very cheap)
-- For complex/long context: `gemini-2.5-pro` (1M token context)
-
-**Advantages:**
-- Very long context (1M tokens)
-- Multimodal (images, audio, video)
-- Good for podcasts
-
-**Troubleshooting:**
-- "API key invalid" → Get fresh key from aistudio.google.com
-- "Quota exceeded" → Free tier limited, upgrade account
-- "Model not found" → Re-discover models from the credential
-
----
+Uses Google Cloud instead of an API key. The form asks for **GCP Project ID**, **Region** and **Service Account JSON Path**, the path to the service-account file **inside the container** (mount it as a volume).
 
 ### Groq
 
-**Cost:** ~$0.05 per 1M tokens (cheapest, but limited models)
+Fast hosted inference of open-weight models; language and speech-to-text.
 
-**Get Your API Key:**
-1. Go to https://console.groq.com/keys
-2. Create account or login
-3. Create new API key
+### Mistral AI
 
-**Configure in Open Notebook:**
-1. Go to **Manage** → **Models**
-2. Click **Add Credential**
-3. Select provider: **Groq**
-4. Give it a name, paste your API key
-5. Click **Save**, then **Test Connection**
-6. Click **Discover Models** → **Register Models**
+Language, embedding and speech models from one key.
 
-**Available Models:**
-- `llama-3.3-70b-versatile` — Best on Groq (recommended)
-- `llama-3.1-70b-versatile` — Fast, capable
-- `mixtral-8x7b-32768` — Good alternative
-- `gemma2-9b-it` — Small, very fast
+### DeepSeek
 
-**Recommended:**
-- For quality: `llama-3.3-70b-versatile` (best overall)
-- For speed: `gemma2-9b-it` (ultra-fast)
-- For balance: `llama-3.1-70b-versatile`
+Language models only.
 
-**Advantages:**
-- Ultra-fast inference
-- Very cheap
-- Great for transformations/batch work
+### xAI (Grok)
 
-**Disadvantages:**
-- Limited model selection
-- Smaller models than OpenAI/Anthropic
-
-**Troubleshooting:**
-- "Rate limited" → Free tier has limits, upgrade
-- "Model not available" → Re-discover models from the credential
-
----
+Language and text-to-speech.
 
 ### OpenRouter
 
-**Cost:** Varies by model ($0.05-15 per 1M tokens)
-
-**Get Your API Key:**
-1. Go to https://openrouter.ai/keys
-2. Create account or login
-3. Add credits to your account
-4. Create new API key
-
-**Configure in Open Notebook:**
-1. Go to **Manage** → **Models**
-2. Click **Add Credential**
-3. Select provider: **OpenRouter**
-4. Give it a name, paste your API key
-5. Click **Save**, then **Test Connection**
-6. Click **Discover Models** → **Register Models**
-
-**Available Models (100+ options):**
-- OpenAI: `openai/gpt-4o`, `openai/o1`
-- Anthropic: `anthropic/claude-sonnet-4.5`, `anthropic/claude-3.5-haiku`
-- Google: `google/gemini-3.5-flash`, `google/gemini-2.5-pro`
-- Meta: `meta-llama/llama-3.3-70b-instruct`, `meta-llama/llama-3.1-405b-instruct`
-- Mistral: `mistralai/mistral-large-2411`
-- DeepSeek: `deepseek/deepseek-chat`
-- And many more...
-
-**Speech Models (Text-to-Speech & Speech-to-Text):**
-OpenRouter also exposes audio models. Discovery seeds working defaults; add any
-other `vendor/model` id manually via the custom-model input.
-- Text-to-Speech: `microsoft/mai-voice-2` (uses Microsoft neural voice names such
-  as `en-US-AvaNeural`, not OpenAI's `alloy`/`nova` set)
-- Speech-to-Text: `openai/whisper-1`, `openai/whisper-large-v3`
-
-**Recommended:**
-- For quality: `anthropic/claude-sonnet-4.5` (best overall)
-- For speed/cost: `google/gemini-2.5-flash` (very fast, cheap)
-- For open-source: `meta-llama/llama-3.3-70b-instruct`
-- For reasoning: `openai/o1`
-
-**Advantages:**
-- One API key for 100+ models
-- Unified billing
-- Easy model comparison
-- Access to models that may have waitlists elsewhere
-
-**Cost Estimate:**
-```
-Light use: $1-5/month
-Medium use: $10-30/month
-Heavy use: Depends on models chosen
-```
-
-**Troubleshooting:**
-- "Invalid API key" → Check it starts with "sk-or-"
-- "Insufficient credits" → Add credits at openrouter.ai
-- "Model not available" → Check model ID spelling (use full path)
-
----
+One key for models from many vendors, with unified billing. Model ids include the vendor (`vendor/model`). OpenRouter also serves speech models; Discover Models suggests `microsoft/mai-voice-2` for text-to-speech (it uses Microsoft neural voice names such as `en-US-AvaNeural`, not OpenAI's `alloy`/`nova`) and `openai/whisper-1` / `openai/whisper-large-v3` for speech-to-text.
 
 ### DashScope (Qwen)
 
-**Cost:** ~$0.01-0.06 per 1K tokens (varies by model)
-
-**Get Your API Key:**
-1. Go to https://dashscope.console.aliyun.com/
-2. Create an Alibaba Cloud account (if needed)
-3. Navigate to API Keys section
-4. Create a new API key
-
-**Configure in Open Notebook:**
-1. Go to **Manage** → **Models**
-2. Click **Add Credential**
-3. Select provider: **DashScope (Qwen)**
-4. Give it a name, paste your API key
-5. Click **Save**, then **Test Connection**
-6. Click **Discover Models** → **Register Models**
-
-**Available Models:**
-- `qwen-max` — Most capable Qwen model
-- `qwen-plus` — Good balance of quality and speed
-- `qwen-turbo` — Fastest, cheapest
-
-**Recommended:**
-- For quality: `qwen-max` (best overall)
-- For general use: `qwen-plus` (good balance)
-- For speed/cost: `qwen-turbo` (cheapest)
-
-**Troubleshooting:**
-- "Invalid API key" → Check the key in the DashScope console
-- "Model not available" → Re-discover models from the credential
-
----
+Alibaba Cloud's Qwen models; language only.
 
 ### MiniMax
 
-**Cost:** Varies by model
+Language models (`MiniMax-M3` with a 1M-token context, also used for the connection test) and text-to-speech (`speech-2.8-hd`, `speech-2.8-turbo`; Discover Models lists both).
 
-**Get Your API Key:**
-1. Go to https://platform.minimaxi.com/
-2. Create an account (if needed)
-3. Navigate to API Keys section
-4. Create a new API key
-
-**Configure in Open Notebook:**
-1. Go to **Manage** → **Models**
-2. Click **Add Credential**
-3. Select provider: **MiniMax**
-4. Give it a name, paste your API key
-5. Click **Save**, then **Test Connection**
-6. Click **Discover Models** → **Register Models**
-
-**Available Models:**
-- Language: `MiniMax-M3` (1M-token context), `MiniMax-M2.5` and `MiniMax-M2.5-highspeed` (204K)
-- Text-to-speech: `speech-2.8-hd` (quality) and `speech-2.8-turbo` (faster). Discover Models lists both
-
-**Recommended:**
-- Chat and transformations: `MiniMax-M3`
-- Podcasts: `speech-2.8-hd` as the speaker profile's voice model
-
-**Text-to-speech voices:**
-In a speaker profile, set the **Voice ID** to a MiniMax voice id, for example `English_Graceful_Lady`. System voices, and voices you cloned or generated in your MiniMax account, all work. The ids are listed in the MiniMax platform's voice library.
-
-**Region:**
-MiniMax API keys are region-specific. Mainland China keys need the credential's **Base URL** set to `https://api.minimax.cn/v1`. The default is the international `https://api.minimax.io/v1`, and the same Base URL is used for chat and text-to-speech. Env-based setups use `MINIMAX_BASE_URL` (migrated into the credential's Base URL).
-
-**Advantages:**
-- Very long context (1M tokens on M3)
-- Chat and podcast voices from one key
-- Competitive pricing
-
-**Troubleshooting:**
-- "Invalid API key" → Check the key in the MiniMax platform, and that its region matches the Base URL
-- "Model not available" → Re-discover models from the credential
-- Podcast fails with a voice error → Check the speaker's Voice ID against your account's voices
-
----
-
-### Cohere
-
-**Cost:** Usage-based
-
-**Get Your API Key:**
-1. Go to https://dashboard.cohere.com/api-keys
-2. Create an account (if needed)
-3. Create a new API key
-
-**Configure in Open Notebook:**
-1. Go to **Manage** → **Models**
-2. Click **Add Credential**
-3. Select provider: **Cohere**
-4. Give it a name, paste your API key
-5. Click **Save**, then **Test Connection**
-6. Click **Discover Models** → **Register Models**
-
-**Available Models:**
-- `command-a-03-2025` — Latest Command language model
-- `embed-v4.0` — Latest embedding model (assign the **Embedding** type when registering)
-
-**Notes:**
-- Cohere uses its native v2 API (`/v2/chat`, `/v2/embed`), not an OpenAI-compatible endpoint.
-- Reranking is not yet available in Open Notebook (tracked separately).
-
-**Troubleshooting:**
-- "Invalid API key" → Check the key in the Cohere dashboard
-- "Model not available" → Re-discover models from the credential
-
----
+- **Voices:** in a speaker profile, set **Voice ID** to a MiniMax voice id such as `English_Graceful_Lady`. System voices and voices you cloned or designed in your MiniMax account all work.
+- **Region:** MiniMax keys are region-specific. Mainland China keys need **Base URL** `https://api.minimax.cn/v1`; the default is the international `https://api.minimax.io/v1`. The same Base URL is used for chat and speech.
 
 ### Novita
 
-**Cost:** Pay-per-model (competitive)
-
-**Get Your API Key:**
-1. Go to https://novita.ai/settings/key-management
-2. Create an account (if needed)
-3. Create a new API key
-
-**Configure in Open Notebook:**
-1. Go to **Manage** → **Models**
-2. Click **Add Credential**
-3. Select provider: **Novita**
-4. Give it a name, paste your API key
-5. Click **Save**, then **Test Connection**
-6. Click **Discover Models** → **Register Models**
-
-**Notes:**
-- Novita is an OpenAI-compatible gateway (`https://api.novita.ai/openai`) for open-weight LLMs.
-
-**Troubleshooting:**
-- "Invalid API key" → Check the key in the Novita console
-- "Model not available" → Re-discover models from the credential
-
----
+An OpenAI-compatible gateway for open-weight language models.
 
 ### SiliconFlow
 
-**Cost:** Pay-per-model (competitive; some small models are free)
-
-**Get Your API Key:**
-1. Go to https://cloud.siliconflow.com/account/ak (mainland China accounts: https://cloud.siliconflow.cn/account/ak)
-2. Create an account (if needed)
-3. Create a new API key
-
-**Configure in Open Notebook:**
-1. Go to **Manage** → **Models**
-2. Click **Add Credential**
-3. Select provider: **SiliconFlow**
-4. Give it a name, paste your API key
-5. **Mainland China account?** Set **Base URL** to `https://api.siliconflow.cn/v1` (the default is the global `https://api.siliconflow.com/v1`)
-6. Click **Save**, then **Test Connection**
-7. Click **Discover Models** → **Register Models**
-
-**Notes:**
-- Hosted DeepSeek, Qwen, GLM and Kimi models behind one OpenAI-compatible key.
-- Language models only for now. Embedding, speech-to-text and text-to-speech through SiliconFlow need support in Esperanto first.
-- Env-based setup: `SILICONFLOW_API_KEY`, plus `SILICONFLOW_BASE_URL` for a mainland China account (migrated into the credential's Base URL).
-
-**Troubleshooting:**
-- "Invalid API key" → Check that the key matches the endpoint: keys from `siliconflow.cn` don't work against the global `.com` endpoint, and vice versa
-- "Model not available" → Re-discover models from the credential
-
----
+Hosted DeepSeek, Qwen, GLM and Kimi models; language only. Mainland China accounts need **Base URL** `https://api.siliconflow.cn/v1` (default: the global `https://api.siliconflow.com/v1`). Keys from one site don't work against the other.
 
 ### Z.ai
 
-**Cost:** Pay-per-token
-
-**Get Your API Key:**
-1. Go to https://z.ai/manage-apikey/apikey-list
-2. Create an account (if needed)
-3. Create a new API key
-
-**Configure in Open Notebook:**
-1. Go to **Manage** → **Models**
-2. Click **Add Credential**
-3. Select provider: **Z.ai**
-4. Give it a name, paste your API key
-5. Click **Save**, then **Test Connection**
-6. Click **Discover Models** → **Register Models**
-
-**Notes:**
-- Z.ai's GLM models (for example `glm-5.2`, also used for the connection test, and `glm-4.5-flash`) are available through an OpenAI-compatible API (`https://api.z.ai/api/paas/v4`). Register the models you want after **Discover Models**.
-- Language models only.
-- Env-based setup: `ZAI_API_KEY`, plus `ZAI_BASE_URL` to point at a different Z.ai endpoint (migrated into the credential's Base URL).
-
-**Troubleshooting:**
-- "Invalid API key" → Check the key in the Z.ai console
-- A model is missing from Discover Models → Type its id (e.g. `glm-4.5-flash`) in the search box and use **Add**
-- "Model not available" → Re-discover models from the credential
-
----
+GLM language models through an OpenAI-compatible API. If a model is missing from Discover Models, type its id (for example `glm-4.5-flash`) and add it by hand.
 
 ### PayPerQ (PPQ)
 
-**Cost:** Pay-as-you-go across the providers it routes to
+A pay-as-you-go gateway offering language, embedding and speech models. Discovered models are classified by name; check the **Model Type** you add them under.
 
-**Get Your API Key:**
-1. Go to https://ppq.ai
-2. Create an account (if needed)
-3. Create a new API key
+### Cohere
 
-**Configure in Open Notebook:**
-1. Go to **Manage** → **Models**
-2. Click **Add Credential**
-3. Select provider: **PayPerQ**
-4. Give it a name, paste your API key
-5. Click **Save**, then **Test Connection**
-6. Click **Discover Models** → **Register Models**
+Language (`command-a-03-2025` is used for the connection test) and embedding models through Cohere's own v2 API. Reranking is not used by Open Notebook.
 
-**Notes:**
-- PPQ is a multi-modality OpenAI-compatible gateway (`https://api.ppq.ai/v1`) offering language, embedding, speech-to-text and text-to-speech models.
-- Discovered models are classified by name; adjust the model type when registering if a model lands in the wrong slot.
+### Voyage AI
 
-**Troubleshooting:**
-- "Invalid API key" → Check the key in the PPQ dashboard
-- "Model not available" → Re-discover models from the credential
+Embedding models only. A common choice next to a language-only provider such as Anthropic.
+
+### ElevenLabs
+
+Text-to-speech and speech-to-text. In speaker profiles, use ElevenLabs voice ids.
+
+### Deepgram
+
+Text-to-speech and speech-to-text.
 
 ---
 
@@ -496,156 +149,21 @@ MiniMax API keys are region-specific. Mainland China keys need the credential's 
 
 ### Ollama (Recommended for Local)
 
-**Cost:** Free (electricity only)
+Free local language and embedding models. Enter the server address as **Base URL**, for example `http://host.docker.internal:11434` when Open Notebook runs in Docker and Ollama on the host. Ollama credentials also have a **Context Window (num_ctx)** field (default 8192 tokens).
 
-**Setup Ollama:**
-1. Install Ollama: https://ollama.ai
-2. Run Ollama in background: `ollama serve`
-3. Download a model: `ollama pull mistral`
-
-**Configure in Open Notebook:**
-1. Go to **Manage** → **Models**
-2. Click **Add Credential**
-3. Select provider: **Ollama**
-4. Give it a name (e.g., "Local Ollama")
-5. Enter the base URL:
-   - Same machine (non-Docker): `http://localhost:11434`
-   - Docker with Ollama on host: `http://host.docker.internal:11434`
-   - Docker with Ollama container: `http://ollama:11434`
-6. Click **Save**, then **Test Connection**
-7. Click **Discover Models** → **Register Models**
-
-See [Ollama Setup Guide](ollama.md) for detailed network configuration.
-
-**Context Window (`num_ctx`):**
-
-Ollama models default to a **8,192-token** context window. This default is intentionally
-conservative so models run reliably on consumer GPUs (≈8GB VRAM) without running out of memory.
-If your hardware can handle more, set an optional **Context Window (num_ctx)** value on the
-Ollama credential (Manage → Models → edit the Ollama credential). It applies to all models
-that use that credential. Leave it empty to keep the default.
-
-- Raise it (e.g. `32768`) when ingesting large documents or using long chat histories.
-- If you hit "out of memory" errors, lower it or leave it at the default.
-
-**Available Models:**
-- `llama3.3:70b` — Best quality (requires 40GB+ RAM)
-- `llama3.1:8b` — Recommended, balanced (8GB RAM)
-- `qwen2.5:7b` — Excellent for code and reasoning
-- `mistral:7b` — Good general purpose
-- `phi3:3.8b` — Small, fast (4GB RAM)
-- `gemma2:9b` — Google's model, balanced
-- Many more: `ollama list` to see available
-
-**Recommended:**
-- For quality (with GPU): `llama3.3:70b` (best)
-- For general use: `llama3.1:8b` (best balance)
-- For speed/low memory: `phi3:3.8b` (very fast)
-- For coding: `qwen2.5:7b` (excellent at code)
-
-**Hardware Requirements:**
-```
-GPU (NVIDIA/AMD):
-  8GB VRAM: Runs most models fine
-  6GB VRAM: Works, slower
-  4GB VRAM: Small models only
-
-CPU-only:
-  16GB+ RAM: Slow but works
-  8GB RAM: Very slow
-  4GB RAM: Not recommended
-```
-
-**Advantages:**
-- Completely private (runs locally)
-- Free (electricity only)
-- No API key needed
-- Works offline
-
-**Disadvantages:**
-- Slower than cloud (unless on GPU)
-- Smaller models than cloud
-- Requires local hardware
-
-**Troubleshooting:**
-- "Connection refused" → Ollama not running or wrong URL in credential
-- "Model not found" → Download it: `ollama pull modelname`
-- "Out of memory" → Use smaller model or add more RAM
-
----
+Networking, model names, context window and the 180-second timeout are covered in the [Ollama guide](ollama.md).
 
 ### oMLX (Apple Silicon)
 
-**Cost:** Free (electricity only)
-
-**Requirements:** Apple Silicon Mac. oMLX runs on the host (not in Linux containers).
-
-**Setup oMLX:**
-1. Install from [oMLX](https://omlx.ai/) / [jundot/omlx](https://github.com/jundot/omlx)
-2. Run on port **11435** (oMLX’s default `8000` conflicts with SurrealDB):
-   ```bash
-   OMLX_PORT=11435 omlx serve
-   ```
-3. Load models in the oMLX admin UI
-
-**Configure in Open Notebook:**
-1. Go to **Manage** → **Models**
-2. Click **Add Credential**
-3. Select provider: **oMLX**
-4. Base URL defaults to `http://localhost:11435/v1` (use `http://host.docker.internal:11435/v1` if Open Notebook is in Docker)
-5. API key is optional (only if you started oMLX with `--api-key`)
-6. Click **Save**, then **Test Connection** → **Discover Models** → **Register Models**
-
-See [oMLX Setup Guide](omlx.md) for port conflict details and troubleshooting.
-
----
+An MLX inference server for M-series Macs, for language and embedding models. Run it on port 11435 (its default 8000 collides with SurrealDB). See the [oMLX guide](omlx.md).
 
 ### LM Studio (Local Alternative)
 
-**Cost:** Free
+Use the **OpenAI Compatible** provider with **Base URL** `http://host.docker.internal:1234/v1` (Open Notebook in Docker) or `http://localhost:1234/v1` (from source). No API key is needed. See [OpenAI-Compatible](openai-compatible.md#lm-studio).
 
-**Setup LM Studio:**
-1. Download LM Studio: https://lmstudio.ai
-2. Open app
-3. Download a model from library
-4. Go to "Local Server" tab
-5. Start server (default port: 1234)
+### Other OpenAI-compatible servers
 
-**Configure in Open Notebook:**
-1. Go to **Manage** → **Models**
-2. Click **Add Credential**
-3. Select provider: **OpenAI-Compatible**
-4. Give it a name (e.g., "LM Studio")
-5. Enter the base URL: `http://host.docker.internal:1234/v1` (Docker) or `http://localhost:1234/v1` (local)
-6. API key: `lm-studio` (placeholder, LM Studio doesn't require one)
-7. Click **Save**, then **Test Connection**
-
-**Advantages:**
-- GUI interface (easier than Ollama CLI)
-- Good model selection
-- Privacy-focused
-- Works offline
-
-**Disadvantages:**
-- Desktop only (Mac/Windows/Linux)
-- Slower than cloud
-- Requires local GPU
-
----
-
-### Custom OpenAI-Compatible
-
-For Text Generation UI, vLLM, or other OpenAI-compatible endpoints:
-
-1. Go to **Manage** → **Models**
-2. Click **Add Credential**
-3. Select provider: **OpenAI-Compatible**
-4. Enter the base URL for your endpoint (e.g., `http://localhost:8000/v1`)
-5. Enter API key if required
-6. Optionally configure per-service URLs (LLM, Embedding, TTS, STT)
-7. Click **Save**, then **Test Connection**
-
-See [OpenAI-Compatible Setup](openai-compatible.md) for detailed instructions.
+vLLM, llama.cpp, LocalAI, Text Generation WebUI and Speaches all work through **OpenAI Compatible**. See [OpenAI-Compatible](openai-compatible.md) and, for speech, [Local speech with Speaches](local-tts.md).
 
 ---
 
@@ -653,95 +171,32 @@ See [OpenAI-Compatible Setup](openai-compatible.md) for detailed instructions.
 
 ### Azure OpenAI
 
-**Cost:** Same as OpenAI (usage-based)
+1. Create an Azure OpenAI resource and deploy the models you need.
+2. In Manage → Models, add an **Azure OpenAI** configuration with the **API Key**, and put the resource endpoint (`https://<resource>.openai.azure.com`) in **Base URL**.
+3. Register models by **deployment name**.
 
-**Configure in Open Notebook:**
-1. Create Azure OpenAI service in Azure portal
-2. Deploy GPT-4/3.5-turbo model
-3. Get your endpoint and key
-4. Go to **Manage** → **Models**
-5. Click **Add Credential**
-6. Select provider: **Azure OpenAI**
-7. Fill in: API Key, Endpoint, API Version
-8. Optionally configure service-specific endpoints (LLM, Embedding)
-9. Click **Save**, then **Test Connection**
-
-**Advantages:**
-- Enterprise support
-- VPC integration
-- Compliance (HIPAA, SOC2, etc.)
-
-**Disadvantages:**
-- More complex setup
-- Higher overhead
-- Requires Azure account
+The form has no field for the API version or for per-modality endpoints. Model calls fail with "Azure OpenAI API version not found" unless the API version is provided another way: set `AZURE_OPENAI_API_VERSION` in the container environment, or create the credential through the API (`POST /api/credentials` accepts `api_version`, `endpoint_llm`, `endpoint_embedding`, `endpoint_stt` and `endpoint_tts`). Credentials migrated from environment variables carry these values over.
 
 ---
 
-## Embeddings (For Search/Semantic Features)
+## Choosing a setup
 
-By default, Open Notebook uses the LLM provider's embeddings. Embedding models are discovered and registered through the same credential system — when you discover models from a credential, embedding models are included alongside language models.
-
----
-
-## Choosing Your Provider
-
-**1. Don't want to run locally and don't want to mess around with different providers:**
-
-Use OpenAI
-- Cloud-based
-- Good quality
-- Reasonable cost
-- Simplest setup, supports all modes (text, embedding, tts, stt, etc)
-
-**For budget-conscious:** Groq, OpenRouter or Ollama
-- Groq: Super cheap cloud
-- Ollama: Free, but local
-- OpenRouter: many open source models very accessible
-
-**For privacy-first:** Ollama or LM Studio and Speaches ([TTS](local-tts.md), [STT](local-stt.md))
-- Everything stays local
-- Works offline
-- No API keys sent anywhere
-
-**For enterprise:** Azure OpenAI
-- Compliance
-- VPC integration
-- Support
-
----
-
-## Next Steps
-
-1. **Choose your provider** from above
-2. **Get API key** (if cloud) or install locally (if Ollama)
-3. **Set `OPEN_NOTEBOOK_ENCRYPTION_KEY`** in your docker-compose.yml (required for storing credentials)
-4. Open **Manage** → **Models** → **Add Credential**
-5. **Test Connection** to verify it works
-6. **Discover & Register Models** to make them available
-7. **Verify it works** with a test chat
-
-> **Multiple providers**: You can add credentials for as many providers as you want. Create separate credentials for different projects or team members.
-
-Done!
+- **Simplest:** OpenAI alone covers chat, embeddings, podcasts and transcription.
+- **Many models, one bill:** OpenRouter, plus an embedding provider if you prefer a dedicated one.
+- **Fully local:** Ollama (or LM Studio, oMLX) for chat and embeddings, and [Speaches](local-tts.md) for speech.
+- **Language-only provider** (Anthropic, DeepSeek, DashScope, Novita, SiliconFlow, Z.ai): add Voyage AI, OpenAI, Google, Mistral or Ollama for embeddings, and a speech provider for podcasts.
 
 ---
 
 ## Legacy: Environment Variables (Deprecated)
 
-> **Deprecated**: Configuring AI provider API keys via environment variables is deprecated. Use the Settings UI instead. Environment variables may still work as a fallback but are no longer the recommended approach.
-
-If you are migrating from an older version that used environment variables, go to **Manage** → **Models** and click the **Migrate to Database** button to import your existing keys into the credential system.
+Provider keys in environment variables (`OPENAI_API_KEY` and so on) still work as a fallback: the database is checked first, then the environment. They are deprecated and may stop working. If any are set, the Models page shows **Environment Variables Detected** with a **Migrate to Database** button that copies them into configurations. Which variables are copied is listed in the [Environment Reference](environment-reference.md#legacy-ai-provider-variables-deprecated).
 
 ---
 
 ## Related
 
-- **[API Configuration](../3-USER-GUIDE/api-configuration.md)** — Detailed credential management guide
-- **[Environment Reference](environment-reference.md)** - Complete list of all environment variables
-- **[Advanced Configuration](advanced.md)** - Timeouts, SSL, performance tuning
-- **[Ollama Setup](ollama.md)** - Detailed Ollama configuration guide
-- **[OpenAI-Compatible](openai-compatible.md)** - LM Studio and other compatible providers
-- **[Local TTS Setup](local-tts.md)** - Text-to-speech with Speaches
-- **[Local STT Setup](local-stt.md)** - Speech-to-text with Speaches
-- **[Troubleshooting](../6-TROUBLESHOOTING/quick-fixes.md)** - Common issues and fixes
+- [API Configuration](../3-USER-GUIDE/api-configuration.md) — the Models page in detail
+- [Environment Reference](environment-reference.md) — all variables
+- [Ollama](ollama.md), [oMLX](omlx.md), [OpenAI-Compatible](openai-compatible.md), [Local speech](local-tts.md)
+- [AI & Chat Issues](../6-TROUBLESHOOTING/ai-chat-issues.md) — when provider calls fail

@@ -61,16 +61,17 @@ http://localhost:11435/v1
 
 ## Configure Open Notebook
 
-1. Go to **Manage** → **Models**
-2. Click **Add Credential** → select **oMLX**
-3. Set **Base URL** to `http://localhost:11435/v1` (prefilled by default)
-4. Optionally set an **API key** if you started oMLX with `--api-key`
-5. **Save** → **Test Connection** → **Discover Models** → register language and embedding models
+1. Go to **Manage** → **Models** and, in the **oMLX** section, click **Add Configuration**
+2. Keep **Base URL** `http://localhost:11435/v1` (prefilled), or use `http://host.docker.internal:11435/v1` if Open Notebook runs in Docker
+3. Optionally set an **API Key** if you started oMLX with `--api-key`
+4. Click **Add Configuration**, then **Test** on the new configuration
+5. Click **Models** to open **Discover Models**, add your models with **Model Type** **Language**, then again with **Embedding**
+6. Choose them under **Default Model Assignments**
 
-### Legacy env vars (optional fallback)
+### Legacy env vars (deprecated fallback)
 
 ```bash
-# Prefer Settings UI; env is for migration / headless setups
+# Prefer Manage → Models; env is for migration / headless setups
 export OMLX_API_BASE=http://localhost:11435/v1
 # Optional, only if oMLX was started with --api-key
 # export OMLX_API_KEY=your-key
@@ -98,7 +99,7 @@ Ensure oMLX listens on an interface Docker can reach.
 | Speech-to-text | ❌ |
 | Text-to-speech | ❌ |
 
-For local STT/TTS, see [Local STT](local-stt.md) and [Local TTS](local-tts.md) (e.g. Speaches via OpenAI-Compatible).
+For local STT/TTS, see [Local speech with Speaches](local-tts.md) (through the OpenAI Compatible provider).
 
 ## Troubleshooting
 

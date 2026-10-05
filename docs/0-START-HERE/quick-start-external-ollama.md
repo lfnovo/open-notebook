@@ -1,214 +1,129 @@
 # Quick Start - External Ollama
 
-Run Open Notebook with a **separately installed Ollama** (not via Docker). This avoids Docker running the Ollama service while you use your own local Ollama installation.
+Run Open Notebook in Docker and connect it to an **Ollama you installed directly on your computer** (not in Docker). Useful when you already use Ollama, or want its native GPU support without Docker GPU passthrough.
+
+If you don't have Ollama yet and want everything in Docker, use the [Local Quick Start](quick-start-local.md).
 
 ## Prerequisites
 
-1. **Docker Desktop** installed (for SurrealDB and Open Notebook)
-   - [Download here](https://www.docker.com/products/docker-desktop/)
+1. **Docker with Compose v2**: [Docker Desktop](https://www.docker.com/products/docker-desktop/) on macOS and Windows; Docker Engine with the Compose plugin on Linux.
+2. **Ollama** installed from [ollama.com](https://ollama.com/download). Check with `ollama --version`.
 
-2. **Ollama** installed separately
-   - [Download here](https://ollama.ai/)
-   - Verify: run `ollama --version`
+## Step 1: Download models (2-5 min)
 
-3. **Models downloaded** in Ollama:
-   ```bash
-   ollama pull mistral
-   ollama pull nomic-embed-text
-   ```
-
----
-
-## Step 1: Start Ollama (1 min)
-
-Start the Ollama server:
+Open Notebook needs a chat model and an embedding model:
 
 ```bash
-# Default: runs on http://localhost:11434
-ollama serve
+ollama pull qwen3
+ollama pull nomic-embed-text
 ```
 
-Keep this terminal open. Ollama will run in the background.
+On a smaller machine, use `llama3.2` or `gemma3:1b` instead of `qwen3`.
 
-**Optional: Start Ollama on a custom port or network interface:**
+## Step 2: Let containers reach Ollama
+
+Open Notebook runs in a container, where `localhost` means the container itself. It reaches your computer's Ollama through the name `host.docker.internal`.
+
+**macOS and Windows (Docker Desktop):** nothing to do. Ollama's default setup is reachable at `http://host.docker.internal:11434`.
+
+**Linux:** Ollama listens only on `127.0.0.1` by default, which containers can't reach. Make it listen on all interfaces. If Ollama runs as the systemd service (the default for the Linux installer):
+
 ```bash
-OLLAMA_HOST=0.0.0.0:11434 ollama serve
+sudo systemctl edit ollama
 ```
 
----
+Add these lines, save, and restart:
 
-## Step 2: Create Configuration (1 min)
+```ini
+[Service]
+Environment="OLLAMA_HOST=0.0.0.0:11434"
+```
 
-Create a new folder `open-notebook-external-ollama` and add these files:
+```bash
+sudo systemctl restart ollama
+```
 
-**docker-compose.yml**:
+If you run Ollama by hand, start it with `OLLAMA_HOST=0.0.0.0:11434 ollama serve`.
+
+This makes Ollama reachable from your network too; firewall port 11434 if the machine is exposed.
+
+## Step 3: Download and configure Open Notebook (1 min)
+
+```bash
+mkdir open-notebook
+cd open-notebook
+curl -o docker-compose.yml https://raw.githubusercontent.com/lfnovo/open-notebook/main/docker-compose.yml
+```
+
+(On Windows PowerShell, use `curl.exe`.)
+
+Open `docker-compose.yml` and replace `change-me-to-a-secret-string` in the `OPEN_NOTEBOOK_ENCRYPTION_KEY` line with a long random secret of your own.
+
+Then create `docker-compose.override.yml` in the same folder. On Linux this is what makes `host.docker.internal` resolve; on Docker Desktop it's harmless:
+
 ```yaml
 services:
-  surrealdb:
-    image: surrealdb/surrealdb:v2
-    command: start --user root --pass password rocksdb:/mydata/mydatabase.db
-    user: root
-    ports:
-      # Localhost only — the database uses default credentials, so never
-      # publish this port on 0.0.0.0
-      - "127.0.0.1:8000:8000"
-    volumes:
-      - ./surreal_data:/mydata
-
   open_notebook:
-    image: lfnovo/open_notebook:v1-latest
-    pull_policy: always
-    ports:
-      - "8502:8502"  # Web UI (React frontend)
-      - "5055:5055"  # API (required!)
-    environment:
-      # Encryption key for credential storage (required)
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
-
-      # Database (required)
-      - SURREAL_URL=ws://surrealdb:8000/rpc
-      - SURREAL_USER=root
-      - SURREAL_PASSWORD=password
-      - SURREAL_NAMESPACE=open_notebook
-      - SURREAL_DATABASE=open_notebook
-    volumes:
-      - ./notebook_data:/app/data
-    depends_on:
-      - surrealdb
-    restart: always
-
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 ```
 
-**Note:** No Ollama service in Docker — we use the host's Ollama.
-
----
-
-## Step 3: Connect Open Notebook to Host Ollama (1 min)
-
-When Open Notebook runs inside Docker, it cannot reach `localhost:11434` on your host directly. Use the special hostname:
-
-| Host OS | Ollama URL in Open Notebook |
-|---------|----------------------------|
-| Linux | `http://host.containers.internal:11434` |
-| macOS | `http://host.docker.internal:11434` |
-| Windows | `http://host.docker.internal:11434` |
-
----
-
-## Step 4: Start Open Notebook (1 min)
-
-Open terminal in your `open-notebook-external-ollama` folder:
+## Step 4: Start (1 min)
 
 ```bash
 docker compose up -d
 ```
 
-Wait 10-15 seconds for services to start.
+## Step 5: Connect Ollama and chat (3 min)
 
----
+Open **http://localhost:8502** and follow **[Connect a provider](../4-AI-PROVIDERS/index.md#connect-a-provider)** with these values:
 
-## Step 5: Configure Ollama Provider (1 min)
+| Field | Value |
+|---|---|
+| Provider | **Ollama** |
+| API Key | Leave empty |
+| Base URL | `http://host.docker.internal:11434` |
+| Models to add | Your chat model as **Language** (listed as `qwen3:latest`), then `nomic-embed-text:latest` as **Embedding** |
+| Defaults | Click **Auto-assign Defaults** |
 
-1. Go to **Manage** → **Models**
-2. Click **Add Credential**
-3. Select provider: **Ollama**
-4. Give it a name (e.g., "Local Ollama")
-5. Enter the base URL:
-   - **Windows/macOS:** `http://host.docker.internal:11434`
-   - **Linux:** `http://host.containers.internal:11434`
-6. Click **Save**
-7. Click **Test Connection** — should show success
-8. Click **Discover Models** → **Register Models**
+The last step of that page creates a notebook, adds a text source and sends a chat message.
 
----
+## Verification checklist
 
-## Step 6: Configure Models (1 min)
-
-1. Go to **Manage** → **Models**
-2. Set:
-   - **Language Model**: `ollama/mistral` (or whichever model you downloaded)
-   - **Embedding Model**: `ollama/nomic-embed-text`
-3. Click **Save**
-
----
-
-## Step 7: Access Open Notebook (instant)
-
-Open your browser:
-```
-http://localhost:8502
-```
-
----
-
-## Verification Checklist
-
-- [ ] Ollama is running (`ollama serve` in terminal)
-- [ ] Docker is running
-- [ ] You can access `http://localhost:8502`
-- [ ] Ollama credential is configured with host URL and tested
-- [ ] Models are registered
-- [ ] Chat works
-
----
+- [ ] `ollama list` shows a chat model and `nomic-embed-text`
+- [ ] `docker compose ps` shows `surrealdb` and `open_notebook` running
+- [ ] **Test** on the Ollama configuration shows a green check
+- [ ] **Default Model Assignments** has a Chat Model and an Embedding Model
+- [ ] A chat message gets an answer
 
 ## Troubleshooting
 
-### "Connection failed" when testing Ollama credential
-
-1. Verify Ollama is running:
-   ```bash
-   curl http://localhost:11434/api/version
-   ```
-
-2. Check firewall allows local connections on port 11434
-
-3. For Windows/macOS, ensure `host.docker.internal` is reachable from inside the container:
-   ```bash
-   docker exec <open_notebook_container> curl http://host.docker.internal:11434/api/version
-   ```
-
-### Ollama not starting
+**Test shows a red cross.** Check from inside the container:
 
 ```bash
-# Check Ollama logs
-ollama list
-
-# Pull a model again
-ollama pull mistral
+docker compose exec open_notebook curl -s http://host.docker.internal:11434/api/version
 ```
 
-### "Address already in use" for SurrealDB
+- *Could not resolve host*: the `extra_hosts` override is missing, or you didn't run `docker compose up -d` after adding it.
+- *Connection refused* (Linux): Ollama is still listening on `127.0.0.1`. Redo Step 2 and check with `ss -ltn | grep 11434` (it should show `*:11434` or `0.0.0.0:11434`).
+- No answer at all: a firewall is blocking port 11434 between Docker and the host.
 
-```bash
-docker compose down
-docker compose up -d
-```
+**Responses are slow or time out.** See the timeouts section of the [Ollama guide](../5-CONFIGURATION/ollama.md).
 
----
+**Adding more models later.** Run `ollama pull <model>`, then open **Models** on the Ollama configuration again and add it.
 
-## Why External Ollama?
+## Ollama in Docker or on the host?
 
-| Approach | Ollama in Docker | Ollama External |
-|----------|-----------------|-----------------|
-| **Resource isolation** | Separated | Shares with host |
-| **GPU access** | Requires Docker GPU setup | Native GPU access |
-| **Model management** | Via `docker exec` | Via terminal directly |
-| **Memory usage** | Isolated from host | Shared with host apps |
+| | Ollama in Docker ([Local Quick Start](quick-start-local.md)) | Ollama on the host (this guide) |
+|---|---|---|
+| GPU | Needs Docker GPU setup | Uses the GPU natively (including Apple Silicon) |
+| Managing models | `docker compose exec ollama ollama ...` | `ollama ...` |
+| Networking | Works out of the box | Linux needs `OLLAMA_HOST` and `extra_hosts` |
 
-**External Ollama** is recommended if you:
-- Already have Ollama installed and configured
-- Want GPU access without Docker GPU passthrough complexity
-- Prefer managing models via command line directly
+## Next steps
 
----
+- [Ollama guide](../5-CONFIGURATION/ollama.md): model choices, networking, timeouts
+- [Docker Compose guide](../1-INSTALLATION/docker-compose.md): settings, backups, updates
+- [User Guide](../3-USER-GUIDE/index.md)
 
-## Going Further
-
-- **Add more models**: Run `ollama pull <model>`, then re-discover from Open Notebook
-- **Check Ollama status**: `ollama list` shows downloaded models
-- **Customize Ollama**: Edit `~/.ollama/config.yaml` for advanced settings
-
----
-
-**Need Help?** Join our [Discord community](https://discord.gg/37XJPXfz2w)
+**Need help?** Join our [Discord community](https://discord.gg/37XJPXfz2w).

@@ -1,65 +1,52 @@
-# Open Notebook Windows Installation Guide (Native, No Docker)
+# Windows Native Installation (No Docker)
 
-This guide documents how to install and run [Open Notebook](https://github.com/lfnovo/open-notebook) on Windows **natively without Docker or WSL**.
+This guide runs [Open Notebook](https://github.com/lfnovo/open-notebook) on Windows **natively, without Docker or WSL**. It is community-maintained; the officially supported route is [Docker Compose](docker-compose.md).
 
 ## Who Is This For?
 
-- **Windows ARM64 users** - Docker Desktop and WSL2 have limitations on ARM64
-- **Users without Hyper-V** - Some Windows editions don't support Docker
-- **Users who prefer native installs** - Simpler architecture, easier debugging
-
-## What This Guide Covers
-
-- Native Windows installation steps
-- Critical configuration fixes for Windows
-- Troubleshooting common issues
-- Upgrade and maintenance scripts
+- **Windows ARM64 users**: Docker Desktop and WSL2 have limitations on ARM64
+- **Users without Hyper-V**: some Windows editions can't run Docker Desktop
+- **Users who prefer native installs**: fewer layers, easier debugging
 
 ## Prerequisites
 
-| Software     | Installation                     | Required |
-| ------------ | -------------------------------- | -------- |
-| Git          | `winget install Git.Git`         | Yes      |
-| Python 3.12+ | Via uv (installed automatically) | Yes      |
-| Node.js 18+  | `winget install OpenJS.NodeJS`   | Yes      |
-| uv           | `pip install uv`                 | Yes      |
-| SurrealDB    | `scoop install surrealdb`        | Yes      |
+| Software | Installation | Notes |
+| --- | --- | --- |
+| Git | `winget install Git.Git` | |
+| uv | `winget install astral-sh.uv` | Also installs a matching Python for you |
+| Python 3.11 or 3.12 | Installed by `uv sync` | 3.13+ is not supported yet |
+| Node.js 20.9+ | `winget install OpenJS.NodeJS.LTS` | Next.js 16 requires 20.9 or later |
+| SurrealDB 2.x | [SurrealDB releases](https://github.com/surrealdb/surrealdb/releases) or `scoop install surrealdb` | Use a 2.x release: the Docker setup pins `surrealdb:v2` |
+| ffmpeg | `winget install Gyan.FFmpeg` | Needed for audio/video sources and podcasts |
 
 ## Quick Start
 
-1. **Clone and setup:**
+1. **Clone and install:**
 
-   ```bash
-   cd %USERPROFILE%\Projects  # or your preferred location
+   ```batch
+   cd %USERPROFILE%\Projects
    git clone https://github.com/lfnovo/open-notebook.git
    cd open-notebook
    uv sync
    cd frontend && npm install && cd ..
    ```
 
-2. **Configure `.env`:**
+2. **Create `.env`:** copy `.env.example` to `.env` and change these two lines:
 
-   - Copy `.env.example` to `.env`
+   ```env
+   OPEN_NOTEBOOK_ENCRYPTION_KEY=any-long-random-secret
+   SURREAL_URL="ws://127.0.0.1:8000/rpc"
+   ```
 
-   - Add your API keys
-
-   - **CRITICAL:** Change `SURREAL_URL` from `localhost` to `127.0.0.1`:
-
-     ```env
-     SURREAL_URL="ws://127.0.0.1:8000/rpc"
-     ```
+   Use `127.0.0.1`, not `localhost` and not `surrealdb` (see [Issue 2](#issue-2-database-health-check-timeout)). You add AI provider keys in the UI later, not in `.env`.
 
 3. **Start the four services**, each in its own terminal, from the `open-notebook` folder.
 
-   > Open Notebook does not ship a launcher script — start the services manually as below (or wrap them in your own `.bat`, see [Optional: one-click launcher](#optional-one-click-launcher)).
+   > Open Notebook does not ship a launcher script. Start the services manually as below, or wrap them in your own `.bat` (see [Optional: one-click launcher](#optional-one-click-launcher)).
 
    ```batch
-   REM Optional: point Open Notebook at a separate data folder (see Issue 4 below).
-   REM Set this in each terminal before running, or skip to use ./data.
-   set DATA_FOLDER=%USERPROFILE%\Projects\open-notebook-data
-
-   REM Terminal 1 — SurrealDB
-   surreal start --user root --pass root --bind 127.0.0.1:8000 rocksdb:%DATA_FOLDER%\surrealdb
+   REM Terminal 1 — SurrealDB (database files go in the folder you name here)
+   surreal start --user root --pass root --bind 127.0.0.1:8000 rocksdb:%USERPROFILE%\Projects\open-notebook-data\surrealdb
 
    REM Terminal 2 — API
    uv run --env-file .env run_api.py
@@ -72,43 +59,31 @@ This guide documents how to install and run [Open Notebook](https://github.com/l
    cd frontend && npm run dev
    ```
 
-4. **Open the app:** http://127.0.0.1:3000
+4. **Open the app** at http://127.0.0.1:3000.
 
-## Directory Structure (Recommended)
+5. **Connect a provider:** follow [Connect a provider](../4-AI-PROVIDERS/index.md#connect-a-provider). It ends with a test chat; chat won't work until the default models are set. A local Ollama is at `http://127.0.0.1:11434`.
 
-```
-YourProjectsFolder\
-├── open-notebook\           # Source code (git clone)
-│   ├── .venv\               # Python virtual environment (created by uv)
-│   ├── frontend\            # Next.js frontend
-│   ├── commands\            # Worker command modules
-│   └── .env                 # Your configuration
-├── open-notebook-data\      # Data storage (SEPARATE from code!)
-│   ├── surrealdb\           # Database files
-│   ├── uploads\             # Uploaded documents
-│   └── sqlite-db\           # LangGraph checkpoints
-└── start-open-notebook.bat  # Optional launcher you create yourself (see below)
-```
+## Where your data lives
 
-**Why separate data folder?** Prevents accidental data loss when updating/reinstalling code.
+- **Database:** the folder you pass to `surreal start` (above: `%USERPROFILE%\Projects\open-notebook-data\surrealdb`). Keeping it outside the code folder protects it when you reinstall.
+- **Uploads and chat checkpoints:** always in the `data\` folder inside `open-notebook\`. The path is fixed in `open_notebook/config.py` and can't be changed with an environment variable. Back it up together with the database.
 
 ## Optional: one-click launcher
 
 Open Notebook does not ship a launcher, but you can save the following as
 `start-open-notebook.bat` (anywhere you like) to start all four services with a
-double-click. Adjust `ROOT` and `DATA_ROOT` to match your setup.
+double-click. Adjust `ROOT` and `DB_DIR` to match your setup.
 
 ```batch
 @echo off
 REM --- adjust these two paths ---
 set ROOT=%USERPROFILE%\Projects\open-notebook
-set DATA_ROOT=%USERPROFILE%\Projects\open-notebook-data
+set DB_DIR=%USERPROFILE%\Projects\open-notebook-data\surrealdb
 
-set DATA_FOLDER=%DATA_ROOT%
 set PYTHONPATH=%ROOT%
 cd /d %ROOT%
 
-start "SurrealDB" surreal start --user root --pass root --bind 127.0.0.1:8000 rocksdb:%DATA_ROOT%\surrealdb
+start "SurrealDB" surreal start --user root --pass root --bind 127.0.0.1:8000 rocksdb:%DB_DIR%
 start "API" cmd /k "uv run --env-file .env run_api.py"
 start "Worker" cmd /k "uv run --env-file .env python -m surreal_commands.cli.worker --import-modules commands"
 start "Frontend" cmd /k "cd /d %ROOT%\frontend && npm run dev"
@@ -202,64 +177,6 @@ Failed to canonicalize script path
 set PYTHONPATH=%ROOT%
 uv run --env-file .env python -m surreal_commands.cli.worker --import-modules commands
 ```
-
-### Issue 4: DATA_FOLDER Path Parsing Error
-
-**Symptom:**
-
-```
-warning: Failed to parse environment file .env at position X
-```
-
-**Cause:** `uv` can't parse Windows paths with backslashes in `.env`.
-
-**Solution:** Keep `DATA_FOLDER` **commented out** in `.env`. Set it via batch file:
-
-```batch
-set DATA_FOLDER=C:\path\to\open-notebook-data
-```
-
-## Configuration Files
-
-### Modifying `open_notebook/config.py`
-
-The default `config.py` uses a hardcoded data path. Modify it to read from environment:
-
-```python
-import os
-
-# ROOT DATA FOLDER - can be overridden via DATA_FOLDER environment variable
-DATA_FOLDER = os.environ.get("DATA_FOLDER", "./data")
-
-# Rest of file uses DATA_FOLDER...
-```
-
-### Required `.env` Settings
-
-```env
-# Database - MUST use 127.0.0.1!
-SURREAL_URL="ws://127.0.0.1:8000/rpc"
-SURREAL_USER="root"
-SURREAL_PASSWORD="root"
-SURREAL_NAMESPACE="open_notebook"
-SURREAL_DATABASE="open_notebook"
-
-# API Keys (uncomment and fill in)
-OPENAI_API_KEY=your-key-here
-ANTHROPIC_API_KEY=your-key-here
-GOOGLE_API_KEY=your-key-here
-```
-
-## Available AI Models
-
-Once running, add models in Manage → Models. Common model names:
-
-| Provider  | Models                                                       |
-| --------- | ------------------------------------------------------------ |
-| OpenAI    | `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `text-embedding-3-small` |
-| Anthropic | `claude-sonnet-4-20250514`, `claude-3-5-sonnet-20241022`, `claude-3-5-haiku-20241022` |
-| Google    | `gemini-3.5-flash`, `gemini-2.5-flash`, `gemini-2.5-pro`     |
-| DeepSeek  | `deepseek-chat`, `deepseek-reasoner`                         |
 
 ## Upgrading
 
@@ -358,13 +275,13 @@ will not find it for those older sources. New uploads are fine.
 
 ### Frontend can't connect to API
 
-- Verify API is running: http://127.0.0.1:5055/docs
-- Check `.env` has `API_URL=http://localhost:5055`
+- Verify the API is running: http://127.0.0.1:5055/docs
+- Open the UI at `http://127.0.0.1:3000`. The frontend derives the API address from the address you use (`http://127.0.0.1:5055`), and the API only listens on `127.0.0.1` by default.
 
 ### Worker not processing commands
 
-- Check Worker window for errors
-- Verify PYTHONPATH is set in startup script
+- Check the Worker window for errors
+- Verify `PYTHONPATH` is set to the `open-notebook` folder in that terminal
 
 ## Contributing
 

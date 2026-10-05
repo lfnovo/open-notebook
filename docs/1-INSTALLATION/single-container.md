@@ -1,22 +1,28 @@
 # Single Container Installation (Deprecated)
 
-> **Deprecation Notice:** The single-container image (`v1-latest-single`) is **deprecated** and will be removed in v2. Please migrate to [Docker Compose](docker-compose.md), which is the recommended installation method for all users. The single-container image will continue to receive updates until v2 is released, but no new features or documentation will target it.
+> **Deprecated:** the single-container image (`v1-latest-single`) will be removed in v2. It still receives updates until then, but new features and documentation target [Docker Compose](docker-compose.md). Use Docker Compose for new installs.
 
-All-in-one container setup. **Simpler than Docker Compose, but less flexible.**
+The single image bundles SurrealDB, the API, the background worker and the web UI in one container. It is mostly useful on hosting platforms that run exactly one container per app.
 
-**Best for:** PikaPods, Railway, shared hosting, minimal setups
+> **Images:** `lfnovo/open_notebook:v1-latest-single` on Docker Hub, `ghcr.io/lfnovo/open-notebook:v1-latest-single` on GitHub Container Registry.
 
-> **Alternative Registry:** Images available on both Docker Hub (`lfnovo/open_notebook:v1-latest-single`) and GitHub Container Registry (`ghcr.io/lfnovo/open-notebook:v1-latest-single`).
+## What the container needs
 
-## Prerequisites
+Whatever runs it (Docker on your machine or a hosting platform) must provide:
 
-- Docker installed (for local testing)
-- API key from OpenAI, Anthropic, or another provider
-- 5 minutes
+| Need | Value |
+|---|---|
+| **Port** | `8502` (web UI). Port `5055` (API) too, unless you set `API_URL` (below). |
+| **Persistent storage** | Two paths: `/app/data` (uploads, app data) **and** `/mydata` (the database). Without `/mydata` on persistent storage the database is lost every time the container is recreated, including on every image update. |
+| **`OPEN_NOTEBOOK_ENCRYPTION_KEY`** | Required. A long random secret; keep it, or saved API keys can't be decrypted. |
+| **`SURREAL_URL`** | `ws://localhost:8000/rpc` (the database runs inside the same container). |
+| **`SURREAL_USER`, `SURREAL_PASSWORD`** | Both `root` (see below). |
+| **`OPEN_NOTEBOOK_PASSWORD`** | Required on anything reachable from a network. Authentication is off when it's unset. |
+| **`API_URL`** | Set it to the public URL of the app (for example `https://notebook.example.com`) when only one port is reachable. The browser then sends API calls through the UI server instead of to port 5055. |
 
-## Quick Setup
+The embedded database always starts with user `root` and password `root`, so set `SURREAL_USER=root` and `SURREAL_PASSWORD=root`. Any other value breaks the connection. Don't publish port `8000`; nothing outside the container needs it.
 
-### For Local Testing (Docker)
+## Run it locally with Docker
 
 ```yaml
 # docker-compose.yml
@@ -25,7 +31,7 @@ services:
     image: lfnovo/open_notebook:v1-latest-single
     pull_policy: always
     ports:
-      - "8502:8502"  # Web UI (React frontend)
+      - "8502:8502"  # Web UI
       - "5055:5055"  # API
     environment:
       - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
@@ -35,112 +41,44 @@ services:
       - SURREAL_NAMESPACE=open_notebook
       - SURREAL_DATABASE=open_notebook
     volumes:
-      - ./data:/app/data
+      - ./notebook_data:/app/data   # app data
+      - ./surreal_data:/mydata      # database
     restart: always
 ```
 
-Run:
+Change the encryption key, then:
+
 ```bash
 docker compose up -d
 ```
 
-Access: `http://localhost:8502`
+Open **http://localhost:8502** and follow [Connect a provider](../4-AI-PROVIDERS/index.md#connect-a-provider). Chat works once the default models are set.
 
-Then configure your AI provider:
-1. Go to **Manage** → **Models**
-2. Click **Add Credential** → Select your provider → Paste API key
-3. Click **Save**, then **Test Connection**
-4. Click **Discover Models** → **Register Models**
+Settings go in the `environment:` block and are applied with `docker compose up -d` (not `restart`). Logs: `docker compose logs -f open_notebook`.
 
-### For Cloud Platforms
+## Hosting platforms
 
-**PikaPods:**
-1. Click "New App"
-2. Search "Open Notebook"
-3. Set environment variables (at minimum: `OPEN_NOTEBOOK_ENCRYPTION_KEY`)
-4. Click "Deploy"
-5. Open the app → Go to **Manage → Models** to configure your AI provider
+Use the table above to fill in your platform's form: the image, port `8502`, persistent storage for **both** `/app/data` and `/mydata`, and the environment variables. Platforms that can't give you persistent storage at both paths will lose data on redeploy; use a platform or VPS that runs Docker Compose instead.
 
-**Railway:**
-1. Create new project
-2. Add `lfnovo/open_notebook:v1-latest-single`
-3. Set environment variables (at minimum: `OPEN_NOTEBOOK_ENCRYPTION_KEY`)
-4. Deploy
-5. Open the app → Go to **Manage → Models** to configure your AI provider
+After deploying, open the app's URL and follow [Connect a provider](../4-AI-PROVIDERS/index.md#connect-a-provider).
 
-**Render:**
-1. Create new Web Service
-2. Use Docker image: `lfnovo/open_notebook:v1-latest-single`
-3. Set environment variables in dashboard (at minimum: `OPEN_NOTEBOOK_ENCRYPTION_KEY`)
-4. Configure persistent disk for `/app/data` and `/mydata`
+### EasyPanel
 
-**DigitalOcean App Platform:**
-1. Create new app from Docker Hub
-2. Use image: `lfnovo/open_notebook:v1-latest-single`
-3. Set port to 8502
-4. Add environment variables (at minimum: `OPEN_NOTEBOOK_ENCRYPTION_KEY`)
-5. Configure persistent storage
+Open Notebook ships an EasyPanel template in [`examples/easypanel/`](https://github.com/lfnovo/open-notebook/tree/main/examples/easypanel). Unlike the single image, the template provisions **two services** (the Open Notebook app and a separate SurrealDB) and generates the database password, encryption key and, optionally, the app password for you.
 
-**Heroku:**
-```bash
-# Using heroku.yml
-heroku container:push web
-heroku container:release web
-heroku config:set OPEN_NOTEBOOK_ENCRYPTION_KEY=your-secret-key
-```
-
-**Coolify:**
-1. Add new service → Docker Image
-2. Image: `lfnovo/open_notebook:v1-latest-single`
-3. Port: 8502
-4. Add environment variables (at minimum: `OPEN_NOTEBOOK_ENCRYPTION_KEY`)
-5. Enable persistent volumes
-6. Coolify handles HTTPS automatically
-
-**EasyPanel:**
-
-Open Notebook ships an EasyPanel template at [`examples/easypanel/`](https://github.com/lfnovo/open-notebook/tree/main/examples/easypanel). Unlike the single-image options above, the template provisions **two services** — the Open Notebook app and a dedicated SurrealDB instance — and generates the database password, encryption key, and (optionally) the app password for you.
-
-- **One-click (recommended):** once the template is published to the official [EasyPanel template gallery](https://github.com/easypanel-io/templates), create a new service from "Open Notebook", set an app password (or leave it blank to auto-generate one), and deploy.
+- **One-click:** once the template is published to the official [EasyPanel template gallery](https://github.com/easypanel-io/templates), create a new service from "Open Notebook", set an app password (or leave it blank to auto-generate one), and deploy.
 - **Manual:** copy `examples/easypanel/` into `templates/open-notebook` in a checkout of [`easypanel-io/templates`](https://github.com/easypanel-io/templates), run the templates playground (`npm run dev`), and create the template from the generated JSON in your EasyPanel instance.
 
-After deployment, open the EasyPanel domain and configure your AI provider in **Manage → Models**. See [`examples/easypanel/README.md`](https://github.com/lfnovo/open-notebook/blob/main/examples/easypanel/README.md) for details.
+See [`examples/easypanel/README.md`](https://github.com/lfnovo/open-notebook/blob/main/examples/easypanel/README.md) for details.
+
+## Moving to Docker Compose
+
+1. Stop the single container and copy its two data folders.
+2. Set up [Docker Compose](docker-compose.md) with the **same** `OPEN_NOTEBOOK_ENCRYPTION_KEY`.
+3. Before the first start, put the old database files in `surreal_data/` and the old app data in `notebook_data/`.
+
+The single image's database uses `root:root`, which matches the compose default. The database path inside both setups is `/mydata/mydatabase.db`.
 
 ---
 
-## Environment Variables
-
-| Variable | Purpose | Example |
-|----------|---------|---------|
-| `OPEN_NOTEBOOK_ENCRYPTION_KEY` | Encryption key for credentials (required) | `my-secret-key` |
-| `SURREAL_URL` | Database | `ws://localhost:8000/rpc` |
-| `SURREAL_USER` | DB user | `root` |
-| `SURREAL_PASSWORD` | DB password | `root` |
-| `SURREAL_NAMESPACE` | DB namespace | `open_notebook` |
-| `SURREAL_DATABASE` | DB name | `open_notebook` |
-| `API_URL` | External URL (for remote access) | `https://myapp.example.com` |
-
-AI provider API keys are configured via the **Manage → Models** UI after deployment.
-
----
-
-## Limitations vs Docker Compose
-
-| Feature | Single Container | Docker Compose |
-|---------|------------------|-----------------|
-| Setup time | 2 minutes | 5 minutes |
-| Complexity | Minimal | Moderate |
-| Services | All bundled | Separated |
-| Scalability | Limited | Excellent |
-| Memory usage | ~800MB | ~1.2GB |
-
----
-
-## Next Steps
-
-Same as Docker Compose setup - just access via `http://localhost:8502` (local) or your platform's URL (cloud).
-
-1. Go to **Manage → Models** to add your AI provider credential
-2. **Test Connection** and **Discover Models**
-
-See [Docker Compose](docker-compose.md) for full post-install guide.
+**Need help?** [Discord](https://discord.gg/37XJPXfz2w) · [GitHub Issues](https://github.com/lfnovo/open-notebook/issues)

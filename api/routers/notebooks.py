@@ -250,9 +250,15 @@ def _notebook_record_id(notebook_id: str) -> RecordID:
     except Exception as e:
         # Parsing is pure, so any failure here means "not a record id". A
         # parseable id is left alone: unknown records still 404.
+        #
+        # The message is deliberately constant. Echoing the id back would only
+        # repeat what the caller just sent, and it makes the response grow with
+        # the request: a 400-character path segment produced a 461-character
+        # detail. Other routers here cap reflected text at 200 characters
+        # (api/routers/credentials.py, api/routers/models.py); naming the
+        # expected format says the same thing in a fixed length.
         raise InvalidInputError(
-            f"Invalid notebook id: '{notebook_id}' "
-            "(expected the format 'notebook:<id>')"
+            "Invalid notebook id (expected the format 'notebook:<id>')"
         ) from e
 
 

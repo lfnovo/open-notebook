@@ -73,6 +73,46 @@ def test_get_notebook_malformed_id_returns_400(mock_repo_query, notebook_id, cli
     assert "notebook:" in response.json()["detail"]
 
 
+# --- the 400 must not become a reflection channel --------------------------------
+
+
+@pytest.mark.parametrize(
+    "notebook_id",
+    [
+        "secret-canary",
+        "x" * 400,
+        # No "/" here on purpose: a slash would split the path segment and
+        # 404 on the route before the handler ever sees it.
+        "<img src=x onerror=alert(1)>",
+    ],
+)
+@patch("api.routers.notebooks.repo_query", new_callable=AsyncMock)
+def test_get_notebook_400_does_not_echo_the_id(mock_repo_query, notebook_id, client):
+    """The id is what the caller just sent; repeating it back adds nothing.
+
+    It also makes the response grow with the request, so a long path segment
+    turns a fixed client-error message into an arbitrary-length one.
+    """
+    response = client.get(f"/api/notebooks/{notebook_id}")
+
+    assert response.status_code == 400
+    detail = response.json()["detail"]
+    assert notebook_id not in detail
+    assert "notebook:<id>" in detail
+
+
+@patch("api.routers.notebooks.repo_query", new_callable=AsyncMock)
+def test_get_notebook_400_length_does_not_depend_on_the_input(
+    mock_repo_query, client
+):
+    """Same status and same detail whether the id is 6 or 400 characters."""
+    short = client.get("/api/notebooks/abc123")
+    long = client.get(f"/api/notebooks/{'x' * 400}")
+
+    assert short.status_code == long.status_code == 400
+    assert short.json()["detail"] == long.json()["detail"]
+
+
 @patch("api.routers.notebooks.repo_query", new_callable=AsyncMock)
 def test_get_notebook_prefixed_id_still_works(mock_repo_query, client):
     """The validation must not reject a well-formed id."""

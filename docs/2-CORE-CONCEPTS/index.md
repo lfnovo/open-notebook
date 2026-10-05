@@ -1,70 +1,44 @@
 # Core Concepts - Understand the Mental Model
 
-Before diving into how to use Open Notebook, it's important to understand **how it thinks**. These core concepts explain the "why" behind the design.
+These pages explain how Open Notebook is organized and how its AI features decide what content to use. Read them once and the rest of the app will make sense. For step-by-step instructions, go to the [User Guide](../3-USER-GUIDE/index.md).
 
-## The Five Mental Models
+## The Pages
 
-### 1. [Notebooks, Sources, and Notes](notebooks-sources-notes.md)
-How Open Notebook organizes your research. Understand the three-tier container structure and how information flows from raw materials to finished insights.
+### 1. [Notebooks, Sources, Insights, and Notes](notebooks-sources-notes.md)
+The four things you work with.
 
-**Key idea**: A notebook is a scoped research container. Sources are inputs (PDFs, URLs, etc.). Notes are outputs (your insights, AI-generated summaries, captured responses).
+**Key idea**: A notebook groups sources and notes for one project. Sources are your input material and can belong to several notebooks. Transformations turn a source into **insights**, which stay attached to the source. Notes are what you write or save from the AI.
 
 ---
 
 ### 2. [AI Context & RAG](ai-context-rag.md)
-How Open Notebook makes AI aware of your research - two different approaches.
+How each AI feature gets your content, and how you control it.
 
-**Key idea**: **Chat** sends entire selected sources to the LLM (full context, conversational). **Ask** uses RAG (retrieval-augmented generation) to automatically search and retrieve only relevant chunks. Different tools for different needs.
-
----
-
-### 3. [Chat vs. Transformations](chat-vs-transformations.md)
-Why Open Notebook has different interaction modes and when to use each one.
-
-**Key idea**: Chat is conversational exploration (you control context). Transformations are insight extractions. They reduced content to smaller bits of concentrated/dense information, which is much more suitable for an AI to use. 
+**Key idea**: **Chat** sends the sources and notes you put in context, with no searching. **Ask** searches your knowledge base (vector search) and answers from what it finds. Each source in a notebook has three context levels for Chat: *Not included in chat*, *Insights only* and *Full content*.
 
 ---
 
-### 4. [Context Management](chat-vs-transformations.md#context-management-the-control-panel)
-Your control panel for privacy and cost. Decide what data actually reaches AI.
+### 3. [Chat vs. Ask vs. Transformations](chat-vs-transformations.md)
+Which tool to use for which job.
 
-**Key idea**: You choose three levels—not in context (private), summary only (condensed), or full content (complete access). This gives you fine-grained control.
-
----
-
-### 5. [Podcasts Explained](podcasts-explained.md)
-Why Open Notebook can turn research into audio and why this matters.
-
-**Key idea**: Podcasts transform your research into a different consumption format. Instead of reading, someone can listen and absorb your insights passively.
+**Key idea**: Chat is a conversation over content you pick. Ask is a one-shot question over everything (or the notebooks you pick). Transformations run a saved prompt over one source and save the result as an insight.
 
 ---
 
-## Read This Section If:
+### 4. [Podcasts Explained](podcasts-explained.md)
+How a podcast episode is generated from your content.
 
-- **You're new to Open Notebook** — Start here to understand how the system works conceptually before learning the features
-- **You're confused about Chat vs Ask** — Section 2 explains the difference (full-content vs RAG)
-- **You're wondering when to use Chat vs Transformations** — Section 3 clarifies the differences
-- **You want to understand privacy controls** — Section 4 shows you what you can control
-- **You're curious about podcasts** — Section 5 explains the architecture and why it's different from competitors
+**Key idea**: An outline model and a transcript model write a script from the content you select, then a text-to-speech model voices it. Episode profiles and speaker profiles hold the settings.
 
 ---
 
 ## The Big Picture
 
-Open Notebook is built on a simple insight: **Your research deserves to stay yours**.
-
-That means:
-- **Privacy by default** — Your data doesn't leave your infrastructure unless you explicitly choose
-- **AI as a tool, not a gatekeeper** — You decide which sources the AI sees, not the AI deciding for you
-- **Flexible consumption** — Read, listen, search, chat, or transform your research however makes sense
-
-These core concepts explain how that works.
-
----
+- **You choose the providers.** Open Notebook works with cloud and local AI providers. A cloud AI provider receives the content each feature sends (described in the pages above); with local models, prompts stay on your machine. Adding a web link still fetches it from the internet, and the Firecrawl and Jina URL engines, when configured, fetch pages through those services.
+- **You choose what the AI sees.** In Chat you set the context per source and note. Ask and Search can be limited to specific notebooks.
+- **Your data stays in your deployment.** Sources, insights, notes and podcast records live in your SurrealDB database. Uploaded files, generated podcast audio and chat history (a checkpoint file) live in the app's data directory. Back up both.
 
 ## Next Steps
 
-1. **Just want to use it?** → Go to [User Guide](../3-USER-GUIDE/index.md)
-2. **Want to understand it first?** → Read the 5 sections above (15 min)
-3. **Setting up for the first time?** → Go to [Installation](../1-INSTALLATION/index.md)
-
+- **Ready to use it?** Go to the [User Guide](../3-USER-GUIDE/index.md)
+- **Not installed yet?** Go to [Installation](../1-INSTALLATION/index.md)

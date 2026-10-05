@@ -48,6 +48,7 @@ _CLASSIFICATION_RULES: list[tuple[list[str], type[OpenNotebookError], str | None
         [
             "connecterror",
             "connecttimeout",
+            "connection timed out",
             "connection refused",
             "connection error",
         ],

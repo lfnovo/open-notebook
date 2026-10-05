@@ -44,9 +44,9 @@ def get_database_url() -> str:
         return surreal_url
 
     # Fallback to the legacy variables. SURREAL_ADDRESS may already carry the
-    # port ("host:8000"); SURREAL_PORT only applies when it doesn't.
+    # port ("host:8000", "[::1]:8000"); SURREAL_PORT only applies when it doesn't.
     address = os.getenv("SURREAL_ADDRESS", "localhost")
-    if ":" not in address:
+    if ":" not in address.rsplit("]", 1)[-1]:
         address = f"{address}:{os.getenv('SURREAL_PORT', '8000')}"
     return f"ws://{address}/rpc"
 

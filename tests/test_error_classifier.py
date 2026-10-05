@@ -34,7 +34,15 @@ def test_connect_timeout_is_a_connection_problem():
 
 
 def test_connection_refused_is_a_connection_problem():
-    _, message = classify_error(httpx.ConnectError("[Errno 111] Connection refused"))
+    exc_class, message = classify_error(
+        httpx.ConnectError("[Errno 111] Connection refused")
+    )
+    assert exc_class is NetworkError
+    assert "Could not connect" in message
+
+
+def test_os_connection_timed_out_is_a_connection_problem():
+    _, message = classify_error(OSError("[Errno 110] Connection timed out"))
     assert "Could not connect" in message
 
 
@@ -48,4 +56,4 @@ def test_missing_default_model_passes_through():
     raw = "No model configured for default for type=chat. Please go to Manage → Models and configure a default model for 'chat'."
     exc_class, message = classify_error(ValueError(raw))
     assert exc_class is ConfigurationError
-    assert message.startswith("No model configured")
+    assert message == raw

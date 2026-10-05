@@ -27,6 +27,17 @@ def test_address_and_port(monkeypatch):
     assert get_database_url() == "ws://db.internal:8018/rpc"
 
 
+def test_bracketed_ipv6_without_port_gets_surreal_port(monkeypatch):
+    monkeypatch.setenv("SURREAL_ADDRESS", "[::1]")
+    monkeypatch.setenv("SURREAL_PORT", "8018")
+    assert get_database_url() == "ws://[::1]:8018/rpc"
+
+
+def test_bracketed_ipv6_with_port(monkeypatch):
+    monkeypatch.setenv("SURREAL_ADDRESS", "[::1]:8000")
+    assert get_database_url() == "ws://[::1]:8000/rpc"
+
+
 def test_address_with_port_ignores_surreal_port(monkeypatch):
     monkeypatch.setenv("SURREAL_ADDRESS", "10.1.2.3:8000")
     monkeypatch.setenv("SURREAL_PORT", "9999")

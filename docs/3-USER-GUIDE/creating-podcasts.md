@@ -10,9 +10,9 @@ Podcasts live on the **Podcasts** page (sidebar, under **Create**), which has tw
 
 You need at least one **speaker profile** with a voice model and one **episode profile** with an outline and transcript model.
 
-Open **Podcasts → Profiles**. A new install already has three speaker profiles and three episode profiles, but **none of them has models assigned**; they show a **Setup required** badge. Either edit them or create your own. Create speakers first: episode profiles reference a speaker profile.
+Open **Podcasts → Profiles**. A new install already has three speaker profiles and three episode profiles, but **none of them has models assigned**; they show a **Setup required** badge (upgraded installations may already have models on them). Either edit them or create your own. Create speakers first: episode profiles reference a speaker profile.
 
-You'll need, in **Manage → Models**:
+You'll need these models added in **Manage → Models** (**Sync Models** → **Discover Models** on a provider configuration); you then select them in the profile fields below:
 - a **text-to-speech** model (for voices). Which providers offer TTS is listed in [AI Providers](../4-AI-PROVIDERS/index.md); for a local option see [Local TTS](../5-CONFIGURATION/local-tts.md).
 - a **language** model for the outline and transcript.
 
@@ -76,7 +76,7 @@ Each episode card has:
 - an **audio player** (completed episodes),
 - **Details**, with the episode's **Summary** (profiles and models used), **Outline** and **Transcript**,
 - **Delete** (removes the episode and its audio file),
-- **Retry** (failed episodes): deletes the failed episode and submits a new job with the same settings.
+- **Retry** (failed episodes): deletes the failed episode and submits a new job with the same name, content, episode profile and speaker profile, using the profiles' current settings (so you can fix a profile, then retry). The episode's **Additional instructions** are not kept.
 
 Failed episodes show the error. Common errors and fixes are listed in [Podcasts Explained → When Things Go Wrong](../2-CORE-CONCEPTS/podcasts-explained.md#when-things-go-wrong-failures--retry).
 

@@ -6,7 +6,19 @@ Step-by-step instructions for each feature. If you want to understand how things
 
 ## Before You Start
 
-Open Notebook needs at least one AI provider and default models. In **Manage → Models**, add a provider configuration, sync its models, and set the **Default Model Assignments** (or click **Auto-assign Defaults**). Without a Chat Model and an Embedding Model, chat, transformations, Ask and vector search won't work. See [API Configuration](api-configuration.md).
+Open Notebook needs at least one AI provider and default models. In **Manage → Models**, add a provider configuration, sync its models, and set the **Default Model Assignments** (or click **Auto-assign Defaults**). See [API Configuration](api-configuration.md).
+
+What each feature needs:
+
+| Feature | Models needed |
+|---------|---------------|
+| Notebook chat, source chat | Chat Model |
+| Transformations (insights) | Transformation Model, or the Chat Model if none is set |
+| Ask | Chat Model and Embedding Model |
+| Vector search | Embedding Model |
+| Text search | None |
+| Audio and video sources | Speech-to-Text Model |
+| Podcasts | The language and text-to-speech models chosen in the episode and speaker profiles |
 
 ---
 

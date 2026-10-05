@@ -7,7 +7,7 @@ Open Notebook can turn sources and notes into a podcast episode: a scripted conv
 ## The Building Blocks
 
 **Speaker profile**: who talks and how they sound.
-- A **voice model** (a text-to-speech model from your Models page), required.
+- A **voice model** (a text-to-speech model, selected in the speaker profile), required.
 - One to four **speakers**, each with a name, a **Voice ID** (a voice name of that TTS model), a backstory and a personality.
 - Optionally, a different voice model per speaker (*Per-speaker TTS override*), so speakers can come from different TTS providers.
 
@@ -21,7 +21,7 @@ Open Notebook can turn sources and notes into a podcast episode: a scripted conv
 
 **Episode**: one generation run. You pick the content, an episode profile, a name and optional additional instructions.
 
-Open Notebook ships with three episode profiles (`tech_discussion`, `solo_expert`, `business_analysis`) and three speaker profiles (`tech_experts`, `solo_expert`, `business_panel`). **They have no models assigned**, so they show a *Setup required* badge until you edit them and pick an outline model, a transcript model and a voice model. Their Voice IDs are OpenAI voice names (`nova`, `alloy`, ...); change them if you use another TTS provider.
+Open Notebook ships with three episode profiles (`tech_discussion`, `solo_expert`, `business_analysis`) and three speaker profiles (`tech_experts`, `solo_expert`, `business_panel`). On a new install **they have no models assigned**, so they show a *Setup required* badge until you edit them and pick an outline model, a transcript model and a voice model. (Installations upgraded from older versions may already have models on them, if matching models were registered.) Their Voice IDs are OpenAI voice names (`nova`, `alloy`, ...); change them if you use another TTS provider.
 
 ---
 

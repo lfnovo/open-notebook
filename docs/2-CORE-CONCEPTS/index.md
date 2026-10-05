@@ -34,9 +34,9 @@ How a podcast episode is generated from your content.
 
 ## The Big Picture
 
-- **You choose the providers.** Open Notebook works with cloud and local AI providers. Content leaves your machine only when you use a cloud provider, and then only the content each feature sends (described in the pages above).
+- **You choose the providers.** Open Notebook works with cloud and local AI providers. A cloud AI provider receives the content each feature sends (described in the pages above); with local models, prompts stay on your machine. Adding a web link still fetches it from the internet, and the Firecrawl and Jina URL engines, when configured, fetch pages through those services.
 - **You choose what the AI sees.** In Chat you set the context per source and note. Ask and Search can be limited to specific notebooks.
-- **Everything is stored in your own database.** Sources, insights, notes, chat history and podcasts live in your SurrealDB instance.
+- **Your data stays in your deployment.** Sources, insights, notes and podcast records live in your SurrealDB database. Uploaded files, generated podcast audio and chat history (a checkpoint file) live in the app's data directory. Back up both.
 
 ## Next Steps
 

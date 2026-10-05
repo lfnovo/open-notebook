@@ -48,7 +48,7 @@ Things to know:
 
 ## Sessions
 
-A session is one conversation; its messages are saved and reloaded when you come back. Click **Sessions** to open **Chat Sessions**, where you can create a session (with an optional title), switch to another one, rename it or delete it. Each session remembers the conversation, not the context selection.
+A session is one conversation; its messages are saved and reloaded when you come back. Click **Sessions** to open **Chat Sessions**, where you can create a session (give it a title), switch to another one, rename it or delete it. Each session remembers the conversation, not the context selection.
 
 ## Choosing the Model
 
@@ -81,7 +81,7 @@ Under each AI answer:
 
 Each source also has its own chat. Open the source and click **Chat with Sources**: the source page shows the content on the left and the chat on the right, with its own sessions and model choice.
 
-Source chat always uses that source's full text and insights; there are no context levels. Long sources are truncated to fit about 50,000 tokens, so for a very long document ask about specific sections, or use notebook chat with the source at *Insights only* plus targeted questions. **Save to note** is not available in source chat (the source isn't tied to one notebook); use **Copy to clipboard**.
+Source chat always uses that source's full text and insights; there are no context levels. Long sources are truncated to fit about 50,000 tokens, so questions about the later parts of a very long document may not be answerable there; use notebook chat with the source at *Full content* instead (large contexts switch to your Large Context Model). **Save to note** is not available in source chat (the source isn't tied to one notebook); use **Copy to clipboard**.
 
 ---
 
@@ -92,6 +92,7 @@ Source chat always uses that source's full text and insights; there are no conte
 | *The model returned an empty response...* | Retry, or pick another model. Reasoning models with a small output limit can spend everything on thinking. The failed question is not kept in the session, so retrying doesn't duplicate it |
 | Answers ignore a source | Check its context icon; it may be excluded or at *Insights only* with thin insights |
 | Slow or expensive | Reduce context: exclude sources, use *Insights only*, or start a new session (the whole session history is sent too) |
+| *The AI provider took too long to respond...* | The request hit the backend timeout (`ESPERANTO_LLM_TIMEOUT`, 180 seconds by default). Retry, use a faster model, reduce context, or raise the timeout |
 | *No model configured...* | Set the Chat Model in **Manage → Models → Default Model Assignments** |
 
 More in [AI & Chat Issues](../6-TROUBLESHOOTING/ai-chat-issues.md).

@@ -42,7 +42,7 @@ Things to know:
 
 - **Sources live in a shared library.** The **Sources** page lists every source. A source can be linked to any number of notebooks (use **Add Existing Source** in a notebook) or to none. Removing a source from a notebook only unlinks it; deleting a source removes it everywhere.
 - **The extracted text is not edited in the app.** To pick up a changed web page, use **Refresh content** on the source; to fix a bad upload, add the file again.
-- **Search coverage depends on embedding.** Text (keyword) search works on every source. Vector search and Ask only see sources that have been embedded.
+- **Search coverage depends on embedding.** Text (keyword) search works on every source. Vector search and Ask search embedded source text and insights; insights are embedded on their own, so a source whose text wasn't embedded can still be found through its insights.
 
 ---
 

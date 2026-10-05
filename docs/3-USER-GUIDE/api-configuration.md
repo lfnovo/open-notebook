@@ -25,7 +25,7 @@ services:
 
 Any string works; an encryption key is derived from it. Apply the change by recreating the container (`docker compose up -d`).
 
-> **Keep this value safe and stable.** If it changes or is lost, stored API keys can't be decrypted: their cards show **Decryption Error** and you have to delete and re-create them.
+> **Keep this value safe and stable.** If it changes, stored API keys can't be decrypted and their cards show **Decryption Error** until you restore the original value. If the original value is lost, the stored keys can't be recovered: delete those configurations and add them again.
 
 Both `OPEN_NOTEBOOK_ENCRYPTION_KEY` and `OPEN_NOTEBOOK_PASSWORD` also accept a `_FILE` variant (for example `OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE=/run/secrets/encryption_key`) for Docker secrets. For the encryption scheme, upgrading stored keys and backups, see [Security](../5-CONFIGURATION/security.md).
 
@@ -52,7 +52,7 @@ The models now appear under the configuration, each with a **Test Model** icon (
 
 Which providers offer which model types (language, embedding, speech) is listed in [AI Providers](../4-AI-PROVIDERS/index.md); provider-specific setup notes are in [AI Providers configuration](../5-CONFIGURATION/ai-providers.md), [Ollama](../5-CONFIGURATION/ollama.md), [OpenAI-compatible](../5-CONFIGURATION/openai-compatible.md) and [oMLX](../5-CONFIGURATION/omlx.md).
 
-> Several providers only offer language models. To use Ask, vector search or podcasts you also need a provider with an embedding model and one with text-to-speech.
+> Several providers only offer language models. Ask and vector search also need an embedding model; podcasts need a text-to-speech model; audio and video sources need a speech-to-text model. These can come from a different provider.
 
 ### Multiple configurations per provider
 
@@ -104,7 +104,7 @@ If provider API keys are set as environment variables (the older way), the Model
 | Symptom | What to check |
 |---------|---------------|
 | Can't save a configuration, *Encryption key not configured* | Set `OPEN_NOTEBOOK_ENCRYPTION_KEY` and recreate the container |
-| **Decryption Error** on a configuration | The encryption key changed. Delete the configuration and add it again |
+| **Decryption Error** on a configuration | The encryption key changed. Restore the original value; if it's lost, delete the configuration and add it again |
 | Test Connection fails | The key, the Base URL (from Docker, `localhost` means the container itself), firewall or proxy |
 | A model isn't in Discover Models | Type its exact name in the search box and add it |
 | *Missing required models* warning | Set the Chat Model and Embedding Model, or click **Auto-assign Defaults** |

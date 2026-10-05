@@ -57,7 +57,8 @@ Not good for: one-off questions (use Chat or Ask).
 Do you know which sources matter?
 ├─ Yes → Do you want a conversation?
 │        ├─ Yes → Notebook Chat (or Source Chat for a single source)
-│        └─ No, the same extraction for each source → Transformation
+│        └─ No → a one-off question: Notebook Chat;
+│               the same extraction for each source: Transformation
 └─ No  → Do you want an AI answer?
          ├─ Yes → Ask
          └─ No, just find the passages → Search (text or vector)

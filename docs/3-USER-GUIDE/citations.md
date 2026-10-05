@@ -29,7 +29,7 @@ Transformations don't produce citations; an insight is the transformation's outp
 
 1. Click the citation next to the claim.
 2. Read the opened item and find the supporting text.
-3. If you can't find it, ask in the same chat: "Where exactly in that source does it say this? Quote the passage."
+3. If you can't find it, ask a follow-up in notebook chat (or the source's own chat): "Where exactly in that source does it say this? Quote the passage." Ask answers can't be followed up; take the question to chat with the cited source in context.
 
 Things that make citations more reliable:
 

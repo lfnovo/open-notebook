@@ -76,7 +76,7 @@ Your question
 Things to know:
 
 - **Ask needs an embedding model.** Without a default Embedding Model the page tells you to set one up and Ask is unavailable.
-- **Ask only sees embedded content.** It searches source chunks, insights and notes that have embeddings. A source added with embedding turned off is invisible to Ask until you embed it.
+- **Ask only sees embedded content.** It searches embedded source chunks, insights and notes. Insights are embedded on their own, so a source added with embedding turned off can still be found through its insights, but not through its full text until you embed it.
 - **Ask searches everything by default.** Leave the **Notebooks** selector empty to search your whole knowledge base, or pick notebooks to limit it. Chat context levels don't apply.
 - **Three model slots.** Strategy, Answer and Final Answer use your Chat Model default unless you change them under **Advanced** on the Ask tab.
 - **Ask is single-turn.** There are no follow-ups. Save a useful answer with **Save to Notebooks**, or take the topic to Chat.
@@ -100,7 +100,7 @@ Use it for exact names, terms and phrases you remember.
 
 - Your query is turned into a vector with the embedding model and compared with the stored chunk vectors.
 - Matches source content, insights and note content by similarity. Titles are not matched.
-- Needs an embedding model, and only finds embedded content.
+- Needs an embedding model, and only finds embedded content. Insights are embedded separately from source text, so a source whose text wasn't embedded can still match through its insights.
 
 Use it when you know the idea but not the wording.
 
@@ -118,7 +118,7 @@ Chat and Ask answers cite the items they used by record ID, for example `[source
 
 ## Privacy: What Leaves Your Machine
 
-Content is sent to whichever provider runs the model for that feature. If all your models are local (for example Ollama), nothing leaves your machine. With a cloud provider:
+Content is sent to whichever provider runs the model for that feature. If all your models are local (for example Ollama), no prompt content goes to a cloud AI provider. Other outbound requests still happen: adding a URL source fetches that site, and the Firecrawl and Jina URL engines (when configured) send the URL to those services, which fetch the page and return its content. With a cloud AI provider:
 
 | Feature | What the provider receives |
 |---------|----------------------------|

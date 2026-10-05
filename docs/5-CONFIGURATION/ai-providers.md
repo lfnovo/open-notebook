@@ -12,6 +12,7 @@ The step-by-step procedure (Add Configuration → Test → Models → Default Mo
 
 - **API-key providers** (most cloud providers): get a key from the link in the table below (the form also shows a **Get API Key** link). Leave **Base URL** empty unless you need a regional or self-hosted endpoint.
 - **Google Vertex AI**: no API key; the form asks for a project, a region and an optional service-account file. See [Google Vertex AI](#google-vertex-ai).
+- **Anthropic Compatible**: needs both an **API Key** and a **Base URL** (the service's API root); there is no default endpoint. See [Anthropic Compatible](#anthropic-compatible).
 - **Ollama, oMLX and OpenAI Compatible**: the API key is optional; **Base URL** is what matters. See [Ollama](ollama.md), [oMLX](omlx.md) and [OpenAI-Compatible](openai-compatible.md).
 
 When **Test** fails, it shows the reason, for example "Invalid API key" or "Cannot connect to server. Check the URL is correct." (see [AI & Chat Issues → Test fails](../6-TROUBLESHOOTING/ai-chat-issues.md#test-fails)). In the **Discover Models** dialog, a model that isn't listed can be added by typing its exact id in the search box and clicking **Add "…"**.

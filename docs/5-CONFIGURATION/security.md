@@ -221,12 +221,14 @@ For single sign-on, per-user access or rate limiting, put an authenticating prox
 ### The login keeps failing
 
 ```bash
-# Is a password set in the container? (prints "set" or "unset", never the value)
-docker compose exec open_notebook sh -c 'if [ -n "$OPEN_NOTEBOOK_PASSWORD$OPEN_NOTEBOOK_PASSWORD_FILE" ]; then echo set; else echo unset; fi'
+# Which password source does the API use? (never prints the value)
+docker compose exec open_notebook sh -c 'f="$OPEN_NOTEBOOK_PASSWORD_FILE"; if [ -n "$f" ] && [ -r "$f" ] && grep -q "[^[:space:]]" "$f"; then echo "set from file"; elif [ -n "$OPEN_NOTEBOOK_PASSWORD" ]; then echo "set from variable"; else echo "unset (authentication off)"; fi'
 
 # Does the API accept it?
 curl -i -H "Authorization: Bearer your_password" http://localhost:5055/api/notebooks
 ```
+
+A `_FILE` path that doesn't exist or points to an empty file is ignored (the API log shows `OPEN_NOTEBOOK_PASSWORD_FILE path does not exist` or `points to empty file`), and the API falls back to `OPEN_NOTEBOOK_PASSWORD`.
 
 If you changed the password in `docker-compose.yml`, apply it with `docker compose up -d` (`restart` keeps the old value), then sign out and log in again.
 

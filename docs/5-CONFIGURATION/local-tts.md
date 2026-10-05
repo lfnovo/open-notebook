@@ -40,7 +40,7 @@ For an NVIDIA GPU, use the `latest-cuda` image and add a GPU reservation:
               capabilities: [gpu]
 ```
 
-`"8969:8000"` publishes Speaches, which has no authentication, on every network interface of the host. Allow port 8969 only from this host and its Docker networks (for example with your firewall), never from untrusted networks.
+`"8969:8000"` publishes Speaches, which has no authentication, on every network interface of the host. Allow port 8969 only from the clients that need it: this host and its Docker networks when Open Notebook runs on the same machine, or the Open Notebook host's address (or its trusted network) when Speaches runs on a separate server. Never open it to untrusted networks.
 
 If you add the `speaches` service to Open Notebook's own `docker-compose.yml` instead, Open Notebook reaches it at `http://speaches:8000/v1` and you don't need to publish a port at all. That's the safer option.
 

@@ -20,7 +20,9 @@ Replace `<generated-key>` with a value you generate yourself, for example with `
 
 The shipped `docker-compose.yml` does not load an env file into the container. A `.env` file next to it only fills the `${...}` placeholders in the compose file (`SURREAL_USER`, `SURREAL_PASSWORD`). If you prefer a file, add `env_file: .env` to the `open_notebook` service yourself.
 
-**From source:** put variables in `.env` in the project root and restart the API and the worker (`make api`, `make worker-start` both load `.env`). The exception is `OPEN_NOTEBOOK_WORKER_MAX_TASKS`: `make worker-start` reads it from your shell before `.env` is loaded, so `export` it.
+**From source:** put backend variables in `.env` in the project root and restart the API and the worker (`make api`, `make worker-start` both load `.env`). The exception is `OPEN_NOTEBOOK_WORKER_MAX_TASKS`: `make worker-start` reads it from your shell before `.env` is loaded, so `export` it.
+
+Variables read by the frontend (`API_URL`, `INTERNAL_API_URL`, `NEXT_PUBLIC_*`, `NEXT_ALLOWED_DEV_ORIGINS`) are different: `make frontend` runs `npm run dev` inside `frontend/`, and Next.js only loads env files from that directory (`frontend/.env.local`, `frontend/.env`), not the root `.env`. Put them in `frontend/.env.local` or export them in the shell before `make frontend`, then restart it. `NEXT_PUBLIC_*` values are compiled in, so they take effect on the next `npm run dev` or `npm run build`. Most setups need none of them: the frontend forwards `/api/*` to `http://localhost:5055` by default.
 
 ### The "Read by" column
 
@@ -283,8 +285,8 @@ These appear in older guides, examples or forum posts. Nothing in Open Notebook 
 # One non-secret variable
 docker compose exec open_notebook printenv OPEN_NOTEBOOK_WORKER_MAX_TASKS
 
-# Which Open Notebook-related variables are set (names only, so no secrets are printed)
-docker compose exec open_notebook sh -c 'printenv | cut -d= -f1 | grep -E "OPEN_NOTEBOOK|SURREAL|API_URL|ESPERANTO|CCORE"'
+# Every variable set in the container, names only (no values, so no secrets are printed)
+docker compose exec open_notebook sh -c 'printenv | cut -d= -f1 | sort'
 ```
 
 Don't print `OPEN_NOTEBOOK_ENCRYPTION_KEY`, `OPEN_NOTEBOOK_PASSWORD` or `SURREAL_PASSWORD` into output you share in an issue or a chat.

@@ -42,4 +42,4 @@ The token is validated by an actual API call (`/notebooks`), not JWT decoding, w
 
 ## Error handling
 
-`getApiErrorMessage()` (`lib/utils/error-handler.ts`) tries an i18n mapping first, then falls back to the backend's descriptive message — which the backend error-classification system already makes user-friendly (see [architecture.md](architecture.md)). Mutations surface errors as toasts; an app-level ErrorBoundary catches render errors.
+`getApiErrorMessage()` (`lib/utils/error-handler.ts`) tries an i18n mapping first, then falls back to the backend's descriptive message — which the backend error-classification system already makes user-friendly (see [architecture.md](architecture.md#how-a-model-call-happens)). Mutations surface errors as toasts; an app-level ErrorBoundary catches render errors.

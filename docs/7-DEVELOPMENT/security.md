@@ -145,7 +145,7 @@ Never pass user-provided file paths directly to file reading or content extracti
 Open Notebook currently uses simple password-based middleware (`PasswordAuthMiddleware`). This is suitable for single-user self-hosted deployments but should be hardened for production:
 
 - Set `OPEN_NOTEBOOK_PASSWORD` explicitly - there is no hardcoded default password; if it's unset, auth is fully disabled (all requests pass through unchecked)
-- Change the default encryption key (`OPEN_NOTEBOOK_ENCRYPTION_KEY`)
+- Set a strong encryption key (`OPEN_NOTEBOOK_ENCRYPTION_KEY`). There is no default: credential storage is unavailable until it is set
 - Consider deploying behind a reverse proxy with proper authentication (OAuth, OIDC)
 
 ### CORS
@@ -160,7 +160,7 @@ The default CORS configuration allows all origins (`allow_origins=["*"]`). `allo
 
 `OPEN_NOTEBOOK_ENCRYPTION_KEY` is used to encrypt API keys stored in SurrealDB. In production:
 
-- Set a strong, unique, high-entropy key (do not use the default, a short word, or a reused password). The key is stretched with PBKDF2-HMAC-SHA256 (600k iterations), which slows brute force but cannot save a guessable passphrase — entropy is the actual security.
+- Set a strong, unique, high-entropy key (not a short word, a reused password, or the `change-me-to-a-secret-string` placeholder from the example compose file). The key is stretched with PBKDF2-HMAC-SHA256 (600k iterations), which slows brute force but cannot save a guessable passphrase — entropy is the actual security.
 - Use Docker secrets via `OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE` when possible
 - Never log or expose this value
 - After upgrading, run the one-shot `POST /api/credentials/migrate-encryption` pass to rewrite pre-existing keys into the versioned format. Back up the database first: the new format is forward-breaking — versions predating the migration cannot read it (see CHANGELOG).

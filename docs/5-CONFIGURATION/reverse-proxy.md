@@ -587,11 +587,12 @@ serversTransport:
 
 If you still experience timeouts after configuring your proxy, you can also adjust the application timeouts:
 
-```bash
-# In .env file:
-API_CLIENT_TIMEOUT=600      # API client timeout (default: 300s)
-ESPERANTO_LLM_TIMEOUT=420   # LLM inference timeout (default: 180s)
+```yaml
+# docker-compose.yml → open_notebook → environment:
+- ESPERANTO_LLM_TIMEOUT=420   # per model call (default: 180s); keep below 600
 ```
+
+The web UI itself waits up to 10 minutes per request, so set your proxy timeouts to at least 600 seconds.
 
 See [Advanced Configuration](advanced.md) for more timeout options.
 
@@ -866,7 +867,7 @@ curl -H "Authorization: Bearer your-password-here" \
 4. **Enable security headers** (HSTS, X-Frame-Options, X-Content-Type-Options, X-XSS-Protection)
 5. **Set up certificate renewal** for Let's Encrypt (usually automatic with certbot)
 6. **Keep ports 5055 and 8502 accessible** from your reverse proxy container (use Docker networks)
-7. **Use environment files** (`.env` or `docker.env`) to manage configuration securely
+7. **Keep secrets out of version control**: set them in the compose `environment:` block or an `env_file:` that isn't committed
 8. **Test your configuration** before going live:
    - Check browser console for config messages
    - Test API: `curl https://your-domain.com/api/config`

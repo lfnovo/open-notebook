@@ -1,6 +1,6 @@
 # Quick Start - Local & Private (10 minutes)
 
-Run Open Notebook and **Ollama** together in Docker. No cloud API keys; your content stays on your machine.
+Run Open Notebook and **Ollama** together in Docker. No cloud API keys: your content is processed by models on your machine, not sent to an AI provider. To keep the app itself private, make sure other devices can't reach it (see the note in Step 1).
 
 **Already have Ollama installed on this computer?** Use the [External Ollama guide](quick-start-external-ollama.md) instead.
 
@@ -20,7 +20,9 @@ curl -o docker-compose.yml https://raw.githubusercontent.com/lfnovo/open-noteboo
 
 (On Windows PowerShell, use `curl.exe`.)
 
-Open `docker-compose.yml` and replace `change-me-to-a-secret-string` in the `OPEN_NOTEBOOK_ENCRYPTION_KEY` line with a long random secret of your own.
+Open `docker-compose.yml` and replace `change-me-to-a-secret-string` in the `OPEN_NOTEBOOK_ENCRYPTION_KEY` line with a long random secret you generate yourself, for example with `openssl rand -hex 32` (Windows: see [Set your encryption key](../1-INSTALLATION/docker-compose.md#step-2-set-your-encryption-key)). Don't reuse an example value.
+
+> **Shared network or server?** The shipped file publishes the UI (`8502`) and API (`5055`) on all network interfaces, and there is no password by default. If other devices can reach this machine, do one of these before starting: change the two `open_notebook` port lines to `"127.0.0.1:8502:8502"` and `"127.0.0.1:5055:5055"`, or add `- OPEN_NOTEBOOK_PASSWORD=your-password` to its `environment:` block.
 
 ## Step 2: Add the Ollama service (1 min)
 
@@ -84,7 +86,7 @@ The last step of that page creates a notebook, adds a text source and sends a ch
 
 **Responses are very slow or time out.** Small models on CPU are slow. Try a smaller model, enable GPU access, or set `OPEN_NOTEBOOK_WORKER_MAX_TASKS=1` so background jobs don't compete with chat. Timeouts are covered in the [Ollama guide](../5-CONFIGURATION/ollama.md).
 
-**Adding more models later.** Run `docker compose exec ollama ollama pull <model>`, then open **Models** on the Ollama configuration again and add it.
+**Adding more models later.** Run `docker compose exec ollama ollama pull <model>`, then click **Models** on the Ollama configuration again (it opens the **Discover Models** dialog) and add it.
 
 **Anything else.** `docker compose logs -f open_notebook` and `docker compose logs -f ollama`. See [Quick Fixes](../6-TROUBLESHOOTING/quick-fixes.md).
 

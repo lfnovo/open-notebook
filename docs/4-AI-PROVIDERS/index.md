@@ -24,8 +24,9 @@ Do this after Open Notebook is running and you can open the UI. It ends with a w
 2. Find your provider in the list and click **Add Configuration**.
 3. Fill in the form:
    - **Configuration Name**: any label, for example `Personal`.
-   - **API Key**: the key from your provider. Local providers such as Ollama don't need one.
+   - **API Key**: the key from your provider. Local providers such as Ollama and oMLX don't need one (the field is marked optional).
    - **Base URL**: leave empty for cloud providers. Local and self-hosted providers need it (for example `http://ollama:11434` for the Ollama container).
+   - **Google Vertex AI** uses a different form: **GCP Project ID** and **Region** (required) and an optional **Service Account JSON Path** instead of an API key. Without the JSON path, the server's default Google Cloud credentials are used.
 4. Click **Add Configuration**.
 
 ### 2. Test the connection
@@ -61,7 +62,7 @@ Scroll down to **Default Model Assignments** on the same page.
 ### 5. Check that chat works
 
 1. In the sidebar, click **Notebooks** → **New Notebook**, enter a name and click **Create New Notebook**.
-2. In the notebook, click **Add Source** → **Add Source**. Choose **Enter Text**, paste a paragraph, give it a title, then click **Next** through the remaining steps and **Done**.
+2. In the notebook, click the **Add Source** button and pick **Add Source** from its menu (the other entry, **Add Existing Sources**, reuses sources you already have). Choose **Enter Text**, paste a paragraph, give it a title, then click **Next** through the remaining steps and **Done**.
 3. Wait for the source to finish processing, then type a question in the chat panel and send it with **Ctrl+Enter** (**⌘+Enter** on macOS).
 
 If you get an answer, you're done. Add more providers the same way at any time; each one gets its own configurations and models.

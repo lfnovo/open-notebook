@@ -31,10 +31,16 @@ This guide runs [Open Notebook](https://github.com/lfnovo/open-notebook) on Wind
    cd frontend && npm install && cd ..
    ```
 
-2. **Create `.env`:** copy `.env.example` to `.env` and change these two lines:
+2. **Create `.env`:** generate an encryption key with
+
+   ```batch
+   uv run python -c "import secrets; print(secrets.token_hex(32))"
+   ```
+
+   then copy `.env.example` to `.env` and change these two lines, pasting the generated value as the key (never an example value). Keep it: if it changes, saved API keys can't be decrypted.
 
    ```env
-   OPEN_NOTEBOOK_ENCRYPTION_KEY=any-long-random-secret
+   OPEN_NOTEBOOK_ENCRYPTION_KEY=<the value you generated>
    SURREAL_URL="ws://127.0.0.1:8000/rpc"
    ```
 
@@ -46,7 +52,7 @@ This guide runs [Open Notebook](https://github.com/lfnovo/open-notebook) on Wind
 
    ```batch
    REM Terminal 1 — SurrealDB (database files go in the folder you name here)
-   surreal start --user root --pass root --bind 127.0.0.1:8000 rocksdb:%USERPROFILE%\Projects\open-notebook-data\surrealdb
+   surreal start --user root --pass root --bind 127.0.0.1:8000 "rocksdb:%USERPROFILE%\Projects\open-notebook-data\surrealdb"
 
    REM Terminal 2 — API
    uv run --env-file .env run_api.py
@@ -83,7 +89,7 @@ set DB_DIR=%USERPROFILE%\Projects\open-notebook-data\surrealdb
 set PYTHONPATH=%ROOT%
 cd /d %ROOT%
 
-start "SurrealDB" surreal start --user root --pass root --bind 127.0.0.1:8000 rocksdb:%DB_DIR%
+start "SurrealDB" surreal start --user root --pass root --bind 127.0.0.1:8000 "rocksdb:%DB_DIR%"
 start "API" cmd /k "uv run --env-file .env run_api.py"
 start "Worker" cmd /k "uv run --env-file .env python -m surreal_commands.cli.worker --import-modules commands"
 start "Frontend" cmd /k "cd /d %ROOT%\frontend && npm run dev"
@@ -233,7 +239,7 @@ Run the `docker compose` commands below from the folder that contains your
    `rocksdb:/mydata/mydatabase.db`):
 
    ```batch
-   surreal start --user root --pass <your-password> --bind 127.0.0.1:8000 rocksdb:surreal_data\mydatabase.db
+   surreal start --user root --pass <your-password> --bind 127.0.0.1:8000 "rocksdb:surreal_data\mydatabase.db"
    ```
 
 5. **Fix what only made sense inside the container**, before starting the API

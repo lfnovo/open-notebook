@@ -46,7 +46,7 @@ services:
     restart: always
 ```
 
-Change the encryption key, then:
+Replace the encryption key with a long random secret you generate yourself (see [Set your encryption key](docker-compose.md#step-2-set-your-encryption-key)). If other devices can reach this machine, also add `- OPEN_NOTEBOOK_PASSWORD=...` or bind the ports to `127.0.0.1`. Then:
 
 ```bash
 docker compose up -d
@@ -73,9 +73,17 @@ See [`examples/easypanel/README.md`](https://github.com/lfnovo/open-notebook/blo
 
 ## Moving to Docker Compose
 
-1. Stop the single container and copy its two data folders.
-2. Set up [Docker Compose](docker-compose.md) with the **same** `OPEN_NOTEBOOK_ENCRYPTION_KEY`.
-3. Before the first start, put the old database files in `surreal_data/` and the old app data in `notebook_data/`.
+1. **Get the data out of the old container.** If `/mydata` was mounted to a host folder, that folder holds the database. Older versions of this guide only mounted `/app/data`, so on those setups the database lives **inside the container**: copy it out before you remove the container. From the folder with the old `docker-compose.yml`:
+
+   ```bash
+   docker compose stop
+   docker compose cp open_notebook:/mydata ./surreal_data
+   docker compose cp open_notebook:/app/data ./notebook_data   # skip if /app/data was already a host folder
+   ```
+
+   On a hosting platform, use its volume or file export instead. Don't run `docker compose down` until the copy is done: removing the container deletes an unmounted database.
+2. Set up [Docker Compose](docker-compose.md) in a new folder with the **same** `OPEN_NOTEBOOK_ENCRYPTION_KEY`.
+3. Before the first start, move the copied `surreal_data/` (it must contain `mydatabase.db`) and `notebook_data/` into the new folder.
 
 The single image's database uses `root:root`, which matches the compose default. The database path inside both setups is `/mydata/mydatabase.db`.
 

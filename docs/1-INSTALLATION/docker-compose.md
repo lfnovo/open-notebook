@@ -39,11 +39,30 @@ Open `docker-compose.yml` and find this line in the `open_notebook` service:
       - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
 ```
 
-Replace `change-me-to-a-secret-string` with a long random string of your own (for example the output of `openssl rand -hex 32`). Open Notebook uses it to encrypt the provider API keys it stores.
+Replace `change-me-to-a-secret-string` with a long random secret that you generate yourself. Don't copy an example value from any guide. Either of these prints a suitable value:
+
+```bash
+openssl rand -hex 32                                   # macOS, Linux
+```
+
+```powershell
+[guid]::NewGuid().ToString("N") + [guid]::NewGuid().ToString("N")   # Windows PowerShell
+```
+
+Open Notebook uses this key to encrypt the provider API keys it stores.
 
 > **Keep this key.** If it changes later, the keys you saved can no longer be decrypted and you have to enter them again.
 
-## Step 3: Start Open Notebook
+## Step 3: Decide who can reach it
+
+The shipped file publishes ports `8502` (UI) and `5055` (API) on **all network interfaces**, and authentication is off until you set a password. If other people or devices can reach this machine (shared network, server, VPS), do one of these **before starting**:
+
+- **Keep it on this machine only:** in `docker-compose.yml`, change the two port lines of the `open_notebook` service to `"127.0.0.1:8502:8502"` and `"127.0.0.1:5055:5055"`.
+- **Require a password:** add `- OPEN_NOTEBOOK_PASSWORD=your-password` to the `environment:` block of the `open_notebook` service.
+
+See [Access from another machine](#access-from-another-machine) if you do want to use it from other devices.
+
+## Step 4: Start Open Notebook
 
 ```bash
 docker compose up -d
@@ -62,7 +81,7 @@ curl http://localhost:5055/health
 # {"status":"healthy"}
 ```
 
-## Step 4: Open the UI and connect a provider
+## Step 5: Open the UI and connect a provider
 
 Open **http://localhost:8502**.
 
@@ -138,16 +157,19 @@ Open Notebook runs in a container, so `localhost` there is the container, not yo
          - "host.docker.internal:host-gateway"
    ```
 
-2. **Linux only:** Ollama listens on `127.0.0.1` by default, which containers can't reach. Make it listen on all interfaces. For the systemd service:
+2. Make Ollama reachable from containers:
 
-   Run `sudo systemctl edit ollama`, add these lines, save, then run `sudo systemctl restart ollama`:
+   - **macOS and Windows (Docker Desktop):** Docker Desktop forwards `host.docker.internal` to the host, so Ollama's default setup usually works as is. If the connection test fails, make Ollama listen on all interfaces and restart it: on macOS run `launchctl setenv OLLAMA_HOST "0.0.0.0:11434"`; on Windows add a user environment variable `OLLAMA_HOST` = `0.0.0.0:11434`. See Ollama's [documentation](https://github.com/ollama/ollama/tree/main/docs) (FAQ, "How do I configure Ollama server?").
+   - **Linux:** Ollama listens on `127.0.0.1` by default, which containers can't reach. For the systemd service, run `sudo systemctl edit ollama`, add these lines, save, then run `sudo systemctl restart ollama`:
 
-   ```ini
-   [Service]
-   Environment="OLLAMA_HOST=0.0.0.0:11434"
-   ```
+     ```ini
+     [Service]
+     Environment="OLLAMA_HOST=0.0.0.0:11434"
+     ```
 
-   If you start Ollama by hand, use `OLLAMA_HOST=0.0.0.0:11434 ollama serve`. This also exposes Ollama to your network, so firewall port 11434 if the machine is reachable from outside.
+     If you start Ollama by hand, use `OLLAMA_HOST=0.0.0.0:11434 ollama serve`.
+
+   `OLLAMA_HOST=0.0.0.0` exposes Ollama's API, which has no authentication, on every network interface. Allow port 11434 only from this host and its Docker networks (for example with your firewall), never from untrusted networks.
 
 3. Run `docker compose up -d`.
 4. When you [connect a provider](../4-AI-PROVIDERS/index.md#connect-a-provider), pick **Ollama** and set **Base URL** to `http://host.docker.internal:11434`.
@@ -165,7 +187,7 @@ By default the browser loads the UI from port `8502` and then calls the API dire
 - make **both** ports `8502` and `5055` reachable, or
 - set `API_URL` to the address you open the UI with (for example `- API_URL=http://192.168.1.50:8502`). The browser then sends API calls through the UI server, and only port `8502` needs to be reachable.
 
-Authentication is off unless you set `OPEN_NOTEBOOK_PASSWORD`. Set it before exposing Open Notebook to any network. For HTTPS and domains, see [Reverse Proxy](../5-CONFIGURATION/reverse-proxy.md) and [Security](../5-CONFIGURATION/security.md).
+Authentication is off unless you set `OPEN_NOTEBOOK_PASSWORD`, so set it whenever the ports are reachable from other machines (see [Step 3](#step-3-decide-who-can-reach-it)). For HTTPS and domains, see [Reverse Proxy](../5-CONFIGURATION/reverse-proxy.md) and [Security](../5-CONFIGURATION/security.md).
 
 ---
 

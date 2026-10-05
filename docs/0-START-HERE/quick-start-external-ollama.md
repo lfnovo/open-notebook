@@ -24,7 +24,7 @@ On a smaller machine, use `llama3.2` or `gemma3:1b` instead of `qwen3`.
 
 Open Notebook runs in a container, where `localhost` means the container itself. It reaches your computer's Ollama through the name `host.docker.internal`.
 
-**macOS and Windows (Docker Desktop):** nothing to do. Ollama's default setup is reachable at `http://host.docker.internal:11434`.
+**macOS and Windows (Docker Desktop):** Docker Desktop forwards `host.docker.internal` to your computer, so Ollama's default setup usually works as is; try it first. If the connection test in Step 5 fails, make Ollama listen on all interfaces and restart it: on macOS run `launchctl setenv OLLAMA_HOST "0.0.0.0:11434"`; on Windows add a user environment variable `OLLAMA_HOST` = `0.0.0.0:11434`. See Ollama's [documentation](https://github.com/ollama/ollama/tree/main/docs) (FAQ, "How do I configure Ollama server?").
 
 **Linux:** Ollama listens only on `127.0.0.1` by default, which containers can't reach. Make it listen on all interfaces. If Ollama runs as the systemd service (the default for the Linux installer):
 
@@ -45,7 +45,7 @@ sudo systemctl restart ollama
 
 If you run Ollama by hand, start it with `OLLAMA_HOST=0.0.0.0:11434 ollama serve`.
 
-This makes Ollama reachable from your network too; firewall port 11434 if the machine is exposed.
+**On any platform,** `OLLAMA_HOST=0.0.0.0` exposes Ollama's API, which has no authentication, on every network interface. Allow port 11434 only from this computer and its Docker networks (for example with your firewall), never from untrusted networks.
 
 ## Step 3: Download and configure Open Notebook (1 min)
 
@@ -57,7 +57,9 @@ curl -o docker-compose.yml https://raw.githubusercontent.com/lfnovo/open-noteboo
 
 (On Windows PowerShell, use `curl.exe`.)
 
-Open `docker-compose.yml` and replace `change-me-to-a-secret-string` in the `OPEN_NOTEBOOK_ENCRYPTION_KEY` line with a long random secret of your own.
+Open `docker-compose.yml` and replace `change-me-to-a-secret-string` in the `OPEN_NOTEBOOK_ENCRYPTION_KEY` line with a long random secret you generate yourself, for example with `openssl rand -hex 32` (Windows: see [Set your encryption key](../1-INSTALLATION/docker-compose.md#step-2-set-your-encryption-key)). Don't reuse an example value.
+
+> **Shared network or server?** The shipped file publishes the UI (`8502`) and API (`5055`) on all network interfaces, and there is no password by default. If other devices can reach this machine, do one of these before starting: change the two `open_notebook` port lines to `"127.0.0.1:8502:8502"` and `"127.0.0.1:5055:5055"`, or add `- OPEN_NOTEBOOK_PASSWORD=your-password` to its `environment:` block.
 
 Then create `docker-compose.override.yml` in the same folder. On Linux this is what makes `host.docker.internal` resolve; on Docker Desktop it's harmless:
 
@@ -105,12 +107,12 @@ docker compose exec open_notebook curl -s http://host.docker.internal:11434/api/
 ```
 
 - *Could not resolve host*: the `extra_hosts` override is missing, or you didn't run `docker compose up -d` after adding it.
-- *Connection refused* (Linux): Ollama is still listening on `127.0.0.1`. Redo Step 2 and check with `ss -ltn | grep 11434` (it should show `*:11434` or `0.0.0.0:11434`).
+- *Connection refused*: Ollama is still listening on `127.0.0.1` only. Redo Step 2 (on macOS and Windows, apply the `OLLAMA_HOST` fallback). On Linux, check with `ss -ltn | grep 11434`; it should show `*:11434` or `0.0.0.0:11434`.
 - No answer at all: a firewall is blocking port 11434 between Docker and the host.
 
 **Responses are slow or time out.** See the timeouts section of the [Ollama guide](../5-CONFIGURATION/ollama.md).
 
-**Adding more models later.** Run `ollama pull <model>`, then open **Models** on the Ollama configuration again and add it.
+**Adding more models later.** Run `ollama pull <model>`, then click **Models** on the Ollama configuration again (it opens the **Discover Models** dialog) and add it.
 
 ## Ollama in Docker or on the host?
 
@@ -118,7 +120,7 @@ docker compose exec open_notebook curl -s http://host.docker.internal:11434/api/
 |---|---|---|
 | GPU | Needs Docker GPU setup | Uses the GPU natively (including Apple Silicon) |
 | Managing models | `docker compose exec ollama ollama ...` | `ollama ...` |
-| Networking | Works out of the box | Linux needs `OLLAMA_HOST` and `extra_hosts` |
+| Networking | Works out of the box | Needs `extra_hosts`; Linux (and sometimes Docker Desktop) needs `OLLAMA_HOST` |
 
 ## Next steps
 

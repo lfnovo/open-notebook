@@ -27,7 +27,9 @@ curl -o docker-compose.yml https://raw.githubusercontent.com/lfnovo/open-noteboo
 
 (On Windows PowerShell, use `curl.exe`.)
 
-Open `docker-compose.yml` and replace `change-me-to-a-secret-string` in the `OPEN_NOTEBOOK_ENCRYPTION_KEY` line with a long random secret of your own. Keep it: if it changes, saved API keys can't be decrypted.
+Open `docker-compose.yml` and replace `change-me-to-a-secret-string` in the `OPEN_NOTEBOOK_ENCRYPTION_KEY` line with a long random secret you generate yourself, for example with `openssl rand -hex 32` (Windows: see [Set your encryption key](../1-INSTALLATION/docker-compose.md#step-2-set-your-encryption-key)). Don't reuse an example value. Keep it: if it changes, saved API keys can't be decrypted.
+
+> **Shared network or server?** The shipped file publishes the UI (`8502`) and API (`5055`) on all network interfaces, and there is no password by default. If other devices can reach this machine, do one of these before starting: change the two `open_notebook` port lines to `"127.0.0.1:8502:8502"` and `"127.0.0.1:5055:5055"`, or add `- OPEN_NOTEBOOK_PASSWORD=your-password` to its `environment:` block.
 
 ## Step 2: Start (1 min)
 

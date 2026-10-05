@@ -60,14 +60,20 @@ Installing `uv` inside the Conda environment keeps the `make` targets working.
 cp .env.example .env
 ```
 
-Edit `.env` and change two lines:
+Generate an encryption key (works on every platform once `uv sync` has run):
 
-```env
-OPEN_NOTEBOOK_ENCRYPTION_KEY=any-long-random-secret
-SURREAL_URL=ws://localhost:8000/rpc
+```bash
+uv run python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-The example file points `SURREAL_URL` at `surrealdb`, a host name that only exists inside Docker Compose. A process running on your machine reaches the database at `localhost`.
+Edit `.env` and change two lines, pasting the generated value as the key (never an example value):
+
+```env
+OPEN_NOTEBOOK_ENCRYPTION_KEY=<the value you generated>
+SURREAL_URL=ws://127.0.0.1:8000/rpc
+```
+
+The example file points `SURREAL_URL` at `surrealdb`, a host name that only exists inside Docker Compose. A process running on your machine reaches the database at `127.0.0.1` (the database port is bound to IPv4 `127.0.0.1`; `localhost` can resolve to IPv6 `::1` first). Keep the key: if it changes, saved API keys can't be decrypted.
 
 ## 4. Start SurrealDB
 
@@ -106,11 +112,13 @@ npm run dev
 
 Open **http://localhost:3000**.
 
+> Once everything works, `make start-all` starts the database, API, worker and frontend from one terminal (stop them with `make stop-all`). Separate terminals make each process's logs easier to read.
+
 ## 8. Connect a provider
 
 Follow [Connect a provider](../4-AI-PROVIDERS/index.md#connect-a-provider). It ends with a test chat. Chat won't work until the default models are set.
 
-If you use Ollama on the same machine, its base URL is `http://localhost:11434`; there is no container in between.
+If you use Ollama on the same machine, its base URL is `http://127.0.0.1:11434`; there is no container in between.
 
 ---
 
@@ -134,11 +142,11 @@ The development workflow is described in the [Development Setup](../7-DEVELOPMEN
 
 **`npm run dev` fails with an engine or syntax error.** Your Node.js is older than 20.9. Check with `node --version`.
 
-**API can't connect to the database.** Check that `SURREAL_URL` in `.env` uses `localhost`, and that the database is running: `docker compose ps` and `docker compose logs surrealdb`.
+**API can't connect to the database.** Check that `SURREAL_URL` in `.env` uses `127.0.0.1`, and that the database is running: `docker compose ps` and `docker compose logs surrealdb`.
 
 **Sources stay queued.** The worker isn't running, or it crashed; check its terminal.
 
-**Port 5055 already in use.** Something else is on that port. Set `API_PORT` in `.env` to move the API; the frontend then needs `API_URL=http://localhost:<port>` in its environment (for example in `frontend/.env.local`).
+**Port 5055 already in use.** Something else is on that port. Set `API_PORT` in `.env` to move the API. The frontend then needs both `API_URL=http://localhost:<port>` (used by the browser) and `INTERNAL_API_URL=http://localhost:<port>` (used by the Next.js server to proxy `/api` requests) in its environment, for example in `frontend/.env.local`.
 
 ---
 

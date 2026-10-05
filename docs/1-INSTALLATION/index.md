@@ -25,7 +25,7 @@ Want a guided first run with a specific provider? The [quick starts](../0-START-
 You need at least one provider for chat, and an embedding model for search. You configure them in the UI after installing, not in config files.
 
 - **Cloud providers** (OpenAI, Anthropic, Google, Mistral, OpenRouter and many more): pay per use; your content is sent to the provider.
-- **Local providers** (Ollama, oMLX, LM Studio and other OpenAI-compatible servers): free to run; content stays on your hardware; speed depends on your hardware.
+- **Local providers** (Ollama, oMLX, LM Studio, or another OpenAI-compatible server running on your own hardware): free to run; content stays on your hardware; speed depends on your hardware. An OpenAI-compatible endpoint hosted elsewhere is a cloud provider for privacy purposes.
 
 The full list, with which providers cover chat, embeddings and speech, is in [AI Providers](../4-AI-PROVIDERS/index.md).
 

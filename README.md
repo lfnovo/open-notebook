@@ -65,7 +65,7 @@ In a world dominated by Artificial Intelligence, having the ability to think �
 - 🎙️ **Generate professional podcasts** - Advanced multi-speaker podcast generation
 - 🔍 **Search intelligently** - Full-text and vector search across all your content
 - 💬 **Chat with context** - AI conversations powered by your research
-- 🌐 **Multi-language UI** - English, Bengali, Catalan, Chinese (Simplified & Traditional), French, German, Japanese, Polish, Portuguese, Russian, Spanish and Turkish
+- 🌐 **Multi-language UI** - English, Bengali, Catalan, Chinese (Simplified & Traditional), French, German, Italian, Japanese, Polish, Portuguese, Russian, Spanish and Turkish
 
 Learn more about our project at [https://www.open-notebook.ai](https://www.open-notebook.ai)
 
@@ -115,7 +115,9 @@ Edit `docker-compose.yml` and change this line:
 ```yaml
 - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
 ```
-to a long random secret of your own. It encrypts the API keys you store; keep it.
+to a long random secret you generate yourself (for example with `openssl rand -hex 32`; [other options](docs/1-INSTALLATION/docker-compose.md#step-2-set-your-encryption-key)). It encrypts the API keys you store; keep it.
+
+> **Shared network or server?** The UI (`8502`) and API (`5055`) are published on all network interfaces and there is no password by default. If other devices can reach this machine, change those two port lines to `"127.0.0.1:8502:8502"` and `"127.0.0.1:5055:5055"`, or add `- OPEN_NOTEBOOK_PASSWORD=your-password` to the `environment:` block, before starting.
 
 ### Step 3: Start services
 ```bash
@@ -127,7 +129,7 @@ Wait about 30 seconds, then open: **http://localhost:8502**
 ### Step 4: Connect an AI provider
 1. In the sidebar, open **Models** (under Manage).
 2. Find your provider (OpenAI, Anthropic, Google, etc.) and click **Add Configuration**.
-3. Enter a name and your API key, then click **Add Configuration**.
+3. Enter a name and your API key (local providers such as Ollama need a **Base URL** instead), then click **Add Configuration**.
 4. Click **Test** on the new configuration to check the connection.
 5. Click **Models**, choose a **Model Type**, tick the models to add and click **Add**. Add at least one **Language** model and one **Embedding** model.
 6. Under **Default Model Assignments**, click **Auto-assign Defaults** (or pick the models yourself).

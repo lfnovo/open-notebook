@@ -87,9 +87,12 @@ def test_as_name_conflict_translates_a_rejected_unique_index():
 @pytest.mark.parametrize(
     "exc",
     [
-        # The two RuntimeErrors repository.py can raise on a create, neither of
-        # which is a rejected index, plus a different exception type to show the
-        # check is on the text and not on the class.
+        # Real errors the codebase raises, none of which a rejected index:
+        #   "Failed to create record"          database/repository.py
+        #   "Failed to load default models..." ai/models.py
+        #   "Invalid GitHub repository URL"    utils/version_utils.py (ValueError)
+        # The third is a different exception class, to show the check keys off
+        # the message rather than the type.
         RuntimeError("Failed to create record"),
         RuntimeError("Failed to load default models configuration"),
         ValueError("Invalid GitHub repository URL"),

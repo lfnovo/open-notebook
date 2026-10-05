@@ -186,9 +186,9 @@ volumes:
   ollama_models:
 ```
 
-Then restart and pull a model:
+Then start it and pull a model:
 ```bash
-docker compose restart
+docker compose up -d
 docker exec open-notebook-local-ollama-1 ollama pull mistral
 ```
 

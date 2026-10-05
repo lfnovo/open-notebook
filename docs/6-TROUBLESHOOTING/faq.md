@@ -206,20 +206,22 @@ tar -xzf backup-20240101.tar.gz
 - First request (model loading)
 
 **Solutions**:
-```bash
-# In .env:
-API_CLIENT_TIMEOUT=600  # 10 minutes for slow setups
-ESPERANTO_LLM_TIMEOUT=420  # 7 minutes for model inference (default: 180)
+```yaml
+# docker-compose.yml → open_notebook → environment:
+- ESPERANTO_LLM_TIMEOUT=420  # 7 minutes per model call (default: 180)
 ```
+
+Then apply it with `docker compose up -d` (`restart` does not reload environment variables).
 
 ### Recommended timeouts by setup:
 
-| Setup | API_CLIENT_TIMEOUT |
+| Setup | ESPERANTO_LLM_TIMEOUT |
 |-------|-------------------|
-| Cloud APIs (OpenAI, Anthropic) | 300 (default) |
-| Local Ollama with GPU | 600 |
-| Local Ollama with CPU | 1200 |
-| Remote LM Studio | 900 |
+| Cloud APIs (OpenAI, Anthropic) | 180 (default) |
+| Local Ollama with GPU | 300 |
+| Local Ollama with CPU, LM Studio | 420-540 |
+
+Stay below 600: the web UI gives up on a request after 10 minutes, and that limit is fixed in the published images.
 
 ---
 

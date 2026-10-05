@@ -45,31 +45,25 @@ Setup: Get API key → Add credential in Manage → Models → Done
 
 Use the right file depending on your setup.
 
-### `.env` (Local Development)
+### Docker: the `environment:` block
 
-You will only use .env if you are running Open Notebook locally.
+With Docker Compose, settings go in the `open_notebook` service's `environment:` block in `docker-compose.yml`. Apply changes with `docker compose up -d`; `docker compose restart` keeps the old environment.
+
+The shipped `docker-compose.yml` does not load any env file into the container. A `.env` file next to it is only used to fill `${...}` placeholders in the compose file (`SURREAL_USER`, `SURREAL_PASSWORD`). To keep settings in a file instead, add `env_file: .env` (or any file name) to the `open_notebook` service.
+
+### `.env` (Running from source)
 
 ```
 Located in: project root
-Use for: Development on your machine
+Use for: running Open Notebook from source
 Format: KEY=value, one per line
-```
-
-### `docker.env` (Docker Deployment)
-
-You will use this file to hold your environment variables if you are using docker-compose and prefer not to put the variables directly in the compose file. 
-```
-Located in: project root (or ./docker)
-Use for: Docker deployments
-Format: Same as .env
-Loaded by: docker-compose.yml
 ```
 
 ---
 
 ## Most Important Settings
 
-All of the settings provided below are to be placed inside your environment file (.env or docker.env depending on your setup).
+All of the settings below go in the `open_notebook` service's `environment:` block (Docker) or in `.env` (from source).
 
 
 ###  Surreal Database
@@ -123,7 +117,7 @@ Auto-detection works for most setups.
 
 ### Scenario 1: Docker on Localhost (Default)
 ```env
-# In docker.env:
+# docker-compose.yml → open_notebook → environment:
 OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
 # Everything else uses defaults
 # Then configure AI provider in Manage → Models
@@ -131,14 +125,14 @@ OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
 
 ### Scenario 2: Docker on Remote Server
 ```env
-# In docker.env:
+# docker-compose.yml → open_notebook → environment:
 OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
 API_URL=http://your-server-ip:5055
 ```
 
 ### Scenario 3: Behind Reverse Proxy (Nginx/Cloudflare)
 ```env
-# In docker.env:
+# docker-compose.yml → open_notebook → environment:
 OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
 API_URL=https://your-domain.com
 # The reverse proxy handles HTTPS
@@ -146,14 +140,14 @@ API_URL=https://your-domain.com
 
 ### Scenario 4: Using Ollama Locally
 ```env
-# In .env:
+# docker-compose.yml → open_notebook → environment:
 OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
 # Then add Ollama credential in Manage → Models
 ```
 
 ### Scenario 5: Using Azure OpenAI
 ```env
-# In docker.env:
+# docker-compose.yml → open_notebook → environment:
 OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
 # Then add Azure OpenAI credential in Manage → Models
 ```
@@ -252,27 +246,24 @@ No file editing, no restarts. Credentials stored securely (encrypted) in databas
 
 → **[Full Guide: API Configuration](../3-USER-GUIDE/api-configuration.md)**
 
-### Method 2: Edit `.env` File (Infrastructure Settings)
+### Method 2: Environment Variables (Infrastructure Settings)
 
-For database, network, and encryption key settings:
+For database, network, encryption key and tuning settings.
 
-```bash
-1. Open .env in your editor
-2. Set OPEN_NOTEBOOK_ENCRYPTION_KEY and database vars
-3. Save
-4. Restart services
-```
+**Docker:** add them under the `open_notebook` service's `environment:` block, then run `docker compose up -d` (`docker compose restart` does not pick up environment changes):
 
-### Method 3: Set Docker Environment (Deployment)
-
-```bash
+```yaml
 # In docker-compose.yml:
 services:
-  api:
+  open_notebook:
     environment:
       - OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
       - API_URL=https://your-domain.com
 ```
+
+The shipped `docker-compose.yml` does not load a `.env` file into the container. Docker Compose only reads `.env` to fill `${...}` placeholders in the compose file (that's how `SURREAL_USER` / `SURREAL_PASSWORD` work), so a variable that exists only in `.env` never reaches Open Notebook. If you prefer keeping settings in a file, add `env_file: .env` to the `open_notebook` service yourself.
+
+**From source:** put them in `.env` and restart the API and worker. The exception is `OPEN_NOTEBOOK_WORKER_MAX_TASKS`: the worker's launch command reads it from your shell before `.env` is loaded, so `export` it before `make worker-start`.
 
 ---
 
@@ -299,7 +290,7 @@ After configuration, verify it works:
 | Wrong database URL | Can't start API | Check SURREAL_URL format |
 | Expose port 5055 | "Can't connect to server" | Expose 5055 in docker-compose |
 | Typo in env var | Settings ignored | Check spelling (case-sensitive!) |
-| Don't restart | Old config still used | Restart services after env changes |
+| Using `docker compose restart` | Old config still used | Run `docker compose up -d` after env changes (from source: restart the API and worker) |
 
 ---
 

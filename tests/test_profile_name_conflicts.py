@@ -81,6 +81,7 @@ def test_as_name_conflict_translates_a_rejected_unique_index():
     assert isinstance(conflict, ConflictError)
     assert "daily_briefing" in str(conflict)
     assert "already exists" in str(conflict)
+    assert str(conflict).startswith(("Episode profile", "Speaker profile"))
 
 
 @pytest.mark.parametrize(
@@ -100,11 +101,15 @@ def test_as_name_conflict_ignores_every_other_failure(exc):
 # --- create --------------------------------------------------------------------
 
 
+@patch("api.routers.episode_profiles._episode_profile_named", new_callable=AsyncMock)
 @patch("api.routers.episode_profiles._resolve_speaker_config", new_callable=AsyncMock)
 @patch("open_notebook.podcasts.models.EpisodeProfile.save", new_callable=AsyncMock)
 def test_create_episode_profile_duplicate_name_returns_409(
-    mock_save, mock_speaker, client
+    mock_save, mock_speaker, mock_taken, client
 ):
+    # The pre-check says the name is free, so the write is attempted and the
+    # unique index is what rejects it -- the concurrent-create case.
+    mock_taken.return_value = False
     mock_speaker.return_value = AsyncMock(id="speaker_profile:1", name="ava")
     mock_save.side_effect = RuntimeError(DUPLICATE_EPISODE)
 
@@ -112,6 +117,7 @@ def test_create_episode_profile_duplicate_name_returns_409(
 
     assert response.status_code == 409
     detail = response.json()["detail"]
+    assert "Episode profile" in detail
     assert "daily_briefing" in detail
     assert "already exists" in detail
     # The old 500 answered a generic "Failed to create episode profile" and
@@ -120,14 +126,19 @@ def test_create_episode_profile_duplicate_name_returns_409(
     assert "Database index" not in detail
 
 
+@patch("api.routers.speaker_profiles._speaker_profile_named", new_callable=AsyncMock)
 @patch("open_notebook.podcasts.models.SpeakerProfile.save", new_callable=AsyncMock)
-def test_create_speaker_profile_duplicate_name_returns_409(mock_save, client):
+def test_create_speaker_profile_duplicate_name_returns_409(
+    mock_save, mock_taken, client
+):
+    mock_taken.return_value = False
     mock_save.side_effect = RuntimeError(DUPLICATE_SPEAKER)
 
     response = client.post("/api/speaker-profiles", json=SPEAKER_BODY)
 
     assert response.status_code == 409
     detail = response.json()["detail"]
+    assert "Speaker profile" in detail
     assert "ava" in detail
     assert "already exists" in detail
 
@@ -135,14 +146,16 @@ def test_create_speaker_profile_duplicate_name_returns_409(mock_save, client):
 # --- update (renaming onto a taken name) ---------------------------------------
 
 
+@patch("api.routers.episode_profiles._episode_profile_named", new_callable=AsyncMock)
 @patch("api.routers.episode_profiles._resolve_speaker_config", new_callable=AsyncMock)
 @patch("open_notebook.podcasts.models.EpisodeProfile.get", new_callable=AsyncMock)
 @patch("open_notebook.podcasts.models.EpisodeProfile.save", new_callable=AsyncMock)
 def test_rename_episode_profile_onto_taken_name_returns_409(
-    mock_save, mock_get, mock_speaker, client
+    mock_save, mock_get, mock_speaker, mock_taken, client
 ):
     from open_notebook.podcasts.models import EpisodeProfile
 
+    mock_taken.return_value = False
     mock_get.return_value = EpisodeProfile(
         id="episode_profile:1",
         name="old_name",
@@ -157,13 +170,15 @@ def test_rename_episode_profile_onto_taken_name_returns_409(
     assert "already exists" in response.json()["detail"]
 
 
+@patch("api.routers.speaker_profiles._speaker_profile_named", new_callable=AsyncMock)
 @patch("open_notebook.podcasts.models.SpeakerProfile.get", new_callable=AsyncMock)
 @patch("open_notebook.podcasts.models.SpeakerProfile.save", new_callable=AsyncMock)
 def test_rename_speaker_profile_onto_taken_name_returns_409(
-    mock_save, mock_get, client
+    mock_save, mock_get, mock_taken, client
 ):
     from open_notebook.podcasts.models import SpeakerProfile
 
+    mock_taken.return_value = False
     mock_get.return_value = SpeakerProfile(
         id="speaker_profile:1",
         name="old_name",
@@ -177,14 +192,65 @@ def test_rename_speaker_profile_onto_taken_name_returns_409(
     assert "already exists" in response.json()["detail"]
 
 
+# --- the pre-check, which does not rely on the driver at all -----------------
+
+
+@pytest.mark.parametrize(
+    "endpoint,payload,entity,patch_target",
+    [
+        (
+            "/api/episode-profiles",
+            EPISODE_BODY,
+            "episode profile",
+            "api.routers.episode_profiles._episode_profile_named",
+        ),
+        (
+            "/api/speaker-profiles",
+            SPEAKER_BODY,
+            "speaker profile",
+            "api.routers.speaker_profiles._speaker_profile_named",
+        ),
+    ],
+)
+@patch("open_notebook.podcasts.models.SpeakerProfile.save", new_callable=AsyncMock)
+def test_create_conflict_is_detected_before_touching_the_database(
+    mock_save, client, endpoint, payload, entity, patch_target
+):
+    """A pre-check answers 409 even if the driver swallows the message.
+
+    repo_create wraps a non-RuntimeError from the driver into
+    RuntimeError("Failed to create record"), losing the "already contains" text
+    the exception path keys off. The pre-check does not depend on that text, so
+    the 409 survives either shape.
+    """
+    with patch(patch_target, new_callable=AsyncMock) as taken:
+        taken.return_value = True
+        if "episode" in endpoint:
+            with patch(
+                "api.routers.episode_profiles._resolve_speaker_config",
+                new_callable=AsyncMock,
+            ) as speaker:
+                speaker.return_value = AsyncMock(id="speaker_profile:1", name="ava")
+                response = client.post(endpoint, json=payload)
+        else:
+            response = client.post(endpoint, json=payload)
+
+    assert response.status_code == 409
+    assert "already exists" in response.json()["detail"]
+    # The insert must never be attempted once the name is known to be taken.
+    assert mock_save.call_count == 0
+
+
 # --- the 500 must survive for every other failure -----------------------------
 
 
+@patch("api.routers.episode_profiles._episode_profile_named", new_callable=AsyncMock)
 @patch("api.routers.episode_profiles._resolve_speaker_config", new_callable=AsyncMock)
 @patch("open_notebook.podcasts.models.EpisodeProfile.save", new_callable=AsyncMock)
 def test_create_episode_profile_other_failure_still_returns_500(
-    mock_save, mock_speaker, client
+    mock_save, mock_speaker, mock_taken, client
 ):
+    mock_taken.return_value = False
     mock_speaker.return_value = AsyncMock(id="speaker_profile:1", name="ava")
     mock_save.side_effect = RuntimeError("connection reset by peer")
 
@@ -193,10 +259,56 @@ def test_create_episode_profile_other_failure_still_returns_500(
     assert response.status_code == 500
 
 
+@patch("api.routers.speaker_profiles._speaker_profile_named", new_callable=AsyncMock)
 @patch("open_notebook.podcasts.models.SpeakerProfile.save", new_callable=AsyncMock)
-def test_create_speaker_profile_other_failure_still_returns_500(mock_save, client):
+def test_create_speaker_profile_other_failure_still_returns_500(
+    mock_save, mock_taken, client
+):
+    mock_taken.return_value = False
     mock_save.side_effect = RuntimeError("connection reset by peer")
 
     response = client.post("/api/speaker-profiles", json=SPEAKER_BODY)
+
+    assert response.status_code == 500
+
+
+@patch("api.routers.episode_profiles._episode_profile_named", new_callable=AsyncMock)
+@patch("api.routers.episode_profiles._resolve_speaker_config", new_callable=AsyncMock)
+@patch("open_notebook.podcasts.models.EpisodeProfile.get", new_callable=AsyncMock)
+@patch("open_notebook.podcasts.models.EpisodeProfile.save", new_callable=AsyncMock)
+def test_rename_episode_profile_other_failure_still_returns_500(
+    mock_save, mock_get, mock_speaker, mock_taken, client
+):
+    from open_notebook.podcasts.models import EpisodeProfile
+
+    mock_taken.return_value = False
+    mock_get.return_value = EpisodeProfile(
+        id="episode_profile:1",
+        name="old_name",
+        default_briefing="Summarise the day.",
+    )
+    mock_speaker.return_value = AsyncMock(id="speaker_profile:1", name="ava")
+    mock_save.side_effect = RuntimeError("connection reset by peer")
+
+    response = client.put("/api/episode-profiles/episode_profile:1", json=EPISODE_BODY)
+
+    assert response.status_code == 500
+
+
+@patch("open_notebook.podcasts.models.SpeakerProfile.get", new_callable=AsyncMock)
+@patch("open_notebook.podcasts.models.SpeakerProfile.save", new_callable=AsyncMock)
+def test_rename_speaker_profile_other_failure_still_returns_500(
+    mock_save, mock_get, client
+):
+    from open_notebook.podcasts.models import SpeakerProfile
+
+    mock_get.return_value = SpeakerProfile(
+        id="speaker_profile:1",
+        name="old_name",
+        speakers=SPEAKER_BODY["speakers"],
+    )
+    mock_save.side_effect = RuntimeError("connection reset by peer")
+
+    response = client.put("/api/speaker-profiles/speaker_profile:1", json=SPEAKER_BODY)
 
     assert response.status_code == 500

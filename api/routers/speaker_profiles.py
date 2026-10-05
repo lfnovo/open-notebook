@@ -4,7 +4,8 @@ from fastapi import APIRouter, HTTPException
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from open_notebook.exceptions import OpenNotebookError, as_name_conflict
+from open_notebook.database.repository import repo_query
+from open_notebook.exceptions import OpenNotebookError, as_name_conflict, name_conflict
 from open_notebook.podcasts.models import SpeakerProfile
 
 router = APIRouter()
@@ -16,6 +17,23 @@ class SpeakerProfileResponse(BaseModel):
     description: str
     voice_model: Optional[str] = None
     speakers: List[Dict[str, Any]]
+
+
+async def _speaker_profile_named(name: str, exclude_id: Optional[str] = None) -> bool:
+    """Whether a speaker profile already holds this name.
+
+    Pre-checks the unique index the way models.py does before creating a model,
+    so the 409 does not depend on the SurrealDB driver passing the rejection
+    message back intact. `exclude_id` leaves a profile's own name alone when it
+    is renamed to itself.
+    """
+    rows = await repo_query(
+        "SELECT id FROM speaker_profile WHERE name = $name LIMIT 1", {"name": name}
+    )
+    for row in rows or []:
+        if exclude_id is None or str(row.get("id", "")) != exclude_id:
+            return True
+    return False
 
 
 def _profile_to_response(profile: SpeakerProfile) -> SpeakerProfileResponse:
@@ -78,6 +96,8 @@ class SpeakerProfileCreate(BaseModel):
 async def create_speaker_profile(profile_data: SpeakerProfileCreate):
     """Create a new speaker profile"""
     try:
+        if await _speaker_profile_named(profile_data.name):
+            raise name_conflict("speaker profile", profile_data.name)
         profile = SpeakerProfile(
             name=profile_data.name,
             description=profile_data.description,
@@ -111,7 +131,12 @@ async def update_speaker_profile(profile_id: str, profile_data: SpeakerProfileCr
                 status_code=404, detail=f"Speaker profile '{profile_id}' not found"
             )
 
-        for field, value in profile_data.model_dump(exclude_unset=True).items():
+        update_data = profile_data.model_dump(exclude_unset=True)
+        if "name" in update_data and await _speaker_profile_named(
+            update_data["name"], str(profile.id)
+        ):
+            raise name_conflict("speaker profile", update_data["name"])
+        for field, value in update_data.items():
             setattr(profile, field, value)
 
         await profile.save()

@@ -112,4 +112,14 @@ def as_name_conflict(exc: Exception, entity: str, name: str) -> Optional[Conflic
     """
     if _UNIQUE_INDEX_REJECTED not in str(exc):
         return None
-    return ConflictError(f"An {entity} named '{name}' already exists")
+    return name_conflict(entity, name)
+
+
+def name_conflict(entity: str, name: str) -> ConflictError:
+    """Build the message for a name that a unique index already holds.
+
+    Capitalises ``entity`` instead of prefixing an article: the callers pass
+    both "episode profile" and "speaker profile", and only one of those wants
+    "an". ``Episode profile 'daily' already exists`` reads the same either way.
+    """
+    return ConflictError(f"{entity.capitalize()} '{name}' already exists")

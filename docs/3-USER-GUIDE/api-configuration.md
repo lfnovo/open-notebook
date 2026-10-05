@@ -43,22 +43,9 @@ Both `OPEN_NOTEBOOK_ENCRYPTION_KEY` and `OPEN_NOTEBOOK_PASSWORD` also accept a `
 
 ## Connect a Provider
 
-1. Go to **Manage → Models** and find your provider's section.
-2. Click **Add Configuration**.
-3. Fill in the form:
-   - **Configuration Name**: any label, for example "Production" or "Personal".
-   - **API Key**: required for most cloud providers. A **Get API Key** link points to the provider's key page.
-   - **Base URL**: optional for cloud providers (only to override the default endpoint). Required for **Ollama** (for example `http://localhost:11434`, or `http://ollama:11434` when Ollama is a service in the same Docker Compose file; see [Ollama](../5-CONFIGURATION/ollama.md) for other setups) and **OpenAI Compatible** (include the version path, for example `http://host.docker.internal:1234/v1` for LM Studio). **oMLX** is pre-filled with `http://localhost:11435/v1`.
-   - **Context Window (num_ctx)**: Ollama only. Leave empty for the default (8192).
-   - **GCP Project ID**, **Region**, **Service Account JSON Path**: Google Vertex AI only.
-4. Save.
-5. On the configuration, click the **Test Connection** icon. *Connection successful* means the key and URL work.
-6. Click the **Sync Models** icon. The **Discover Models** dialog lists the provider's models:
-   - Pick the **Model Type** (language, embedding, text-to-speech or speech-to-text). Add different types in separate batches.
-   - Select models, or type a name in **Search or type a model name...** to add one that isn't listed.
-   - Click **Add Selected**.
+The step-by-step setup (**Add Configuration** → **Test Connection** → **Discover Models** dialog → **Add (N)** → **Auto-assign Defaults** → a first chat) is in [AI Providers → Connect a provider](../4-AI-PROVIDERS/index.md#connect-a-provider). In short: add a configuration for the provider, test it, open its **Discover Models** dialog (the *Sync Models* button), pick a **Model Type**, tick the models (or type a name that isn't listed) and click **Add (N)**. Repeat per model type you need.
 
-The models now appear under the configuration, each with a **Test Model** icon (sends a small request to that model) and a delete icon.
+The models then appear under the configuration, each with a **Test Model** icon (sends a small request to that model) and a delete icon.
 
 Which providers offer which model types (language, embedding, speech) is listed in [AI Providers](../4-AI-PROVIDERS/index.md); provider-specific setup notes are in [AI Providers configuration](../5-CONFIGURATION/ai-providers.md), [Ollama](../5-CONFIGURATION/ollama.md), [OpenAI-compatible](../5-CONFIGURATION/openai-compatible.md) and [oMLX](../5-CONFIGURATION/omlx.md).
 
@@ -84,7 +71,7 @@ This section decides which model each feature uses. Fields marked with an asteri
 | **Text-to-Speech Model** | Nothing at the moment: podcasts take their voice model from the speaker profile | — |
 | **Speech-to-Text Model** | Transcribing uploaded audio and video files, and YouTube videos without a transcript | Those sources can't be transcribed (YouTube videos with a transcript still work) |
 
-Click **Auto-assign Defaults** to fill every empty slot from the models you have added. If it says *No models available to assign*, sync some models first.
+While the Chat Model or Embedding Model is missing, a notice offers **Auto-assign Defaults**, which fills those two from the models you have added (the other slots stay as they are). If it says *No models available to assign*, add some models first.
 
 Podcasts use the models set in their episode and speaker profiles, not these defaults (see [Creating Podcasts](creating-podcasts.md)).
 

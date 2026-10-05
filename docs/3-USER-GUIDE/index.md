@@ -6,7 +6,7 @@ Step-by-step instructions for each feature. If you want to understand how things
 
 ## Before You Start
 
-Open Notebook needs at least one AI provider and default models. In **Manage → Models**, add a provider configuration, sync its models, and set the **Default Model Assignments** (or click **Auto-assign Defaults**). See [API Configuration](api-configuration.md).
+Open Notebook needs at least one AI provider and default models. Follow [AI Providers → Connect a provider](../4-AI-PROVIDERS/index.md#connect-a-provider) to add a provider in **Manage → Models**, add its models and set the **Default Model Assignments**. [API Configuration](api-configuration.md) covers the rest of the Models page.
 
 What each feature needs:
 

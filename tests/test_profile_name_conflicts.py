@@ -87,9 +87,12 @@ def test_as_name_conflict_translates_a_rejected_unique_index():
 @pytest.mark.parametrize(
     "exc",
     [
-        RuntimeError("connection reset by peer"),
+        # The two RuntimeErrors repository.py can raise on a create, neither of
+        # which is a rejected index, plus a different exception type to show the
+        # check is on the text and not on the class.
         RuntimeError("Failed to create record"),
-        ValueError("something else entirely"),
+        RuntimeError("Failed to load default models configuration"),
+        ValueError("Invalid GitHub repository URL"),
     ],
 )
 def test_as_name_conflict_ignores_every_other_failure(exc):
@@ -348,7 +351,10 @@ def test_other_failure_still_returns_500(client, method, endpoint, profile, erro
         else _null(),
     ):
         taken.return_value = False
-        save.side_effect = RuntimeError("connection reset by peer")
+        # What save() really raises when the write fails for a reason other
+        # than a rejected index: repo_create replaces any non-RuntimeError
+        # from the driver with exactly this.
+        save.side_effect = RuntimeError("Failed to create record")
         if profile == "EpisodeProfile":
             with patch(
                 "api.routers.episode_profiles._resolve_speaker_config",

@@ -1,6 +1,6 @@
 # AI Providers
 
-Open Notebook talks to AI models through providers. You connect a provider once in **Manage → Models**, pick which of its models to use, and choose a default model for each job (chat, embeddings, podcasts, transcription).
+Open Notebook talks to AI models through providers. You connect a provider once in **Manage → Models**, pick which of its models to use, and choose a default model for each job (chat, embeddings, transcription and more).
 
 This page has three parts:
 
@@ -51,13 +51,13 @@ Scroll down to **Default Model Assignments** on the same page.
 |---|---|---|
 | **Chat Model** | Yes | Notebook and source chat |
 | **Embedding Model** | Yes | Vector search and Ask |
-| **Text-to-Speech Model** | No | Podcasts |
+| **Text-to-Speech Model** | No | Not used yet: podcasts use the voice model set in each speaker profile |
 | **Speech-to-Text Model** | No | Transcribing audio and video sources |
 | **Transformation Model** | No (uses the chat model) | Transformations and insights |
-| **Tools Model** | No (uses the chat model) | Ask (search planning) |
+| **Tools Model** | No (uses the chat model) | Ask requests made through the API without explicit models (the Ask page uses the models picked there, which default to the chat model) |
 | **Large Context Model** | No (uses the chat model) | Any prompt over ~105K tokens is sent here automatically |
 
-**Auto-assign Defaults** only fills Chat Model and Embedding Model. Set Text-to-Speech and Speech-to-Text by hand if you want podcasts or audio/video transcription.
+**Auto-assign Defaults** only fills Chat Model and Embedding Model. Set Speech-to-Text by hand if you want audio/video transcription; for podcasts, pick a voice model in each speaker profile (**Podcasts → Profiles**).
 
 ### 5. Check that chat works
 

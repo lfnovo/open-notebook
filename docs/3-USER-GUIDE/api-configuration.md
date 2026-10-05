@@ -1,396 +1,109 @@
 # API Configuration
 
-Configure AI provider credentials through the Settings UI. No file editing required.
+Connect AI providers and choose your default models in **Manage → Models**. API keys are stored encrypted in the database; no file editing is needed after the encryption key is set.
 
-> **Credential System**: Open Notebook uses encrypted credentials stored in the database. Each credential connects to a provider and allows you to discover, register, and test models.
+The page has three parts, top to bottom:
 
----
-
-## Overview
-
-Open Notebook manages AI provider access through a **credential-based system**:
-
-1. You create a **credential** for each provider (API key + settings)
-2. Credentials are **encrypted** and stored in the database
-3. You **test connections** to verify credentials work
-4. You **discover and register models** from each credential
-5. Models are linked to credentials for direct configuration
+1. **Environment Variables Detected** banner (only if you have provider keys in environment variables; see [Migrating from Environment Variables](#migrating-from-environment-variables)).
+2. **Default Model Assignments**: which model each feature uses.
+3. **Provider sections**: one per provider, each showing *Configured* or *Not configured*, its configurations and their models.
 
 ---
 
 ## Encryption Setup
 
-Before storing credentials, you must configure an encryption key.
+Storing API keys requires `OPEN_NOTEBOOK_ENCRYPTION_KEY`. Until it is set, the Models page shows **Encryption key not configured** and configurations can't be saved.
 
-### Setting the Encryption Key
-
-Add `OPEN_NOTEBOOK_ENCRYPTION_KEY` to your docker-compose.yml:
+Set it on the `open_notebook` service in your `docker-compose.yml`:
 
 ```yaml
-environment:
-  - OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-passphrase
-```
-
-Any string works as a key — it will be securely derived via SHA-256 internally.
-
-> **Warning**: If you change or lose the encryption key, **all stored credentials become unreadable**. Back up your encryption key securely and separately from your database backups.
-
-### Docker Secrets Support
-
-Both password and encryption key support Docker secrets:
-
-```yaml
-# docker-compose.yml
 services:
   open_notebook:
     environment:
-      - OPEN_NOTEBOOK_PASSWORD_FILE=/run/secrets/app_password
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE=/run/secrets/encryption_key
-    secrets:
-      - app_password
-      - encryption_key
-
-secrets:
-  app_password:
-    file: ./secrets/password.txt
-  encryption_key:
-    file: ./secrets/encryption_key.txt
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=<your-generated-secret>
 ```
 
-### Encryption Details
+Replace `<your-generated-secret>` with a long random secret that you generate yourself. Don't copy an example value from any guide. Either of these prints a suitable value:
 
-API keys stored in the database are encrypted using Fernet (AES-128-CBC + HMAC-SHA256).
-
-| Configuration | Behavior |
-|---------------|----------|
-| Encryption key set | Keys encrypted with your key |
-| No encryption key set | Storing credentials is disabled |
-
----
-
-## Accessing Credential Configuration
-
-1. In the sidebar, find the **Manage** section
-2. Click **Models**
-3. You'll see existing credentials and an **Add Credential** button
-
-```
-Navigation: Manage → Models
+```bash
+openssl rand -hex 32                                   # macOS, Linux
 ```
 
----
+```powershell
+[guid]::NewGuid().ToString("N") + [guid]::NewGuid().ToString("N")   # Windows PowerShell
+```
 
-## Supported Providers
+Apply the change by recreating the container (`docker compose up -d`).
 
-### Cloud Providers
+> **Keep this value safe and stable.** If it changes, stored API keys can't be decrypted and their cards show **Decryption Error** until you restore the original value. If the original value is lost, the stored keys can't be recovered: delete those configurations and add them again.
 
-| Provider | Required Fields | Optional Fields |
-|----------|-----------------|-----------------|
-| OpenAI | API Key | — |
-| Anthropic | API Key | — |
-| Google Gemini | API Key | — |
-| Groq | API Key | — |
-| Mistral | API Key | — |
-| DeepSeek | API Key | — |
-| xAI | API Key | — |
-| OpenRouter | API Key | — |
-| Voyage AI | API Key | — |
-| ElevenLabs | API Key | — |
-
-### Local/Self-Hosted
-
-| Provider | Required Fields | Notes |
-|----------|-----------------|-------|
-| Ollama | Base URL | Typically `http://localhost:11434` or `http://ollama:11434` |
-| oMLX | Base URL | Default `http://localhost:11435/v1` (avoids SurrealDB on 8000); API key optional |
-
-### Enterprise
-
-| Provider | Required Fields | Optional Fields |
-|----------|-----------------|-----------------|
-| Azure OpenAI | API Key, URL Base (Azure endpoint) | Service-specific endpoints (LLM, Embedding, STT, TTS) |
-| OpenAI-Compatible | Base URL | API Key, Service-specific configs |
-| Vertex AI | Project ID, Location, Credentials Path | — |
+Both `OPEN_NOTEBOOK_ENCRYPTION_KEY` and `OPEN_NOTEBOOK_PASSWORD` also accept a `_FILE` variant (for example `OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE=/run/secrets/encryption_key`) for Docker secrets. For the encryption scheme, upgrading stored keys and backups, see [Security](../5-CONFIGURATION/security.md).
 
 ---
 
-## Creating a Credential
+## Connect a Provider
 
-### Step 1: Add Credential
+The step-by-step setup (**Add Configuration** → **Test Connection** → **Discover Models** dialog → **Add (N)** → **Auto-assign Defaults** → a first chat) is in [AI Providers → Connect a provider](../4-AI-PROVIDERS/index.md#connect-a-provider). In short: add a configuration for the provider, test it, open its **Discover Models** dialog (the *Sync Models* button), pick a **Model Type**, tick the models (or type a name that isn't listed) and click **Add (N)**. Repeat per model type you need.
 
-1. Go to **Manage** → **Models**
-2. Click **Add Credential**
-3. Select your provider
-4. Give it a descriptive name (e.g., "My OpenAI Key", "Work Anthropic")
-5. Fill in the required fields (API key, base URL, etc.)
-6. Click **Save**
+The models then appear under the configuration, each with a **Test Model** icon (sends a small request to that model) and a delete icon.
 
-### Step 2: Test Connection
+Which providers offer which model types (language, embedding, speech) is listed in [AI Providers](../4-AI-PROVIDERS/index.md); provider-specific setup notes are in [AI Providers configuration](../5-CONFIGURATION/ai-providers.md), [Ollama](../5-CONFIGURATION/ollama.md), [OpenAI-compatible](../5-CONFIGURATION/openai-compatible.md) and [oMLX](../5-CONFIGURATION/omlx.md).
 
-1. On your new credential card, click **Test Connection**
-2. Wait for the result:
+> Several providers only offer language models. Ask and vector search also need an embedding model; podcasts need a text-to-speech model; uploaded audio and video files, and YouTube videos without a transcript, need a speech-to-text model. These can come from a different provider.
 
-| Result | Meaning |
-|--------|---------|
-| Success | Key is valid, provider accessible |
-| Invalid API key | Check key format and value |
-| Connection failed | Check URL, network, firewall |
+### Multiple configurations per provider
 
-### Step 3: Discover Models
-
-1. Click **Discover Models** on the credential card
-2. The system queries the provider for available models
-3. Review the discovered models
-
-### Step 4: Register Models
-
-1. Select the models you want to use
-2. Click **Register Models**
-3. The models are now available throughout Open Notebook
+A provider can have several configurations, for example two API keys or two Ollama servers. Each model is linked to the configuration it was added from and uses that configuration's key and URL.
 
 ---
 
-## Multi-Credential Support
+## Default Model Assignments
 
-Each provider can have **multiple credentials**. This is useful when:
-- You have different API keys for different projects
-- You want to test with different endpoints
-- Multiple team members need separate credentials
+This section decides which model each feature uses. Fields marked with an asterisk are required.
 
-### Creating Multiple Credentials
+| Assignment | Used for | If not set |
+|------------|----------|-----------|
+| **Chat Model** * | Notebook chat, source chat; the default for all three Ask stages on the Ask page | Chat and Ask fail |
+| **Embedding Model** * | Embedding sources, notes and insights; vector search; Ask | Ask and vector search are unavailable |
+| **Transformation Model** | Transformations (insights), titles for AI-generated notes | Uses the Chat Model |
+| **Tools Model** | Ask, when called through the API without explicit models | Uses the Chat Model |
+| **Large Context Model** | Any prompt over about 105,000 tokens | Uses the Chat Model |
+| **Text-to-Speech Model** | Nothing at the moment: podcasts take their voice model from the speaker profile | — |
+| **Speech-to-Text Model** | Transcribing uploaded audio and video files, and YouTube videos without a transcript | Those sources can't be transcribed (YouTube videos with a transcript still work) |
 
-1. Click **Add Credential** again
-2. Select the same provider
-3. Fill in different credentials
-4. Each credential can discover and register its own models
+While the Chat Model or Embedding Model is missing, a notice offers **Auto-assign Defaults**, which fills those two from the models you have added (the other slots stay as they are). If it says *No models available to assign*, add some models first.
 
-### How Models Link to Credentials
+Podcasts use the models set in their episode and speaker profiles, not these defaults (see [Creating Podcasts](creating-podcasts.md)).
 
-When you register models from a credential, those models are linked to that specific credential. This means:
-- Each model knows which API key to use
-- You can have models from different credentials for the same provider
-- Deleting a credential removes its linked models
-
----
-
-## Testing Connections
-
-Click **Test Connection** to verify your credential:
-
-| Result | Meaning |
-|--------|---------|
-| Success | Key is valid, provider accessible |
-| Invalid API key | Check key format and value |
-| Connection failed | Check URL, network, firewall |
-| Model not available | Key valid but model access restricted |
-
-Test uses inexpensive models (e.g., `gpt-3.5-turbo`, `claude-3-haiku`) to minimize cost.
-
----
-
-## Configuring Specific Providers
-
-### Simple Providers (API Key Only)
-
-For OpenAI, Anthropic, Google, Groq, Mistral, DeepSeek, xAI, OpenRouter:
-
-1. Add credential with your API key
-2. Test connection
-3. Discover and register models
-
-### Ollama (URL-Based)
-
-1. Add credential with provider **Ollama**
-2. Enter the base URL (e.g., `http://ollama:11434`)
-3. Test connection
-4. Discover and register models
-
-Ollama allows localhost and private IPs since it runs locally.
-
-### oMLX (Apple Silicon)
-
-1. Add credential with provider **oMLX**
-2. Base URL defaults to `http://localhost:11435/v1` (do not use port `8000` — that conflicts with SurrealDB)
-3. API key is optional
-4. Test connection → discover and register language/embedding models
-
-See [oMLX Setup](../5-CONFIGURATION/omlx.md) for install and Docker host networking notes.
-
-### Azure OpenAI
-
-1. Add credential with provider **Azure OpenAI**
-2. Enter your API key
-3. Enter your Azure endpoint in the **URL Base** field (e.g., `https://myresource.openai.azure.com`)
-4. Test connection
-5. Discover and register models
-
-The URL Base field is automatically mapped to the Azure endpoint. The API version defaults to `2024-10-21` if not set via environment variable.
-
-### OpenAI-Compatible
-
-For custom OpenAI-compatible servers (LM Studio, vLLM, etc.):
-
-1. Add credential with provider **OpenAI-Compatible**
-2. Enter the base URL
-3. Enter API key (if required)
-4. Optionally configure per-service URLs
-
-Supports separate configurations for:
-- LLM (language models)
-- Embedding
-- STT (speech-to-text)
-- TTS (text-to-speech)
-
-### Vertex AI
-
-Google Cloud's enterprise AI platform:
-
-| Field | Example |
-|-------|---------|
-| Project ID | `my-gcp-project` |
-| Location | `us-central1` |
-| Credentials Path | `/path/to/service-account.json` |
+**Changing the Embedding Model** opens a confirmation: existing embeddings were made by the old model and won't match new queries. Choose **Change & Go to Rebuild** to go to **Advanced → Rebuild Embeddings**, or **Change Model Only** to rebuild later.
 
 ---
 
 ## Migrating from Environment Variables
 
-If you have existing API keys in environment variables (from a previous version):
+If provider API keys are set as environment variables (the older way), the Models page shows **Environment Variables Detected**.
 
-1. Open **Manage → Models**
-2. A banner appears: "Environment variables detected"
-3. Click **Migrate to Database**
-4. Keys are copied to the database (encrypted)
-5. Original environment variables remain unchanged
-
-### Migration Behavior
-
-| Scenario | Action |
-|----------|--------|
-| Key in env only | Migrated to database |
-| Key in database only | No change |
-| Key in both | Database version kept (skipped) |
-
-### After Migration
-
-- Database credentials are used for all operations
-- You can remove the API key environment variables from your docker-compose.yml
-- Keep `OPEN_NOTEBOOK_ENCRYPTION_KEY` — it's still required
-
-### Migration Banner Visibility
-
-The migration banner only appears when:
-- You have environment variables configured
-- Those providers are **not** already in the database
-- If all env providers are already migrated, the banner won't show
+1. Click **Migrate to Database**.
+2. For each provider that has keys in the environment and **no** configuration in the database yet, a configuration is created from those keys (encrypted). Providers that already have a configuration are skipped.
+3. The environment variables are not changed. Once the migrated configurations work, you can remove the keys from your environment. Keep `OPEN_NOTEBOOK_ENCRYPTION_KEY`.
 
 ---
 
-## Migrating from ProviderConfig (v1.1 → v1.2)
+## Edit or Delete a Configuration
 
-If you're upgrading from an older version that used the ProviderConfig system:
-
-- The migration happens automatically on first startup
-- Your existing configurations are converted to credentials
-- Check **Manage → Models** to verify the migration succeeded
-- If you see issues, check the API logs for migration messages
-
----
-
-## Key Storage Security
-
-### Encryption
-
-API keys stored in the database are encrypted using Fernet (AES-128-CBC + HMAC-SHA256).
-
-| Configuration | Behavior |
-|---------------|----------|
-| Encryption key set | Keys encrypted with your key |
-| No encryption key set | Storing API keys in database is disabled |
-
-### Default Credentials
-
-| Setting | Default Value | Production Recommendation |
-|---------|---------------|---------------------------|
-| Password | None - auth is fully disabled until set | Set `OPEN_NOTEBOOK_PASSWORD` |
-| Encryption Key | None (must be set) | Set `OPEN_NOTEBOOK_ENCRYPTION_KEY` to any secret string |
-
-**For production deployments, always set custom credentials.**
-
----
-
-## Deleting Credentials
-
-1. Click the **Delete** button on the credential card
-2. Confirm deletion
-3. Credential and all its linked models are removed from the database
+- **Edit** (pencil icon): change the name, URL or other fields. Leave **API Key** blank to keep the stored key.
+- **Delete** (trash icon): if the configuration has models, you can pick another configuration of the same provider under **Migrate models to** and click **Migrate & Delete**, or click **Delete with Models** to remove the models too. Check **Default Model Assignments** afterwards if any of them used the deleted models.
 
 ---
 
 ## Troubleshooting
 
-### Credential Not Saving
+| Symptom | What to check |
+|---------|---------------|
+| Can't save a configuration, *Encryption key not configured* | Set `OPEN_NOTEBOOK_ENCRYPTION_KEY` and recreate the container |
+| **Decryption Error** on a configuration | The encryption key changed. Restore the original value; if it's lost, delete the configuration and add it again |
+| Test Connection fails | The key, the Base URL (from Docker, `localhost` means the container itself), firewall or proxy |
+| A model isn't in Discover Models | Type its exact name in the search box and add it |
+| *Missing required models* warning | Set the Chat Model and Embedding Model, or click **Auto-assign Defaults** |
 
-| Symptom | Cause | Solution |
-|---------|-------|----------|
-| Save button disabled | Empty or invalid input | Enter a valid key |
-| Error on save | Encryption key not set | Set `OPEN_NOTEBOOK_ENCRYPTION_KEY` in docker-compose.yml |
-| Error on save | Database connection issue | Check database status |
-
-### Test Connection Fails
-
-| Error | Cause | Solution |
-|-------|-------|----------|
-| Invalid API key | Wrong key or format | Verify key from provider dashboard |
-| Connection refused | Wrong URL | Check base URL format |
-| Timeout | Network issue | Check firewall, proxy settings |
-| 403 Forbidden | IP restriction | Whitelist your server IP |
-
-### Migration Issues
-
-| Problem | Solution |
-|---------|----------|
-| No migration banner | No env vars detected, or already migrated |
-| Partial migration | Check error list, fix and retry |
-| Keys not working after migration | Clear browser cache, restart services |
-
-### Provider Shows "Not Configured"
-
-1. Check if a credential exists for this provider (Manage → Models)
-2. Test the credential connection
-3. Verify key format matches provider requirements
-4. Re-discover and register models if needed
-
----
-
-## Provider-Specific Notes
-
-### OpenAI
-- Keys start with `sk-proj-` (project keys) or `sk-` (legacy)
-- Requires billing enabled on account
-
-### Anthropic
-- Keys start with `sk-ant-`
-- Check account has API access enabled
-
-### Google Gemini
-- Keys start with `AIzaSy`
-- Free tier has rate limits
-
-### Ollama
-- No API key required
-- Default URL: `http://localhost:11434` (local) or `http://ollama:11434` (Docker)
-- Ensure Ollama server is running
-
-### Azure OpenAI
-- Enter your Azure endpoint in the **URL Base** field (format: `https://{resource-name}.openai.azure.com`)
-- API version defaults to `2024-10-21`; override via `AZURE_OPENAI_API_VERSION` environment variable if needed
-- Deployment names configured separately when registering models via the credential's Discover Models dialog
-
----
-
-## Related
-
-- **[AI Providers](../5-CONFIGURATION/ai-providers.md)** — Provider setup instructions and recommendations
-- **[Security](../5-CONFIGURATION/security.md)** — Password and encryption configuration
-- **[Environment Reference](../5-CONFIGURATION/environment-reference.md)** — All configuration options
+More in [Troubleshooting](../6-TROUBLESHOOTING/index.md).

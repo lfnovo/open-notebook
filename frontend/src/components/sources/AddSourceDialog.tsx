@@ -18,11 +18,13 @@ import { WizardContainer, WizardStep } from '@/components/ui/wizard-container'
 import { SourceTypeStep, parseAndValidateUrls } from './steps/SourceTypeStep'
 import { NotebooksStep } from './steps/NotebooksStep'
 import { ProcessingStep } from './steps/ProcessingStep'
+import { DuplicateSourceDialog } from './DuplicateSourceDialog'
 import { useNotebooks } from '@/lib/hooks/use-notebooks'
 import { useTransformations } from '@/lib/hooks/use-transformations'
 import { useCreateSource } from '@/lib/hooks/use-sources'
 import { useSettings } from '@/lib/hooks/use-settings'
-import { CreateSourceRequest } from '@/lib/types/api'
+import { CreateSourceRequest, DuplicateSourceInfo } from '@/lib/types/api'
+import { sourcesApi } from '@/lib/api/sources'
 import { useTranslation } from '@/lib/hooks/use-translation'
 
 const MAX_BATCH_SIZE = 50
@@ -110,6 +112,15 @@ export function AddSourceDialog({
   // Batch-specific state
   const [urlValidationErrors, setUrlValidationErrors] = useState<{ url: string; line: number }[]>([])
   const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null)
+  // Duplicate warning state (#257): pending form data held until the user
+  // confirms "proceed anyway" from the duplicate dialog.
+  const [duplicateMatches, setDuplicateMatches] = useState<DuplicateSourceInfo[]>([])
+  const [pendingSubmit, setPendingSubmit] = useState<CreateSourceFormData | null>(null)
+  const [checkingDuplicates, setCheckingDuplicates] = useState(false)
+
+  // Generation counter for the duplicate probe (#257): a stale probe result
+  // is ignored when the dialog was closed while the request was pending.
+  const probeRef = useRef(0)
 
   // Cleanup timeouts to prevent memory leaks
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -383,7 +394,7 @@ export function AddSourceDialog({
   }
 
   // Form submission
-  const onSubmit = async (data: CreateSourceFormData) => {
+  const runSubmit = async (data: CreateSourceFormData) => {
     try {
       setProcessing(true)
 
@@ -421,6 +432,55 @@ export function AddSourceDialog({
     }
   }
 
+  const onSubmit = async (data: CreateSourceFormData) => {
+    // Duplicate probe (#257) for single adds only: batch mode creates many
+    // sources per submit and a modal per item would be unusable. A failed
+    // probe never blocks creation (fail-open).
+    if (!isBatchMode) {
+      probeRef.current += 1
+      const probeId = probeRef.current
+      setCheckingDuplicates(true)
+      try {
+        const file = data.type === 'upload' && data.file
+          ? (data.file instanceof FileList ? data.file[0] : data.file)
+          : undefined
+        const duplicates = await sourcesApi.checkDuplicates({
+          type: data.type,
+          url: data.type === 'link' ? data.url : undefined,
+          title: data.title,
+          content: data.type === 'text' ? data.content : undefined,
+          filename: file instanceof File ? file.name : undefined,
+        })
+        if (probeRef.current !== probeId) return
+        if (duplicates.length > 0) {
+          setDuplicateMatches(duplicates)
+          setPendingSubmit(data)
+          return
+        }
+      } catch {
+        if (probeRef.current !== probeId) return
+        // fail-open: proceed with creation when the probe errors
+      } finally {
+        setCheckingDuplicates(false)
+      }
+    }
+    await runSubmit(data)
+  }
+
+  const handleDuplicateCancel = () => {
+    setDuplicateMatches([])
+    setPendingSubmit(null)
+  }
+
+  const handleDuplicateProceed = async () => {
+    const data = pendingSubmit
+    setDuplicateMatches([])
+    setPendingSubmit(null)
+    if (data) {
+      await runSubmit(data)
+    }
+  }
+
   // Dialog management
   const handleClose = () => {
     // Clear any pending timeouts
@@ -436,6 +496,9 @@ export function AddSourceDialog({
     setSelectedNotebooks(defaultNotebookId ? [defaultNotebookId] : [])
     setUrlValidationErrors([])
     setBatchProgress(null)
+    setDuplicateMatches([])
+    setPendingSubmit(null)
+    probeRef.current += 1
 
     // Reset to default transformations
     if (transformations.length > 0) {
@@ -620,15 +683,21 @@ export function AddSourceDialog({
               {/* Show Done button on all steps, styled as primary */}
               <Button
                 type="submit"
-                disabled={!currentStepValid || createSource.isPending}
+                disabled={!currentStepValid || createSource.isPending || checkingDuplicates}
                 className="min-w-[120px]"
               >
-                {createSource.isPending ? t('common.adding') : t('common.done')}
+                {createSource.isPending || checkingDuplicates ? t('common.adding') : t('common.done')}
               </Button>
             </div>
           </div>
         </form>
       </DialogContent>
+      <DuplicateSourceDialog
+        open={duplicateMatches.length > 0}
+        matches={duplicateMatches}
+        onCancel={handleDuplicateCancel}
+        onProceed={handleDuplicateProceed}
+      />
     </Dialog>
   )
 }

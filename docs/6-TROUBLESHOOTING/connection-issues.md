@@ -56,17 +56,17 @@ docker compose up -d
 
 ### Solution 3: API_URL Mismatch
 ```bash
-# In .env, check API_URL:
-cat .env | grep API_URL
+# Check the API_URL the container actually sees:
+docker compose exec open_notebook printenv API_URL
 
-# Should match your frontend URL:
+# It should be the API address as your browser reaches it:
 # Frontend: http://localhost:8502
 # API_URL: http://localhost:5055
 
-# If wrong, fix it:
-# API_URL=http://localhost:5055
-# Then restart:
-docker compose restart frontend
+# If wrong, fix it in docker-compose.yml → open_notebook → environment:
+#   - API_URL=http://localhost:5055
+# Apply (restart does not reload environment):
+docker compose up -d
 ```
 
 ### Solution 4: Firewall Blocking
@@ -156,12 +156,12 @@ docker compose logs api | grep "slow\|timeout"
 
 ### Reduce Load
 ```bash
-# In .env:
-SURREAL_COMMANDS_MAX_TASKS=2
-API_CLIENT_TIMEOUT=600
+# docker-compose.yml → open_notebook → environment:
+#   - OPEN_NOTEBOOK_WORKER_MAX_TASKS=2
+#   - ESPERANTO_LLM_TIMEOUT=420
 
-# Restart
-docker compose restart
+# Apply (restart does not reload environment):
+docker compose up -d
 ```
 
 ### Check Network
@@ -213,11 +213,11 @@ location /api {
 
 ### Set API_URL for HTTPS
 ```bash
-# In .env:
-API_URL=https://yourdomain.com
+# docker-compose.yml → open_notebook → environment:
+#   - API_URL=https://yourdomain.com
 
-# Restart
-docker compose restart
+# Apply (restart does not reload environment):
+docker compose up -d
 ```
 
 ---
@@ -235,22 +235,22 @@ docker compose restart
 
 ### Enable Retry Logic
 ```bash
-# In .env:
-SURREAL_COMMANDS_RETRY_ENABLED=true
-SURREAL_COMMANDS_RETRY_MAX_ATTEMPTS=5
-SURREAL_COMMANDS_RETRY_WAIT_STRATEGY=exponential_jitter
+# docker-compose.yml → open_notebook → environment:
+#   - SURREAL_COMMANDS_RETRY_ENABLED=true
+#   - SURREAL_COMMANDS_RETRY_MAX_ATTEMPTS=5
+#   - SURREAL_COMMANDS_RETRY_WAIT_STRATEGY=exponential_jitter
 
-# Restart
-docker compose restart
+# Apply (restart does not reload environment):
+docker compose up -d
 ```
 
 ### Reduce Concurrency
 ```bash
-# In .env:
-SURREAL_COMMANDS_MAX_TASKS=2
+# docker-compose.yml → open_notebook → environment:
+#   - OPEN_NOTEBOOK_WORKER_MAX_TASKS=2
 
-# Restart
-docker compose restart
+# Apply (restart does not reload environment):
+docker compose up -d
 ```
 
 ### Check Network Stability
@@ -282,11 +282,11 @@ hostname -I
 
 ### Step 2: Update API_URL
 ```bash
-# In .env:
-API_URL=http://192.168.1.100:5055
+# docker-compose.yml → open_notebook → environment:
+#   - API_URL=http://192.168.1.100:5055
 
-# Restart
-docker compose restart
+# Apply (restart does not reload environment):
+docker compose up -d
 ```
 
 ### Step 3: Access from Other Machine
@@ -344,12 +344,12 @@ CORS policy: Response to preflight request doesn't pass access control check
 # - Requesting from: http://localhost:8502
 # - Trying to reach: http://localhost:5055
 
-# Make sure API_URL matches:
-API_URL=http://localhost:5055
+# Make sure API_URL (docker-compose.yml → open_notebook → environment:) matches:
+#   - API_URL=http://localhost:5055
 
 # And protocol matches (http/https)
-# Restart
-docker compose restart frontend
+# Apply (restart does not reload environment):
+docker compose up -d
 ```
 
 ---
@@ -408,7 +408,7 @@ Works with HTTP but fails with HTTPS
 
 ### Solution 1: Use Custom CA Bundle (Recommended)
 ```bash
-# In .env:
+# From source, in .env:
 ESPERANTO_SSL_CA_BUNDLE=/path/to/your/ca-bundle.pem
 
 # For Docker, mount the certificate:
@@ -424,8 +424,9 @@ This applies to chat **and** to credential Test Connection / model discovery.
 ### Solution 2: Disable SSL Verification (Development Only)
 ```bash
 # WARNING: Only use in trusted development environments
-# In .env:
-ESPERANTO_SSL_VERIFY=false
+# Docker: docker-compose.yml → open_notebook → environment:
+#   - ESPERANTO_SSL_VERIFY=false
+# From source: ESPERANTO_SSL_VERIFY=false in .env
 ```
 
 Same scope: Esperanto providers, Test Connection, and Discover Models.

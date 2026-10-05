@@ -219,11 +219,11 @@ Switch in: Manage → Models
 
 ### Solution 3: Increase Timeout
 ```bash
-# In .env:
-API_CLIENT_TIMEOUT=600  # 10 minutes
+# docker-compose.yml → open_notebook → environment:
+#   - ESPERANTO_LLM_TIMEOUT=420  # per model call (default: 180); keep below 600
 
-# Restart:
-docker compose restart
+# Apply (restart does not reload environment):
+docker compose up -d
 ```
 
 ### Solution 4: Check System Load
@@ -232,8 +232,8 @@ docker compose restart
 docker stats
 
 # If CPU >80% or memory >90%:
-# Reduce: SURREAL_COMMANDS_MAX_TASKS=2
-# Restart: docker compose restart
+# Reduce: OPEN_NOTEBOOK_WORKER_MAX_TASKS=2 (under open_notebook → environment:)
+# Apply: docker compose up -d
 ```
 
 ---

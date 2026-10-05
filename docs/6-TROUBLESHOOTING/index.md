@@ -213,8 +213,9 @@ curl http://localhost:5055/health
 # Check resource usage
 docker stats
 
-# Reduce concurrency in .env
-SURREAL_COMMANDS_MAX_TASKS=2
+# Reduce concurrency: docker-compose.yml → open_notebook → environment:
+#   - OPEN_NOTEBOOK_WORKER_MAX_TASKS=2
+docker compose up -d
 ```
 
 **High costs?**

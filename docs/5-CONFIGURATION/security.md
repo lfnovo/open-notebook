@@ -20,11 +20,11 @@ Open Notebook encrypts API keys stored in the database using Fernet symmetric en
 Set the encryption key to any secret string:
 
 ```bash
-# .env or docker.env
+# docker-compose.yml → open_notebook → environment: (or .env when running from source)
 OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-passphrase
 ```
 
-Any string works — it will be securely derived via SHA-256 internally. Use a strong passphrase for production deployments.
+Any string works: it is stretched into the encryption key with PBKDF2-HMAC-SHA256 (600k iterations). That slows brute force but can't save a guessable passphrase, so use a long, random one for production deployments.
 
 ### Default Credentials
 
@@ -93,10 +93,10 @@ services:
     # ... rest of config
 ```
 
-Or using environment file:
+Or using an environment file (add `env_file: .env` to the `open_notebook` service; the shipped compose file doesn't load one):
 
 ```bash
-# docker.env
+# .env
 OPEN_NOTEBOOK_ENCRYPTION_KEY=your-secret-encryption-key
 OPEN_NOTEBOOK_PASSWORD=your_secure_password
 ```

@@ -4,7 +4,11 @@ from fastapi import APIRouter, HTTPException
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from open_notebook.exceptions import InvalidInputError, OpenNotebookError
+from open_notebook.exceptions import (
+    InvalidInputError,
+    OpenNotebookError,
+    as_name_conflict,
+)
 from open_notebook.podcasts.models import EpisodeProfile, SpeakerProfile
 
 router = APIRouter()
@@ -165,6 +169,9 @@ async def create_episode_profile(profile_data: EpisodeProfileCreate):
     except OpenNotebookError:
         raise
     except Exception as e:
+        conflict = as_name_conflict(e, "episode profile", profile_data.name)
+        if conflict is not None:
+            raise conflict from e
         logger.error(f"Failed to create episode profile: {e}")
         raise HTTPException(status_code=500, detail="Failed to create episode profile")
 
@@ -199,6 +206,9 @@ async def update_episode_profile(profile_id: str, profile_data: EpisodeProfileCr
     except OpenNotebookError:
         raise
     except Exception as e:
+        conflict = as_name_conflict(e, "episode profile", profile_data.name)
+        if conflict is not None:
+            raise conflict from e
         logger.error(f"Failed to update episode profile: {e}")
         raise HTTPException(status_code=500, detail="Failed to update episode profile")
 

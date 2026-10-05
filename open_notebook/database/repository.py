@@ -43,10 +43,12 @@ def get_database_url() -> str:
     if surreal_url:
         return surreal_url
 
-    # Fallback to old format - WebSocket URL format
+    # Fallback to the legacy variables. SURREAL_ADDRESS may already carry the
+    # port ("host:8000"); SURREAL_PORT only applies when it doesn't.
     address = os.getenv("SURREAL_ADDRESS", "localhost")
-    port = os.getenv("SURREAL_PORT", "8000")
-    return f"ws://{address}/rpc:{port}"
+    if ":" not in address:
+        address = f"{address}:{os.getenv('SURREAL_PORT', '8000')}"
+    return f"ws://{address}/rpc"
 
 
 def get_database_password() -> str:

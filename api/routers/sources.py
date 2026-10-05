@@ -245,15 +245,22 @@ async def find_duplicate_sources(
         params["max_len"] = raw_len * 2 + 512
     if weak:
         clauses.append(
-            "(title != NONE AND string::lowercase(string::trim(title)) = $weak_title)"
+            "((title != NONE AND string::lowercase(string::trim(title)) = $weak_title) "
+            "OR (asset.file_path != NONE AND "
+            "string::contains(string::lowercase(asset.file_path), $weak_file)))"
         )
         params["weak_title"] = weak
-        clauses.append("(asset.file_path != NONE)")
+        params["weak_file"] = weak.rsplit(".", 1)[0] if "." in weak else weak
     if not clauses:
         return []
+    # Select full_text only for rows that can content-match; filename/URL-only
+    # candidates skip the heavy column in the query and get excerpt=NONE.
+    want_text = bool(wanted_hash)
     try:
         rows = await repo_query(
-            "SELECT id, title, asset, full_text, created, updated FROM source WHERE "
+            "SELECT id, title, asset, created, updated"
+            + (", full_text" if want_text else "")
+            + " FROM source WHERE "
             + " OR ".join(clauses),
             params,
         )

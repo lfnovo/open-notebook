@@ -130,6 +130,17 @@ class TestFindDuplicateSources:
 
     @pytest.mark.asyncio
     @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
+    async def test_filename_lookup_is_keyed_in_query(self, mock_query):
+        """Upload probes filter by title/filename in the query, not Python-only."""
+        mock_query.return_value = EXISTING
+        await find_duplicate_sources(source_type="upload", filename="Notes.PDF")
+        query, params = mock_query.await_args.args
+        assert "string::contains(string::lowercase(asset.file_path)" in query
+        assert params["weak_file"] == "notes"
+        assert "full_text" not in query.split("FROM source")[0]
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
     async def test_no_match_returns_empty(self, mock_query):
         mock_query.return_value = EXISTING
         assert (

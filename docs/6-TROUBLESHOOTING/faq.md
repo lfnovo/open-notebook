@@ -1,261 +1,117 @@
 # Frequently Asked Questions
 
-Common questions about Open Notebook usage, configuration, and best practices.
+Questions that aren't about an error message. For errors, see the [Troubleshooting index](index.md).
 
 ---
 
-## General Usage
+## General
 
 ### What is Open Notebook?
 
-Open Notebook is an open-source, privacy-focused alternative to Google's Notebook LM. It allows you to:
-- Create and manage research notebooks
-- Chat with your documents using AI
-- Generate podcasts from your content
-- Search across all your sources with semantic search
-- Transform and analyze your content
+An open-source, self-hosted research assistant in the spirit of Google's NotebookLM: you collect sources into notebooks, chat with them, search them, run transformations that extract insights, and generate podcasts. You choose the AI providers, including fully local ones.
 
-### How is it different from Google Notebook LM?
+### How is it different from Google NotebookLM?
 
-**Privacy**: Your data stays local by default. Only your chosen AI providers receive queries.
-**Flexibility**: Support for 17+ AI providers (OpenAI, Anthropic, Google, local models, etc.)
-**Customization**: Open source, so you can modify and extend functionality
-**Control**: You control your data, models, and processing
+- **You host it.** Your notebooks, sources and notes stay in your own database.
+- **You choose the models.** 24 providers are supported, from OpenAI and Anthropic to Ollama on your own machine. See [AI Providers](../5-CONFIGURATION/ai-providers.md).
+- **It's open source.** You can read, change and extend it.
 
-### Can I use Open Notebook offline?
+What leaves your machine is what you send to the AI providers you configure: when you chat, transform or generate a podcast, the relevant source content goes to that provider. When Ollama, LM Studio or Speaches runs on your own hardware, that content stays there; a remote endpoint receives it like any other provider.
 
-**Partially**: The application runs locally, but requires internet for:
-- AI model API calls (unless using local models like Ollama)
-- Web content scraping
+### Can I use it offline?
 
-**Fully offline**: Possible with local models (Ollama) for basic functionality.
+Yes, with local models for everything: Ollama, LM Studio or oMLX for chat and embeddings, and [Speaches](../5-CONFIGURATION/local-tts.md) for speech. Adding web pages and YouTube videos still needs internet access, of course.
 
-### What file types are supported?
+### What can I add as a source?
 
-**Documents**: PDF, DOCX, TXT, Markdown
-**Web Content**: URLs, YouTube videos
-**Media**: MP3, WAV, M4A (audio), MP4, AVI, MOV (video)
-**Other**: Direct text input, CSV, code files
+Files (PDF, Word, PowerPoint, Excel, EPUB, OpenDocument, HTML, plain text and Markdown; audio and video such as MP3, WAV, M4A and MP4; ZIP archives), web pages, YouTube videos and pasted text. Images and scanned documents need the optional Docling engine (`OPEN_NOTEBOOK_ENABLE_DOCLING=true`). Audio, video and YouTube videos without captions need a speech-to-text model. See [Adding Sources](../3-USER-GUIDE/adding-sources.md).
 
 ### How much does it cost?
 
-**Software**: Free (open source)
-**AI API costs**: Pay-per-use to providers:
-- OpenAI: ~$0.50-5 per 1M tokens
-- Anthropic: ~$3-75 per 1M tokens
-- Google: Often free tier available
-- Local models: Free after initial setup
-
-**Typical monthly costs**: $5-50 for moderate usage.
+The software is free. AI usage is billed by your providers per token, character or minute, at their prices; local models cost nothing beyond your hardware. The biggest cost drivers are the size of the context you send (how many sources are included in chat, and as "Full content" or "Insights only"), embedding large libraries, and podcast audio.
 
 ---
 
-## AI Models and Providers
+## AI models
 
-### Which AI provider should I choose?
+### Which provider should I start with?
 
-**For beginners**: OpenAI (reliable, well-documented)
-**For privacy**: Local models (Ollama) or European providers (Mistral)
-**For cost optimization**: Groq, Google (free tier), or OpenRouter
-**For long context**: Anthropic (200K tokens) or Google Gemini (1M tokens)
+- **Simplest:** one provider that covers language, embeddings and speech, such as OpenAI or Google AI.
+- **Many models with one key:** OpenRouter.
+- **Private and free:** Ollama, plus Speaches for speech.
 
-### Can I use multiple providers?
+Providers like Anthropic only offer language models, so you'd add a second one for embeddings. The modality table is in [AI Providers](../5-CONFIGURATION/ai-providers.md#providers-and-what-they-offer).
 
-**Yes**: Configure different providers for different tasks:
-- OpenAI for chat
-- Google for embeddings
-- ElevenLabs for text-to-speech
-- Anthropic for complex reasoning
+### Can I mix providers?
 
-### What are the best model combinations?
+Yes. Every model role is assigned separately under **Manage → Models → Default Model Assignments**: Chat, Transformation, Tools, Large Context, Embedding, Text-to-Speech and Speech-to-Text. You can also override the model for a single chat session.
 
-**Budget-friendly**:
-- Language: `gpt-4o-mini` (OpenAI) or `deepseek-chat`
-- Embedding: `text-embedding-3-small` (OpenAI)
+### What happens if I change the embedding model?
 
-**High-quality**:
-- Language: `claude-3-5-sonnet` (Anthropic) or `gpt-4o` (OpenAI)
-- Embedding: `text-embedding-3-large` (OpenAI)
-
-**Privacy-focused**:
-- Language: Local Ollama models (mistral, llama3)
-- Embedding: Local embedding models
-
-### How do I optimize AI costs?
-
-**Model selection**:
-- Use smaller models for simple tasks (gpt-4o-mini, claude-3-5-haiku)
-- Use larger models only for complex reasoning
-- Leverage free tiers when available
-
-**Usage optimization**:
-- Use "Summary Only" context for background sources
-- Ask more specific questions
-- Use local models (Ollama) for frequent tasks
+Existing embeddings were made by the old model and won't match new searches. Open Notebook warns you and offers to go to the **Advanced** page to rebuild them. Rebuild before relying on search or Ask.
 
 ---
 
-## Data Management
+## Data
 
-### Where is my data stored?
+### Where is my data?
 
-**Local storage**: By default, all data is stored locally:
-- Database: SurrealDB files in `surreal_data/`
-- Uploads: Files in `data/uploads/`
-- Podcasts: Generated audio in `data/podcasts/`
-- No external data transmission (except to chosen AI providers)
+With the shipped `docker-compose.yml`, in two directories next to it:
 
-### How do I backup my data?
+- `./surreal_data`: the SurrealDB database (notebooks, sources' text, notes, chats, settings, encrypted credentials)
+- `./notebook_data`: uploaded files, podcast audio and caches
 
-```bash
-# Create backup
-tar -czf backup-$(date +%Y%m%d).tar.gz data/ surreal_data/
+The single-container setup uses `./surreal_single_data` for the database.
 
-# Restore backup
-tar -xzf backup-20240101.tar.gz
-```
+### How do I back up?
 
-### Can I sync data between devices?
+Stop the stack, archive both directories, start it again. Keep `OPEN_NOTEBOOK_ENCRYPTION_KEY` safe too: without it, the provider keys in a restored database can't be decrypted. Step-by-step: [Advanced → Backup & Restore](../5-CONFIGURATION/advanced.md#backup--restore).
 
-**Currently**: No built-in sync functionality.
-**Workarounds**:
-- Use shared network storage for data directories
-- Manual backup/restore between devices
+Always back up before upgrading. Some upgrades can't be undone without a backup, such as the credential encryption change in v1.15.0.
 
-### What happens if I delete a notebook?
+### Can I sync between devices?
 
-**Soft deletion**: Notebooks are marked as archived, not permanently deleted.
-**Recovery**: Archived notebooks can be restored from the database.
+There is no built-in sync. Run one instance that all your devices reach over the network, or move data with backup and restore.
+
+### What happens when I delete a notebook?
+
+Deletion is permanent ("This action cannot be undone."). The notebook's notes are always deleted; you can choose to also delete sources that belong only to that notebook. Sources shared with other notebooks are kept. To put a notebook away without losing it, use **Archive** instead.
 
 ---
 
-## Best Practices
+## Running it
 
-### How should I organize my notebooks?
+### Can I use the API directly?
 
-- **By topic**: Separate notebooks for different research areas
-- **By project**: One notebook per project or course
-- **By time period**: Monthly or quarterly notebooks
+Yes. Interactive documentation is at `http://localhost:5055/docs`. When a password is set, send it as `Authorization: Bearer <password>`. See [Security → API client examples](../5-CONFIGURATION/security.md#api-client-examples) and the [API Reference](../7-DEVELOPMENT/api-reference.md).
 
-**Recommended size**: 20-100 sources per notebook for best performance.
+### Is it ready for an internet-facing deployment?
 
-### How do I get the best search results?
+It can run on a server, but its built-in protection is basic: one shared password, no user accounts, no rate limiting, and CORS open to all origins by default. Put it behind HTTPS, set a password, restrict `CORS_ORIGINS`, and keep the database private. See [Security](../5-CONFIGURATION/security.md) and [Reverse Proxy](../5-CONFIGURATION/reverse-proxy.md).
 
-- Use descriptive queries ("data analysis methods" not just "data")
-- Combine multiple related terms
-- Use natural language (ask questions as you would to a human)
-- Try both text search (keywords) and vector search (concepts)
+### How do I change a setting?
 
-### How can I improve chat responses?
+Infrastructure settings are environment variables in the `open_notebook` service's `environment:` block, applied with `docker compose up -d`. Everything else is in the UI. See [Configuration](../5-CONFIGURATION/index.md).
 
-- Provide context: Reference specific sources or topics
-- Be specific: Ask detailed questions rather than general ones
-- Request citations: "Answer with page citations"
-- Use follow-up questions: Build on previous responses
+### How do I update?
 
-### What are the security best practices?
-
-- Never share API keys publicly
-- Use `OPEN_NOTEBOOK_PASSWORD` for public deployments
-- Use HTTPS for production (via reverse proxy)
-- Keep Docker images updated
-- Encrypt backups if they contain sensitive data
+Back up, then `docker compose pull && docker compose up -d`. Database migrations run automatically when the API starts.
 
 ---
 
-## Technical Questions
+## Getting help
 
-### Can I use Open Notebook programmatically?
+- **Discord:** https://discord.gg/37XJPXfz2w
+- **GitHub Discussions:** questions and ideas, https://github.com/lfnovo/open-notebook/discussions
+- **GitHub Issues:** reproducible bugs, https://github.com/lfnovo/open-notebook/issues
 
-**Yes**: Open Notebook provides a REST API:
-- Full API documentation at `http://localhost:5055/docs`
-- Support for all UI functionality
-- Authentication via password header
-
-### Can I run Open Notebook in production?
-
-**Yes**: Designed for production use with:
-- Docker deployment
-- Security features (password protection)
-- Monitoring and logging
-- Reverse proxy support (nginx, Caddy, Traefik)
-
-### What are the system requirements?
-
-**Minimum**:
-- 4GB RAM
-- 2 CPU cores
-- 10GB disk space
-
-**Recommended**:
-- 8GB+ RAM
-- 4+ CPU cores
-- SSD storage
-- For local models: 16GB+ RAM, GPU recommended
-
----
-
-## Timeout and Performance
-
-### Why do I get timeout errors?
-
-**Common causes**:
-- Large context (too many sources)
-- Slow AI provider
-- Local models on CPU (slow)
-- First request (model loading)
-
-**Solutions**:
-```yaml
-# docker-compose.yml → open_notebook → environment:
-- ESPERANTO_LLM_TIMEOUT=420  # 7 minutes per model call (default: 180)
-```
-
-Then apply it with `docker compose up -d` (`restart` does not reload environment variables).
-
-### Recommended timeouts by setup:
-
-| Setup | ESPERANTO_LLM_TIMEOUT |
-|-------|-------------------|
-| Cloud APIs (OpenAI, Anthropic) | 180 (default) |
-| Local Ollama with GPU | 300 |
-| Local Ollama with CPU, LM Studio | 420-540 |
-
-Stay below 600: the web UI gives up on a request after 10 minutes, and that limit is fixed in the published images.
-
----
-
-## Getting Help
-
-### My question isn't answered here
-
-1. Check the troubleshooting guides in this section
-2. Search existing GitHub issues
-3. Ask in [GitHub Discussions](https://github.com/lfnovo/open-notebook/discussions/categories/q-a) or the Discord community
-4. If you found a reproducible bug, create a GitHub Issue with detailed information
-
-### How do I report a bug?
-
-Include:
-- Steps to reproduce
-- Expected vs actual behavior
-- Error messages and logs
-- System information
-- Configuration details (without API keys)
-
-Submit to: [GitHub Issues](https://github.com/lfnovo/open-notebook/issues)
-
-### Where can I get help?
-
-- **Discord**: https://discord.gg/37XJPXfz2w (fastest)
-- **GitHub Discussions**: Questions, ideas, and feature requests
-- **GitHub Issues**: Reproducible bug reports
-- **Documentation**: This docs site
+When reporting a bug, include the exact error message, steps to reproduce, relevant logs (without keys or passwords), your version and how you run Open Notebook.
 
 ---
 
 ## Related
 
-- [Quick Fixes](quick-fixes.md) - Common issues with 1-minute solutions
-- [AI & Chat Issues](ai-chat-issues.md) - Model and chat problems
-- [Connection Issues](connection-issues.md) - Network and API problems
+- [Quick Fixes](quick-fixes.md)
+- [AI & Chat Issues](ai-chat-issues.md)
+- [Processing Issues](processing-issues.md)
+- [Connection Issues](connection-issues.md)

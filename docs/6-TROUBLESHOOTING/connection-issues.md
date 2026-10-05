@@ -1,457 +1,144 @@
-# Connection Issues - Network & API Problems
+# Connection Issues - UI, API & Database
 
-Frontend can't reach API or services won't communicate.
+When the pieces of Open Notebook can't reach each other. There are three hops:
+
+```
+Browser ──> Web UI (8502) ──> API (5055) ──> SurrealDB (8000)
+```
+
+With the shipped `docker-compose.yml` there are two services: `surrealdb`, and `open_notebook`, which runs the UI, the API and the background worker together. Commands on this page use those names.
 
 ---
 
-## "Cannot connect to server" (Most Common)
+## The page doesn't load at all
 
-**What it looks like:**
-- Browser shows error page
-- "Unable to reach API"
-- "Cannot connect to server"
-- UI loads but can't create notebooks
-
-**Diagnosis:**
+The browser shows its own error ("This site can't be reached", "connection refused") for `http://localhost:8502`.
 
 ```bash
-# Check if API is running
-docker ps | grep api
-# Should see "api" service running
+docker compose ps                      # is open_notebook "Up"?
+docker compose logs --tail 50 open_notebook
+```
 
-# Check if API is responding
+- **Not running or restarting:** read the log. The API waits for the database before the UI starts, so a database problem can keep the UI down too (see [Database Connection Failed](#database-connection-failed)).
+- **Running, but the port isn't published:** `docker compose ps` must show `0.0.0.0:8502->8502/tcp`. If you changed the mapping, use the host port you chose.
+- **"Bind for 0.0.0.0:8502 failed: port is already allocated"** when starting: another program uses the port. Find it with `lsof -i :8502` (or `sudo ss -ltnp | grep 8502`), or map a different host port (`"8503:8502"`) and run `docker compose up -d`.
+- **From another machine:** the server's firewall must allow 8502 (and 5055, see below).
+
+The first start after enabling `OPEN_NOTEBOOK_ENABLE_DOCLING` or `OPEN_NOTEBOOK_ENABLE_CRAWL4AI` installs large packages before anything else starts; the log shows `[entrypoint] Installing ...`. Wait for it to finish.
+
+---
+
+## "Unable to Connect to API Server"
+
+Full overlay text: **Unable to Connect to API Server** — "The Open Notebook API server could not be reached". On the login page the same problem reads "Unable to connect to server. Please check if the API is running."
+
+The UI loaded, but the browser can't reach the API. Click **Show Technical Details** in the overlay: **Attempted URL** is the API address the browser used.
+
+**1. Is the API up?**
+
+```bash
 curl http://localhost:5055/health
-# Should show: {"status":"ok"}
-
-# Check if frontend is running
-docker ps | grep frontend
-# Should see "frontend" or React service running
+# {"status":"healthy"}
 ```
 
-**Solutions:**
+No answer: check `docker compose logs open_notebook` for API errors. A database problem stops the API from starting (see below).
 
-### Solution 1: API Not Running
+**2. Can the browser reach the Attempted URL?**
+
+When `API_URL` is not set, the browser uses the host from the address bar plus port 5055. Opening `http://192.168.1.50:8502` makes it call `http://192.168.1.50:5055`. So:
+
+- Port 5055 must be published (`"5055:5055"` in the shipped file) and allowed by the server's firewall.
+- Behind a reverse proxy, the auto-detected `https://your-domain:5055` usually doesn't exist. Set `API_URL=https://your-domain` (no `/api`) in the `open_notebook` environment and run `docker compose up -d`. See [Reverse Proxy](../5-CONFIGURATION/reverse-proxy.md#how-the-browser-finds-the-api).
+- If you published the API on another host port, set `API_URL` to match (`http://<host>:<port>`).
+
+Check what the container received with `docker compose exec open_notebook printenv API_URL`. Changes need `docker compose up -d`; `docker compose restart` keeps the old environment.
+
+**3. HTTPS page, HTTP API?** The browser blocks it as mixed content. `API_URL` must start with `https://` when the UI is served over HTTPS.
+
+---
+
+## "Database Connection Failed"
+
+Full overlay text: **Database Connection Failed** — "The API server is running, but the database is not accessible". You see it when the database becomes unreachable while the API is running.
+
+If the database is unreachable when the API **starts**, the API doesn't come up at all: its log shows `Database is not reachable yet (attempt n/12)` while it waits, then `Database did not become reachable after 12 attempts` and `CRITICAL: Database migration failed`. The browser then can't reach the API (**Unable to Connect to API Server**), or in the Docker image the UI doesn't load at all, because it waits for the API. The causes and fixes are the same.
+
 ```bash
-# Start API
-docker compose up api -d
-
-# Wait 5 seconds
-sleep 5
-
-# Verify it's running
-docker compose logs api | tail -20
+docker compose ps surrealdb
+docker compose logs --tail 50 surrealdb
+docker compose exec open_notebook printenv SURREAL_URL SURREAL_USER SURREAL_NAMESPACE SURREAL_DATABASE   # no passwords
 ```
 
-### Solution 2: Port Not Exposed
+| Cause | Fix |
+|-------|-----|
+| `surrealdb` isn't running, or crashed (often a permissions error on `./surreal_data`) | Read its log. The shipped service runs as `user: root` so it can write the bind mount |
+| `SURREAL_URL` uses `localhost` inside Docker | Use the service name: `ws://surrealdb:8000/rpc` |
+| Wrong user or password | `SURREAL_USER`/`SURREAL_PASSWORD` must match the `--user`/`--pass` SurrealDB started with. With the shipped file, set both in `.env` so the two services agree |
+| Running from source with the Docker URL | Use `ws://localhost:8000/rpc` in `.env` |
+| Corporate proxy, API log shows HTTP 403 on the database websocket | Add `surrealdb` and `localhost` to `NO_PROXY` ([Environment Reference → Outbound proxy](../5-CONFIGURATION/environment-reference.md#outbound-proxy)) |
+
+More: [Database](../5-CONFIGURATION/database.md).
+
+---
+
+## Background jobs never run
+
+Sources stay **Queued**, podcasts stay **Pending**, embeddings never finish. The worker isn't running or uses a different database namespace. See [Processing Issues → Sources stay "Queued"](processing-issues.md#sources-stay-queued-waiting-to-be-processed).
+
+---
+
+## Slow pages, 502 or 504 behind a proxy
+
+- `502 Bad Gateway`: the proxy can't reach port 8502 (container down, or not on the proxy's network).
+- `504 Gateway Timeout` or `socket hang up` on long chats and transformations: the proxy's read timeout is shorter than the request. Set it to at least 600 seconds.
+
+See [Reverse Proxy → Troubleshooting](../5-CONFIGURATION/reverse-proxy.md#troubleshooting).
+
+---
+
+## CORS errors in the browser console
+
+`Cross-Origin Request Blocked` or `has been blocked by CORS policy`. With default settings the API accepts every origin, so on a default install a CORS error almost always hides another problem:
+
+- **Status 413:** an upload hit a size limit in your reverse proxy ([Upload size](../5-CONFIGURATION/reverse-proxy.md#upload-size-413-errors)).
+- **502/504 or no status:** the proxy returned its own error page, which has no CORS headers. Fix the underlying error.
+- **You set `CORS_ORIGINS`:** the origin in the browser's address bar (scheme, host and port) must be in the list exactly. See [Security → CORS Origins](../5-CONFIGURATION/security.md#cors-origins).
+
+---
+
+## Login problems
+
+- **"Invalid password"**: the password doesn't match `OPEN_NOTEBOOK_PASSWORD`. If you just changed it in `docker-compose.yml`, apply it with `docker compose up -d`.
+- **Logged out, or "Unauthorized access, please check your password"** after changing the password: the browser still holds the old one. Sign out and log in again.
+
+See [Security](../5-CONFIGURATION/security.md#password-protection).
+
+---
+
+## Provider connections (Test Connection)
+
+"Cannot connect to server. Check the URL is correct." and "Cannot connect to Ollama. Check if Ollama server is running." come from the **Test** button in Manage → Models. They are about the AI provider's address, not about Open Notebook's own API. See [AI & Chat Issues → Test fails](ai-chat-issues.md#test-fails).
+
+### SSL errors with a provider
+
+`[SSL: CERTIFICATE_VERIFY_FAILED]` in the log, or Test failing only on an `https://` Base URL: the provider uses a certificate the container doesn't trust. Mount the CA bundle and set `ESPERANTO_SSL_CA_BUNDLE`; this covers model calls, Test and model discovery. See [Advanced → SSL](../5-CONFIGURATION/advanced.md#ssl-for-self-signed-providers).
+
+---
+
+## Full check
+
 ```bash
-# Check docker-compose.yml has port mapping:
-# api:
-#   ports:
-#     - "5055:5055"
-
-# If missing, add it and restart:
-docker compose down
-docker compose up -d
-```
-
-### Solution 3: API_URL Mismatch
-```bash
-# Check the API_URL the container actually sees:
-docker compose exec open_notebook printenv API_URL
-
-# It should be the API address as your browser reaches it:
-# Frontend: http://localhost:8502
-# API_URL: http://localhost:5055
-
-# If wrong, fix it in docker-compose.yml → open_notebook → environment:
-#   - API_URL=http://localhost:5055
-# Apply (restart does not reload environment):
-docker compose up -d
-```
-
-### Solution 4: Firewall Blocking
-```bash
-# Verify port 5055 is accessible
-netstat -tlnp | grep 5055
-# Should show port listening
-
-# If on different machine, try:
-# Instead of localhost, use your IP:
-API_URL=http://192.168.1.100:5055
-```
-
-### Solution 5: Services Not Started
-```bash
-# Restart everything
-docker compose restart
-
-# Wait 10 seconds
-sleep 10
-
-# Check all services
-docker compose ps
-# All should show "Up"
+docker compose ps                                  # both services Up
+curl -s http://localhost:5055/health               # {"status":"healthy"}
+curl -s http://localhost:5055/api/config           # "dbStatus": "online"
+docker compose logs --since 10m open_notebook | grep -iE "error|warning|critical"
 ```
 
 ---
 
-## Connection Refused
-
-**What it looks like:**
-```
-Connection refused
-ECONNREFUSED
-Error: socket hang up
-```
-
-**Diagnosis:**
-- API port (5055) not open
-- API crashed
-- Wrong IP/hostname
-
-**Solution:**
-
-```bash
-# Step 1: Check if API is running
-docker ps | grep api
-
-# Step 2: Check if port is listening
-lsof -i :5055
-# or
-netstat -tlnp | grep 5055
-
-# Step 3: Check API logs
-docker compose logs api | tail -30
-# Look for errors
-
-# Step 4: Restart API
-docker compose restart api
-docker compose logs api | grep -i "error"
-```
-
----
-
-## Timeout / Slow Connection
-
-**What it looks like:**
-- Page loads slowly
-- Request times out
-- "Gateway timeout" error
-
-**Causes:**
-- API is overloaded
-- Network is slow
-- Reverse proxy issue
-
-**Solutions:**
-
-### Check API Performance
-```bash
-# See CPU/memory usage
-docker stats
-
-# Check logs for slow operations
-docker compose logs api | grep "slow\|timeout"
-```
-
-### Reduce Load
-```bash
-# docker-compose.yml → open_notebook → environment:
-#   - OPEN_NOTEBOOK_WORKER_MAX_TASKS=2
-#   - ESPERANTO_LLM_TIMEOUT=420
-
-# Apply (restart does not reload environment):
-docker compose up -d
-```
-
-### Check Network
-```bash
-# Test latency
-ping localhost
-
-# Test API directly
-time curl http://localhost:5055/health
-
-# Should be < 100ms
-```
-
----
-
-## 502 Bad Gateway (Reverse Proxy)
-
-**What it looks like:**
-```
-502 Bad Gateway
-The server is temporarily unable to service the request
-```
-
-**Cause:** Reverse proxy can't reach API
-
-**Solutions:**
-
-### Check Backend is Running
-```bash
-# From the reverse proxy server
-curl http://localhost:5055/health
-
-# Should work
-```
-
-### Check Reverse Proxy Config
-```nginx
-# Nginx example (correct):
-location /api {
-    proxy_pass http://localhost:5055/api;
-    proxy_http_version 1.1;
-}
-
-# Common mistake (wrong):
-location /api {
-    proxy_pass http://localhost:5055;  # Missing /api
-}
-```
-
-### Set API_URL for HTTPS
-```bash
-# docker-compose.yml → open_notebook → environment:
-#   - API_URL=https://yourdomain.com
-
-# Apply (restart does not reload environment):
-docker compose up -d
-```
-
----
-
-## Intermittent Disconnects
-
-**What it looks like:**
-- Works sometimes, fails other times
-- Sporadic "cannot connect" errors
-- Works then stops working
-
-**Cause:** Transient network issue or database conflicts
-
-**Solutions:**
-
-### Enable Retry Logic
-```bash
-# docker-compose.yml → open_notebook → environment:
-#   - SURREAL_COMMANDS_RETRY_ENABLED=true
-#   - SURREAL_COMMANDS_RETRY_MAX_ATTEMPTS=5
-#   - SURREAL_COMMANDS_RETRY_WAIT_STRATEGY=exponential_jitter
-
-# Apply (restart does not reload environment):
-docker compose up -d
-```
-
-### Reduce Concurrency
-```bash
-# docker-compose.yml → open_notebook → environment:
-#   - OPEN_NOTEBOOK_WORKER_MAX_TASKS=2
-
-# Apply (restart does not reload environment):
-docker compose up -d
-```
-
-### Check Network Stability
-```bash
-# Monitor connection
-ping google.com
-
-# Long-running test
-ping -c 100 google.com | grep "packet loss"
-# Should be 0% loss
-```
-
----
-
-## Different Machine / Remote Access
-
-**You want to access Open Notebook from another computer**
-
-**Solution:**
-
-### Step 1: Get Your Machine IP
-```bash
-# On the server running Open Notebook:
-ifconfig | grep "inet "
-# or
-hostname -I
-# Note the IP (e.g., 192.168.1.100)
-```
-
-### Step 2: Update API_URL
-```bash
-# docker-compose.yml → open_notebook → environment:
-#   - API_URL=http://192.168.1.100:5055
-
-# Apply (restart does not reload environment):
-docker compose up -d
-```
-
-### Step 3: Access from Other Machine
-```bash
-# In browser on other machine:
-http://192.168.1.100:8502
-# (or your server IP)
-```
-
-### Step 4: Verify Port is Exposed
-```bash
-# On server:
-docker compose ps
-
-# Should show port mapping:
-# 0.0.0.0:8502->8502/tcp
-# 0.0.0.0:5055->5055/tcp
-```
-
-### If Still Doesn't Work
-```bash
-# Check firewall on server
-sudo ufw status
-# May need to open ports:
-sudo ufw allow 8502
-sudo ufw allow 5055
-
-# Check on different machine:
-telnet 192.168.1.100 5055
-# Should connect
-```
-
----
-
-## CORS Error (Browser Console)
-
-**What it looks like:**
-```
-Cross-Origin Request Blocked
-Access-Control-Allow-Origin
-```
-
-**In browser console (F12):**
-```
-CORS policy: Response to preflight request doesn't pass access control check
-```
-
-**Cause:** Frontend and API URLs don't match
-
-**Solution:**
-
-```bash
-# Check browser console error for what URLs are being used
-# The error shows:
-# - Requesting from: http://localhost:8502
-# - Trying to reach: http://localhost:5055
-
-# Make sure API_URL (docker-compose.yml → open_notebook → environment:) matches:
-#   - API_URL=http://localhost:5055
-
-# And protocol matches (http/https)
-# Apply (restart does not reload environment):
-docker compose up -d
-```
-
----
-
-## Testing Connection
-
-**Full diagnostic:**
-
-```bash
-# 1. Services running?
-docker compose ps
-# All should show "Up"
-
-# 2. Ports listening?
-netstat -tlnp | grep -E "8502|5055|8000"
-
-# 3. API responding?
-curl http://localhost:5055/health
-
-# 4. Frontend accessible?
-curl http://localhost:8502 | head
-
-# 5. Network OK?
-ping google.com
-
-# 6. No firewall?
-sudo ufw status | grep -E "5055|8502|8000"
-```
-
----
-
-## Checklist for Remote Access
-
-- [ ] Server IP noted (e.g., 192.168.1.100)
-- [ ] Ports 8502, 5055, 8000 exposed in docker-compose
-- [ ] API_URL set to server IP
-- [ ] Firewall allows ports 8502, 5055, 8000
-- [ ] Can reach server from client machine (ping IP)
-- [ ] All services running (docker compose ps)
-- [ ] Can curl API from client (curl http://IP:5055/health)
-
----
-
-## SSL Certificate Errors
-
-**What it looks like:**
-```
-[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed
-Connection error when using HTTPS endpoints
-Works with HTTP but fails with HTTPS
-```
-
-**Cause:** Self-signed or privately issued certificates not trusted by Python's SSL verification inside the container. Chat via Esperanto may honor `ESPERANTO_SSL_*`, but **Test Connection** and **Discover Models** used raw httpx and historically ignored those settings (fixed so they share the same env vars).
-
-**Solutions:**
-
-### Solution 1: Use Custom CA Bundle (Recommended)
-```bash
-# From source, in .env:
-ESPERANTO_SSL_CA_BUNDLE=/path/to/your/ca-bundle.pem
-
-# For Docker, mount the certificate:
-# In docker-compose.yml:
-volumes:
-  - /path/to/your/ca-bundle.pem:/certs/ca-bundle.pem:ro
-environment:
-  - ESPERANTO_SSL_CA_BUNDLE=/certs/ca-bundle.pem
-```
-
-This applies to chat **and** to credential Test Connection / model discovery.
-
-### Solution 2: Disable SSL Verification (Development Only)
-```bash
-# WARNING: Only use in trusted development environments
-# Docker: docker-compose.yml → open_notebook → environment:
-#   - ESPERANTO_SSL_VERIFY=false
-# From source: ESPERANTO_SSL_VERIFY=false in .env
-```
-
-Same scope: Esperanto providers, Test Connection, and Discover Models.
-
-### Solution 3: Use HTTP Instead
-If services are on a trusted local network, HTTP is acceptable:
-```
-Change the base URL in your credential (Manage → Models) from https:// to http://
-Example: http://localhost:1234/v1
-```
-
-> **Security Note:** Disabling SSL verification exposes you to man-in-the-middle attacks. Always prefer custom CA bundle or HTTP on trusted networks.
-
-> **Note:** SSL failures on Test Connection are often reported as a generic
-> "Cannot connect to server" message (httpx wraps `CERTIFICATE_VERIFY_FAILED`
-> as `ConnectError`). If chat or `curl -k` works but Test Connection fails,
-> check `ESPERANTO_SSL_CA_BUNDLE` / `ESPERANTO_SSL_VERIFY` first.
-
----
-
-## Still Having Issues?
-
-- Check [Quick Fixes](quick-fixes.md)
-- Check [FAQ](faq.md)
-- Check logs: `docker compose logs`
-- Try restart: `docker compose restart`
-- Check firewall: `sudo ufw status`
-- Ask for help on [Discord](https://discord.gg/37XJPXfz2w)
+## Related
+
+- [Reverse Proxy](../5-CONFIGURATION/reverse-proxy.md)
+- [Database](../5-CONFIGURATION/database.md)
+- [Processing Issues](processing-issues.md)
+- [AI & Chat Issues](ai-chat-issues.md)

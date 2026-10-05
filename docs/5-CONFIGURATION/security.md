@@ -1,43 +1,45 @@
 # Security Configuration
 
-Protect your Open Notebook deployment with password authentication and production hardening.
+Password protection, credential encryption and production hardening.
+
+Open Notebook's built-in protection is basic: one shared password, no user accounts, CORS open to every origin by default. Treat it as a lock on the door, not as enterprise security. For anything reachable from the internet, put it behind HTTPS and a firewall (see [Production hardening](#production-hardening)).
+
+All variables on this page go in the `open_notebook` service's `environment:` block (apply with `docker compose up -d`) or in `.env` when running from source. Full list: [Environment Reference](environment-reference.md#security-and-access).
 
 ---
 
 ## API Key Encryption
 
-Open Notebook encrypts API keys stored in the database using Fernet symmetric encryption (AES-128-CBC with HMAC-SHA256).
+AI provider keys saved in **Manage → Models** are encrypted before they are stored in SurrealDB, using Fernet (AES-128-CBC with HMAC-SHA256). The Fernet key is derived from `OPEN_NOTEBOOK_ENCRYPTION_KEY` with PBKDF2-HMAC-SHA256 (600,000 iterations).
 
-### Configuration Methods
-
-| Method | Documentation |
-|--------|---------------|
-| **Settings UI** | [API Configuration Guide](../3-USER-GUIDE/api-configuration.md) |
-| **Environment Variables** | This page (below) |
-
-### Setup
-
-Set the encryption key to any secret string:
+Generate a unique value for each installation, then put it in place of `<generated-key>`:
 
 ```bash
-# docker-compose.yml → open_notebook → environment: (or .env when running from source)
-OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-passphrase
+openssl rand -hex 32                                   # macOS, Linux
 ```
 
-Any string works: it is stretched into the encryption key with PBKDF2-HMAC-SHA256 (600k iterations). That slows brute force but can't save a guessable passphrase, so use a long, random one for production deployments.
+```powershell
+[guid]::NewGuid().ToString("N") + [guid]::NewGuid().ToString("N")   # Windows PowerShell
+```
 
-### Default Credentials
+```yaml
+services:
+  open_notebook:
+    environment:
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=<generated-key>
+```
 
-| Setting | Default | Security Level |
-|---------|---------|----------------|
-| Password | None - auth is fully disabled until `OPEN_NOTEBOOK_PASSWORD` is set | Development only |
-| Encryption Key | **None** (must be configured) | Required for API key storage |
+Don't copy an example value from any guide, including this one.
 
-**The encryption key has no default.** You must set `OPEN_NOTEBOOK_ENCRYPTION_KEY` before using the API key configuration feature. Without it, encrypting/decrypting API keys will fail.
+- **The key has no default.** Without it you can't save credentials: **Manage → Models** shows "Encryption key not configured" and the API logs `OPEN_NOTEBOOK_ENCRYPTION_KEY not set. API key encryption will fail until this is configured.`
+- **Use a generated value.** Any string is accepted, but PBKDF2 only slows down guessing; it can't save a short, common or published passphrase.
+- **Replace the placeholder.** The shipped `docker-compose.yml` sets `change-me-to-a-secret-string`. That value is public, and Open Notebook does not warn about it.
+- **Don't change it once credentials are saved.** Keys encrypted with the old value can't be decrypted with the new one. Each affected credential shows **Decryption Error** in Manage → Models; delete and re-create it. There is no key-rotation command.
+- **Keep it apart from your backups.** A database backup plus the key gives access to every stored provider key.
 
-### Docker Secrets Support
+### Docker secrets
 
-Both settings support Docker secrets via `_FILE` suffix:
+Both secrets can be read from files. The `_FILE` variant is checked first:
 
 ```yaml
 environment:
@@ -45,378 +47,209 @@ environment:
   - OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE=/run/secrets/encryption_key
 ```
 
-### Security Notes
+### Upgrading to PBKDF2 (v1.15.0)
 
-| Scenario | Behavior |
-|----------|----------|
-| Key configured | API keys encrypted with your key |
-| No key configured | Encryption/decryption will fail (key is required) |
-| Key changed | Old encrypted keys become unreadable |
-| Legacy data | Unencrypted keys still work (graceful fallback) |
+Before v1.15.0 the Fernet key was derived with a single unsalted SHA-256 hash. Since v1.15.0:
 
-### Key Management
+- New and edited credentials are written in the PBKDF2 format (values prefixed with `pbkdf2v1:`).
+- Credentials written by older versions keep working; they are decrypted with the old derivation.
+- A one-time call rewrites the old values into the new format:
 
-- **Keep secret**: Never commit the encryption key to version control
-- **Backup securely**: Store the key separately from database backups
-- **No rotation yet**: Changing the key requires re-saving all API keys
-- **Per-deployment**: Each instance should have its own encryption key
+```bash
+# Back up the database first (see below)
+curl -X POST http://localhost:5055/api/credentials/migrate-encryption \
+  -H "Authorization: Bearer your_password"   # omit the header if no password is set
+```
 
----
+The response lists the credentials that were `migrated`, `skipped` (already in the new format) and any `errors`. Running it again changes nothing. A credential that can't be decrypted (for example because the key changed) is left untouched and reported as an error. There is no button for this in the UI.
 
-## When to Use Password Protection
+> **Back up the database before migrating, and don't downgrade afterwards.** Versions older than 1.15.0 can't read `pbkdf2v1:` values. This already applies to any credential you add or edit on 1.15.0, migrated or not. To go back to an older version, restore a backup taken before the upgrade. Backup steps: [Advanced → Backup & Restore](advanced.md#backup--restore).
 
-### Use it for:
-- Public cloud deployments (PikaPods, Railway, DigitalOcean)
-- Shared network environments
-- Any deployment accessible beyond localhost
+Run the migration as a single admin, while nobody is editing credentials. When `OPEN_NOTEBOOK_PASSWORD` is unset, this endpoint is open to anyone who can reach the API, like every other endpoint.
 
-### You can skip it for:
-- Local development on your machine
-- Private, isolated networks
-- Single-user local setups
+### Plaintext keys from very old versions
+
+Values that are not encrypted at all (from versions before credential encryption existed) are still read as-is. Saving the credential again encrypts it.
 
 ---
 
-## Quick Setup
+## Password Protection
 
-### Docker Deployment
+### When to use it
+
+Set a password for any deployment reachable from something other than your own machine: a cloud host, a shared LAN, a reverse proxy on the internet. Without `OPEN_NOTEBOOK_PASSWORD`, authentication is off and anyone who can reach ports 8502 or 5055 can use the app and its stored provider keys. Open Notebook does not log a warning when the password is unset.
 
 ```yaml
-# Add to your docker-compose.yml (requires surrealdb service, see installation guide)
 services:
   open_notebook:
-    image: lfnovo/open_notebook:v1-latest
-    pull_policy: always
     environment:
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=your-secret-encryption-key
-      - OPEN_NOTEBOOK_PASSWORD=your_secure_password
-    # ... rest of config
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=<generated-key>
+      - OPEN_NOTEBOOK_PASSWORD=<generated-password>
 ```
 
-Or using an environment file (add `env_file: .env` to the `open_notebook` service; the shipped compose file doesn't load one):
+Generate the password the same way as the key (`openssl rand -hex 32`, or the PowerShell command above), and use a different value for each. Non-ASCII passwords work; API clients must send them UTF-8 encoded.
+
+### How the UI handles it
+
+1. The login page asks for the password on first visit.
+2. After a successful login the browser keeps the password in `localStorage` (key `auth-storage`), so it survives closing the browser.
+3. **Sign Out** in the UI clears it. Clearing site data for the app does the same.
+
+Anyone with access to that browser profile can read the stored password. Don't log in from shared machines.
+
+### How the API checks it
+
+Every request must send `Authorization: Bearer <password>`:
 
 ```bash
-# .env
-OPEN_NOTEBOOK_ENCRYPTION_KEY=your-secret-encryption-key
-OPEN_NOTEBOOK_PASSWORD=your_secure_password
+curl -H "Authorization: Bearer your_password" http://localhost:5055/api/notebooks
 ```
 
-> **Important**: The encryption key is **required** for credential storage. Without it, you cannot save AI provider credentials via the Settings UI. If you change or lose the encryption key, all stored credentials become unreadable.
+Without the header the API answers `401 {"detail": "Missing authorization header"}`. A wrong password gives `{"detail": "Invalid password"}`.
 
-### Development Setup
+These paths work without a password:
 
-```bash
-# .env
-OPEN_NOTEBOOK_PASSWORD=your_secure_password
-```
+| Path | Purpose |
+|------|---------|
+| `/` | API banner |
+| `/health` | Health check, returns `{"status": "healthy"}` |
+| `/docs`, `/redoc`, `/openapi.json` | API documentation |
+| `/api/auth/status` | Tells the UI whether a password is required |
+| `/api/config` | Version, update check and database status |
 
----
-
-## Password Requirements
-
-### Good Passwords
-
-```bash
-# Strong: 20+ characters, mixed case, numbers, symbols
-OPEN_NOTEBOOK_PASSWORD=MySecure2024!Research#Tool
-OPEN_NOTEBOOK_PASSWORD=Notebook$Dev$2024$Strong!
-
-# Generated (recommended)
-OPEN_NOTEBOOK_PASSWORD=$(openssl rand -base64 24)
-```
-
-### Bad Passwords
+### API client examples
 
 ```bash
-# DON'T use these
-OPEN_NOTEBOOK_PASSWORD=password123
-OPEN_NOTEBOOK_PASSWORD=opennotebook
-OPEN_NOTEBOOK_PASSWORD=admin
-```
-
----
-
-## How It Works
-
-### Frontend Protection
-
-1. Login form appears on first visit
-2. Password stored in browser session
-3. Session persists until browser closes
-4. Clear browser data to log out
-
-### API Protection
-
-All API endpoints require authentication:
-
-```bash
-# Authenticated request
-curl -H "Authorization: Bearer your_password" \
-  http://localhost:5055/api/notebooks
-
-# Unauthenticated (will fail)
-curl http://localhost:5055/api/notebooks
-# Returns: {"detail": "Missing authorization header"}
-```
-
-### Unprotected Endpoints
-
-These work without authentication:
-
-- `/health` - System health check
-- `/docs` - API documentation
-- `/openapi.json` - OpenAPI spec
-
----
-
-## API Authentication Examples
-
-### curl
-
-```bash
-# List notebooks
-curl -H "Authorization: Bearer your_password" \
-  http://localhost:5055/api/notebooks
-
-# Create notebook
-curl -X POST \
+# Create a notebook
+curl -X POST http://localhost:5055/api/notebooks \
   -H "Authorization: Bearer your_password" \
   -H "Content-Type: application/json" \
-  -d '{"name": "My Notebook", "description": "Research notes"}' \
-  http://localhost:5055/api/notebooks
+  -d '{"name": "My Notebook", "description": "Research notes"}'
 
-# Upload file
-curl -X POST \
+# Upload a file as a source (multipart form)
+curl -X POST http://localhost:5055/api/sources \
   -H "Authorization: Bearer your_password" \
-  -F "file=@document.pdf" \
-  http://localhost:5055/api/sources/upload
+  -F "type=upload" \
+  -F "file=@document.pdf"
 ```
-
-### Python
 
 ```python
 import requests
 
-class OpenNotebookClient:
-    def __init__(self, base_url: str, password: str):
-        self.base_url = base_url
-        self.headers = {"Authorization": f"Bearer {password}"}
-
-    def get_notebooks(self):
-        response = requests.get(
-            f"{self.base_url}/api/notebooks",
-            headers=self.headers
-        )
-        return response.json()
-
-    def create_notebook(self, name: str, description: str = None):
-        response = requests.post(
-            f"{self.base_url}/api/notebooks",
-            headers=self.headers,
-            json={"name": name, "description": description}
-        )
-        return response.json()
-
-# Usage
-client = OpenNotebookClient("http://localhost:5055", "your_password")
-notebooks = client.get_notebooks()
+headers = {"Authorization": "Bearer your_password"}
+notebooks = requests.get("http://localhost:5055/api/notebooks", headers=headers).json()
 ```
 
-### JavaScript/TypeScript
-
-```javascript
-const API_URL = 'http://localhost:5055';
-const PASSWORD = 'your_password';
-
-async function getNotebooks() {
-  const response = await fetch(`${API_URL}/api/notebooks`, {
-    headers: {
-      'Authorization': `Bearer ${PASSWORD}`
-    }
-  });
-  return response.json();
-}
-```
+Full API documentation: `http://localhost:5055/docs` on your instance, or [API Reference](../7-DEVELOPMENT/api-reference.md).
 
 ---
 
 ## Production Hardening
 
-### Docker Security
+### Network exposure
+
+- **Don't publish SurrealDB.** The shipped compose file binds it to `127.0.0.1:8000`. It uses `root`/`root` unless you set `SURREAL_USER` and `SURREAL_PASSWORD` (in `.env`, which the compose file passes to both services).
+- **Put a reverse proxy with HTTPS in front** and bind the app ports to localhost so only the proxy can reach them. The password travels in a header on every request, so plain HTTP exposes it. See [Reverse Proxy](reverse-proxy.md).
 
 ```yaml
-# Add to your docker-compose.yml (requires surrealdb service, see installation guide)
 services:
   open_notebook:
-    image: lfnovo/open_notebook:v1-latest
-    pull_policy: always
     ports:
-      - "127.0.0.1:8502:8502"  # Bind to localhost only
-    environment:
-      - OPEN_NOTEBOOK_PASSWORD=your_secure_password
+      - "127.0.0.1:8502:8502"
+      - "127.0.0.1:5055:5055"
+```
+
+```bash
+# UFW example: allow only SSH and the reverse proxy
+sudo ufw allow ssh
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable
+```
+
+Docker publishes ports by editing iptables directly, which can bypass UFW rules. Binding to `127.0.0.1` as above is the reliable way to keep a port private.
+
+### CORS Origins
+
+The API accepts cross-origin requests from any origin by default (`*`) and logs a warning at startup while `CORS_ORIGINS` is unset. For internet-facing deployments, list the exact origins that load the UI:
+
+```bash
+CORS_ORIGINS=https://notebook.example.com
+# Several origins, comma-separated
+CORS_ORIGINS=https://notebook.example.com,http://192.168.1.10:8502
+```
+
+Include the scheme and any non-default port. Restart the API after changing it (`docker compose up -d`). With the default wildcard, the API does not allow credentialed cross-origin requests; once you list origins, it does, for those origins only. Error responses carry CORS headers only for allowed origins.
+
+Most installs never hit CORS at all: the browser loads the UI and the API from origins it is told about through `API_URL`. If you set `CORS_ORIGINS` and the UI starts failing with CORS errors, the origin you are browsing from is missing from the list.
+
+### Other measures
+
+```yaml
+services:
+  open_notebook:
     security_opt:
       - no-new-privileges:true
     deploy:
       resources:
         limits:
-          memory: 2G
-          cpus: "1.0"
-    restart: always
+          memory: 4G
 ```
 
-### Firewall Configuration
-
-```bash
-# UFW (Ubuntu)
-sudo ufw allow ssh
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw deny 8502/tcp   # Block direct access
-sudo ufw deny 5055/tcp   # Block direct API access
-sudo ufw enable
-
-# iptables
-iptables -A INPUT -p tcp --dport 22 -j ACCEPT
-iptables -A INPUT -p tcp --dport 80 -j ACCEPT
-iptables -A INPUT -p tcp --dport 443 -j ACCEPT
-iptables -A INPUT -p tcp --dport 8502 -j DROP
-iptables -A INPUT -p tcp --dport 5055 -j DROP
-```
-
-### Reverse Proxy with SSL
-
-See [Reverse Proxy Configuration](reverse-proxy.md) for complete nginx/Caddy/Traefik setup with HTTPS.
-
-### CORS Origins
-
-The API accepts cross-origin requests from any origin by default (`*`). This is convenient for development and diverse self-hosted setups, but it's not recommended for internet-facing production deployments because any website the user visits can issue authenticated cross-origin requests to your API.
-
-When `CORS_ORIGINS` is not set, the API logs a startup warning prompting you to configure it.
-
-**For production, set `CORS_ORIGINS` to your frontend's actual origin(s):**
-
-```bash
-# Single origin
-CORS_ORIGINS=https://notebook.example.com
-
-# Multiple origins (comma-separated)
-CORS_ORIGINS=https://notebook.example.com,https://admin.example.com
-```
-
-**Guidelines:**
-
-- Always use HTTPS origins in production.
-- List only the exact origins that should be allowed to call the API.
-- Include the scheme and port (if non-default): `https://example.com`, `http://192.168.1.10:3000`.
-- Changes require an API restart to take effect.
-
-**Error responses** (401, 404, 500, etc.) also respect the configured origins — they only include `Access-Control-Allow-Origin` for allowed origins, so error bodies are not leaked cross-origin when `CORS_ORIGINS` is configured.
+- Keep the image current: `docker compose pull && docker compose up -d`.
+- Back up `./notebook_data` and `./surreal_data`, and encrypt the backups if your sources are sensitive.
 
 ---
 
-## Security Limitations
+## Limitations
 
-Open Notebook's password protection provides **basic access control**, not enterprise-grade security:
+| Area | Current behavior |
+|------|------------------|
+| Users | One shared password, no accounts or roles |
+| Password in transit | A plain bearer header: use HTTPS |
+| Password in the browser | Stored in `localStorage` until Sign Out |
+| Sessions | No expiry; the password is sent with every request |
+| Rate limiting, lockout | None |
+| Audit log | None |
 
-| Feature | Status |
-|---------|--------|
-| Password transmission | Plain text (use HTTPS!) |
-| Password storage | In memory |
-| User management | Single password for all |
-| Session timeout | None (until browser close) |
-| Rate limiting | None |
-| Audit logging | None |
-
-### Risk Mitigation
-
-1. **Always use HTTPS** - Encrypt traffic with TLS
-2. **Strong passwords** - 20+ characters, complex
-3. **Network security** - Firewall, VPN for sensitive deployments
-4. **Regular updates** - Keep containers and dependencies updated
-5. **Monitoring** - Check logs for suspicious activity
-6. **Backups** - Regular backups of data
-
----
-
-## Enterprise Considerations
-
-For deployments requiring advanced security:
-
-| Need | Solution |
-|------|----------|
-| SSO/OAuth | Implement OAuth2/SAML proxy |
-| Role-based access | Custom middleware |
-| Audit logging | Log aggregation service |
-| Rate limiting | API gateway or nginx |
-| Data encryption | Encrypt volumes at rest |
-| Network segmentation | Docker networks, VPC |
+For single sign-on, per-user access or rate limiting, put an authenticating proxy or API gateway in front of Open Notebook.
 
 ---
 
 ## Troubleshooting
 
-### Password Not Working
+### The login keeps failing
 
 ```bash
-# Check env var is set
-docker exec open-notebook env | grep OPEN_NOTEBOOK_PASSWORD
+# Which password source does the API use? (never prints the value)
+docker compose exec open_notebook sh -c 'f="$OPEN_NOTEBOOK_PASSWORD_FILE"; if [ -n "$f" ] && [ -r "$f" ] && grep -q "[^[:space:]]" "$f"; then echo "set from file"; elif [ -n "$OPEN_NOTEBOOK_PASSWORD" ]; then echo "set from variable"; else echo "unset (authentication off)"; fi'
 
-# Check logs
-docker logs open-notebook | grep -i auth
-
-# Test API directly
-curl -H "Authorization: Bearer your_password" \
-  http://localhost:5055/health
+# Does the API accept it?
+curl -i -H "Authorization: Bearer your_password" http://localhost:5055/api/notebooks
 ```
 
-### 401 Unauthorized Errors
+A `_FILE` path that doesn't exist or points to an empty file is ignored (the API log shows `OPEN_NOTEBOOK_PASSWORD_FILE path does not exist` or `points to empty file`), and the API falls back to `OPEN_NOTEBOOK_PASSWORD`.
 
-```bash
-# Check header format
-curl -v -H "Authorization: Bearer your_password" \
-  http://localhost:5055/api/notebooks
+If you changed the password in `docker-compose.yml`, apply it with `docker compose up -d` (`restart` keeps the old value), then sign out and log in again.
 
-# Verify password matches
-echo "Password length: $(echo -n $OPEN_NOTEBOOK_PASSWORD | wc -c)"
-```
+### "Unable to connect to server. Please check if the API is running."
 
-### Cannot Access After Setting Password
+This is the login page failing to reach the API, not a wrong password. See [Connection Issues](../6-TROUBLESHOOTING/connection-issues.md).
 
-1. Clear browser cache and cookies
-2. Try incognito/private mode
-3. Check browser console for errors
-4. Verify password is correct in environment
+### Credential problems
 
-### Security Testing
-
-```bash
-# Without password (should fail)
-curl http://localhost:5055/api/notebooks
-# Expected: {"detail": "Missing authorization header"}
-
-# With correct password (should succeed)
-curl -H "Authorization: Bearer your_password" \
-  http://localhost:5055/api/notebooks
-
-# Health check (should work without password)
-curl http://localhost:5055/health
-```
+"Encryption key not configured", "Decryption Error" and related messages are covered in [AI & Chat Issues → Credentials and encryption](../6-TROUBLESHOOTING/ai-chat-issues.md#credentials-and-encryption).
 
 ---
 
 ## Reporting Security Issues
 
-If you discover security vulnerabilities:
-
-1. **Do NOT open public issues**
-2. Contact maintainers directly
-3. Provide detailed information
-4. Allow time for fixes before disclosure
+Don't open a public issue. Use GitHub's private vulnerability reporting, as described in [SECURITY.md](../../SECURITY.md).
 
 ---
 
 ## Related
 
-- **[Reverse Proxy](reverse-proxy.md)** - HTTPS and SSL setup
-- **[Advanced Configuration](advanced.md)** - Ports, timeouts, and SSL settings
-- **[Environment Reference](environment-reference.md)** - All configuration options
+- [Reverse Proxy](reverse-proxy.md) — HTTPS setup
+- [Environment Reference](environment-reference.md) — all variables
+- [Developer security notes](../7-DEVELOPMENT/security.md) — threat model and implementation details

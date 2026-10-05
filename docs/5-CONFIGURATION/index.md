@@ -1,323 +1,111 @@
-# Configuration - Essential Settings
+# Configuration
 
-Configuration is how you customize Open Notebook for your specific setup. This section covers what you need to know.
+Open Notebook is configured in two places:
 
----
-
-## What Needs Configuration?
-
-Three things:
-
-1. **AI Provider** — Which LLM/embedding service you're using (OpenAI, Anthropic, Ollama, etc.)
-2. **Database** — How to connect to SurrealDB (usually pre-configured)
-3. **Server** — API URL, ports, timeouts (usually auto-detected)
+1. **Environment variables** for infrastructure: the encryption key, the database connection, the API URL, timeouts. The complete list is the [Environment Reference](environment-reference.md).
+2. **The web UI** for everything else: AI provider credentials and models in **Manage → Models**, content processing engines in **Settings**.
 
 ---
 
-## Quick Decision: Which Provider?
+## Where environment variables go
 
-### Option 1: Cloud Provider (Fastest)
-- **OpenRouter (recommended)** (access to all models with one key)
-- **OpenAI** (GPT)
-- **Anthropic** (Claude)
-- **Google Gemini** (multi-modal, long context)
-- **Groq** (ultra-fast inference)
+### Docker Compose
 
-Setup: Get API key → Add credential in Manage → Models → Done
+Put them under the `open_notebook` service's `environment:` block in `docker-compose.yml`, then run:
 
-→ Go to **[AI Providers Guide](ai-providers.md)**
-
-### Option 2: Local (Free & Private)
-- **Ollama** (open-source models, on your machine)
-- **oMLX** (Apple Silicon / MLX inference server)
-
-→ Go to **[Ollama Setup](ollama.md)** or **[oMLX Setup](omlx.md)**
-
-### Option 3: OpenAI-Compatible
-- **LM Studio** (local)
-- **Custom endpoints**
-
-→ Go to **[OpenAI-Compatible Guide](openai-compatible.md)** (for oMLX, prefer the native [oMLX](omlx.md) provider)
-
----
-
-## Configuration File
-
-Use the right file depending on your setup.
-
-### Docker: the `environment:` block
-
-With Docker Compose, settings go in the `open_notebook` service's `environment:` block in `docker-compose.yml`. Apply changes with `docker compose up -d`; `docker compose restart` keeps the old environment.
-
-The shipped `docker-compose.yml` does not load any env file into the container. A `.env` file next to it is only used to fill `${...}` placeholders in the compose file (`SURREAL_USER`, `SURREAL_PASSWORD`). To keep settings in a file instead, add `env_file: .env` (or any file name) to the `open_notebook` service.
-
-### `.env` (Running from source)
-
-```
-Located in: project root
-Use for: running Open Notebook from source
-Format: KEY=value, one per line
+```bash
+docker compose up -d
 ```
 
----
-
-## Most Important Settings
-
-All of the settings below go in the `open_notebook` service's `environment:` block (Docker) or in `.env` (from source).
-
-
-###  Surreal Database
-
-This is the database used by the app.
-
-```
-SURREAL_URL=ws://surrealdb:8000/rpc
-SURREAL_USER=root
-SURREAL_PASSWORD=root  # Change in production!
-SURREAL_NAMESPACE=open_notebook
-SURREAL_DATABASE=open_notebook
-```
-
-> The only thing that is critical to not miss is the hostname in the `SURREAL_URL`. Check what URL to use based on your deployment, [here](database.md).
-
-
-### AI Provider (Credentials)
-
-We need access to LLMs in order for the app to work. AI provider credentials are configured via the **Settings UI**:
-
-1. Set `OPEN_NOTEBOOK_ENCRYPTION_KEY` in your environment (required for storing credentials)
-2. Start services
-3. Go to **Manage → Models → Add Credential**
-4. Select your provider, paste your API key
-5. **Test Connection** → **Discover Models** → **Register Models**
-
-```
-# Required in your .env or docker-compose.yml:
-OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
-```
-
-> **Ollama users**: Add an Ollama credential in Manage → Models with the correct base URL. See [Ollama Setup](ollama.md) for network configuration help.
-
-> **LM Studio / OpenAI-Compatible**: Add an OpenAI-Compatible credential in Manage → Models. See [OpenAI-Compatible Guide](openai-compatible.md).
-
-
-### API URL (If Behind Reverse Proxy)
-You only need to worry about this if you are deploying on a proxy or if you are changing port information. Otherwise, skip this.
-
-```
-API_URL=https://your-domain.com
-# Usually auto-detected. Only set if needed.
-```
-
-Auto-detection works for most setups.
-
----
-
-## Configuration by Scenario
-
-### Scenario 1: Docker on Localhost (Default)
-```env
-# docker-compose.yml → open_notebook → environment:
-OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
-# Everything else uses defaults
-# Then configure AI provider in Manage → Models
-```
-
-### Scenario 2: Docker on Remote Server
-```env
-# docker-compose.yml → open_notebook → environment:
-OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
-API_URL=http://your-server-ip:5055
-```
-
-### Scenario 3: Behind Reverse Proxy (Nginx/Cloudflare)
-```env
-# docker-compose.yml → open_notebook → environment:
-OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
-API_URL=https://your-domain.com
-# The reverse proxy handles HTTPS
-```
-
-### Scenario 4: Using Ollama Locally
-```env
-# docker-compose.yml → open_notebook → environment:
-OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
-# Then add Ollama credential in Manage → Models
-```
-
-### Scenario 5: Using Azure OpenAI
-```env
-# docker-compose.yml → open_notebook → environment:
-OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
-# Then add Azure OpenAI credential in Manage → Models
-```
-
----
-
-## Configuration Sections
-
-### [AI Providers](ai-providers.md)
-- OpenAI configuration
-- Anthropic configuration
-- Google Gemini configuration
-- Groq configuration
-- Ollama configuration
-- Azure OpenAI configuration
-- OpenAI-compatible configuration
-
-### [Database](database.md)
-- SurrealDB setup
-- Connection strings
-- Database vs. namespace
-- Running your own SurrealDB
-
-### [Advanced](advanced.md)
-- Ports and networking
-- Timeouts and concurrency
-- SSL/security
-- Retry configuration
-- Worker concurrency
-- Language models & embeddings
-- Speech-to-text & text-to-speech
-- Debugging and logging
-
-### [Reverse Proxy](reverse-proxy.md)
-- Nginx, Caddy, Traefik configs
-- Custom domain setup
-- SSL/HTTPS configuration
-- Coolify and other platforms
-
-### [Security](security.md)
-- Password protection
-- API authentication
-- Production hardening
-- Firewall configuration
-
-### [Local TTS](local-tts.md)
-- Speaches setup for local text-to-speech
-- GPU acceleration
-- Voice options
-- Docker networking
-
-### [Local STT](local-stt.md)
-- Speaches setup for local speech-to-text
-- Whisper model options
-- GPU acceleration
-- Docker networking
-
-### [Ollama](ollama.md)
-- Setting up and pointing to an Ollama server
-
-### [oMLX](omlx.md)
-- Apple Silicon MLX server (default `http://localhost:11435/v1`, SurrealDB port note)
-- Downloading models
-- Using embedding
-
-### [OpenAI-Compatible Providers](openai-compatible.md)
-- LM Studio, vLLM, Text Generation WebUI
-- Connection configuration
-- Docker networking
-- Troubleshooting
-
-### [Complete Reference](environment-reference.md)
-- All environment variables
-- Grouped by category
-- What each one does
-- Default values
-
----
-
-## How to Add Configuration
-
-### Method 1: Settings UI (For AI Provider Credentials)
-
-The recommended way to configure AI providers:
-
-```
-1. Open Open Notebook in your browser
-2. Go to Manage → Models
-3. Click "Add Credential"
-4. Select provider, enter API key
-5. Click Save, then Test Connection
-6. Click Discover Models → Register Models
-```
-
-No file editing, no restarts. Credentials stored securely (encrypted) in database.
-
-→ **[Full Guide: API Configuration](../3-USER-GUIDE/api-configuration.md)**
-
-### Method 2: Environment Variables (Infrastructure Settings)
-
-For database, network, encryption key and tuning settings.
-
-**Docker:** add them under the `open_notebook` service's `environment:` block, then run `docker compose up -d` (`docker compose restart` does not pick up environment changes):
+`docker compose restart` keeps the old environment, so it does not apply changes.
 
 ```yaml
-# In docker-compose.yml:
 services:
   open_notebook:
     environment:
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
-      - API_URL=https://your-domain.com
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=<generated-key>
+      - API_URL=https://notebook.example.com
 ```
 
-The shipped `docker-compose.yml` does not load a `.env` file into the container. Docker Compose only reads `.env` to fill `${...}` placeholders in the compose file (that's how `SURREAL_USER` / `SURREAL_PASSWORD` work), so a variable that exists only in `.env` never reaches Open Notebook. If you prefer keeping settings in a file, add `env_file: .env` to the `open_notebook` service yourself.
+Replace `<generated-key>` with a value you generate yourself, for example with `openssl rand -hex 32` (on Windows, see [Set your encryption key](../1-INSTALLATION/docker-compose.md#step-2-set-your-encryption-key)). Don't reuse an example value.
 
-**From source:** put them in `.env` and restart the API and worker. The exception is `OPEN_NOTEBOOK_WORKER_MAX_TASKS`: the worker's launch command reads it from your shell before `.env` is loaded, so `export` it before `make worker-start`.
+The shipped `docker-compose.yml` doesn't load an env file into the container. A `.env` file next to it only fills the `${...}` placeholders in the compose file (`SURREAL_USER`, `SURREAL_PASSWORD`), so a variable that exists only in `.env` never reaches Open Notebook. To keep settings in a file, add `env_file: .env` to the `open_notebook` service.
+
+### From source
+
+Put backend variables in `.env` in the project root (start from `.env.example`) and restart the API and the worker (`make api` and `make worker-start` load it). The exception is `OPEN_NOTEBOOK_WORKER_MAX_TASKS`, which `make worker-start` reads from your shell: `export` it first.
+
+Frontend variables (`API_URL`, `INTERNAL_API_URL`, `NEXT_PUBLIC_*`) are not read from the root `.env`; see [Environment Reference → How to set a variable](environment-reference.md#how-to-set-a-variable).
 
 ---
 
-## Verification
+## The settings that matter
 
-After configuration, verify it works:
+### Encryption key (required)
 
+```yaml
+- OPEN_NOTEBOOK_ENCRYPTION_KEY=<generated-key>
 ```
-1. Open your notebook
-2. Go to Manage → Models
-3. You should see your configured provider
-4. Try a simple Chat question
-5. If it responds, configuration is correct!
+
+Encrypts the provider API keys you save in Manage → Models. Generate the value yourself, for example with `openssl rand -hex 32`. Without it you can't save credentials. Replace the `change-me-to-a-secret-string` placeholder from the shipped file, and don't change the value later: credentials saved with the old key become unreadable. See [Security](security.md#api-key-encryption).
+
+### Database
+
+```yaml
+- SURREAL_URL=ws://surrealdb:8000/rpc
+- SURREAL_USER=root
+- SURREAL_PASSWORD=root
+- SURREAL_NAMESPACE=open_notebook
+- SURREAL_DATABASE=open_notebook
 ```
+
+The shipped compose file already sets these. The hostname in `SURREAL_URL` depends on where SurrealDB runs; see [Database](database.md). Change the user and password before exposing the instance (set `SURREAL_USER`/`SURREAL_PASSWORD` in `.env`; the compose file applies them to both services).
+
+### AI providers (in the UI)
+
+Providers are connected in **Manage → Models**: add a configuration, test it, add models and set the default models. Follow [Connect a provider](../4-AI-PROVIDERS/index.md#connect-a-provider) for the steps.
+
+Details for each provider: [AI Providers](ai-providers.md). Local options: [Ollama](ollama.md), [oMLX](omlx.md), [OpenAI-Compatible](openai-compatible.md) (LM Studio, vLLM, llama.cpp…), [Local speech with Speaches](local-tts.md).
+
+### API URL (usually not needed)
+
+The browser finds the API automatically at `<the host you opened>:5055`. Set `API_URL` only when that's wrong: behind a reverse proxy (`API_URL=https://notebook.example.com`) or when the API is published on another port. See [Reverse Proxy](reverse-proxy.md#how-the-browser-finds-the-api).
+
+### Password
+
+Set `OPEN_NOTEBOOK_PASSWORD` for anything reachable beyond your own machine. Without it, authentication is off. See [Security](security.md).
 
 ---
 
-## Common Mistakes
+## Configuration pages
 
-| Mistake | Problem | Fix |
+| Page | Covers |
+|------|--------|
+| [Environment Reference](environment-reference.md) | Every environment variable: default, which process reads it, what it does |
+| [AI Providers](ai-providers.md) | Supported providers, what each one offers, setup notes |
+| [Ollama](ollama.md) | Local models with Ollama: networking, context window, timeouts |
+| [oMLX](omlx.md) | Apple Silicon MLX server |
+| [OpenAI-Compatible](openai-compatible.md) | LM Studio, vLLM, llama.cpp and other OpenAI-style servers |
+| [Local speech (Speaches)](local-tts.md) | Local text-to-speech and speech-to-text |
+| [Local speech-to-text](local-stt.md) | Whisper model choice and long audio |
+| [Database](database.md) | SurrealDB connection settings |
+| [Security](security.md) | Password, credential encryption, CORS, hardening |
+| [Reverse Proxy](reverse-proxy.md) | nginx, Caddy, Traefik, custom domains, HTTPS |
+| [Advanced](advanced.md) | Concurrency, timeouts, ports, logging, backups |
+| [MCP Integration](mcp-integration.md) | Using Open Notebook from MCP clients |
+
+---
+
+## Common mistakes
+
+| Mistake | Symptom | Fix |
 |---------|---------|-----|
-| No credential configured | Models not available | Add credential in Manage → Models |
-| Missing encryption key | Can't save credentials | Set OPEN_NOTEBOOK_ENCRYPTION_KEY |
-| Wrong database URL | Can't start API | Check SURREAL_URL format |
-| Expose port 5055 | "Can't connect to server" | Expose 5055 in docker-compose |
-| Typo in env var | Settings ignored | Check spelling (case-sensitive!) |
-| Using `docker compose restart` | Old config still used | Run `docker compose up -d` after env changes (from source: restart the API and worker) |
+| Variable added to `.env` only (Docker) | Setting has no effect | Put it under `open_notebook` → `environment:` |
+| `docker compose restart` after editing | Old values still used | `docker compose up -d` |
+| No encryption key | "Encryption key not configured" in **Manage → Models** | Set `OPEN_NOTEBOOK_ENCRYPTION_KEY` |
+| Encryption key changed | "Decryption Error" on saved credentials | Restore the old key, or delete and re-create the credentials |
+| No default chat model | Chat fails with "No model configured for default for type=chat" | Manage → Models → Default Model Assignments |
+| Port 5055 not reachable from the browser | "Unable to Connect to API Server" | Publish 5055, or set `API_URL` behind a proxy |
+| `SURREAL_URL` uses `localhost` inside Docker | API won't start, "Database is not reachable yet" in the log | Use the service name: `ws://surrealdb:8000/rpc` |
 
----
-
-## What Comes After Configuration
-
-Once configured:
-
-1. **[Quick Start](../0-START-HERE/index.md)** — Run your first notebook
-2. **[Installation](../1-INSTALLATION/index.md)** — Multi-route deployment guides
-3. **[User Guide](../3-USER-GUIDE/index.md)** — How to use each feature
-
----
-
-## Getting Help
-
-- **Configuration error?** → Check [Troubleshooting](../6-TROUBLESHOOTING/quick-fixes.md)
-- **Provider-specific issue?** → Check [AI Providers](ai-providers.md)
-- **Need complete reference?** → See [Environment Reference](environment-reference.md)
-
----
-
-## Summary
-
-**Minimal configuration to run:**
-1. Set `OPEN_NOTEBOOK_ENCRYPTION_KEY` in your environment
-2. Start services
-3. Add AI provider credential in Manage → Models
-4. Done!
-
-Everything else is optional optimization.
+More in [Troubleshooting](../6-TROUBLESHOOTING/index.md).

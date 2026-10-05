@@ -46,9 +46,9 @@ ESPERANTO_LLM_TIMEOUT=180
 
 `ESPERANTO_LLM_TIMEOUT` limits each model call (chat, Ask, transformations, podcast outline and transcript) and applies to every provider, including Ollama. Open Notebook sets it to 180 seconds when you don't; set it yourself to change it. Speech-to-text and text-to-speech have their own, longer timeouts.
 
-The web UI waits up to 10 minutes for a response (`NEXT_PUBLIC_API_TIMEOUT_MS`, default `600000`; `0` disables it). This value is compiled into the frontend at build time, so in the published Docker images it is fixed at 10 minutes, and changing it means building the frontend yourself.
+The web UI waits up to 10 minutes for a response (`NEXT_PUBLIC_API_TIMEOUT_MS`, default `600000`; `0` disables it). For requests that wait for a complete answer, such as notebook chat, that is a total budget. Ask streams its answer and only gives up after 10 minutes without new output. The value is compiled into the frontend at build time, so in the published Docker images it is fixed at 10 minutes, and changing it means building the frontend yourself.
 
-**Guideline:** keep `ESPERANTO_LLM_TIMEOUT` below 600 seconds, so a slow model fails with a clear error before the UI gives up. One request can make several model calls (Ask runs three), so leave headroom.
+**Guideline:** keep `ESPERANTO_LLM_TIMEOUT` below 600 seconds, so a slow model fails with a clear error before the UI gives up.
 
 ```
 Example (slow local models):

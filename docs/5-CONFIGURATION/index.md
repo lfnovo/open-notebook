@@ -263,7 +263,7 @@ services:
 
 The shipped `docker-compose.yml` does not load a `.env` file into the container. Docker Compose only reads `.env` to fill `${...}` placeholders in the compose file (that's how `SURREAL_USER` / `SURREAL_PASSWORD` work), so a variable that exists only in `.env` never reaches Open Notebook. If you prefer keeping settings in a file, add `env_file: .env` to the `open_notebook` service yourself.
 
-**From source:** put them in `.env` and restart the API and worker.
+**From source:** put them in `.env` and restart the API and worker. The exception is `OPEN_NOTEBOOK_WORKER_MAX_TASKS`: the worker's launch command reads it from your shell before `.env` is loaded, so `export` it before `make worker-start`.
 
 ---
 
@@ -290,7 +290,7 @@ After configuration, verify it works:
 | Wrong database URL | Can't start API | Check SURREAL_URL format |
 | Expose port 5055 | "Can't connect to server" | Expose 5055 in docker-compose |
 | Typo in env var | Settings ignored | Check spelling (case-sensitive!) |
-| Don't restart | Old config still used | Restart services after env changes |
+| Using `docker compose restart` | Old config still used | Run `docker compose up -d` after env changes (from source: restart the API and worker) |
 
 ---
 

@@ -867,7 +867,7 @@ curl -H "Authorization: Bearer your-password-here" \
 4. **Enable security headers** (HSTS, X-Frame-Options, X-Content-Type-Options, X-XSS-Protection)
 5. **Set up certificate renewal** for Let's Encrypt (usually automatic with certbot)
 6. **Keep ports 5055 and 8502 accessible** from your reverse proxy container (use Docker networks)
-7. **Keep secrets out of version control**: set them in the compose `environment:` block or an `env_file:` that isn't committed
+7. **Keep secrets out of version control**: if your `docker-compose.yml` is tracked in git, put secrets in an untracked `docker-compose.override.yml` (see `docker-compose.override.yml.example`) or an uncommitted `env_file:`
 8. **Test your configuration** before going live:
    - Check browser console for config messages
    - Test API: `curl https://your-domain.com/api/config`

@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Docs no longer recommend settings that do nothing.** `API_CLIENT_TIMEOUT` was never read by Open Notebook; the timeout guidance now covers what actually applies: `ESPERANTO_LLM_TIMEOUT` per model call (keep it below 600) and the web UI's 10-minute request limit (`NEXT_PUBLIC_API_TIMEOUT_MS`, build time only). Remaining `SURREAL_COMMANDS_MAX_TASKS` advice now uses `OPEN_NOTEBOOK_WORKER_MAX_TASKS`. Docker instructions no longer say to edit `.env` and `docker compose restart`: the shipped compose file doesn't load `.env` into the container and `restart` doesn't reload environment changes, so they now point to the `open_notebook` service's `environment:` block and `docker compose up -d`
+- **Timeouts no longer read as connection failures.** A model that doesn't answer within `ESPERANTO_LLM_TIMEOUT` used to report "Could not connect to the AI provider"; it now says the provider took too long and how to raise the limit. Connection failures (including connect timeouts) keep the old message
+- Error hints point to screens that exist: an authentication failure sends you to Manage → Models (not "Settings → Credentials"), and an unsupported podcast voice to Podcasts → Profiles. The empty Podcasts page points to the Generate Podcast button instead of chat screens that can't start a podcast
+- **Italian is selectable in the language menu**, and dates are formatted in Italian. The menu now lists every registered language, so a new translation can't be left out again
+- `make start-all` starts SurrealDB again (it pointed to a compose file removed long ago)
+- The legacy `SURREAL_ADDRESS` / `SURREAL_PORT` fallback builds a valid database URL (`ws://host:port/rpc`, was `ws://host/rpc:port`); an address that already includes the port is kept as is
+- `.env.example` names the chunking variables Open Notebook actually reads (`OPEN_NOTEBOOK_CHUNK_SIZE` / `OPEN_NOTEBOOK_CHUNK_OVERLAP`)
 
 ## [1.15.0] - 2026-10-04
 

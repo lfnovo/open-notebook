@@ -20,10 +20,20 @@ Set it on the `open_notebook` service in your `docker-compose.yml`:
 services:
   open_notebook:
     environment:
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=a-long-random-secret
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=<your-generated-secret>
 ```
 
-Any string works; an encryption key is derived from it. Apply the change by recreating the container (`docker compose up -d`).
+Replace `<your-generated-secret>` with a long random secret that you generate yourself. Don't copy an example value from any guide. Either of these prints a suitable value:
+
+```bash
+openssl rand -hex 32                                   # macOS, Linux
+```
+
+```powershell
+[guid]::NewGuid().ToString("N") + [guid]::NewGuid().ToString("N")   # Windows PowerShell
+```
+
+Apply the change by recreating the container (`docker compose up -d`).
 
 > **Keep this value safe and stable.** If it changes, stored API keys can't be decrypted and their cards show **Decryption Error** until you restore the original value. If the original value is lost, the stored keys can't be recovered: delete those configurations and add them again.
 
@@ -52,7 +62,7 @@ The models now appear under the configuration, each with a **Test Model** icon (
 
 Which providers offer which model types (language, embedding, speech) is listed in [AI Providers](../4-AI-PROVIDERS/index.md); provider-specific setup notes are in [AI Providers configuration](../5-CONFIGURATION/ai-providers.md), [Ollama](../5-CONFIGURATION/ollama.md), [OpenAI-compatible](../5-CONFIGURATION/openai-compatible.md) and [oMLX](../5-CONFIGURATION/omlx.md).
 
-> Several providers only offer language models. Ask and vector search also need an embedding model; podcasts need a text-to-speech model; audio and video sources need a speech-to-text model. These can come from a different provider.
+> Several providers only offer language models. Ask and vector search also need an embedding model; podcasts need a text-to-speech model; uploaded audio and video files, and YouTube videos without a transcript, need a speech-to-text model. These can come from a different provider.
 
 ### Multiple configurations per provider
 
@@ -72,7 +82,7 @@ This section decides which model each feature uses. Fields marked with an asteri
 | **Tools Model** | Ask, when called through the API without explicit models | Uses the Chat Model |
 | **Large Context Model** | Any prompt over about 105,000 tokens | Uses the Chat Model |
 | **Text-to-Speech Model** | Nothing at the moment: podcasts take their voice model from the speaker profile | — |
-| **Speech-to-Text Model** | Transcribing audio and video sources | Audio and video sources can't be transcribed |
+| **Speech-to-Text Model** | Transcribing uploaded audio and video files, and YouTube videos without a transcript | Those sources can't be transcribed (YouTube videos with a transcript still work) |
 
 Click **Auto-assign Defaults** to fill every empty slot from the models you have added. If it says *No models available to assign*, sync some models first.
 

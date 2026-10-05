@@ -17,7 +17,7 @@ What each feature needs:
 | Ask | Chat Model and Embedding Model |
 | Vector search | Embedding Model |
 | Text search | None |
-| Audio and video sources | Speech-to-Text Model |
+| Uploaded audio and video files, YouTube videos without a transcript | Speech-to-Text Model (YouTube videos with a transcript don't need one) |
 | Podcasts | The language and text-to-speech models chosen in the episode and speaker profiles |
 
 ---

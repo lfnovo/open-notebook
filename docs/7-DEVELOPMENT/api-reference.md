@@ -51,7 +51,7 @@ Use `/docs` for request and response shapes. This map shows where things are:
 | Search and Ask | `/api/search`, `/api/search/ask` (streaming), `/api/search/ask/simple` |
 | Transformations | `/api/transformations`, `/api/transformations/execute`, `/api/transformations/default-prompt` |
 | Models and providers | `/api/models`, `/api/models/defaults`, `/api/models/sync`, `/api/models/auto-assign`, `/api/providers` |
-| Credentials | `/api/credentials`, `/api/credentials/{id}/test`, `/discover`, `/register-models`, `/api/credentials/migrate-*` |
+| Credentials | `/api/credentials`, `/api/credentials/{id}/test`, `/api/credentials/{id}/discover`, `/api/credentials/{id}/register-models`, `/api/credentials/migrate-*` |
 | Podcasts | `/api/podcasts/generate`, `/api/podcasts/episodes`, `/api/episode-profiles`, `/api/speaker-profiles` |
 | Background jobs | `/api/commands/jobs`, `/api/commands/jobs/{job_id}` |
 | Embeddings | `/api/embed`, `/api/embeddings/rebuild` |
@@ -61,7 +61,7 @@ Use `/docs` for request and response shapes. This map shows where things are:
 
 Source processing, embedding and podcast generation run on the background worker (see [architecture.md](architecture.md#background-jobs)). The endpoint that starts them returns right away with a record and/or a job id:
 
-- Creating a source returns the source; poll `GET /api/sources/{id}/status` until it is `completed` or `failed`.
+- Creating a source with `async_processing=true` (the UI does this) saves it, submits a `process_source` job and returns at once; poll `GET /api/sources/{id}/status` until it is `completed` or `failed`. Without it (the default), the request waits until processing finishes.
 - `POST /api/podcasts/generate` returns a job id; poll `GET /api/podcasts/jobs/{job_id}` or list `GET /api/podcasts/episodes`.
 - Any job: `GET /api/commands/jobs/{job_id}`.
 
@@ -73,6 +73,7 @@ If the worker isn't running, jobs stay queued.
 
 ```bash
 curl -N http://localhost:5055/api/search/ask \
+  -H "Authorization: Bearer $OPEN_NOTEBOOK_PASSWORD" \
   -H "Content-Type: application/json" \
   -d '{"question": "What are the main findings?", "strategy_model": "model:...", "answer_model": "model:...", "final_answer_model": "model:..."}'
 ```

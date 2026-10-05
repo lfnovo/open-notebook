@@ -22,7 +22,7 @@ Or all at once: `make start-all` (status: `make status`, stop: `make stop-all`).
 - Tests: `uv run pytest tests/`
 - Python lint/format/typecheck: `uv run ruff check . --fix` · `uv run ruff format .` · `uv run python -m mypy .`
 - Frontend (inside `frontend/`): `npm run lint` · `npm run test` · `npm run build`
-- CI runs `uv run ruff check .`, `uv run ruff format --check .`, mypy, pytest and the three frontend commands; all must pass
+- CI runs `uv run ruff check .`, `uv run ruff format --check .`, mypy, pytest and, in `frontend/`, `npm run lint`, `npm run test:coverage` and `npm run build`; all must pass
 - Docker release: `make docker-release` (see `.github/RELEASE_PROCESS.md`)
 
 ## Hard rules
@@ -32,7 +32,7 @@ Or all at once: `make start-all` (status: `make status`, stop: `make stop-all`).
 - CORS is wide-open and auth is a simple password middleware — **dev defaults, not production hardening**. Don't build features that assume otherwise.
 - Product direction questions (does this feature fit?) → [VISION.md](VISION.md). Past decisions ("why is it like this?") → [docs/7-DEVELOPMENT/decisions/](docs/7-DEVELOPMENT/decisions/). Structural decisions made while coding should produce a new decision record there.
 - **Conventional Commits** for commits and PR titles (`fix(podcasts): …`, `feat(providers): …`, `docs: …`).
-- **Every user-visible change adds a CHANGELOG entry** under `## [Unreleased]`, in the one section for its type (`### Added` / `### Changed` / `### Fixed` / `### Security`); never create a duplicate section. Details: [contributing.md](docs/7-DEVELOPMENT/contributing.md#changelog).
+- **Every user-visible change adds a CHANGELOG entry** under `## [Unreleased]`, in the one section for its type (`### Added` / `### Changed` / `### Deprecated` / `### Removed` / `### Fixed` / `### Security`); never create a duplicate section. Details: [contributing.md](docs/7-DEVELOPMENT/contributing.md#changelog).
 - Maintainer profile lives in `.maintainer/`; do not run release, triage or discussions workflows without it.
 
 ## Where to look

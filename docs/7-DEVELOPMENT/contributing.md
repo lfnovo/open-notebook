@@ -128,7 +128,7 @@ To update your branch: `git fetch upstream && git rebase upstream/main`.
 We use [Conventional Commits](https://www.conventionalcommits.org/), with a scope when one fits:
 
 ```text
-fix(podcasts): unconfigured speaker profiles no longer break generation (#1454)
+fix(podcasts): skip unconfigured speaker profiles (#1454)
 feat(providers): add SiliconFlow and Z.ai (#1443)
 docs: fix the encryption anchor in credentials.md
 ```
@@ -139,7 +139,7 @@ Common types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `build`, `ci`,
 
 Every PR with a user-visible change adds an entry to `CHANGELOG.md` under `## [Unreleased]`. The file follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/):
 
-- Put the entry in the section for its type: `### Added`, `### Changed`, `### Fixed` or `### Security`. There is **one section per type** under Unreleased. If the section already exists, add to it; don't create a second `### Fixed`.
+- Put the entry in the section for its type: `### Added`, `### Changed`, `### Deprecated`, `### Removed`, `### Fixed` or `### Security`. There is **one section per type** under Unreleased. If the section already exists, add to it; don't create a second `### Fixed`.
 - Write it for users and operators: what changed and what they need to do, not which functions moved. End with the issue or PR number, e.g. `(#1438)`.
 - Purely internal changes (refactors, tests, CI) usually need no entry.
 
@@ -156,7 +156,7 @@ uv run pytest tests/
 
 # Frontend (inside frontend/), if you touched it
 npm run lint
-npm run test
+npm run test            # CI runs npm run test:coverage (same tests, plus a coverage report)
 npm run build
 ```
 

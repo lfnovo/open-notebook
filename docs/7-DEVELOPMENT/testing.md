@@ -17,7 +17,7 @@ npm run test:watch        # watch mode
 npm run test:coverage     # what CI runs
 ```
 
-The backend suite needs **no running SurrealDB, worker or AI provider**. CI runs it with nothing but `uv sync`. Database calls, models and HTTP requests are mocked.
+The backend suite needs **no running SurrealDB, worker or AI provider**. CI runs it with nothing but `uv sync`. SurrealDB access, models and HTTP requests are mocked; a few tests use in-memory substitutes instead (for example an in-memory `SqliteSaver` in `tests/test_empty_model_reply.py`).
 
 ## Backend layout (`tests/`)
 
@@ -74,7 +74,7 @@ def test_delete_notebook_missing_returns_404(mock_get, client):
 
 ## Frontend layout
 
-Tests are colocated with the code as `*.test.ts` / `*.test.tsx` (for example `src/lib/locales/index.test.ts`, `src/components/common/ConfirmDialog.test.tsx`). `frontend/src/test/` holds only the shared setup (`setup.ts`: jest-dom matchers and mocks for `next/navigation` and `matchMedia`).
+Tests are colocated with the code as `*.test.ts` / `*.test.tsx` (for example `src/lib/locales/index.test.ts`, `src/components/common/ConfirmDialog.test.tsx`). `frontend/src/test/` holds only the shared setup (`setup.ts`: jest-dom matchers and mocks for `next/navigation`, `matchMedia` and `@/lib/hooks/use-translation`, whose `t()` returns the key itself, so assert on keys rather than English text).
 
 Vitest runs in `jsdom` with globals enabled and the `@/` alias (`frontend/vitest.config.ts`). Use Testing Library to render components; mock API modules rather than the network.
 

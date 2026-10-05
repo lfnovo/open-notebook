@@ -30,7 +30,7 @@ Fixes #<!-- issue number, or "N/A (small fix)" -->
 - [ ] Tested locally with Docker
 - [ ] Tested locally with development setup
 - [ ] Added new unit tests
-- [ ] Existing tests pass (`uv run pytest tests/`, and `npm run test` if the frontend changed)
+- [ ] Existing tests pass (`uv run pytest tests/`, and `npm run test` in `frontend/` if the frontend changed)
 - [ ] Manual testing performed (describe below)
 
 **Test Details:**
@@ -71,7 +71,7 @@ Fixes #<!-- issue number, or "N/A (small fix)" -->
 - [ ] I ran linting: `uv run ruff check .`
 - [ ] I ran formatting: `uv run ruff format .` (CI fails if `ruff format --check .` finds changes)
 - [ ] I ran type checking: `uv run python -m mypy .`
-- [ ] Frontend changes: `npm run lint`, `npm run test` and `npm run build` pass
+- [ ] Frontend changes: `npm run lint`, `npm run test` and `npm run build` pass (run inside `frontend/`)
 
 ### Documentation
 - [ ] I have updated the relevant documentation in `/docs` (if applicable)

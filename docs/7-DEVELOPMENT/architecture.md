@@ -38,7 +38,7 @@ The Docker image runs the API, worker and frontend under supervisord (`superviso
 | Path | What lives there |
 |---|---|
 | `api/main.py` | App setup: middleware (password auth, body-size limit, CORS), exception handlers, router registration (`prefix="/api"`), startup migrations |
-| `api/routers/` | One module per resource (23 of them). Most call domain models and `repo_*` functions directly |
+| `api/routers/` | One module per resource (22 of them, plus the `_chat_shared.py` helper). Most call domain models and `repo_*` functions directly |
 | `api/*_service.py` | Shared or orchestration logic: `command_service.py` (job submission), `credentials_service.py` (credential lifecycle, discovery), `podcast_service.py` |
 | `api/models.py` | Pydantic request and response schemas |
 | `open_notebook/domain/` | Domain models on `ObjectModel` / `RecordModel` (`base.py`): `Notebook`, `Source`, `Note`, `SourceInsight`, `ChatSession`, `Transformation`, `Credential`, settings singletons |
@@ -103,7 +103,7 @@ Nodes are `async def`, except in the two checkpointed chat graphs, which use syn
 2. The worker runs the `@command` function. Its `retry` config decides what is retried; exceptions in `stop_on` fail the job immediately.
 3. Clients poll `GET /api/commands/jobs/{job_id}`, or a resource-specific status endpoint such as `GET /api/sources/{source_id}/status`.
 
-Example: `POST /api/sources` saves the source, submits `process_source`, and returns. The worker extracts the content, runs transformations, and submits `embed_source` if embedding was requested.
+Example: `POST /api/sources` with `async_processing=true` (what the UI sends) saves the source, submits `process_source`, and returns. Without that flag, the API runs the same command inline (`execute_command_sync`) and responds when it finishes. The worker extracts the content, runs transformations, and submits `embed_source` if embedding was requested.
 
 ## Request path in the API
 

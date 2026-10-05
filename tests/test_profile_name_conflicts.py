@@ -25,6 +25,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
+from surrealdb.errors import SurrealDBMethodError
 
 from open_notebook.exceptions import ConflictError, as_name_conflict
 
@@ -212,18 +213,31 @@ def test_rename_speaker_profile_onto_taken_name_returns_409(
         ),
     ],
 )
-@patch("open_notebook.podcasts.models.SpeakerProfile.save", new_callable=AsyncMock)
 def test_create_conflict_is_detected_before_touching_the_database(
-    mock_save, client, endpoint, payload, entity, patch_target
+    client, endpoint, payload, entity, patch_target
 ):
     """A pre-check answers 409 even if the driver swallows the message.
 
-    repo_create wraps a non-RuntimeError from the driver into
-    RuntimeError("Failed to create record"), losing the "already contains" text
-    the exception path keys off. The pre-check does not depend on that text, so
-    the 409 survives either shape.
+    The pre-check does not depend on the driver's wording, so the 409 survives
+    either exception shape.
+
+    Both save methods are patched and both are asserted. Asserting only
+    `SpeakerProfile.save` left the episode case vacuous: that router persists
+    through `EpisodeProfile.save`, so `SpeakerProfile.save.call_count` was 0
+    whether or not an insert was attempted. The assertion now fails if
+    *either* endpoint reaches its write.
     """
-    with patch(patch_target, new_callable=AsyncMock) as taken:
+    with (
+        patch(
+            "open_notebook.podcasts.models.SpeakerProfile.save",
+            new_callable=AsyncMock,
+        ) as speaker_save,
+        patch(
+            "open_notebook.podcasts.models.EpisodeProfile.save",
+            new_callable=AsyncMock,
+        ) as episode_save,
+        patch(patch_target, new_callable=AsyncMock) as taken,
+    ):
         taken.return_value = True
         if "episode" in endpoint:
             with patch(
@@ -238,7 +252,8 @@ def test_create_conflict_is_detected_before_touching_the_database(
     assert response.status_code == 409
     assert "already exists" in response.json()["detail"]
     # The insert must never be attempted once the name is known to be taken.
-    assert mock_save.call_count == 0
+    assert speaker_save.call_count == 0
+    assert episode_save.call_count == 0
 
 
 # --- the 500 must survive for every other failure -----------------------------
@@ -312,3 +327,109 @@ def test_rename_speaker_profile_other_failure_still_returns_500(
     response = client.put("/api/speaker-profiles/speaker_profile:1", json=SPEAKER_BODY)
 
     assert response.status_code == 500
+
+
+# --- the repository boundary ----------------------------------------------------
+
+
+class _FakeConnection:
+    """Stands in for the driver's connection inside repo_create."""
+
+    def __init__(self, insert_result):
+        self._insert_result = insert_result
+        self.insert_calls = []
+
+    async def insert(self, table, data):
+        self.insert_calls.append((table, data))
+        return self._insert_result
+
+    async def close(self):
+        return None
+
+
+class _FakeDbConnection:
+    def __init__(self, connection):
+        self._connection = connection
+
+    async def __aenter__(self):
+        return self._connection
+
+    async def __aexit__(self, *exc_info):
+        return False
+
+
+@pytest.mark.asyncio
+async def test_repo_create_preserves_the_unique_index_message():
+    """The 409 depends on repo_create re-raising the driver's own wording.
+
+    SurrealDB does not raise on a rejected unique index: `connection.insert`
+    hands back the error as a string, which `parse_record_ids` passes through
+    untouched. `repo_create` turns that string into a RuntimeError *itself*, so
+    the failure lands on its `except RuntimeError` arm and keeps the
+    "already contains" text that `as_name_conflict` keys off. The other arm
+    (`raise RuntimeError("Failed to create record")`) would discard it and
+    silently turn every duplicate create back into a 500.
+
+    Mocking at the connection rather than at `EpisodeProfile.save` is the
+    point: it is the only level that exercises this translation. (Checked
+    against SurrealDB 2.3.7, which reports
+    ``Database index `idx` already contains 'daily', with record `ep:...```.)
+    """
+    from open_notebook.database.repository import repo_create
+
+    driver_message = (
+        "Database index `idx_episode_profile_name` already contains "
+        "'daily_briefing', with record `episode_profile:abc`"
+    )
+    connection = _FakeConnection(driver_message)
+
+    with patch(
+        "open_notebook.database.repository.db_connection",
+        return_value=_FakeDbConnection(connection),
+    ):
+        with pytest.raises(RuntimeError) as caught:
+            await repo_create("episode_profile", {"name": "daily_briefing"})
+
+    assert connection.insert_calls, "the insert should have been attempted"
+    assert "already contains" in str(caught.value)
+    conflict = as_name_conflict(caught.value, "episode profile", "daily_briefing")
+    assert isinstance(conflict, ConflictError)
+    assert conflict.args[0] == "Episode profile 'daily_briefing' already exists"
+
+
+@pytest.mark.asyncio
+async def test_repo_create_loses_the_message_only_if_the_driver_raises():
+    """Document the shape that *would* break the 409, and why it is not the one.
+
+    If `connection.insert` raised a non-RuntimeError, `repo_create` would take
+    its `except Exception` arm and replace the exception with
+    RuntimeError("Failed to create record") -- the wording `as_name_conflict`
+    keys off would be gone and the duplicate would answer 500 again. That is
+    the risk worth pinning.
+
+    It is not the shape the driver uses: SurrealDB returns the error as a
+    string (see the test above), which repo_create re-raises as a RuntimeError
+    of its own, landing on the arm that preserves the text. This test exists so
+    that if a future driver version starts raising, it fails here -- at the
+    boundary -- instead of surfacing as a 500 in production.
+    """
+    from open_notebook.database.repository import repo_create
+
+    class _RaisingConnection(_FakeConnection):
+        async def insert(self, table, data):
+            raise SurrealDBMethodError(
+                "Database index `idx_episode_profile_name` already contains "
+                "'daily_briefing', with record `episode_profile:abc`"
+            )
+
+    with patch(
+        "open_notebook.database.repository.db_connection",
+        return_value=_FakeDbConnection(_RaisingConnection(None)),
+    ):
+        with pytest.raises(RuntimeError) as caught:
+            await repo_create("episode_profile", {"name": "daily_briefing"})
+
+    # The wording is gone, so no caller can read this as a conflict.
+    assert str(caught.value) == "Failed to create record"
+    assert "already contains" not in str(caught.value)
+    assert as_name_conflict(caught.value, "episode profile", "daily_briefing") is None

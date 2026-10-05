@@ -1,377 +1,118 @@
 # Interface Overview - Finding Your Way Around
 
-Open Notebook uses a clean three-panel layout. This guide shows you where everything is.
+## The Sidebar
+
+Every page has a sidebar on the left (it can be collapsed to icons).
+
+```
+┌──────────────────────┐
+│ Open Notebook        │
+│ [+ New]              │  → Source, Notebook, Podcast
+│                      │
+│ COLLECT              │
+│   Sources            │
+│ PROCESS              │
+│   Notebooks          │
+│   Ask and Search     │
+│ CREATE               │
+│   Podcasts           │
+│ MANAGE               │
+│   Models             │
+│   Transformations    │
+│   Settings           │
+│   Advanced           │
+│                      │
+│ Quick actions   ⌘K   │
+│ Theme · Language ·   │
+│ Sign Out             │
+└──────────────────────┘
+```
+
+| Item | What it's for |
+|------|---------------|
+| **New** | Create a source, notebook or podcast episode from anywhere |
+| **Sources** | Your source library: every source, whichever notebooks it is in |
+| **Notebooks** | Your notebooks: recently viewed, active and archived, in tile or list view |
+| **Ask and Search** | Ask questions across your knowledge base, or search it ([Search and Ask](search.md)) |
+| **Podcasts** | Generated episodes and the episode/speaker profiles ([Creating Podcasts](creating-podcasts.md)) |
+| **Models** | AI provider configurations and default models ([API Configuration](api-configuration.md)) |
+| **Transformations** | Your transformation prompts and the Playground ([Transformations](transformations.md)) |
+| **Settings** | Content Processing, Embedding and Search, File Management |
+| **Advanced** | System Info (version and update check) and Rebuild Embeddings |
+| **Quick actions** | The command palette: jump to pages and notebooks, search or ask, create items, change theme |
+| **Theme / Language** | Light, dark or system theme; interface language |
 
 ---
 
-## The Main Layout
+## The Notebook Page
+
+Opening a notebook shows its header and three columns.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  [Logo]  Notebooks  Search  Podcasts  Models  Settings      │
-├──────────────┬──────────────┬───────────────────────────────┤
-│              │              │                               │
-│   SOURCES    │    NOTES     │           CHAT                │
-│              │              │                               │
-│  Your docs   │  Your        │   Talk to AI about            │
-│  PDFs, URLs  │  insights    │   your sources                │
-│  Videos      │  summaries   │                               │
-│              │              │                               │
-│  [+Add]      │  [+Write]    │   [Type here...]              │
-│              │              │                               │
-└──────────────┴──────────────┴───────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────┐
+│ Notebook name   (click to edit)            [Archive]   [Delete]    │
+│ Description     (click to edit)                                    │
+├──────────────────┬──────────────────┬──────────────────────────────┤
+│ SOURCES          │ NOTES            │ CHAT WITH NOTEBOOK           │
+│ [Context] [Add   │ [Context]        │ [Sessions]                   │
+│           Source]│ [Write Note]     │                              │
+│                  │                  │  messages, with numbered     │
+│ ┌──────────────┐ │ ┌──────────────┐ │  references                  │
+│ │ paper.pdf    │ │ │ My notes     │ │                              │
+│ │ File · 2     │ │ │ Human        │ │  2 sources · 1 note          │
+│ │ insights  ◐ ⋮│ │ │            ◐ │ │  ~12,400 tokens              │
+│ └──────────────┘ │ └──────────────┘ │ [Model] [Ask anything...]    │
+└──────────────────┴──────────────────┴──────────────────────────────┘
 ```
+
+On desktop the Sources and Notes columns can be collapsed. On small screens the columns become three tabs, **Sources**, **Notes** and **Chat**, with Chat selected first.
+
+### Sources column
+
+- **Add Source** opens a menu: **Add Source** (the wizard for new content) or **Add Existing Sources** (link sources from your library). See [Adding Sources](adding-sources.md).
+- **Context** sets every source at once: **Include all (insights only)**, **Include all (full content)** or **Exclude all from context**.
+- Each **source card** shows the title, the type (Add URL, Upload File or Enter Text), the processing status while it isn't finished, and the insight count. The **context icon** cycles the source's [context level](../2-CORE-CONCEPTS/ai-context-rag.md#context-levels-in-notebook-chat) when you click it. The **⋮ menu** has **Remove from Notebook**, **Retry Processing** (failed sources), **Refresh content** (completed links) and **Delete Source**.
+- Click a card to open the source view.
+
+### Notes column
+
+- **Write Note** creates a note.
+- **Context** has **Include all in context** and **Exclude all from context**.
+- Each **note card** shows the title, an **AI Generated** or **Human** badge and a context icon (on or off). Click a card to edit the note. See [Working with Notes](working-with-notes.md).
+
+### Chat column
+
+Notebook chat with the sources and notes in context. **Sessions** opens your saved chat sessions, the model button picks a model for the session, and the panel shows how much content is in context. Send with **Ctrl+Enter** (**⌘+Enter** on Mac). See [Chat Effectively](chat-effectively.md).
 
 ---
 
-## Navigation Bar
+## The Source View
 
-The top navigation takes you to main sections:
+Clicking a source opens it with three tabs:
 
-| Icon | Page | What It Does |
-|------|------|--------------|
-| **Notebooks** | Main workspace | Your research projects |
-| **Search** | Ask & Search | Query across all notebooks |
-| **Podcasts** | Audio generation | Manage podcast profiles |
-| **Models** | AI configuration | Set up providers and models |
-| **Settings** | Preferences | App configuration |
+- **Content**: the extracted text (or the video, for YouTube links).
+- **Insights**: the insights generated by transformations, and **Generate New Insight** to run another one. See [Transformations](transformations.md).
+- **Details**: topics, embedding status, created and updated dates, and the notebooks the source belongs to (**Manage Notebooks**).
+
+**Chat with Sources** opens the source's own page, with the source on the left and a chat about it on the right. The **⋮ menu** has **Download File** (uploaded files, while the file is still stored), **Embed Content** (if the source isn't embedded yet) and **Delete Source**.
 
 ---
 
-## Left Panel: Sources
+## Other Pages
 
-Your research materials live here.
-
-### What You'll See
-
-```
-┌─────────────────────────┐
-│  Sources (5)            │
-│  [+ Add Source]         │
-├─────────────────────────┤
-│  ┌─────────────────┐    │
-│  │ 📄 Paper.pdf    │    │
-│  │ 🟢 Full Content │    │
-│  │ [⋮ Menu]        │    │
-│  └─────────────────┘    │
-│                         │
-│  ┌─────────────────┐    │
-│  │ 🔗 Article URL  │    │
-│  │ 🟡 Summary Only │    │
-│  │ [⋮ Menu]        │    │
-│  └─────────────────┘    │
-└─────────────────────────┘
-```
-
-### Source Card Elements
-
-- **Icon** - File type (PDF, URL, video, etc.)
-- **Title** - Document name
-- **Context indicator** - What AI can see:
-  - 🟢 Full Content
-  - 🟡 Summary Only
-  - ⛔ Not in Context
-- **Menu (⋮)** - Edit, transform, delete
-
-### Add Source Button
-
-Click to add:
-- File upload (PDF, DOCX, etc.)
-- Web URL
-- YouTube video
-- Plain text
-
----
-
-## Middle Panel: Notes
-
-Your insights and AI-generated content.
-
-### What You'll See
-
-```
-┌─────────────────────────┐
-│  Notes (3)              │
-│  [+ Write Note]         │
-├─────────────────────────┤
-│  ┌─────────────────┐    │
-│  │ 📝 My Analysis  │    │
-│  │ Manual note     │    │
-│  │ Jan 3, 2026     │    │
-│  └─────────────────┘    │
-│                         │
-│  ┌─────────────────┐    │
-│  │ 🤖 Summary      │    │
-│  │ From transform  │    │
-│  │ Jan 2, 2026     │    │
-│  └─────────────────┘    │
-└─────────────────────────┘
-```
-
-### Note Card Elements
-
-- **Icon** - Note type (manual 📝 or AI 🤖)
-- **Title** - Note name
-- **Origin** - How it was created
-- **Date** - When created
-
-### Write Note Button
-
-Click to:
-- Create manual note
-- Add your own insights
-- Markdown supported
-
----
-
-## Right Panel: Chat
-
-Your AI conversation space.
-
-### What You'll See
-
-```
-┌───────────────────────────────┐
-│  Chat                         │
-│  Session: Research Discussion │
-│  [+ New Session] [Sessions ▼] │
-├───────────────────────────────┤
-│                               │
-│  You: What's the main         │
-│       finding?                │
-│                               │
-│  AI: Based on the paper [1],  │
-│      the main finding is...   │
-│      [Save as Note]           │
-│                               │
-│  You: Tell me more about      │
-│       the methodology.        │
-│                               │
-├───────────────────────────────┤
-│  Context: 3 sources (12K tok) │
-├───────────────────────────────┤
-│  [Type your message...]  [↑]  │
-└───────────────────────────────┘
-```
-
-### Chat Elements
-
-- **Session selector** - Switch between conversations
-- **Message history** - Your conversation
-- **Save as Note** - Keep good responses
-- **Context indicator** - What AI can see
-- **Input field** - Type your questions
-
----
-
-## Context Indicators
-
-These show what AI can access:
-
-### Token Counter
-
-```
-Context: 3 sources (12,450 tokens)
-         ↑          ↑
-         Sources    Approximate cost indicator
-         included
-```
-
-### Per-Source Indicators
-
-| Indicator | Meaning | AI Access |
-|-----------|---------|-----------|
-| 🟢 Full Content | Complete text | Everything |
-| 🟡 Summary Only | AI summary | Key points only |
-| ⛔ Not in Context | Excluded | Nothing |
-
-Click any source to change its context level.
-
----
-
-## Podcasts Tab
-
-Inside a notebook, switch to Podcasts:
-
-```
-┌───────────────────────────────┐
-│  [Chat]  [Podcasts]           │
-├───────────────────────────────┤
-│  Episode Profile: [Select ▼]  │
-│                               │
-│  Speakers:                    │
-│  ├─ Host: Alex (voice model)  │
-│  └─ Guest: Sam (voice model)  │
-│                               │
-│  Include:                     │
-│  ☑ Paper.pdf                  │
-│  ☑ My Analysis (note)         │
-│  ☐ Background article         │
-│                               │
-│  [Generate Podcast]           │
-└───────────────────────────────┘
-```
-
----
-
-## Settings Page
-
-Access via navigation bar → Settings:
-
-### Key Sections
-
-| Section | What It Controls |
-|---------|------------------|
-| **Processing** | Document and URL extraction engines |
-| **Embedding** | Auto-embed settings |
-| **Files** | Auto-delete uploads after processing |
-| **YouTube** | Preferred transcript languages |
-
----
-
-## Models Page
-
-Configure AI providers:
-
-```
-┌───────────────────────────────────────┐
-│  Models                               │
-├───────────────────────────────────────┤
-│  Language Models                      │
-│  ┌─────────────────────────────────┐  │
-│  │ GPT-4o (OpenAI)         [Edit]  │  │
-│  │ Claude Sonnet (Anthropic)       │  │
-│  │ Llama 3.3 (Ollama)      [⭐]    │  │
-│  └─────────────────────────────────┘  │
-│  [+ Add Model]                        │
-│                                       │
-│  Embedding Models                     │
-│  ┌─────────────────────────────────┐  │
-│  │ text-embedding-3-small  [⭐]    │  │
-│  └─────────────────────────────────┘  │
-│                                       │
-│  Text-to-Speech                       │
-│  ┌─────────────────────────────────┐  │
-│  │ OpenAI TTS             [⭐]     │  │
-│  │ Google TTS                      │  │
-│  └─────────────────────────────────┘  │
-└───────────────────────────────────────┘
-```
-
-- **⭐** = Default model for that category
-- **[Edit]** = Modify configuration
-- **[+ Add]** = Add new model
-
----
-
-## Search Page
-
-Query across all notebooks:
-
-```
-┌───────────────────────────────────────┐
-│  Search                               │
-├───────────────────────────────────────┤
-│  [What are you looking for?    ] [🔍] │
-│                                       │
-│  Search type: [Text ▼] [Vector ▼]     │
-│  Search in:   [Sources] [Notes]       │
-├───────────────────────────────────────┤
-│  Results (15)                         │
-│                                       │
-│  📄 Paper.pdf - Notebook: Research    │
-│     "...the transformer model..."     │
-│                                       │
-│  📝 My Analysis - Notebook: Research  │
-│     "...key findings include..."      │
-└───────────────────────────────────────┘
-```
-
----
-
-## Common Actions
-
-### Create a Notebook
-
-```
-Notebooks page → [+ New Notebook] → Enter name → Create
-```
-
-### Add a Source
-
-```
-Inside notebook → [+ Add Source] → Choose type → Upload/paste → Wait for processing
-```
-
-### Ask a Question
-
-```
-Inside notebook → Chat panel → Type question → Enter → Read response
-```
-
-### Save AI Response
-
-```
-Get good response → Click [Save as Note] → Edit title → Save
-```
-
-### Change Context Level
-
-```
-Click source → Context dropdown → Select level → Changes apply immediately
-```
-
-### Generate Podcast
-
-```
-Podcasts tab → Select profile → Choose sources → [Generate] → Wait → Download
-```
+- **Sources** (library): a table of all sources with type, insight count and embedding status. **New Source** adds a source without opening a notebook.
+- **Notebooks**: **New Notebook**, a search box, **Recently Viewed**, and the **Active Notebooks** and **Archived Notebooks** lists.
+- **Settings**: Content Processing (document and URL engines, OCR and other Docling options; see [Content Processing Engines](content-processing-engines.md)), Embedding and Search (**Default Embedding Option**: Ask, Always or Never), and File Management (**Auto Delete Files**: whether uploaded files are deleted after processing).
+- **Advanced**: **System Info** shows your version and whether an update is available. **Rebuild Embeddings** re-embeds content after you change the embedding model (mode *Existing* or *All*); it runs in the background.
 
 ---
 
 ## Keyboard Shortcuts
 
-| Key | Action |
-|-----|--------|
-| `Enter` | Send chat message |
-| `Shift + Enter` | New line in chat |
-| `Escape` | Close dialogs |
-| `Ctrl/Cmd + F` | Browser find |
-
----
-
-## Mobile View
-
-On smaller screens, the three-panel layout stacks vertically:
-
-```
-┌─────────────────┐
-│    SOURCES      │
-│    (tap to expand)
-├─────────────────┤
-│    NOTES        │
-│    (tap to expand)
-├─────────────────┤
-│    CHAT         │
-│    (always visible)
-└─────────────────┘
-```
-
-- Panels collapse to save space
-- Tap headers to expand/collapse
-- Chat remains accessible
-- Full functionality preserved
-
----
-
-## Tips for Efficient Navigation
-
-1. **Use keyboard** - Enter sends messages, Escape closes dialogs
-2. **Context first** - Set source context before chatting
-3. **Sessions** - Create new sessions for different topics
-4. **Search globally** - Use Search page to find across all notebooks
-5. **Models page** - Bookmark your preferred models
-
----
-
-Now you know where everything is. Start with [Adding Sources](adding-sources.md) to begin your research!
+| Shortcut | Where | Action |
+|----------|-------|--------|
+| **Ctrl+K** / **⌘K** | Anywhere | Open Quick actions (command palette) |
+| **Ctrl+Enter** / **⌘+Enter** | Chat message box | Send |
+| **Enter** | Chat message box | New line |
+| **Ctrl+Enter** / **⌘+Enter** | Ask question box | Ask |
+| **Enter** | Search box | Search |

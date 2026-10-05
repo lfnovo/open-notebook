@@ -1,402 +1,87 @@
-# Transformations - Batch Processing Your Sources
+# Transformations - Generating Insights from Sources
 
-Transformations apply the same analysis to multiple sources at once. Instead of asking the same question repeatedly, define a template and run it across your content.
-
----
-
-## When to Use Transformations
-
-| Use Transformations When | Use Chat Instead When |
-|-------------------------|----------------------|
-| Same analysis on many sources | One-off questions |
-| Consistent output format needed | Exploratory conversation |
-| Batch processing | Follow-up questions needed |
-| Creating structured notes | Context changes between questions |
-
-**Example**: You have 10 papers and want a summary of each. Transformation does it in one operation.
+A **transformation** is a saved prompt that runs on one source. Its output is saved as an **insight** on that source, titled with the transformation's title. Insights show on the source's **Insights** tab, can be sent to Chat on their own (the *Insights only* context level), are used by the *Summary* option in podcasts, and are searchable. See [Notebooks, Sources, Insights, and Notes](../2-CORE-CONCEPTS/notebooks-sources-notes.md#insights).
 
 ---
 
-## Quick Start: Your First Transformation
+## Running a Transformation
 
-```
-1. Go to your notebook
-2. Click "Transformations" in navigation
-3. Select a built-in template (e.g., "Summary")
-4. Select sources to transform
-5. Click "Apply"
-6. Wait for processing
-7. New notes appear automatically
-```
+There are two places to run one.
+
+**When you add a source.** Step 3 of the Add Source wizard (**Process**) lists your transformations under **Transformations (optional)**. Tick the ones you want; they run after the text is extracted. In a batch upload, the selection applies to every item. This is the way to apply a transformation to many sources at once.
+
+**On an existing source.**
+
+1. Open the source (click its card) and go to the **Insights** tab.
+2. Under **Generate New Insight**, choose a transformation in **Select a transformation...**.
+3. Click **New**. You'll see *Insight generation started. It will appear shortly.*
+
+The transformation runs in the background and the insight appears on the tab when it's done. Running the same transformation again adds another insight; delete the ones you don't want (**View Insight** → **Delete**, or the delete icon on the insight).
+
+There is no action to run a transformation on several existing sources at once.
 
 ---
 
 ## Built-in Transformations
 
-Open Notebook includes ready-to-use templates:
+A new install comes with six:
 
-### Summary
+| Title | What it produces |
+|-------|------------------|
+| **Paper Analysis** | An analysis of a technical or scientific paper |
+| **Key Insights** | Important insights and actionable items |
+| **Dense Summary** | A rich, dense summary. Pre-selected for new sources |
+| **Reflection Questions** | Questions to help explore the document further |
+| **Table of Contents** | The topics the document covers |
+| **Simple Summary** | A short summary |
 
-```
-What it does: Creates a 200-300 word overview
-Output: Key points, main arguments, conclusions
-Best for: Quick reference, getting the gist
-```
-
-### Key Concepts
-
-```
-What it does: Extracts main ideas and terminology
-Output: List of concepts with explanations
-Best for: Learning new topics, building vocabulary
-```
-
-### Methodology
-
-```
-What it does: Extracts research approach
-Output: How the study was conducted
-Best for: Academic papers, research review
-```
-
-### Takeaways
-
-```
-What it does: Extracts actionable insights
-Output: What you should do with this information
-Best for: Business documents, practical guides
-```
-
-### Questions
-
-```
-What it does: Generates questions the source raises
-Output: Open questions, gaps, follow-up research
-Best for: Literature review, research planning
-```
-
----
-
-## Creating Custom Transformations
-
-### Step-by-Step
-
-```
-1. Go to "Transformations" page
-2. Click "Create New"
-3. Enter a name: "Academic Paper Analysis"
-4. Write your prompt template:
-
-   "Analyze this academic paper and extract:
-
-   1. **Research Question**: What problem does this address?
-   2. **Hypothesis**: What did they predict?
-   3. **Methodology**: How did they test it?
-   4. **Key Findings**: What did they discover? (numbered list)
-   5. **Limitations**: What caveats do the authors mention?
-   6. **Future Work**: What do they suggest next?
-
-   Be specific and cite page numbers where possible."
-
-5. Click "Save"
-6. Your transformation appears in the list
-```
-
-### Prompt Template Tips
-
-**Be specific about format:**
-```
-Good: "List 5 key points as bullet points"
-Bad: "What are the key points?"
-```
-
-**Request structure:**
-```
-Good: "Create sections for: Summary, Methods, Results"
-Bad: "Tell me about this paper"
-```
-
-**Ask for citations:**
-```
-Good: "Cite page numbers for each claim"
-Bad: (no citation request)
-```
-
-**Set length expectations:**
-```
-Good: "In 200-300 words, summarize..."
-Bad: "Summarize this"
-```
-
----
-
-## Applying Transformations
-
-### To a Single Source
-
-```
-1. In Sources panel, click source menu (⋮)
-2. Select "Transform"
-3. Choose transformation template
-4. Click "Apply"
-5. Note appears when done
-```
-
-### To Multiple Sources (Batch)
-
-```
-1. Go to Transformations page
-2. Select your template
-3. Check multiple sources
-4. Click "Apply to Selected"
-5. Processing runs in parallel
-6. One note per source created
-```
-
-### Processing Time
-
-| Sources | Typical Time |
-|---------|--------------|
-| 1 source | 30 seconds - 1 minute |
-| 5 sources | 2-3 minutes |
-| 10 sources | 4-5 minutes |
-| 20+ sources | 8-10 minutes |
-
-Processing runs in background. You can continue working.
-
----
-
-## Transformation Examples
-
-### Literature Review Template
-
-```
-Name: Literature Review Entry
-
-Prompt:
-"For this research paper, create a literature review entry:
-
-**Citation**: [Author(s), Year, Title, Journal]
-**Research Question**: What problem is addressed?
-**Methodology**: What approach was used?
-**Sample**: What population/data was studied?
-**Key Findings**:
-1. [Finding with page citation]
-2. [Finding with page citation]
-3. [Finding with page citation]
-**Strengths**: What did this study do well?
-**Limitations**: What are the gaps?
-**Relevance**: How does this connect to my research?
-
-Keep each section to 2-3 sentences."
-```
-
-### Meeting Notes Template
-
-```
-Name: Meeting Summary
-
-Prompt:
-"From this meeting transcript, extract:
-
-**Attendees**: Who was present
-**Date/Time**: When it occurred
-**Key Decisions**: What was decided (numbered)
-**Action Items**:
-- [ ] Task (Owner, Due Date)
-**Open Questions**: Unresolved issues
-**Next Steps**: What happens next
-
-Format as clear, scannable notes."
-```
-
-### Competitor Analysis Template
-
-```
-Name: Competitor Analysis
-
-Prompt:
-"Analyze this company/product document:
-
-**Company**: Name and overview
-**Products/Services**: What they offer
-**Target Market**: Who they serve
-**Pricing**: If available
-**Strengths**: Competitive advantages
-**Weaknesses**: Gaps or limitations
-**Opportunities**: How we compare
-**Threats**: What they do better
-
-Be objective and cite specific details."
-```
-
-### Technical Documentation Template
-
-```
-Name: API Documentation Summary
-
-Prompt:
-"Extract from this technical document:
-
-**Overview**: What does this do? (1-2 sentences)
-**Authentication**: How to authenticate
-**Key Endpoints**:
-- Endpoint 1: [method] [path] - [purpose]
-- Endpoint 2: ...
-**Common Parameters**: Frequently used params
-**Rate Limits**: If mentioned
-**Error Codes**: Key error responses
-**Example Usage**: Simple code example if possible
-
-Keep technical but concise."
-```
+You can edit or delete any of them.
 
 ---
 
 ## Managing Transformations
 
-### Edit a Transformation
+Go to **Manage → Transformations**. The **Transformations** tab lists them under **Custom Transformations**; a **Default** badge marks the ones suggested for new sources.
 
-```
-1. Go to Transformations page
-2. Find your template
-3. Click "Edit"
-4. Modify the prompt
-5. Click "Save"
-```
+### Create or edit
 
-### Delete a Transformation
+Click **Create New** (or **Edit** on a card) and fill in:
 
-```
-1. Go to Transformations page
-2. Find the template
-3. Click "Delete"
-4. Confirm
-```
+| Field | Meaning |
+|-------|---------|
+| **Name** | Unique identifier, for example `key_topics` |
+| **Title** | The name shown in the UI and given to the insights it creates (defaults to the name) |
+| **Description** | What it does |
+| **System Prompt** | The instructions. The source's full text is sent after them |
+| **Model** | The model to use. **System Default** uses your **Transformation Model** default (or the Chat Model) |
+| **Suggest by default on new sources** | Pre-selects it in the Add Source wizard |
 
-### Reorder/Organize
+Write the prompt with the source in mind: ask for a summary, a list, a table, or any structured output. The output is saved as Markdown.
 
-Built-in transformations appear first, then custom ones alphabetically.
+### Test in the Playground
 
----
+The **Playground** tab (or **Playground** on a card) lets you pick a transformation and a model, paste **Input Text**, and click **Run Transformation**. The output is shown but not saved anywhere, so it's a safe place to tune a prompt.
 
-## Transformation Output
+### Default Transformation Prompt
 
-### Where Results Go
-
-- Each source produces one note
-- Notes appear in your notebook's Notes panel
-- Notes are tagged with transformation name
-- Original source is linked
-
-### Note Naming
-
-```
-Default: "[Transformation Name] - [Source Title]"
-Example: "Summary - Research Paper 2025.pdf"
-```
-
-### Editing Output
-
-```
-1. Click the generated note
-2. Click "Edit"
-3. Refine the content
-4. Save
-```
+The **Default Transformation Prompt** box at the top of the Transformations tab is meant to be added to every transformation prompt. In v1.15.0 the text is saved but not applied when transformations run, so put shared instructions in each transformation's prompt instead.
 
 ---
 
-## Best Practices
+## Errors
 
-### Template Design
+| Message | Cause |
+|---------|-------|
+| *This source has no text content to transform* / *Source has no text content* | Extraction produced no text (for example a failed link). Fix the source first |
+| *The model reached its generation limit before completing the transformation...* | The output was cut off. Use a shorter prompt or a model with a larger output limit |
+| *The model returned no usable text for the transformation...* | The model returned nothing, or only thinking content. Try another model |
 
-1. **Start specific** - Vague prompts give vague results
-2. **Use formatting** - Headings, bullets, numbered lists
-3. **Request citations** - Make results verifiable
-4. **Set length** - Prevent overly long or short output
-5. **Test first** - Run on one source before batch
-
-### Source Selection
-
-1. **Similar content** - Same transformation on similar sources
-2. **Reasonable size** - Very long sources may need splitting
-3. **Processed status** - Ensure sources are fully processed
-
-### Quality Control
-
-1. **Review samples** - Check first few outputs before trusting batch
-2. **Edit as needed** - Transformations are starting points
-3. **Iterate prompts** - Refine based on results
+When you run a transformation from the Insights tab and it fails, an error toast shows the reason and no insight is saved. If a transformation selected in the Add Source wizard fails, the source's processing job fails with it and the source shows **Failed** (see [When a Source Fails](adding-sources.md#when-a-source-fails)). Provider and model problems are covered in [Troubleshooting](../6-TROUBLESHOOTING/index.md).
 
 ---
 
-## Common Issues
+## Tips
 
-### Generic Output
-
-**Problem**: Results are too vague
-**Solution**: Make prompt more specific, add format requirements
-
-### Missing Information
-
-**Problem**: Key details not extracted
-**Solution**: Explicitly ask for what you need in prompt
-
-### Inconsistent Format
-
-**Problem**: Each note looks different
-**Solution**: Add clear formatting instructions to prompt
-
-### Too Long/Short
-
-**Problem**: Output doesn't match expectations
-**Solution**: Specify word count or section lengths
-
-### Processing Fails
-
-**Problem**: Transformation doesn't complete
-**Solution**:
-- Check source is processed
-- Try shorter/simpler prompt
-- Process sources individually
-
----
-
-## Transformations vs. Chat vs. Ask
-
-| Feature | Transformations | Chat | Ask |
-|---------|----------------|------|-----|
-| **Input** | Predefined template | Your questions | Your question |
-| **Scope** | One source at a time | Selected sources | Auto-searched |
-| **Output** | Structured note | Conversation | Comprehensive answer |
-| **Best for** | Batch processing | Exploration | One-shot answers |
-| **Follow-up** | Run again | Ask more | New query |
-
----
-
-## Summary
-
-```
-Transformations = Batch AI Processing
-
-How to use:
-1. Define template (or use built-in)
-2. Select sources
-3. Apply transformation
-4. Get structured notes
-
-When to use:
-- Same analysis on many sources
-- Consistent output needed
-- Building structured knowledge base
-- Saving time on repetitive tasks
-
-Tips:
-- Be specific in prompts
-- Request formatting
-- Test before batch
-- Edit output as needed
-```
-
-Transformations turn repetitive analysis into one-click operations. Define once, apply many times.
+- **Keep summaries short if you chat with insights.** A source set to *Insights only* sends all its insights with every chat message.
+- **One job per transformation.** "Key arguments" and "Open questions" as two transformations give cleaner insights than one prompt asking for both.
+- **Large sources** over about 105,000 tokens are sent to your **Large Context Model**, regardless of the transformation's model.

@@ -1,284 +1,98 @@
-# Notebooks, Sources, and Notes - The Container Model
+# Notebooks, Sources, Insights, and Notes
 
-Open Notebook organizes research in three connected layers. Understanding this hierarchy is key to using the system effectively.
-
-## The Three-Layer Structure
+Open Notebook has four kinds of content. Knowing how they relate explains most of the app.
 
 ```
-┌─────────────────────────────────────┐
-│         NOTEBOOK (The Container)    │
-│     "My AI Safety Research 2026"   │
-├─────────────────────────────────────┤
-│                                     │
-│  SOURCES (The Raw Materials)        │
-│  ├─ safety_paper.pdf                │
-│  ├─ alignment_video.mp4             │
-│  └─ prompt_injection_article.html   │
-│                                     │
-│  NOTES (The Processed Insights)     │
-│  ├─ AI Summary (auto-generated)     │
-│  ├─ Key Concepts (transformation)   │
-│  ├─ My Research Notes (manual)      │
-│  └─ Chat Insights (from conversation)
-│                                     │
-└─────────────────────────────────────┘
-```
-
----
-
-## 1. NOTEBOOKS - The Research Container
-
-### What Is a Notebook?
-
-A **notebook** is a *scoped container* for a research project or topic. It's your research workspace.
-
-Think of it like a physical notebook: everything inside is about the same topic, shares the same context, and builds toward the same goals.
-
-### What Goes In?
-
-- **A description** — "This notebook collects research on X topic"
-- **Sources** — The raw materials you add
-- **Notes** — Your insights and outputs
-- **Conversation history** — Your chats and questions
-
-### Why This Matters
-
-**Isolation**: Each notebook is completely separate. Sources in Notebook A never appear in Notebook B. This lets you:
-- Keep different research topics completely isolated
-- Reuse source names across notebooks without conflicts
-- Control which AI context applies to which research
-
-**Shared Context**: All sources and notes in a notebook inherit the notebook's context. If your notebook is titled "AI Safety 2026" with description "Focusing on alignment and interpretability," that context applies to all AI interactions within that notebook.
-
-**Parallel Projects**: You can have 10 notebooks running simultaneously. Each one is its own isolated research environment.
-
-### Example
-
-```
-Notebook: "Customer Research - Product Launch"
-Description: "User interviews and feedback for Q1 2026 launch"
-
-→ All sources added to this notebook are about customer feedback
-→ All notes generated are in that context
-→ When you chat, the AI knows you're analyzing product launch feedback
-→ Different from your "Market Analysis - Competitors" notebook
-```
-
----
-
-## 2. SOURCES - The Raw Materials
-
-### What Is a Source?
-
-A **source** is a *single piece of input material* — the raw content you bring in. Sources never change; they're just processed and indexed.
-
-### What Can Be a Source?
-
-- **PDFs** — Research papers, reports, documents
-- **Web links** — Articles, blog posts, web pages
-- **Audio files** — Podcasts, interviews, lectures
-- **Video files** — Tutorials, presentations, recordings
-- **Plain text** — Notes, transcripts, passages
-- **Uploaded text** — Paste content directly
-
-### What Happens When You Add a Source?
-
-```
-1. EXTRACTION
-   File/URL → Extract text and metadata
-   (OCR for PDFs, web scraping for URLs, speech-to-text for audio)
-
-2. CHUNKING
-   Long text → Break into searchable chunks
-   (Prevents "too much context" in single query)
-
-3. EMBEDDING
-   Each chunk → Generate semantic vector
-   (Allows AI to find conceptually similar content)
-
-4. STORAGE
-   Chunks + vectors → Store in database
-   (Ready for search and retrieval)
-```
-
-### Key Properties
-
-**Immutable**: Once added, the source doesn't change. If you need a new version, add it as a new source.
-
-**Indexed**: Sources are automatically indexed for search (both text and semantic).
-
-**Scoped**: A source belongs to exactly one notebook.
-
-**Referenceable**: Other sources and notes can reference this source by citation.
-
-### Example
-
-```
-Source: "openai_charter.pdf"
-Type: PDF document
-
-What happens:
-→ PDF is uploaded
-→ Text is extracted (including images)
-→ Text is split into 50 chunks (paragraphs, sections)
-→ Each chunk gets an embedding vector
-→ Now searchable by: "OpenAI's approach to safety"
-```
-
----
-
-## 3. NOTES - The Processed Insights
-
-### What Is a Note?
-
-A **note** is a *processed output* — something you created or AI created based on your sources. Notes are the "results" of your research work.
-
-### Types of Notes
-
-#### Manual Notes
-You write them yourself. They're your original thinking, capturing:
-- What you learned from sources
-- Your analysis and interpretations
-- Your next steps and questions
-
-#### AI-Generated Notes
-Created by applying AI processing to sources:
-- **Transformations** — Structured extraction (main points, key concepts, methodology)
-- **Chat Responses** — Answers you saved from conversations
-- **Ask Results** — Comprehensive answers saved to your notebook
-
-#### Captured Insights
-Notes you explicitly saved from interactions:
-- "Save this response as a note"
-- "Save this transformation result"
-- Convert any AI output into a permanent note
-
-### What Can Notes Contain?
-
-- **Text** — Your writing or AI-generated content
-- **Citations** — References to specific sources
-- **Metadata** — When created, how created (manual/AI), which sources influenced it
-- **Tags** — Your categorization (optional but useful)
-
-### Why Notes Matter
-
-**Knowledge Accumulation**: Notes become your actual knowledge base. They're what you take away from the research.
-
-**Searchable**: Notes are searchable along with sources. "Find everything about X" includes your notes, not just sources.
-
-**Citable**: Notes can cite sources, creating an audit trail of where insights came from.
-
-**Shareable**: Notes are your outputs. You can share them, publish them, or build on them in other projects.
-
----
-
-## How They Connect: The Data Flow
-
-```
-YOU
+NOTEBOOK  "AI Safety Research"  (name + description)
  │
- ├─→ Create Notebook ("AI Research")
+ ├── SOURCES  (linked; a source can be linked to several notebooks)
+ │    ├── safety_paper.pdf
+ │    │     └── INSIGHTS  "Dense Summary", "Key Insights"   ← made by transformations
+ │    └── alignment_talk.mp4
+ │          └── INSIGHTS  "Simple Summary"
  │
- ├─→ Add Sources (papers, articles, videos)
- │    └─→ System: Extract, embed, index
- │
- ├─→ Search Sources (text or semantic)
- │    └─→ System: Find relevant chunks
- │
- ├─→ Apply Transformations (extract insights)
- │    └─→ Creates Notes
- │
- ├─→ Chat with Sources (explore with context control)
- │    ├─→ Can save responses as Notes
- │    └─→ Notes include citations
- │
- ├─→ Ask Questions (automated comprehensive search)
- │    ├─→ Can save results as Notes
- │    └─→ Notes include citations
- │
- └─→ Generate Podcast (transform notebook into audio)
-     └─→ Uses all sources + notes for content
+ └── NOTES  (belong to this notebook)
+      ├── My reading notes          (Human)
+      └── Answer saved from chat    (AI Generated)
 ```
 
 ---
 
-## Key Design Decisions
+## Notebooks
 
-### 1. One Notebook Per Source
+A **notebook** is a workspace for one project or topic. It has a name, an optional description, its linked sources, its notes and its chat sessions.
 
-Each source belongs to exactly one notebook. This creates clear boundaries:
-- No ambiguity about which research project a source is in
-- Easy to isolate or export a complete project
-- Clean permissions model (if someone gets access to notebook, they get access to all its sources)
-
-### 2. Immutable Sources, Mutable Notes
-
-Sources never change (once added, always the same). But notes can be edited or deleted. Why?
-- Sources are evidence → evidence shouldn't be altered
-- Notes are your thinking → thinking evolves as you learn
-
-### 3. Explicit Context Control
-
-Sources don't automatically go to AI. You decide which sources are "in context" for each interaction:
-- Chat: You manually select which sources to include
-- Ask: System automatically figures out which sources to search
-- Transformations: You choose which sources to transform
-
-This is different from systems that always send everything to AI.
+- The **name and description are sent to the AI in notebook Chat** as project information, so a good description helps Chat answers. Ask, Search and transformations don't use them.
+- Notebooks can be **archived** (hidden from the active list, nothing is deleted) and unarchived.
+- **Deleting** a notebook permanently deletes its notes. Sources that are linked only to this notebook can be deleted too or kept in your library; sources shared with other notebooks are just unlinked. The delete dialog shows the counts before you confirm.
 
 ---
 
-## Mental Models Explained
+## Sources
 
-### Notebook as Boundaries
-Think of a notebook like a Git repository:
-- Everything in it is about the same topic
-- You can clone/fork it (copy to new project)
-- It has clear entry/exit points
-- You know exactly what's included
+A **source** is one piece of input material: an uploaded file, a web link or pasted text. See [Adding Sources](../3-USER-GUIDE/adding-sources.md) for the supported types.
 
-### Sources as Evidence
-Think of sources like exhibits in a legal case:
-- Once filed, they don't change
-- They can be cited and referenced
-- They're the ground truth for what you're basing claims on
-- Multiple sources can be cross-referenced
+When you add a source, a background job:
 
-### Notes as Synthesis
-Think of notes like your case brief:
-- You write them based on evidence
-- They're your interpretation
-- You can cite which evidence supports each claim
-- They're what you actually share or act on
+1. **Extracts the text** (document parsing, web page fetching, or speech-to-text for audio and video; see [Content Processing Engines](../3-USER-GUIDE/content-processing-engines.md)).
+2. **Embeds it**, if embedding is enabled for that source: the text is split into chunks (about 400 tokens each by default) and each chunk gets a vector for semantic search.
+3. **Runs the transformations** you selected, producing insights.
+
+Things to know:
+
+- **Sources live in a shared library.** The **Sources** page lists every source. A source can be linked to any number of notebooks (use **Add Existing Source** in a notebook) or to none. Removing a source from a notebook only unlinks it; deleting a source removes it everywhere.
+- **The extracted text is not edited in the app.** To pick up a changed web page, use **Refresh content** on the source; to fix a bad upload, add the file again.
+- **Search coverage depends on embedding.** Text (keyword) search works on every source. Vector search and Ask only see sources that have been embedded.
 
 ---
 
-## Common Questions
+## Insights
 
-### Can I move a source to a different notebook?
-Not directly. Each source is tied to one notebook. If you want it in multiple notebooks, add it again (uploads are fast if it's already processed).
+An **insight** is the output of running a [transformation](../3-USER-GUIDE/transformations.md) on a source, for example a summary, a list of key points or a table of contents. Insights are the piece most people miss, and several features depend on them:
 
-### Can a note reference sources from a different notebook?
-No. Notes stay within their notebook and reference sources within that notebook. This keeps boundaries clean.
+- **They are attached to the source**, not to a notebook. You see them on the source's **Insights** tab, labeled with the transformation's title.
+- **They are the "Insights only" context level.** In notebook Chat, a source set to *Insights only* sends its title and its insights instead of its full text. A source with no insights can only be *Full content* or *Not included in chat*. See [AI Context & RAG](ai-context-rag.md#context-levels-in-notebook-chat).
+- **They are the "Summary" option in podcasts.** When you pick content for an episode, *Summary* sends the source's insights.
+- **They are searchable.** Text search, vector search and Ask all include insights.
+- **They can be cited.** Chat answers can reference an insight, and clicking the reference opens it.
+- **They can become notes**, but only through the API today (`POST /api/insights/{insight_id}/save-as-note`). The UI has no button for this.
 
-### What if I want to group sources within a notebook?
-Use tags. You can tag sources ("primary research," "background," "methodology") and filter by tags.
-
-### Can I merge two notebooks?
-Not built-in, but you can manually copy sources from one notebook to another by re-uploading them.
+You create insights when you add a source (step 3 of the Add Source wizard) or later from the source's Insights tab with **Generate New Insight**.
 
 ---
+
+## Notes
+
+A **note** is text that belongs to a notebook. A note has a title and Markdown content, and is marked either **Human** (you wrote it) or **AI Generated** (saved from the AI).
+
+Ways to create one:
+
+- **Write Note** in the notebook's Notes column.
+- **Save to note** under a notebook Chat answer (one click; the title is generated for you).
+- **Save to Notebooks** after an Ask answer (the question becomes the title, and you can pick several notebooks).
+
+Notes are on or off in notebook Chat context (they have no insights level), are searchable, and are embedded for vector search when an embedding model is configured. See [Working with Notes](../3-USER-GUIDE/working-with-notes.md).
+
+---
+
+## How They Connect
+
+```
+Add source ──► extract text ──► embed (optional) ──► run transformations ──► insights
+                                      │                                       │
+                                      ▼                                       ▼
+                         vector search + Ask                    "Insights only" context in Chat
+                                                                "Summary" content in podcasts
+
+Chat / Ask answer ──► Save to note / Save to Notebooks ──► note (AI Generated)
+Write Note ──────────────────────────────────────────────► note (Human)
+```
 
 ## Summary
 
-| Concept | Purpose | Lifecycle | Scope |
-|---------|---------|-----------|-------|
-| **Notebook** | Container + context | Create once, configure | All its sources + notes |
-| **Source** | Raw material | Add → Process → Store | One notebook |
-| **Note** | Processed output | Create/capture → Edit → Share | One notebook |
-
-This three-layer model gives you:
-- **Clear organization** (everything scoped to projects)
-- **Privacy control** (isolated notebooks)
-- **Audit trails** (notes cite sources)
-- **Flexibility** (notes can be manual or AI-generated)
+| Concept | What it is | Belongs to |
+|---------|------------|------------|
+| **Notebook** | A project workspace with name and description | — |
+| **Source** | Input material (file, link, text) | The library; linked to zero or more notebooks |
+| **Insight** | A transformation's output for one source | One source |
+| **Note** | Text you wrote or saved from the AI | One notebook |

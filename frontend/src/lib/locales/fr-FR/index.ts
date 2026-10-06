@@ -308,7 +308,7 @@ export const frFR = {
     failedToAddSource: "Échec de l'ajout de la source",
     fileTooLargeForProxy: "Trop volumineux pour être envoyé via l'application web : {{names}} (limite {{limit}} Mo)",
     fileTooLargeForProxyHint: "Pour envoyer des fichiers plus volumineux, redirigez /api/ de votre proxy inverse directement vers le port 5055.",
-    fileTooLargeForProxyDocs: "Voir comment",
+    fileTooLargeForProxyDocs: "Voir comment faire",
     sourceUpdatedSuccess: "Source mise à jour avec succès",
     failedToUpdateSource: "Échec de la mise à jour de la source",
     sourceDeletedSuccess: "Source supprimée avec succès",

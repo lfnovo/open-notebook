@@ -34,6 +34,7 @@ describe('uploadsUseFrontendProxy', () => {
 describe('filesTooLargeForProxy', () => {
   const big = fileOfSize('lecture.mp3', 150 * 1024 * 1024)
   const atLimit = fileOfSize('exact.mp3', PROXY_MAX_UPLOAD_BYTES)
+  const justUnder = fileOfSize('under.mp3', PROXY_MAX_UPLOAD_BYTES - 2 * 1024 * 1024)
   const small = fileOfSize('notes.pdf', 2 * 1024 * 1024)
 
   it('keeps the limit in one place, matching next.config.ts', () => {
@@ -42,8 +43,12 @@ describe('filesTooLargeForProxy', () => {
   })
 
   it('through the rewrite: returns the files over the limit', () => {
-    expect(filesTooLargeForProxy([big, atLimit, small], '', ORIGIN)).toEqual([big])
+    expect(filesTooLargeForProxy([big, justUnder, small], '', ORIGIN)).toEqual([big])
     expect(filesTooLargeForProxy([big], ORIGIN, ORIGIN)).toEqual([big])
+  })
+
+  it('through the rewrite: a file of exactly the limit is rejected, the multipart body would exceed it', () => {
+    expect(filesTooLargeForProxy([atLimit], '', ORIGIN)).toEqual([atLimit])
   })
 
   it('direct to the API: returns nothing, the API answers with its own 413', () => {

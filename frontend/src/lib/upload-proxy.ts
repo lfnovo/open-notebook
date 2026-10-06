@@ -1,5 +1,9 @@
 import { PROXY_MAX_UPLOAD_BYTES } from './upload-limits'
 
+// The proxy limit applies to the whole request body, so leave room for the
+// multipart boundaries and the other form fields sent along with the file.
+const MULTIPART_HEADROOM_BYTES = 1024 * 1024
+
 export const PROXY_UPLOAD_DOCS_URL =
   'https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/reverse-proxy.md#upload-size-413-errors'
 
@@ -22,5 +26,5 @@ export function uploadsUseFrontendProxy(apiUrl: string, pageOrigin: string): boo
  */
 export function filesTooLargeForProxy(files: File[], apiUrl: string, pageOrigin: string): File[] {
   if (!uploadsUseFrontendProxy(apiUrl, pageOrigin)) return []
-  return files.filter((file) => file.size > PROXY_MAX_UPLOAD_BYTES)
+  return files.filter((file) => file.size > PROXY_MAX_UPLOAD_BYTES - MULTIPART_HEADROOM_BYTES)
 }

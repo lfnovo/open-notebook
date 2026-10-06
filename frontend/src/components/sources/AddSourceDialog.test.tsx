@@ -27,7 +27,7 @@ function fileOfSize(name: string, bytes: number): File {
   return file
 }
 
-async function uploadAndSubmit(file: File) {
+async function uploadAndSubmit(...files: File[]) {
   render(<AddSourceDialog open={true} onOpenChange={vi.fn()} defaultNotebookId="notebook:1" />)
   const uploadTab = screen.getByRole('tab', { name: /sources\.upload/ })
   fireEvent.mouseDown(uploadTab)
@@ -37,7 +37,7 @@ async function uploadAndSubmit(file: File) {
     if (!el) throw new Error('no file input yet')
     return el
   })
-  Object.defineProperty(input, 'files', { value: fileList(file) })
+  Object.defineProperty(input, 'files', { value: fileList(...files) })
   fireEvent.change(input)
   fireEvent.click(await screen.findByRole('button', { name: 'common.next' }))
   fireEvent.click(await screen.findByRole('button', { name: 'common.next' }))
@@ -61,7 +61,17 @@ describe('AddSourceDialog upload size check (#1477)', () => {
     expect(mutateAsync).not.toHaveBeenCalled()
   })
 
-  it('API called directly (default setup): the file goes to the API, which applies its own limit', async () => {
+  it("batch upload through the rewrite: names every file over the limit and sends nothing", async () => {
+    mockGetApiUrl.mockResolvedValue(window.location.origin)
+    const second = fileOfSize('seminar.m4a', 120 * 1024 * 1024)
+    await uploadAndSubmit(lecture, second, fileOfSize('notes.pdf', 2 * 1024 * 1024))
+
+    await waitFor(() => expect(mockToastError).toHaveBeenCalled())
+    expect(mockToastError.mock.calls[0][0]).toBe('sources.fileTooLargeForProxy')
+    expect(mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('API called directly (the default: /config points the browser at <host>:5055): the file goes to the API, which applies its own limit', async () => {
     mockGetApiUrl.mockResolvedValue('http://localhost:5055')
     await uploadAndSubmit(lecture)
 

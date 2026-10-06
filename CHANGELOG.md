@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `make start-all` starts SurrealDB again (it pointed to a compose file removed long ago)
 - The legacy `SURREAL_ADDRESS` / `SURREAL_PORT` fallback builds a valid database URL (`ws://host:port/rpc`, was `ws://host/rpc:port`); an address that already includes the port is kept as is
 - `.env.example` names the chunking variables Open Notebook actually reads (`OPEN_NOTEBOOK_CHUNK_SIZE` / `OPEN_NOTEBOOK_CHUNK_OVERLAP`)
+- The Add Source file picker no longer offers `.zip`, `.tar` and `.gz` files. Archives aren't supported, so uploading one always failed with "Unsupported file type". The hint under the picker and the FAQ no longer list ZIP archives as supported either (#1472)
 
 ## [1.15.0] - 2026-10-04
 

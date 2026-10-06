@@ -368,7 +368,7 @@ export const plPL = {
     invalidUrlsDetected: "Wykryto nieprawidłowe adresy URL:",
     lineLabel: "Wiersz {{line}}",
     fixInvalidUrls: "Popraw lub usuń nieprawidłowe adresy URL, aby kontynuować",
-    selectMultipleFilesHint: "Wybierz wiele plików, aby zaimportować je wsadowo. Obsługiwane: Dokumenty (PDF, DOC, DOCX, PPT, XLS, EPUB, ODT, ODS, ODP, HTML, HTM, TXT, MD), Media (MP4, MP3, WAV, M4A), Obrazy (JPG, PNG), Archiwa (ZIP)",
+    selectMultipleFilesHint: "Wybierz wiele plików, aby zaimportować je wsadowo. Obsługiwane: Dokumenty (PDF, DOC, DOCX, PPT, XLS, EPUB, ODT, ODS, ODP, HTML, HTM, TXT, MD), Media (MP4, MP3, WAV, M4A), Obrazy (JPG, PNG)",
     selectedFiles: "Wybrane pliki:",
     textPlaceholder: "Wklej lub wpisz tutaj swoją treść...",
     htmlDetected: "Wykryto treść HTML. Po przetworzeniu zostanie przekonwertowana na Markdown.",

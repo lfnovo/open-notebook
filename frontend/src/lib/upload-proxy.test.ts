@@ -1,6 +1,12 @@
-import { describe, it, expect } from 'vitest'
-import { filesTooLargeForProxy, uploadsUseFrontendProxy } from './upload-proxy'
+import { describe, it, expect, vi } from 'vitest'
+import {
+  apiSharesPageOrigin,
+  filesTooLargeForProxy,
+  FRONTEND_PROXY_PROBE_PATH,
+  uploadsUseFrontendProxy,
+} from './upload-proxy'
 import { PROXY_MAX_UPLOAD_BYTES, PROXY_MAX_UPLOAD_MB } from './upload-limits'
+import { GET } from '../app/api/frontend-proxy/route'
 
 const ORIGIN = 'https://notebook.example.com'
 
@@ -10,24 +16,54 @@ function fileOfSize(name: string, bytes: number): File {
   return file
 }
 
-describe('uploadsUseFrontendProxy', () => {
-  it('is true for an empty or relative API URL (the /api/* rewrite)', () => {
-    expect(uploadsUseFrontendProxy('', ORIGIN)).toBe(true)
-    expect(uploadsUseFrontendProxy('/', ORIGIN)).toBe(true)
+function probeAnswering(status: number) {
+  return vi.fn().mockResolvedValue(new Response('{}', { status }))
+}
+
+describe('apiSharesPageOrigin', () => {
+  it('is true for an empty or relative API URL', () => {
+    expect(apiSharesPageOrigin('', ORIGIN)).toBe(true)
+    expect(apiSharesPageOrigin('/', ORIGIN)).toBe(true)
   })
 
   it("is true when the API URL is the frontend's own origin", () => {
-    expect(uploadsUseFrontendProxy(ORIGIN, ORIGIN)).toBe(true)
-    expect(uploadsUseFrontendProxy(`${ORIGIN}/`, ORIGIN)).toBe(true)
+    expect(apiSharesPageOrigin(ORIGIN, ORIGIN)).toBe(true)
+    expect(apiSharesPageOrigin(`${ORIGIN}/`, ORIGIN)).toBe(true)
   })
 
-  it('is false when the API is called directly', () => {
-    expect(uploadsUseFrontendProxy('https://notebook.example.com:5055', ORIGIN)).toBe(false)
-    expect(uploadsUseFrontendProxy('http://localhost:5055', 'http://localhost:8502')).toBe(false)
+  it('is false for another origin or a URL it cannot parse', () => {
+    expect(apiSharesPageOrigin('https://notebook.example.com:5055', ORIGIN)).toBe(false)
+    expect(apiSharesPageOrigin('http://localhost:5055', 'http://localhost:8502')).toBe(false)
+    expect(apiSharesPageOrigin('http://', ORIGIN)).toBe(false)
+  })
+})
+
+describe('uploadsUseFrontendProxy', () => {
+  it('same origin and the frontend answers the probe: through the rewrite', async () => {
+    const fetchFn = probeAnswering(200)
+    expect(await uploadsUseFrontendProxy(ORIGIN, ORIGIN, fetchFn)).toBe(true)
+    expect(fetchFn).toHaveBeenCalledWith(`${ORIGIN}${FRONTEND_PROXY_PROBE_PATH}`, { cache: 'no-store' })
   })
 
-  it('is false for a URL it cannot parse', () => {
-    expect(uploadsUseFrontendProxy('http://', ORIGIN)).toBe(false)
+  it('same origin but /api/ routed straight to the API (it answers 404): direct', async () => {
+    expect(await uploadsUseFrontendProxy(ORIGIN, ORIGIN, probeAnswering(404))).toBe(false)
+  })
+
+  it('probe fails: treated as direct, the API keeps the last word', async () => {
+    const fetchFn = vi.fn().mockRejectedValue(new TypeError('network'))
+    expect(await uploadsUseFrontendProxy('', ORIGIN, fetchFn)).toBe(false)
+  })
+
+  it('another origin: direct, without probing', async () => {
+    const fetchFn = probeAnswering(200)
+    expect(await uploadsUseFrontendProxy('http://localhost:5055', 'http://localhost:8502', fetchFn)).toBe(false)
+    expect(fetchFn).not.toHaveBeenCalled()
+  })
+})
+
+describe('frontend-proxy probe route', () => {
+  it('reports the rewrite limit', async () => {
+    expect(await GET().json()).toEqual({ maxUploadMb: PROXY_MAX_UPLOAD_MB })
   })
 })
 
@@ -42,16 +78,11 @@ describe('filesTooLargeForProxy', () => {
     expect(PROXY_MAX_UPLOAD_BYTES).toBe(100 * 1024 * 1024)
   })
 
-  it('through the rewrite: returns the files over the limit', () => {
-    expect(filesTooLargeForProxy([big, justUnder, small], '', ORIGIN)).toEqual([big])
-    expect(filesTooLargeForProxy([big], ORIGIN, ORIGIN)).toEqual([big])
+  it('returns the files over the limit', () => {
+    expect(filesTooLargeForProxy([big, justUnder, small])).toEqual([big])
   })
 
-  it('through the rewrite: a file of exactly the limit is rejected, the multipart body would exceed it', () => {
-    expect(filesTooLargeForProxy([atLimit], '', ORIGIN)).toEqual([atLimit])
-  })
-
-  it('direct to the API: returns nothing, the API answers with its own 413', () => {
-    expect(filesTooLargeForProxy([big], 'http://localhost:5055', 'http://localhost:8502')).toEqual([])
+  it('a file of exactly the limit is rejected, the multipart body would exceed it', () => {
+    expect(filesTooLargeForProxy([atLimit])).toEqual([atLimit])
   })
 })

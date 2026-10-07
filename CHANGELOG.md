@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `make start-all` starts SurrealDB again (it pointed to a compose file removed long ago)
 - The legacy `SURREAL_ADDRESS` / `SURREAL_PORT` fallback builds a valid database URL (`ws://host:port/rpc`, was `ws://host/rpc:port`); an address that already includes the port is kept as is
 - `.env.example` names the chunking variables Open Notebook actually reads (`OPEN_NOTEBOOK_CHUNK_SIZE` / `OPEN_NOTEBOOK_CHUNK_OVERLAP`)
+- **Uploads over 100 MB through the frontend proxy explain the limit instead of failing with a bare 500.** When `API_URL` points at the frontend's own URL and `/api/*` reaches the frontend, uploads go through the Next.js rewrite, which cuts bodies over 100 MB. The Add Source dialog now checks file sizes first in that setup (a small `/api/frontend-proxy` route tells it apart from a reverse proxy that routes `/api/` straight to the API), names the files that are too large and says how to route `/api/` straight to port 5055; nothing is sent. Direct API calls are unchanged and still answer with the API's 413 (#1477)
 
 ## [1.15.0] - 2026-10-04
 

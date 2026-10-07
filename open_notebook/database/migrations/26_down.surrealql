@@ -1,0 +1,2 @@
+-- Migration 26 down: remove the embedding_cache table.
+REMOVE TABLE IF EXISTS embedding_cache;

@@ -190,7 +190,7 @@ async def mean_pool_embeddings(embeddings: List[List[float]]) -> List[float]:
 
 
 async def generate_embeddings(
-    texts: List[str], command_id: Optional[str] = None
+    texts: List[str], command_id: Optional[str] = None, use_cache: bool = False
 ) -> List[List[float]]:
     """
     Generate embeddings for multiple texts with automatic batching and retry.
@@ -250,17 +250,27 @@ async def generate_embeddings(
     )
 
     all_embeddings: List[List[float]] = []
+    cache_on = use_cache and model_name != "unknown"
     total_batches = (len(texts) + EMBEDDING_BATCH_SIZE - 1) // EMBEDDING_BATCH_SIZE
 
     for batch_idx in range(total_batches):
         start = batch_idx * EMBEDDING_BATCH_SIZE
         end = start + EMBEDDING_BATCH_SIZE
-        batch = texts[start:end]
+        full_batch = texts[start:end]
+        hashes = [_embedding_cache_key(model_name, t) for t in full_batch]
+        cached = await _cache_lookup(hashes) if cache_on else {}
+        miss_hashes = [h for h in hashes if h not in cached]
+        batch = [t for t, h in zip(full_batch, hashes) if h in miss_hashes]
+        new_embeddings: List[List[float]] = []
+        if cache_on:
+            logger.info(
+                f"Embedding batch {batch_idx + 1}/{total_batches}: "
+                f"{len(full_batch) - len(batch)} cache hits, {len(batch)} misses"
+            )
 
-        for attempt in range(1, EMBEDDING_MAX_RETRIES + 1):
+        for attempt in range(1, EMBEDDING_MAX_RETRIES + 1) if batch else ():
             try:
-                batch_embeddings = await embedding_model.aembed(batch)
-                all_embeddings.extend(batch_embeddings)
+                new_embeddings = await embedding_model.aembed(batch)
                 break
             except Exception as e:
                 cmd_context = f" (command: {command_id})" if command_id else ""
@@ -277,11 +287,27 @@ async def generate_embeddings(
                         f"failed after {EMBEDDING_MAX_RETRIES} attempts "
                         f"using model '{model_name}'{cmd_context}: {e}"
                     )
+                    if cache_on:
+                        await _cache_evict(EMBEDDING_CACHE_MAX_ROWS)
                     raise RuntimeError(
                         f"Failed to generate embeddings using model '{model_name}' "
                         f"(batch {batch_idx + 1}/{total_batches}, "
                         f"{len(batch)} texts): {e}"
                     ) from e
+
+        if len(new_embeddings) != len(batch):
+            raise ValueError(
+                f"Embedding count mismatch in batch {batch_idx + 1}/{total_batches}: "
+                f"got {len(new_embeddings)} embeddings for {len(batch)} texts"
+            )
+
+        fresh = iter(new_embeddings)
+        all_embeddings.extend(cached[h] if h in cached else next(fresh) for h in hashes)
+        if cache_on:
+            await _cache_store(model_name, dict(zip(miss_hashes, new_embeddings)))
+
+    if cache_on:
+        await _cache_evict(EMBEDDING_CACHE_MAX_ROWS)
 
     logger.debug(
         f"Generated {len(all_embeddings)} embeddings in {total_batches} batch(es)"

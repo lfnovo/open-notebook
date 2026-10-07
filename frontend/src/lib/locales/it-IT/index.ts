@@ -386,7 +386,7 @@ export const itIT = {
     noInsightSelected: "Nessun approfondimento selezionato",
     sourceInsight: "Approfondimento Fonte",
     saveAsNote: "Salva come nota",
-    chooseNotebook: "Scegli un notebook",
+    chooseNotebook: "Scegli un quaderno",
     insightSavedAsNote: "Approfondimento salvato come nota",
     failedToSaveInsightAsNote: "Impossibile salvare l'approfondimento come nota",
     manageNotebooks: "Gestisci quaderni",

@@ -389,7 +389,7 @@ export const deDE = {
     noInsightSelected: "Keine Erkenntnis ausgewählt",
     sourceInsight: "Quellen-Erkenntnis",
     saveAsNote: "Als Notiz speichern",
-    chooseNotebook: "Notizbuch auswählen",
+    chooseNotebook: "Notebook auswählen",
     insightSavedAsNote: "Erkenntnis als Notiz gespeichert",
     failedToSaveInsightAsNote: "Erkenntnis konnte nicht als Notiz gespeichert werden",
     manageNotebooks: "Notebooks verwalten",

@@ -386,7 +386,7 @@ export const caES = {
     noInsightSelected: "No s'ha seleccionat cap anàlisi",
     sourceInsight: "Anàlisi de la font",
     saveAsNote: "Desa com a nota",
-    chooseNotebook: "Tria una llibreta",
+    chooseNotebook: "Tria un quadern",
     insightSavedAsNote: "Anàlisi desada com a nota",
     failedToSaveInsightAsNote: "No s'ha pogut desar l'anàlisi com a nota",
     manageNotebooks: "Gestiona els quaderns",

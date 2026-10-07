@@ -1,4 +1,5 @@
 import apiClient from './client'
+import { NoteResponse } from '@/lib/types/api'
 
 export interface SourceInsightResponse {
   id: string
@@ -50,6 +51,14 @@ export const insightsApi = {
 
   delete: async (insightId: string) => {
     await apiClient.delete(`/insights/${insightId}`)
+  },
+
+  saveAsNote: async (insightId: string, notebookId: string) => {
+    const response = await apiClient.post<NoteResponse>(
+      `/insights/${insightId}/save-as-note`,
+      { notebook_id: notebookId }
+    )
+    return response.data
   },
 
   getCommandStatus: async (commandId: string, signal?: AbortSignal) => {

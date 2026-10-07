@@ -25,6 +25,7 @@ def _question_response(question, include_answers: bool) -> ExamQuestionResponse:
         prompt=question.prompt,
         points=question.points,
         options=question.options,
+        image_ids=question.image_ids,
         blank_count=len(question.blanks),
     )
     if include_answers:
@@ -61,6 +62,21 @@ def _exam_response(
             if include_questions
             else None
         ),
+        images={
+            image_id: image
+            if include_answers
+            else image.model_copy(
+                update={
+                    "name": image_id,
+                    "source_id": None,
+                    "source_title": None,
+                    "page": None,
+                }
+            )
+            for image_id, image in exam.images.items()
+        }
+        if include_questions
+        else {},
         created=str(exam.created),
         updated=str(exam.updated),
     )

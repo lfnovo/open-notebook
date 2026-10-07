@@ -50,6 +50,7 @@ export function CreateExamDialog({ open, onOpenChange, initialNotebookId }: Crea
 
   const [notebookId, setNotebookId] = useState(initialNotebookId ?? '')
   const [selectedSources, setSelectedSources] = useState<Set<string>>(new Set())
+  const [includeImages, setIncludeImages] = useState(true)
   const [includeNotes, setIncludeNotes] = useState(false)
   const [numMultipleChoice, setNumMultipleChoice] = useState(5)
   const [numMultipleSelect, setNumMultipleSelect] = useState(2)
@@ -94,6 +95,7 @@ export function CreateExamDialog({ open, onOpenChange, initialNotebookId }: Crea
       title: title.trim() || undefined,
       source_ids: allSelected ? undefined : Array.from(selectedSources),
       include_notes: includeNotes,
+      include_images: includeImages,
       num_multiple_choice: numMultipleChoice,
       num_multiple_select: numMultipleSelect,
       num_fill_blank: numFillBlank,
@@ -178,6 +180,14 @@ export function CreateExamDialog({ open, onOpenChange, initialNotebookId }: Crea
               </label>
             </div>
           )}
+
+          <div className="space-y-1">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <Checkbox checked={includeImages} onCheckedChange={(c) => setIncludeImages(c === true)} />
+              {t('exams.includeImages')}
+            </label>
+            <p className="text-xs text-muted-foreground">{t('exams.imagesHint')}</p>
+          </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="space-y-2">

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { createInstance } from 'i18next'
 import fs from 'fs'
 import path from 'path'
 import { resources } from './index'
@@ -157,4 +158,26 @@ describe('Unused Key Detection', () => {
     },
     30_000,
   )
+})
+
+
+describe('Source image provenance', () => {
+  it.each(Object.entries(resources))('%s renders the source name and page', async (code, resource) => {
+    const i18n = createInstance()
+    await i18n.init({ lng: code, resources: { [code]: resource }, interpolation: { escapeValue: false } })
+    const label = i18n.t('chat.sourceImage', { source: 'rta.pdf', page: 3 })
+    expect(label).toContain('rta.pdf')
+    expect(label).toContain('3')
+    expect(label).not.toMatch(/[{}]/)
+  })
+})
+
+
+describe('Exam figure labels', () => {
+  it.each(Object.entries(resources))('%s interpolates the figure number', async (code, resource) => {
+    const i18n = createInstance()
+    await i18n.init({ lng: code, resources: { [code]: resource }, interpolation: { escapeValue: false } })
+    expect(i18n.t('exams.figure', { n: 2 })).toContain('2')
+    expect(i18n.t('exams.figure', { n: 2 })).not.toMatch(/[{}]/)
+  })
 })

@@ -150,7 +150,16 @@ export interface BaseChatSession {
 
 export interface SourceChatSession extends BaseChatSession {
   source_id: string
-  model_override?: string
+  model_override?: string | null
+}
+
+export interface ChatImage {
+  name: string
+  data_url: string
+  kind?: 'generated' | 'source' | null
+  source_id?: string | null
+  source_title?: string | null
+  page?: number | null
 }
 
 export interface SourceChatMessage {
@@ -158,6 +167,8 @@ export interface SourceChatMessage {
   type: 'human' | 'ai'
   content: string
   timestamp?: string
+  images?: ChatImage[]
+  quizzes?: string[]
 }
 
 export interface SourceChatContextIndicator {
@@ -179,11 +190,13 @@ export interface CreateSourceChatSessionRequest {
 
 export interface UpdateSourceChatSessionRequest {
   title?: string
-  model_override?: string
+  model_override?: string | null
 }
 
 export interface SendMessageRequest {
+  visual_tools?: boolean
   message: string
+  images?: ChatImage[]
   model_override?: string
 }
 
@@ -205,6 +218,8 @@ export interface NotebookChatMessage {
   type: 'human' | 'ai'
   content: string
   timestamp?: string
+  images?: ChatImage[]
+  quizzes?: string[]
 }
 
 export interface NotebookChatSessionWithMessages extends NotebookChatSession {
@@ -223,8 +238,10 @@ export interface UpdateNotebookChatSessionRequest {
 }
 
 export interface SendNotebookChatMessageRequest {
+  visual_tools?: boolean
   session_id: string
   message: string
+  images?: ChatImage[]
   context: {
     sources: Array<Record<string, unknown>>
     notes: Array<Record<string, unknown>>

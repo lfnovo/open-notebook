@@ -8,13 +8,21 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
-from typing_extensions import TypedDict
+from typing_extensions import NotRequired, TypedDict
 
 from open_notebook.ai.provision import provision_langchain_model
 from open_notebook.config import LANGGRAPH_CHECKPOINT_FILE
 from open_notebook.domain.notebook import Source, SourceInsight
 from open_notebook.exceptions import IncompleteGenerationError, OpenNotebookError
 from open_notebook.utils import clean_thinking_content
+from open_notebook.utils.chat_images import chat_model_context
+from open_notebook.utils.chat_responses import (
+    latest_request,
+    quiz_instructions,
+    requested_widgets,
+    run_chat_response,
+)
+from open_notebook.utils.chat_visuals import run_visual_chat
 from open_notebook.utils.context_builder import (
     build_source_context,
     format_source_context,
@@ -29,6 +37,7 @@ class SourceChatState(TypedDict):
     source: Optional[Source]
     insights: Optional[List[SourceInsight]]
     context: Optional[str]
+    visual_tools: NotRequired[bool]
     model_override: Optional[str]
     context_indicators: Optional[Dict[str, List[str]]]
 
@@ -147,7 +156,9 @@ def _call_model_with_source_context_inner(
     system_prompt = Prompter(prompt_template="source_chat/system").render(
         data=prompt_data
     )
-    payload = [SystemMessage(content=system_prompt)] + state.get("messages", [])
+    payload = [SystemMessage(content=system_prompt + quiz_instructions())] + state.get(
+        "messages", []
+    )
 
     # Handle async model provisioning from sync context
     def run_in_new_loop():
@@ -157,7 +168,7 @@ def _call_model_with_source_context_inner(
             asyncio.set_event_loop(new_loop)
             return new_loop.run_until_complete(
                 provision_langchain_model(
-                    str(payload),
+                    chat_model_context(payload),
                     config.get("configurable", {}).get("model_id")
                     or state.get("model_override"),
                     "chat",
@@ -181,7 +192,7 @@ def _call_model_with_source_context_inner(
         # No event loop running, safe to use asyncio.run()
         model = asyncio.run(
             provision_langchain_model(
-                str(payload),
+                chat_model_context(payload),
                 config.get("configurable", {}).get("model_id")
                 or state.get("model_override"),
                 "chat",
@@ -189,7 +200,16 @@ def _call_model_with_source_context_inner(
             )
         )
 
-    ai_message = model.invoke(payload)
+    if state.get("visual_tools") or requested_widgets(latest_request(payload))[0]:
+        ai_message = run_visual_chat(
+            model,
+            payload,
+            {source_id},
+            config.get("configurable", {}).get("model_id")
+            or state.get("model_override"),
+        )
+    else:
+        ai_message = model.invoke(payload)
 
     # Clean thinking content from AI response (e.g., <think>...</think> tags)
     content = extract_text_content(ai_message.content)
@@ -202,6 +222,14 @@ def _call_model_with_source_context_inner(
             "different model if this keeps happening."
         )
     cleaned_message = ai_message.model_copy(update={"content": cleaned_content})
+
+    cleaned_message = run_chat_response(
+        cleaned_message,
+        config.get("configurable", {}).get("thread_id", ""),
+        config.get("configurable", {}).get("model_id") or state.get("model_override"),
+        latest_request(payload),
+        extract_text_content(payload[0].content),
+    )
 
     # Update state with context information
     return {

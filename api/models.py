@@ -2,6 +2,8 @@ from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from open_notebook.utils.chat_images import ChatImage
+
 
 # Notebook models
 class NotebookCreate(BaseModel):
@@ -834,6 +836,10 @@ class ExamCreateRequest(BaseModel):
         None, description="Sources to use (all notebook sources if omitted or empty)"
     )
     include_notes: bool = Field(False, description="Also use the notebook's notes")
+    include_images: bool = Field(
+        True,
+        description="Include source crops or illustrations when useful to a question",
+    )
     num_multiple_choice: int = Field(5, ge=0, le=50)
     num_multiple_select: int = Field(0, ge=0, le=50)
     num_fill_blank: int = Field(3, ge=0, le=50)
@@ -846,11 +852,13 @@ class ExamCreateRequest(BaseModel):
         None, description="Extra instructions for the exam writer"
     )
     model_id: Optional[str] = Field(
-        None, description="Model for generation and grading (default transformation model if omitted)"
+        None,
+        description="Model for generation and grading (default transformation model if omitted)",
     )
 
 
 class ExamQuestionResponse(BaseModel):
+    image_ids: List[str] = Field(default_factory=list)
     id: str
     type: Literal["multiple_choice", "multiple_select", "fill_blank", "open"]
     prompt: str
@@ -879,6 +887,7 @@ class ExamResponse(BaseModel):
     attempt_count: int = 0
     best_score: Optional[float] = None
     questions: Optional[List[ExamQuestionResponse]] = None
+    images: Dict[str, ChatImage] = Field(default_factory=dict)
     created: str
     updated: str
 

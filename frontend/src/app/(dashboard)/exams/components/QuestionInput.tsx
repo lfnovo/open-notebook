@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment } from 'react'
+import { Fragment, useId } from 'react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -26,6 +26,7 @@ interface QuestionInputProps {
 
 export function QuestionInput({ question, value, onChange, disabled }: QuestionInputProps) {
   const { t } = useTranslation()
+  const inputId = useId()
 
   if (question.type === 'multiple_choice') {
     return (
@@ -36,7 +37,7 @@ export function QuestionInput({ question, value, onChange, disabled }: QuestionI
         className="gap-2"
       >
         {question.options.map((option, index) => {
-          const id = `${question.id}-opt-${index}`
+          const id = `${inputId}-${question.id}-opt-${index}`
           return (
             <div key={id} className="flex items-start gap-3 rounded-md border p-3 has-[:checked]:border-primary">
               <RadioGroupItem value={String(index)} id={id} className="mt-0.5" />
@@ -56,7 +57,7 @@ export function QuestionInput({ question, value, onChange, disabled }: QuestionI
       <div className="space-y-2">
         <p className="text-sm text-muted-foreground">{t('exams.selectAllThatApply')}</p>
         {question.options.map((option, index) => {
-          const id = `${question.id}-opt-${index}`
+          const id = `${inputId}-${question.id}-opt-${index}`
           return (
             <div key={id} className="flex items-start gap-3 rounded-md border p-3 has-[[data-state=checked]]:border-primary">
               <Checkbox

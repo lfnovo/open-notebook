@@ -20,6 +20,7 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 import { cn } from '@/lib/utils'
 import { ExamAnswer, ExamAnswers, ExamAttempt, ExamQuestion } from '@/lib/types/exams'
 import { QuestionInput } from '../components/QuestionInput'
+import { ExamQuestionImages } from '../components/ExamQuestionImages'
 import { ExamResults } from '../components/ExamResults'
 
 function isAnswered(question: ExamQuestion, answer: ExamAnswer | undefined) {
@@ -105,7 +106,7 @@ export default function ExamPage() {
 
             {viewedAttempt ? (
               <>
-                <ExamResults attempt={viewedAttempt} questions={examWithAnswers?.questions ?? questions} />
+                <ExamResults attempt={viewedAttempt} questions={examWithAnswers?.questions ?? questions} images={examWithAnswers?.images ?? exam.images} />
                 <Button onClick={retake}>
                   <RotateCcw className="h-4 w-4 mr-2" />
                   {t('exams.retake')}
@@ -127,7 +128,8 @@ export default function ExamPage() {
                         </CardTitle>
                       )}
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="space-y-3">
+                      <ExamQuestionImages question={question} images={exam.images} />
                       <QuestionInput
                         question={question}
                         value={answers[question.id]}

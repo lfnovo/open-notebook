@@ -5,10 +5,12 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
+from open_notebook.domain.chat_quiz import ChatQuiz, ChatQuizAttempt
 from open_notebook.domain.exam import Exam, ExamAttempt, ExamQuestion, QuestionResult
 from open_notebook.domain.notebook import Notebook
 from open_notebook.exceptions import InvalidInputError
 from open_notebook.graphs.exam import (
+    collect_exam_images,
     generate_exam_questions,
     grade_with_ai,
     normalize_answer,
@@ -35,7 +37,7 @@ async def build_study_material(
     for source in sources:
         if source.full_text and source.full_text.strip():
             parts.append(
-                f"## SOURCE: {source.title or source.id}\n\n{source.full_text}"
+                f"## SOURCE: {source.title or source.id}\nSource ID: {source.id}\n\n{source.full_text}"
             )
             used_ids.append(source.id or "")
 
@@ -71,6 +73,7 @@ async def create_exam(
     language: Optional[str],
     instructions: Optional[str],
     model_id: Optional[str],
+    include_images: bool = True,
 ) -> Exam:
     total = num_multiple_choice + num_multiple_select + num_fill_blank + num_open
     if total == 0:
@@ -80,6 +83,19 @@ async def create_exam(
 
     notebook = await Notebook.get(notebook_id)
     material, used_ids = await build_study_material(notebook, source_ids, include_notes)
+
+    images = (
+        await collect_exam_images(
+            material,
+            source_ids=used_ids,
+            language=language,
+            instructions=instructions,
+            model_id=model_id,
+            question_count=total,
+        )
+        if include_images
+        else {}
+    )
 
     generated_title, questions = await generate_exam_questions(
         material,
@@ -91,8 +107,10 @@ async def create_exam(
         language=language,
         instructions=instructions,
         model_id=model_id,
+        images=images,
     )
 
+    used_images = {image_id for q in questions for image_id in q.image_ids}
     exam = Exam(
         notebook_id=notebook_id,
         title=(title or "").strip() or generated_title or notebook.name,
@@ -101,6 +119,7 @@ async def create_exam(
         instructions=instructions,
         source_ids=used_ids,
         questions=[q.model_dump() for q in questions],
+        images={key: image for key, image in images.items() if key in used_images},
         model_id=model_id,
     )
     await exam.save()
@@ -175,7 +194,7 @@ def grade_deterministic(
     return None
 
 
-async def grade_attempt(exam: Exam, answers: Dict[str, Any]) -> ExamAttempt:
+async def grade_attempt(exam: Exam | ChatQuiz, answers: Dict[str, Any]) -> ExamAttempt:
     questions = exam.get_questions()
     semaphore = asyncio.Semaphore(GRADING_CONCURRENCY)
 
@@ -195,6 +214,7 @@ async def grade_attempt(exam: Exam, answers: Dict[str, Any]) -> ExamAttempt:
                 student_answer,
                 language=exam.language,
                 model_id=exam.model_id,
+                images=exam.images,
             )
         return QuestionResult(
             question_id=question.id,
@@ -207,7 +227,8 @@ async def grade_attempt(exam: Exam, answers: Dict[str, Any]) -> ExamAttempt:
 
     results = await asyncio.gather(*(grade(q) for q in questions))
 
-    attempt = ExamAttempt(
+    attempt_type = ChatQuizAttempt if isinstance(exam, ChatQuiz) else ExamAttempt
+    attempt = attempt_type(
         exam_id=exam.id or "",
         answers={q.id: answers.get(q.id) for q in questions},
         results=[r.model_dump() for r in results],

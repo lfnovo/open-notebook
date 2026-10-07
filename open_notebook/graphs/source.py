@@ -247,6 +247,14 @@ async def content_process(state: SourceState) -> dict:
     if not processed.content or not processed.content.strip():
         if url and _is_youtube_url(url):
             raise ValueError(_YOUTUBE_NO_TRANSCRIPT_MESSAGE)
+        file_path = content_state.get("file_path", "")
+        if file_path.lower().endswith(".pdf"):
+            raise ValueError(
+                "No text could be extracted from this PDF. It may contain scanned "
+                "pages. Enable Docling (OPEN_NOTEBOOK_ENABLE_DOCLING=true), "
+                "select the Docling document engine and enable OCR in "
+                "Settings → Content Processing, then retry this source."
+            )
         raise ValueError(
             "Could not extract any text content from this source. "
             "The content may be empty, inaccessible, or in an unsupported format."

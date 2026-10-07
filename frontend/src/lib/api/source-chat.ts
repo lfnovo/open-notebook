@@ -63,9 +63,10 @@ export const sourceChatApi = {
         ...(token && { 'Authorization': `Bearer ${token}` })
       },
       body: JSON.stringify(data)
-    }).then(response => {
+    }).then(async response => {
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        const error = await response.json().catch(() => null)
+        throw new Error(typeof error?.detail === 'string' ? error.detail : `HTTP error! status: ${response.status}`)
       }
       return response.body
     })

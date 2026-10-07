@@ -7,6 +7,8 @@ import { Progress } from '@/components/ui/progress'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { cn } from '@/lib/utils'
 import { ExamAttempt, ExamQuestion, ExamQuestionResult } from '@/lib/types/exams'
+import type { ChatImage } from '@/lib/types/api'
+import { ExamQuestionImages } from './ExamQuestionImages'
 import { BLANK_MARKER, blankAnswers } from './QuestionInput'
 
 function formatScore(value: number) {
@@ -24,11 +26,13 @@ function QuestionReview({
   result,
   answer,
   index,
+  images,
 }: {
   question: ExamQuestion
   result?: ExamQuestionResult
   answer: ExamAttempt['answers'][string] | undefined
   index: number
+  images?: Record<string, ChatImage>
 }) {
   const { t } = useTranslation()
 
@@ -60,6 +64,7 @@ function QuestionReview({
         </div>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
+        <ExamQuestionImages question={question} images={images} review />
         {(question.type === 'multiple_choice' || question.type === 'multiple_select') && (
           <ul className="space-y-1.5">
             {question.options.map((option, i) => {
@@ -149,9 +154,10 @@ function QuestionReview({
 interface ExamResultsProps {
   attempt: ExamAttempt
   questions: ExamQuestion[]
+  images?: Record<string, ChatImage>
 }
 
-export function ExamResults({ attempt, questions }: ExamResultsProps) {
+export function ExamResults({ attempt, questions, images }: ExamResultsProps) {
   const { t } = useTranslation()
   const percent = attempt.max_score > 0 ? Math.round((attempt.score / attempt.max_score) * 100) : 0
   const resultsById = Object.fromEntries(attempt.results.map((r) => [r.question_id, r]))
@@ -183,6 +189,7 @@ export function ExamResults({ attempt, questions }: ExamResultsProps) {
         <QuestionReview
           key={question.id}
           question={question}
+          images={images}
           index={index}
           result={resultsById[question.id]}
           answer={attempt.answers[question.id]}

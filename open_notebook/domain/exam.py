@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel
 from open_notebook.exceptions import DatabaseOperationError
+from open_notebook.utils.chat_images import ChatImage
 
 QuestionType = Literal["multiple_choice", "multiple_select", "fill_blank", "open"]
 
@@ -25,6 +26,7 @@ class ExamQuestion(BaseModel):
     type: QuestionType
     prompt: str
     points: float = 1.0
+    image_ids: List[str] = Field(default_factory=list)
     options: List[str] = Field(default_factory=list)
     correct_option: Optional[int] = None
     correct_options: List[int] = Field(default_factory=list)
@@ -53,6 +55,7 @@ class Exam(ObjectModel):
     instructions: Optional[str] = None
     source_ids: List[str] = Field(default_factory=list)
     questions: List[Dict[str, Any]] = Field(default_factory=list)
+    images: Dict[str, ChatImage] = Field(default_factory=dict)
     model_id: Optional[str] = None
 
     def _prepare_save_data(self) -> Dict[str, Any]:
@@ -61,6 +64,14 @@ class Exam(ObjectModel):
         if data.get("model_id"):
             data["model_id"] = ensure_record_id(data["model_id"])
         return data
+
+    async def save(self) -> None:
+        await super().save()
+        # ObjectModel refreshes dictionaries from the DB without reconstructing
+        # nested models inside containers. Restore typed figures after saving.
+        self.images = {
+            key: ChatImage.model_validate(image) for key, image in self.images.items()
+        }
 
     def get_questions(self) -> List[ExamQuestion]:
         return [ExamQuestion(**q) for q in self.questions]
@@ -74,11 +85,13 @@ class Exam(ObjectModel):
         try:
             if notebook_id:
                 rows = await repo_query(
-                    "SELECT * FROM exam WHERE notebook_id = $nb ORDER BY created DESC",
+                    "SELECT * OMIT images FROM exam WHERE notebook_id = $nb ORDER BY created DESC",
                     {"nb": ensure_record_id(notebook_id)},
                 )
             else:
-                rows = await repo_query("SELECT * FROM exam ORDER BY created DESC")
+                rows = await repo_query(
+                    "SELECT * OMIT images FROM exam ORDER BY created DESC"
+                )
             return [cls(**row) for row in rows]
         except Exception as e:
             raise DatabaseOperationError(e)

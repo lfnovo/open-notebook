@@ -1,3 +1,5 @@
+import type { ChatImage } from './api'
+
 export type ExamQuestionType = 'multiple_choice' | 'multiple_select' | 'fill_blank' | 'open'
 export type ExamDifficulty = 'easy' | 'medium' | 'hard'
 
@@ -7,6 +9,7 @@ export interface ExamQuestion {
   prompt: string
   points: number
   options: string[]
+  image_ids?: string[]
   blank_count: number
   // Answer key: only present when requested with include_answers
   correct_option?: number | null
@@ -25,6 +28,7 @@ export interface Exam {
   language?: string | null
   instructions?: string | null
   source_ids: string[]
+  images?: Record<string, ChatImage>
   question_count: number
   max_score: number
   attempt_count: number
@@ -39,6 +43,7 @@ export interface CreateExamRequest {
   title?: string
   source_ids?: string[]
   include_notes: boolean
+  include_images?: boolean
   num_multiple_choice: number
   num_multiple_select: number
   num_fill_blank: number

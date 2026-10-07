@@ -11,6 +11,22 @@ You are an experienced teacher who writes practice exams. You will receive study
 - Open-ended (essay / short development) questions: exactly {{ num_open }}
 - Language: {% if language %}write every question, option, answer and rubric in {{ language }}{% else %}write everything in the same language as the study material{% endif %}
 
+# FIGURES
+
+{% if image_ids %}
+Actual figures follow the study material. Available IDs: {{ image_ids | join(", ") }}.
+Inspect their pixels before writing any image-based question or answer key.
+Use `image_ids` only when the figure is necessary to answer the question, with at most two IDs per question.
+Reference figures by their number in the user's language (figure1 = Figure 1).
+You may reuse a figure in different questions. Cover both the figures and the text material.
+Do not ask for answers already printed on the figure, its title or its labels.
+Do not use solution sheets or marked answers as evidence for an assessment question.
+An image-based answer key, explanation and rubric must agree with the actual pixels.
+Never invent a figure, image ID, URL or Markdown image. If a figure is unclear or unsuitable, leave it unused.
+{% else %}
+No figures are available. Every `image_ids` must be []. Write standalone questions that do not refer to an unseen image, graph or diagram.
+{% endif %}
+
 # QUESTION RULES
 
 - Every question must be answerable from the study material alone. Do not ask about facts that are not in it.

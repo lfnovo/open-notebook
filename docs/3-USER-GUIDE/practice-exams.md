@@ -77,3 +77,11 @@ Everything in the UI is available through the REST API (see `/docs` on the API p
 | `GET` / `DELETE /api/exam-attempts/{id}` | Get or delete one attempt |
 
 Answers are keyed by question id: the option index for multiple choice, a list of option indexes for multiple select, a list of strings (one per blank) for fill in the blank, and text for open answers.
+
+## Images in questions
+
+**Include images when useful** is enabled when creating an exam. The model can inspect selected sources, crop relevant figures, or generate an educational illustration if no suitable source figure is available. Images are included only when they help answer a question, for example when interpreting a chart or diagram. Answer sheets and solved exercises should not be used as figures.
+
+Choose a model that supports vision and tools. Disable the option to generate a text-only exam. Image preparation may add generation time and provider charges.
+
+Figures appear above the answer controls. Click a figure to enlarge it. The same saved image is available when reviewing results and is sent to the grading model for open questions and non-exact blank answers. Source links appear during review; captions and source filenames are hidden while answering to avoid giving away an answer. Existing exams continue to work without images.

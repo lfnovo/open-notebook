@@ -9,6 +9,7 @@ import { sourceChatApi } from '@/lib/api/source-chat'
 import {
   SourceChatSession,
   SourceChatMessage,
+  ChatImage,
   SourceChatContextIndicator,
   CreateSourceChatSessionRequest,
   UpdateSourceChatSessionRequest
@@ -19,6 +20,7 @@ export function useSourceChat(sourceId: string) {
   const queryClient = useQueryClient()
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<SourceChatMessage[]>([])
+  const [pendingModelOverride, setPendingModelOverride] = useState<string | null>(null)
   const [isStreaming, setIsStreaming] = useState(false)
   const [contextIndicators, setContextIndicators] = useState<SourceChatContextIndicator | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -104,22 +106,24 @@ export function useSourceChat(sourceId: string) {
   })
 
   // Send message with streaming
-  const sendMessage = useCallback(async (message: string, modelOverride?: string) => {
+  const sendMessage = useCallback(async (message: string, modelOverride?: string, images?: ChatImage[], visualTools = false) => {
     let sessionId = currentSessionId
+    const effectiveModel = modelOverride ?? currentSession?.model_override ?? pendingModelOverride ?? undefined
 
     // Auto-create session if none exists
     if (!sessionId) {
       try {
-        const defaultTitle = message.length > 30 ? `${message.substring(0, 30)}...` : message
-        const newSession = await sourceChatApi.createSession(sourceId, { title: defaultTitle })
+        const defaultTitle = message.length > 30 ? `${message.substring(0, 30)}...` : message || images?.[0]?.name || t('chat.imageMessage')
+        const newSession = await sourceChatApi.createSession(sourceId, { title: defaultTitle, model_override: effectiveModel })
         sessionId = newSession.id
         setCurrentSessionId(sessionId)
+        setPendingModelOverride(null)
         queryClient.invalidateQueries({ queryKey: ['sourceChatSessions', sourceId] })
       } catch (err: unknown) {
         const error = err as { response?: { data?: { detail?: string } }, message?: string };
         console.error('Failed to create chat session:', error)
         toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToCreateSession'))
-        return
+        return false
       }
     }
 
@@ -128,6 +132,7 @@ export function useSourceChat(sourceId: string) {
       id: `temp-${Date.now()}`,
       type: 'human',
       content: message,
+      images,
       timestamp: new Date().toISOString()
     }
     setMessages(prev => [...prev, userMessage])
@@ -136,7 +141,9 @@ export function useSourceChat(sourceId: string) {
     try {
       const response = await sourceChatApi.sendMessage(sourceId, sessionId, {
         message,
-        model_override: modelOverride
+        images,
+        ...(visualTools && { visual_tools: true }),
+        model_override: effectiveModel
       })
 
       if (!response) {
@@ -173,6 +180,8 @@ export function useSourceChat(sourceId: string) {
                     id: `ai-${Date.now()}`,
                     type: 'ai',
                     content: data.content || '',
+                    images: data.images || [],
+                    quizzes: data.quizzes || [],
                     timestamp: new Date().toISOString()
                   }
                   setMessages(prev => [...prev, aiMessage!])
@@ -200,18 +209,20 @@ export function useSourceChat(sourceId: string) {
           }
         }
       }
+      return true
     } catch (err: unknown) {
       const error = err as { response?: { data?: { detail?: string } }, message?: string };
       console.error('Error sending message:', error)
       toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToSendMessage'))
       // Remove optimistic messages on error
       setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
+      return false
     } finally {
       setIsStreaming(false)
       // Refetch session to get persisted messages
       refetchCurrentSession()
     }
-  }, [sourceId, currentSessionId, refetchCurrentSession, queryClient, t])
+  }, [sourceId, currentSessionId, currentSession, pendingModelOverride, refetchCurrentSession, queryClient, t])
 
   // Cancel streaming
   const cancelStreaming = useCallback(() => {
@@ -242,10 +253,19 @@ export function useSourceChat(sourceId: string) {
     return deleteSessionMutation.mutate(sessionId)
   }, [deleteSessionMutation])
 
+  const setModelOverride = useCallback((model: string | null) => {
+    if (currentSessionId) {
+      updateSessionMutation.mutate({ sessionId: currentSessionId, data: { model_override: model } })
+    } else {
+      setPendingModelOverride(model)
+    }
+  }, [currentSessionId, updateSessionMutation])
+
   return {
     // State
     sessions,
-    currentSession: sessions.find(s => s.id === currentSessionId),
+    currentSession: currentSession || sessions.find(s => s.id === currentSessionId),
+    pendingModelOverride,
     currentSessionId,
     messages,
     isStreaming,
@@ -258,6 +278,7 @@ export function useSourceChat(sourceId: string) {
     deleteSession,
     switchSession,
     sendMessage,
+    setModelOverride,
     cancelStreaming,
     refetchSessions
   }

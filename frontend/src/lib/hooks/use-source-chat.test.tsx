@@ -1,5 +1,5 @@
 import { ReactNode } from 'react'
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useSourceChat } from './use-source-chat'
@@ -9,6 +9,9 @@ vi.mock('@/lib/api/source-chat', () => ({
   sourceChatApi: {
     listSessions: vi.fn(),
     getSession: vi.fn(),
+    createSession: vi.fn(),
+    sendMessage: vi.fn(),
+    updateSession: vi.fn(),
   },
 }))
 
@@ -59,5 +62,20 @@ describe('useSourceChat', () => {
 
     await waitFor(() => expect(result.current.contextIndicators).toEqual(indicators))
     expect(result.current.messages).toHaveLength(1)
+  })
+
+  it('uses a vision model selected before the first session when sending an image', async () => {
+    vi.mocked(sourceChatApi.listSessions).mockResolvedValue([])
+    const session = { id: 'chat_session:new', title: 'chart.png', source_id: 'source:xyz', created: '', updated: '' }
+    vi.mocked(sourceChatApi.createSession).mockResolvedValue(session)
+    vi.mocked(sourceChatApi.getSession).mockResolvedValue({ ...session, messages: [] })
+    vi.mocked(sourceChatApi.sendMessage).mockResolvedValue(new ReadableStream({ start(controller) { controller.close() } }))
+    const { result } = renderHook(() => useSourceChat('source:xyz'), { wrapper })
+    const images = [{ name: 'chart.png', data_url: 'data:image/png;base64,cGl4ZWxz' }]
+    act(() => result.current.setModelOverride('model:vision'))
+    expect(result.current.pendingModelOverride).toBe('model:vision')
+    await act(async () => { await result.current.sendMessage('', undefined, images) })
+    expect(sourceChatApi.createSession).toHaveBeenCalledWith('source:xyz', { title: 'chart.png', model_override: 'model:vision' })
+    expect(sourceChatApi.sendMessage).toHaveBeenCalledWith('source:xyz', 'chat_session:new', { message: '', images, model_override: 'model:vision' })
   })
 })

@@ -9,6 +9,7 @@ import { chatApi } from '@/lib/api/chat'
 import { QUERY_KEYS } from '@/lib/api/query-client'
 import {
   NotebookChatMessage,
+  ChatImage,
   CreateNotebookChatSessionRequest,
   UpdateNotebookChatSessionRequest,
   SourceListResponse,
@@ -173,7 +174,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
   }, [notebookId, sources, notes, contextSelections])
 
   // Send message (synchronous, no streaming)
-  const sendMessage = useCallback(async (message: string, modelOverride?: string) => {
+  const sendMessage = useCallback(async (message: string, modelOverride?: string, images?: ChatImage[], visualTools = false) => {
     let sessionId = currentSessionId
 
     // Auto-create session if none exists
@@ -181,7 +182,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       try {
         const defaultTitle = message.length > 30
           ? `${message.substring(0, 30)}...`
-          : message
+          : message || images?.[0]?.name || t('chat.imageMessage')
         const newSession = await chatApi.createSession({
           notebook_id: notebookId,
           title: defaultTitle,
@@ -198,7 +199,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       } catch (err: unknown) {
         const error = err as { response?: { data?: { detail?: string } }, message?: string };
         toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToCreateSession'))
-        return
+        return false
       }
     }
 
@@ -207,6 +208,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       id: `temp-${Date.now()}`,
       type: 'human',
       content: message,
+      images,
       timestamp: new Date().toISOString()
     }
     setMessages(prev => [...prev, userMessage])
@@ -218,6 +220,8 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       const response = await chatApi.sendMessage({
         session_id: sessionId,
         message,
+        images,
+        ...(visualTools && { visual_tools: true }),
         context,
         model_override: modelOverride ?? (currentSession?.model_override ?? undefined)
       })
@@ -227,12 +231,14 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
 
       // Refetch current session to get updated data
       await refetchCurrentSession()
+      return true
     } catch (err: unknown) {
       const error = err as { response?: { data?: { detail?: string } }, message?: string };
       console.error('Error sending message:', error)
       toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToSendMessage'))
       // Remove optimistic message on error
       setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
+      return false
     } finally {
       setIsSending(false)
     }

@@ -33,6 +33,14 @@ Maximum score: {{ question.points }}
 {{ student_answer if student_answer else "(empty)" }}
 {% endif %}
 
+{% if question.image_ids %}
+# QUESTION FIGURES
+
+The actual figures {{ question.image_ids | join(", ") }} follow this prompt.
+Inspect them when grading. Judge visual observations against their pixels and the rubric,
+not against a guessed diagram. Accept accurate visual observations even if phrased differently.
+{% endif %}
+
 # OUTPUT FORMATTING
 
 {{ format_instructions }}

@@ -1,0 +1,2 @@
+REMOVE TABLE IF EXISTS chat_quiz_attempt;
+REMOVE TABLE IF EXISTS chat_quiz;

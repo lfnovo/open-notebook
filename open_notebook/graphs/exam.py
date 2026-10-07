@@ -16,10 +16,21 @@ from langchain_core.output_parsers.pydantic import PydanticOutputParser
 from loguru import logger
 from pydantic import BaseModel, Field
 
+from open_notebook.ai.models import model_manager
 from open_notebook.ai.provision import provision_langchain_model
 from open_notebook.domain.exam import ExamQuestion
-from open_notebook.exceptions import ExternalServiceError, OpenNotebookError
+from open_notebook.exceptions import (
+    ExternalServiceError,
+    InvalidInputError,
+    OpenNotebookError,
+)
 from open_notebook.utils import clean_thinking_content
+from open_notebook.utils.chat_images import (
+    ChatImage,
+    chat_model_context,
+    message_images,
+)
+from open_notebook.utils.chat_visuals import invoke_visual_chat
 from open_notebook.utils.error_classifier import classify_error
 from open_notebook.utils.text_utils import extract_text_content
 
@@ -40,6 +51,11 @@ class GeneratedQuestion(BaseModel):
     type: Literal["multiple_choice", "multiple_select", "fill_blank", "open"]
     prompt: str
     points: float = 1.0
+    image_ids: List[str] = Field(
+        default_factory=list,
+        max_length=2,
+        description="IDs of provided figures essential to answering this question; [] for text-only questions",
+    )
     options: List[str] = Field(default_factory=list)
     correct_option: Optional[int] = Field(
         None, description="0-based index of the correct option (multiple_choice)"
@@ -92,12 +108,15 @@ def normalize_answer(text: str) -> str:
 
 def validate_generated_questions(
     generated: List[GeneratedQuestion],
+    images: Optional[dict[str, ChatImage]] = None,
 ) -> List[ExamQuestion]:
     """Drop malformed questions and assign stable ids (q1, q2, ...)."""
     questions: List[ExamQuestion] = []
     for q in generated:
         prompt = q.prompt.strip()
-        if not prompt:
+        if not prompt or any(
+            image_id not in (images or {}) for image_id in q.image_ids
+        ):
             continue
         points = q.points if q.points and q.points > 0 else 1.0
         data: dict[str, Any] = dict(
@@ -105,6 +124,7 @@ def validate_generated_questions(
             prompt=prompt,
             points=float(points),
             explanation=q.explanation,
+            image_ids=list(dict.fromkeys(q.image_ids)),
         )
         if q.type == "multiple_choice":
             options = [o.strip() for o in q.options if o and o.strip()]
@@ -142,6 +162,88 @@ def validate_generated_questions(
     return questions
 
 
+def _figure_blocks(
+    images: dict[str, ChatImage], image_ids: Optional[List[str]] = None
+) -> list[str | dict[Any, Any]]:
+    blocks: list[str | dict[Any, Any]] = []
+    for image_id in image_ids if image_ids is not None else images:
+        image = images.get(image_id)
+        if image is None:
+            raise InvalidInputError(f"Question figure {image_id} is unavailable.")
+        blocks.extend(
+            [
+                {
+                    "type": "text",
+                    "text": f"Figure ID: {image_id}. Inspect the image itself; its caption is not an answer key.",
+                },
+                {"type": "image_url", "image_url": {"url": image.data_url}},
+            ]
+        )
+    return blocks
+
+
+async def collect_exam_images(
+    content: str,
+    *,
+    source_ids: List[str],
+    language: Optional[str],
+    instructions: Optional[str],
+    model_id: Optional[str],
+    question_count: int,
+) -> dict[str, ChatImage]:
+    """Choose genuine useful figures before writing image-dependent questions."""
+    try:
+        if not model_id:
+            defaults = await model_manager.get_defaults()
+            model_id = (
+                defaults.default_transformation_model or defaults.default_chat_model
+            )
+        prompt = (
+            "Prepare visual material for a practice exam, not the questions themselves. "
+            "Include images ONLY when students can reason about a chart, diagram, plot, "
+            "spatial example or process. Do not add decoration to conceptual/textual exams. "
+            "Prefer relevant genuine source crops; generate an educational illustration "
+            "only if it is necessary and no suitable source figure is available. "
+            "Never use answer sheets, marked answers, solved exercises, rubrics or solutions "
+            "as figures. Preview source pages and crop only the useful figure, excluding solutions. "
+            "Keep generated figures scientifically accurate, legible, with no correct answers "
+            "or question solutions printed on them. All labels must be in the exam language. "
+            "Do not invent source diagrams. Finish without attachments if none are useful or "
+            "tools cannot obtain suitable figures; the exam will then use standalone text questions. "
+            f"Prepare at most {min(4, question_count)} figures. "
+            f"Exam language: {language or 'same as the study material'}. "
+            f"User exam instructions: {instructions or '(none)'}."
+        )
+        payload = [
+            SystemMessage(content=prompt),
+            HumanMessage(
+                content=(
+                    "Select source figures or generate a new illustration only when necessary for "
+                    "an exam on the following study material. Do not provide questions or solutions.\n\n"
+                    + content
+                )
+            ),
+        ]
+        model = await provision_langchain_model(
+            chat_model_context(payload),
+            model_id,
+            "transformation",
+            max_tokens=4096,
+        )
+        reply = await invoke_visual_chat(model, payload, set(source_ids), model_id)
+        return {
+            f"figure{index + 1}": image
+            for index, image in enumerate(
+                message_images(reply)[: min(4, question_count)]
+            )
+        }
+    except OpenNotebookError:
+        raise
+    except Exception as exc:
+        error_class, user_message = classify_error(exc)
+        raise error_class(user_message) from exc
+
+
 async def generate_exam_questions(
     content: str,
     *,
@@ -153,6 +255,7 @@ async def generate_exam_questions(
     language: Optional[str],
     instructions: Optional[str],
     model_id: Optional[str],
+    images: Optional[dict[str, ChatImage]] = None,
 ) -> tuple[str, List[ExamQuestion]]:
     """Ask the model for an exam over `content`; returns (title, questions)."""
     try:
@@ -170,11 +273,14 @@ async def generate_exam_questions(
                 difficulty=difficulty,
                 language=language,
                 instructions=instructions,
+                image_ids=list(images or {}),
             )
         )
         payload = [SystemMessage(content=system_prompt), HumanMessage(content=content)]
+        if images:
+            payload.append(HumanMessage(content=_figure_blocks(images)))
         model = await provision_langchain_model(
-            str(payload),
+            chat_model_context(payload),
             model_id,
             "transformation",
             max_tokens=GENERATE_MAX_TOKENS,
@@ -187,7 +293,7 @@ async def generate_exam_questions(
         error_class, user_message = classify_error(e)
         raise error_class(user_message) from e
 
-    questions = validate_generated_questions(exam.questions)
+    questions = validate_generated_questions(exam.questions, images)
     if not questions:
         raise ExternalServiceError(
             "The model did not return any valid question. Try again, pick a "
@@ -202,6 +308,7 @@ async def grade_with_ai(
     *,
     language: Optional[str],
     model_id: Optional[str],
+    images: Optional[dict[str, ChatImage]] = None,
 ) -> tuple[float, str]:
     """Grade an open or non-exact fill-in-the-blank answer; returns (score, feedback)."""
     try:
@@ -215,14 +322,20 @@ async def grade_with_ai(
                 language=language,
             )
         )
+        payload: Any = prompt
+        if question.image_ids:
+            payload = [
+                SystemMessage(content=prompt),
+                HumanMessage(content=_figure_blocks(images or {}, question.image_ids)),
+            ]
         model = await provision_langchain_model(
-            prompt,
+            chat_model_context(payload) if isinstance(payload, list) else prompt,
             model_id,
             "transformation",
             max_tokens=GRADE_MAX_TOKENS,
             structured=dict(type="json"),
         )
-        grade = await _invoke_structured(model, prompt, parser)
+        grade = await _invoke_structured(model, payload, parser)
     except OpenNotebookError:
         raise
     except Exception as e:

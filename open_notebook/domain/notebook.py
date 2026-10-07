@@ -757,6 +757,19 @@ class Note(ObjectModel):
 
 class ChatSession(ObjectModel):
     table_name: ClassVar[str] = "chat_session"
+
+    async def delete(self) -> bool:
+        session = ensure_record_id(self.id or "")
+        await repo_query(
+            "DELETE chat_quiz_attempt WHERE exam_id IN (SELECT VALUE id FROM chat_quiz WHERE session_id = $quiz_session_id)",
+            {"quiz_session_id": session},
+        )
+        await repo_query(
+            "DELETE chat_quiz WHERE session_id = $quiz_session_id",
+            {"quiz_session_id": session},
+        )
+        return await super().delete()
+
     nullable_fields: ClassVar[set[str]] = {"model_override"}
     title: Optional[str] = None
     model_override: Optional[str] = None

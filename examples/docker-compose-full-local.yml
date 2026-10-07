@@ -105,13 +105,13 @@ volumes:
 # ==========================================
 #
 # Ollama Models (LLM):
-#   docker exec open_notebook-ollama-1 ollama pull mistral
-#   docker exec open_notebook-ollama-1 ollama pull llama3.1
-#   docker exec open_notebook-ollama-1 ollama pull qwen2.5
+#   docker compose exec ollama ollama pull mistral
+#   docker compose exec ollama ollama pull llama3.1
+#   docker compose exec ollama ollama pull qwen2.5
 #
 # Ollama Models (Embeddings):
-#   docker exec open_notebook-ollama-1 ollama pull nomic-embed-text
-#   docker exec open_notebook-ollama-1 ollama pull mxbai-embed-large
+#   docker compose exec ollama ollama pull nomic-embed-text
+#   docker compose exec ollama ollama pull mxbai-embed-large
 #
 # Speaches (TTS):
 #   docker compose exec speaches uv tool run speaches-cli model download speaches-ai/Kokoro-82M-v1.0-ONNX

@@ -27,7 +27,7 @@ import { CreateSourceRequest, DuplicateSourceInfo } from '@/lib/types/api'
 import { sourcesApi } from '@/lib/api/sources'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { getApiUrl } from '@/lib/config'
-import { filesTooLargeForProxy, PROXY_UPLOAD_DOCS_URL } from '@/lib/upload-proxy'
+import { filesTooLargeForProxy, PROXY_UPLOAD_DOCS_URL, uploadsUseFrontendProxy } from '@/lib/upload-proxy'
 import { PROXY_MAX_UPLOAD_MB } from '../../lib/upload-limits'
 
 const MAX_BATCH_SIZE = 50
@@ -403,13 +403,15 @@ export function AddSourceDialog({
     const files = isBatchMode
       ? parsedFiles
       : [data.file instanceof FileList ? data.file[0] : data.file].filter((f): f is File => f instanceof File)
+    const tooLarge = filesTooLargeForProxy(files)
+    if (tooLarge.length === 0) return []
     let apiUrl: string
     try {
       apiUrl = await getApiUrl()
     } catch {
       return []
     }
-    return filesTooLargeForProxy(files, apiUrl, window.location.origin)
+    return (await uploadsUseFrontendProxy(apiUrl, window.location.origin)) ? tooLarge : []
   }
 
   // Form submission

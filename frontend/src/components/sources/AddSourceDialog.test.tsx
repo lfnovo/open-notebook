@@ -14,6 +14,13 @@ vi.mock('@/lib/hooks/use-sources', () => ({ useCreateSource: () => ({ mutateAsyn
 
 const mockGetApiUrl = vi.mocked(getApiUrl)
 const mockToastError = vi.mocked(toast.error)
+const mockFetch = vi.fn()
+vi.stubGlobal('fetch', mockFetch)
+
+// What /api/frontend-proxy answers: 200 from the frontend, 404 when /api/ is routed to the API.
+function probeAnswers(status: number) {
+  mockFetch.mockResolvedValue(new Response('{}', { status }))
+}
 
 // jsdom has no FileList constructor; this passes the dialog's `instanceof FileList` checks like a real one.
 function fileList(...files: File[]): FileList {
@@ -50,6 +57,7 @@ describe('AddSourceDialog upload size check (#1477)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mutateAsync.mockResolvedValue({})
+    probeAnswers(200)
   })
 
   it("API_URL is the frontend's origin: explains the limit and sends nothing", async () => {
@@ -71,12 +79,31 @@ describe('AddSourceDialog upload size check (#1477)', () => {
     expect(mutateAsync).not.toHaveBeenCalled()
   })
 
-  it('API called directly (the default: /config points the browser at <host>:5055): the file goes to the API, which applies its own limit', async () => {
+  it("API_URL is the frontend's origin but the reverse proxy routes /api/ to port 5055: the file goes to the API", async () => {
+    mockGetApiUrl.mockResolvedValue(window.location.origin)
+    probeAnswers(404)
+    await uploadAndSubmit(lecture)
+
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1))
+    expect(mutateAsync.mock.calls[0][0].file).toBe(lecture)
+    expect(mockToastError).not.toHaveBeenCalled()
+  })
+
+  it('API on another origin (e.g. <host>:5055): the file goes to the API, which applies its own limit', async () => {
     mockGetApiUrl.mockResolvedValue('http://localhost:5055')
     await uploadAndSubmit(lecture)
 
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1))
     expect(mutateAsync.mock.calls[0][0].file).toBe(lecture)
     expect(mockToastError).not.toHaveBeenCalled()
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('small files: no probe, nothing blocked', async () => {
+    mockGetApiUrl.mockResolvedValue(window.location.origin)
+    await uploadAndSubmit(fileOfSize('notes.mp3', 2 * 1024 * 1024))
+
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1))
+    expect(mockFetch).not.toHaveBeenCalled()
   })
 })

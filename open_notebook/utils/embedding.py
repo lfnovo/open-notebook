@@ -13,7 +13,7 @@ to ensure consistent behavior and proper handling of large content.
 import asyncio
 import hashlib
 import os
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import numpy as np
 from loguru import logger
@@ -75,6 +75,62 @@ EMBEDDING_CACHE_MAX_ROWS = _get_embedding_cache_max_rows()
 def _embedding_cache_key(model_name: str, text: str) -> str:
     """Return the sha256 hex digest of the model name and the text."""
     return hashlib.sha256(f"{model_name}\x00{text}".encode("utf-8")).hexdigest()
+
+
+async def _cache_lookup(hashes: List[str]) -> Dict[str, List[float]]:
+    """Return cached embeddings keyed by hash; empty on any cache failure."""
+    from open_notebook.database.repository import repo_query
+
+    try:
+        rows = await repo_query(
+            "SELECT hash, embedding FROM embedding_cache WHERE hash IN $hashes",
+            {"hashes": hashes},
+        )
+        return {row["hash"]: row["embedding"] for row in rows}
+    except Exception as e:
+        logger.warning(f"Embedding cache lookup failed: {e}")
+        return {}
+
+
+async def _cache_store(model_name: str, entries: Dict[str, List[float]]) -> None:
+    """Save new embeddings to the cache; failures are logged and ignored."""
+    from open_notebook.database.repository import repo_insert
+
+    if not entries:
+        return
+    try:
+        await repo_insert(
+            "embedding_cache",
+            [
+                {"hash": h, "model": model_name, "embedding": e}
+                for h, e in entries.items()
+            ],
+            ignore_duplicates=True,
+        )
+    except Exception as e:
+        logger.warning(f"Embedding cache write failed: {e}")
+
+
+async def _cache_evict(max_rows: int) -> None:
+    """Delete the oldest cache rows when the table exceeds max_rows."""
+    from open_notebook.database.repository import ensure_record_id, repo_query
+
+    try:
+        counted = await repo_query("SELECT count() AS n FROM embedding_cache GROUP ALL")
+        excess = (counted[0]["n"] if counted else 0) - max_rows
+        if excess <= 0:
+            return
+        oldest = await repo_query(
+            "SELECT id, created FROM embedding_cache ORDER BY created ASC LIMIT $n",
+            {"n": excess},
+        )
+        await repo_query(
+            "DELETE embedding_cache WHERE id IN $ids",
+            {"ids": [ensure_record_id(row["id"]) for row in oldest]},
+        )
+        logger.info(f"Evicted {len(oldest)} oldest embedding cache rows")
+    except Exception as e:
+        logger.warning(f"Embedding cache eviction failed: {e}")
 
 
 async def mean_pool_embeddings(embeddings: List[List[float]]) -> List[float]:

@@ -11,11 +11,10 @@ frontend table). Now the backend surfaces are all derived from the
 - `open_notebook/ai/model_discovery.py` `OPENAI_COMPAT_PROVIDERS`
 - `GET /api/providers` (api/routers/providers.py)
 
-One place still needs a manual edit when adding a provider — enforced by
-tests (tests/test_credential_provider_validation.py): the
-`SupportedProvider` Literal in `api/models.py` (typing can't be built at
-runtime from this dict). The frontend consumes `GET /api/providers` at
-runtime, so it needs no edit.
+Adding a provider also requires edits outside this file; see the full
+step table in docs/7-DEVELOPMENT/change-playbooks.md ("Playbook: Add an
+AI Provider"). The frontend consumes `GET /api/providers` at runtime,
+so it needs no edit.
 
 The declaration order below is the display order the frontend renders —
 `GET /api/providers` returns `PROVIDERS.values()` as declared.

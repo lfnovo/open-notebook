@@ -57,11 +57,10 @@ reviews:
         Enforce this project's recurring mechanical pitfalls (full rules in
         open_notebook/AGENTS.md and frontend/AGENTS.md):
         - i18n: every user-visible frontend string goes through t('section.key') and the
-          key must exist in ALL 7 locales (en-US, pt-BR, zh-CN, zh-TW, ja-JP, ru-RU, bn-IN).
-        - Providers: adding/changing a provider = edit the registry
-          (open_notebook/ai/provider_registry.py PROVIDERS) plus the SupportedProvider
-          Literal in api/models.py; everything else (TEST_MODELS, PROVIDER_ENV_CONFIG,
-          the frontend via GET /api/providers) is derived from the registry.
+          key must exist in every locale under frontend/src/lib/locales/.
+        - Providers: adding/changing a provider requires edits in several files; see the
+          full step table in docs/7-DEVELOPMENT/change-playbooks.md
+          ("Playbook: Add an AI Provider").
         - Migrations: a new open_notebook/database/migrations/N.surrealql file must also be
           registered in AsyncMigrationManager (async_migrate.py) — no auto-discovery.
         - Graphs: LLM calls in LangGraph nodes must use provision_langchain_model() and wrap

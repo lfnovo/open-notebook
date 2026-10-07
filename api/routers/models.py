@@ -104,15 +104,45 @@ PROVIDER_PRIORITY = [
     "minimax",
 ]
 
-# Model preference patterns (preferred models within each provider)
-MODEL_PREFERENCES = {
-    "openai": ["gpt-4o", "gpt-4", "gpt-3.5-turbo"],
-    "anthropic": ["claude-3-5-sonnet", "claude-3-opus", "claude-3-sonnet"],
-    "google": ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-2.5-pro"],
-    "mistral": ["mistral-large", "mixtral"],
+# Model preference patterns applied by _get_preferred_model.
+# Each value is a list of substrings matched case-insensitively against the
+# model name, in preference order — so a shorter pattern like "gpt-4o" would
+# also match "gpt-4o-mini". List newer / better models first so that a newly
+# registered model beats an older one in the same family.
+MODEL_PREFERENCES: dict[str, list[str]] = {
+    "openai": [
+        "gpt-5-mini",
+        "gpt-5",
+        "gpt-4.1-mini",
+        "gpt-4.1",
+        "gpt-4o-mini",
+        "gpt-4o",
+        "gpt-4",
+    ],
+    "anthropic": ["claude-sonnet", "claude-haiku", "claude-opus"],
+    "google": [
+        "gemini-2.5-flash",
+        "gemini-2.5-pro",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+    ],
+    "mistral": ["mistral-medium", "mistral-large", "mistral-small", "mixtral"],
     "groq": ["llama-3.3", "llama-3.1", "mixtral"],
     "dashscope": ["qwen-max", "qwen-plus", "qwen-turbo"],
     "minimax": ["MiniMax-M3", "MiniMax-M2.5", "MiniMax-M2.5-highspeed"],
+}
+
+# Per-type overrides for the embedding slot so it does not fall back to
+# "first model from provider" when no chat-model pattern matches.
+EMBEDDING_PREFERENCES: dict[str, list[str]] = {
+    "openai": [
+        "text-embedding-3-small",
+        "text-embedding-3-large",
+        "text-embedding-ada",
+    ],
+    "google": ["gemini-embedding", "text-embedding"],
+    "mistral": ["mistral-embed"],
+    "dashscope": ["text-embedding-v3", "text-embedding-v2"],
 }
 
 
@@ -817,9 +847,15 @@ async def auto_assign_defaults():
                 missing.append(slot_name)
                 continue
 
-            # Select best model for this slot
+            # Select best model for this slot; use type-specific preferences
+            # for the embedding slot so it gets an embedding model, not a chat one.
+            preferences = (
+                EMBEDDING_PREFERENCES
+                if model_type == "embedding"
+                else MODEL_PREFERENCES
+            )
             best_model = _get_preferred_model(
-                available_models, PROVIDER_PRIORITY, MODEL_PREFERENCES
+                available_models, PROVIDER_PRIORITY, preferences
             )
 
             if best_model:

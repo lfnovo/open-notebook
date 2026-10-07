@@ -11,6 +11,7 @@ to ensure consistent behavior and proper handling of large content.
 """
 
 import asyncio
+import hashlib
 import os
 from typing import List, Optional
 
@@ -45,6 +46,35 @@ def _get_embedding_batch_size() -> int:
 EMBEDDING_BATCH_SIZE = _get_embedding_batch_size()
 EMBEDDING_MAX_RETRIES = 3
 EMBEDDING_RETRY_DELAY = 2  # seconds
+
+DEFAULT_EMBEDDING_CACHE_MAX_ROWS = 5000
+
+
+def _get_embedding_cache_max_rows() -> int:
+    """Read the embedding cache row limit from the environment."""
+    name = "OPEN_NOTEBOOK_EMBEDDING_CACHE_MAX_ROWS"
+    raw = os.getenv(name, str(DEFAULT_EMBEDDING_CACHE_MAX_ROWS)).strip()
+    try:
+        value = int(raw)
+        if value < 1:
+            raise ValueError
+        return value
+    except ValueError:
+        logger.warning(
+            "Invalid {}={}; falling back to {}",
+            name,
+            raw,
+            DEFAULT_EMBEDDING_CACHE_MAX_ROWS,
+        )
+        return DEFAULT_EMBEDDING_CACHE_MAX_ROWS
+
+
+EMBEDDING_CACHE_MAX_ROWS = _get_embedding_cache_max_rows()
+
+
+def _embedding_cache_key(model_name: str, text: str) -> str:
+    """Return the sha256 hex digest of the model name and the text."""
+    return hashlib.sha256(f"{model_name}\x00{text}".encode("utf-8")).hexdigest()
 
 
 async def mean_pool_embeddings(embeddings: List[List[float]]) -> List[float]:

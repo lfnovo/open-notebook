@@ -438,6 +438,28 @@ class TestNoteDomain:
         note2 = Note(title="Test", content=None)
         assert note2.content is None
 
+    @pytest.mark.asyncio
+    async def test_insight_saved_as_note_is_marked_ai(self):
+        """A note saved from a source insight is AI-generated, not human (#1469)."""
+        insight = SourceInsight(
+            id="source_insight:test",
+            insight_type="Summary",
+            content="Insight content",
+        )
+        source = Source(id="source:test", title="Paper")
+        with (
+            patch.object(
+                SourceInsight, "get_source", new=AsyncMock(return_value=source)
+            ),
+            patch.object(Note, "save", new=AsyncMock()),
+            patch.object(Note, "add_to_notebook", new=AsyncMock()) as mock_add,
+        ):
+            note = await insight.save_as_note("notebook:test")
+
+        assert note.note_type == "ai"
+        assert note.title == "Summary from source Paper"
+        mock_add.assert_awaited_once_with("notebook:test")
+
 
 # ============================================================================
 # TEST SUITE 6: Podcast Domain Validation

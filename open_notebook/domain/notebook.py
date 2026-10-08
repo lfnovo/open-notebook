@@ -396,6 +396,7 @@ class SourceInsight(ObjectModel):
         note = Note(
             title=f"{self.insight_type} from source {source.title}",
             content=self.content,
+            note_type="ai",
         )
         await note.save()
         if notebook_id:

@@ -295,14 +295,19 @@ async def generate_embeddings(
                         f"{len(batch)} texts): {e}"
                     ) from e
 
-        if len(new_embeddings) != len(batch):
+        if cache_on and len(new_embeddings) != len(batch):
             raise ValueError(
                 f"Embedding count mismatch in batch {batch_idx + 1}/{total_batches}: "
                 f"got {len(new_embeddings)} embeddings for {len(batch)} texts"
             )
 
-        fresh = iter(new_embeddings)
-        all_embeddings.extend(cached[h] if h in cached else next(fresh) for h in hashes)
+        if cached:
+            fresh = iter(new_embeddings)
+            all_embeddings.extend(
+                cached[h] if h in cached else next(fresh) for h in hashes
+            )
+        else:
+            all_embeddings.extend(new_embeddings)
         if cache_on:
             await _cache_store(model_name, dict(zip(miss_hashes, new_embeddings)))
 

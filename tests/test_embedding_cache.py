@@ -1,6 +1,7 @@
 """generate_embeddings(use_cache=True) resumes a failed run from the hash cache."""
 
 from contextlib import ExitStack
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -11,8 +12,12 @@ from open_notebook.utils.embedding import _cache_evict, generate_embeddings
 class _FakeCacheTable:
     def __init__(self):
         self.rows: list = []
+        self.query_override: Any = None
+        self.insert_override: Any = None
 
     async def repo_query(self, query, params=None):
+        if self.query_override is not None:
+            return await self.query_override(query, params)
         if "WHERE hash IN" in query:
             wanted = set(params["hashes"])
             return [r for r in self.rows if r["hash"] in wanted]
@@ -21,6 +26,8 @@ class _FakeCacheTable:
         raise AssertionError(f"unexpected query: {query}")
 
     async def repo_insert(self, table, records, ignore_duplicates=False):
+        if self.insert_override is not None:
+            return await self.insert_override(table, records, ignore_duplicates)
         assert table == "embedding_cache"
         self.rows.extend(records)
         return records
@@ -81,8 +88,8 @@ async def test_failed_run_resumes_from_cache():
 @pytest.mark.asyncio
 async def test_use_cache_false_never_touches_cache():
     table = _FakeCacheTable()
-    table.repo_query = AsyncMock(return_value=[])
-    table.repo_insert = AsyncMock(return_value=[])
+    table.query_override = AsyncMock(return_value=[])
+    table.insert_override = AsyncMock(return_value=[])
     texts = [f"t{i}" for i in range(6)]
 
     model = _fake_model()
@@ -91,8 +98,8 @@ async def test_use_cache_false_never_touches_cache():
             stack.enter_context(p)
         result = await generate_embeddings(texts)
 
-    assert table.repo_query.await_count == 0
-    assert table.repo_insert.await_count == 0
+    assert table.query_override.await_count == 0
+    assert table.insert_override.await_count == 0
     assert model.calls == [["t0", "t1"], ["t2", "t3"], ["t4", "t5"]]
     assert result == [[float(i)] for i in range(6)]
 
@@ -100,8 +107,8 @@ async def test_use_cache_false_never_touches_cache():
 @pytest.mark.asyncio
 async def test_broken_cache_falls_through_to_provider():
     table = _FakeCacheTable()
-    table.repo_query = AsyncMock(side_effect=ConnectionError("db down"))
-    table.repo_insert = AsyncMock(side_effect=ConnectionError("db down"))
+    table.query_override = AsyncMock(side_effect=ConnectionError("db down"))
+    table.insert_override = AsyncMock(side_effect=ConnectionError("db down"))
     texts = [f"t{i}" for i in range(6)]
 
     model = _fake_model()
@@ -110,14 +117,14 @@ async def test_broken_cache_falls_through_to_provider():
             stack.enter_context(p)
         result = await generate_embeddings(texts, use_cache=True)
 
-    assert table.repo_query.await_count > 0
+    assert table.query_override.await_count > 0
     assert model.calls == [["t0", "t1"], ["t2", "t3"], ["t4", "t5"]]
     assert result == [[float(i)] for i in range(6)]
 
 
 @pytest.mark.asyncio
 async def test_eviction_removes_oldest_rows_over_the_cap():
-    rows = [
+    rows: list[dict[str, Any]] = [
         {"id": "embedding_cache:d", "created": 4},
         {"id": "embedding_cache:a", "created": 1},
         {"id": "embedding_cache:c", "created": 3},
@@ -150,8 +157,8 @@ async def test_eviction_removes_oldest_rows_over_the_cap():
 @pytest.mark.asyncio
 async def test_max_rows_zero_disables_cache():
     table = _FakeCacheTable()
-    table.repo_query = AsyncMock(return_value=[])
-    table.repo_insert = AsyncMock(return_value=[])
+    table.query_override = AsyncMock(return_value=[])
+    table.insert_override = AsyncMock(return_value=[])
     texts = [f"t{i}" for i in range(6)]
 
     model = _fake_model()
@@ -163,7 +170,7 @@ async def test_max_rows_zero_disables_cache():
         )
         result = await generate_embeddings(texts, use_cache=True)
 
-    assert table.repo_query.await_count == 0
-    assert table.repo_insert.await_count == 0
+    assert table.query_override.await_count == 0
+    assert table.insert_override.await_count == 0
     assert model.calls == [["t0", "t1"], ["t2", "t3"], ["t4", "t5"]]
     assert result == [[float(i)] for i in range(6)]

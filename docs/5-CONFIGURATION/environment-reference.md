@@ -149,6 +149,7 @@ NO_PROXY=localhost,127.0.0.1,host.docker.internal,surrealdb,.local
 | `OPEN_NOTEBOOK_CHUNK_OVERLAP` | 15% of the chunk size | API + Worker | Tokens shared between consecutive chunks |
 | `OPEN_NOTEBOOK_MIN_CHUNK_SIZE` | `5` | API + Worker | Chunks shorter than this (in tokens) are dropped before embedding. Some providers, such as llama.cpp, return null vectors for one-character chunks. `0` disables the filter |
 | `OPEN_NOTEBOOK_EMBEDDING_BATCH_SIZE` | `50` | API + Worker | Texts per embedding request. Lower it for CPU-only or strict OpenAI-compatible embedding servers |
+| `OPEN_NOTEBOOK_EMBEDDING_CACHE_MAX_ROWS` | `5000` | Worker | Maximum rows kept in the embedding cache, which lets a failed source embed resume without re-embedding finished batches. The oldest rows are removed first. Set to `0` to turn the cache off. Keep it above the chunk count of your largest source |
 
 Changing chunk settings affects new embeddings only. Rebuild existing embeddings from the **Advanced** page afterwards.
 

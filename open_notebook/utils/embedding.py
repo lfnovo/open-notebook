@@ -51,12 +51,12 @@ DEFAULT_EMBEDDING_CACHE_MAX_ROWS = 5000
 
 
 def _get_embedding_cache_max_rows() -> int:
-    """Read the embedding cache row limit from the environment."""
+    """Read the embedding cache row limit from the environment (0 disables)."""
     name = "OPEN_NOTEBOOK_EMBEDDING_CACHE_MAX_ROWS"
     raw = os.getenv(name, str(DEFAULT_EMBEDDING_CACHE_MAX_ROWS)).strip()
     try:
         value = int(raw)
-        if value < 1:
+        if value < 0:
             raise ValueError
         return value
     except ValueError:
@@ -250,7 +250,7 @@ async def generate_embeddings(
     )
 
     all_embeddings: List[List[float]] = []
-    cache_on = use_cache and model_name != "unknown"
+    cache_on = use_cache and EMBEDDING_CACHE_MAX_ROWS > 0 and model_name != "unknown"
     total_batches = (len(texts) + EMBEDDING_BATCH_SIZE - 1) // EMBEDDING_BATCH_SIZE
 
     for batch_idx in range(total_batches):

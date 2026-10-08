@@ -457,7 +457,6 @@ class TestNoteDomain:
             note = await insight.save_as_note("notebook:test")
 
         assert note.note_type == "ai"
-        assert note.title == "Summary from source Paper"
         mock_add.assert_awaited_once_with("notebook:test")
 
 

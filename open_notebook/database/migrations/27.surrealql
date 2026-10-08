@@ -1,0 +1,12 @@
+-- Interactive tests embedded in notebook/source chat responses.
+DEFINE TABLE IF NOT EXISTS chat_quiz SCHEMALESS;
+DEFINE FIELD IF NOT EXISTS session_id ON TABLE chat_quiz TYPE record<chat_session>;
+DEFINE FIELD IF NOT EXISTS title ON TABLE chat_quiz TYPE string;
+DEFINE FIELD IF NOT EXISTS questions ON TABLE chat_quiz FLEXIBLE TYPE array<object>;
+DEFINE INDEX IF NOT EXISTS idx_chat_quiz_session ON TABLE chat_quiz COLUMNS session_id;
+
+DEFINE TABLE IF NOT EXISTS chat_quiz_attempt SCHEMALESS;
+DEFINE FIELD IF NOT EXISTS exam_id ON TABLE chat_quiz_attempt TYPE record<chat_quiz>;
+DEFINE FIELD IF NOT EXISTS answers ON TABLE chat_quiz_attempt FLEXIBLE TYPE object;
+DEFINE FIELD IF NOT EXISTS results ON TABLE chat_quiz_attempt FLEXIBLE TYPE array<object>;
+DEFINE INDEX IF NOT EXISTS idx_chat_quiz_attempt_quiz ON TABLE chat_quiz_attempt COLUMNS exam_id;

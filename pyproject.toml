@@ -44,6 +44,9 @@ dependencies = [
     "podcast-creator>=0.13.1,<1",
     "surreal-commands>=1.3.1,<2",
     "numpy>=2.4.1",
+    "pillow>=12.3.0",
+    "pypdfium2>=4.30,<6",
+    "openai>=2,<3",
     "pycountry>=26.2.16",
     "babel>=2.18.0",
 ]

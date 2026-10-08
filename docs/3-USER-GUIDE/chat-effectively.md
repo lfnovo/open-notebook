@@ -54,6 +54,14 @@ A session is one conversation; its messages are saved and reloaded when you come
 
 The model button next to the message box opens **Model Configuration**. Pick a model to use for this session instead of your **Chat Model** default, or click **Reset to Default**. Only language models you have added in **Manage → Models** are listed.
 
+## Sending Images
+
+Click **Attach images**, paste a screenshot into the message box, or drop images onto the composer. This works in both notebook chat and source chat. You can attach up to four PNG, JPEG or WebP images per message, at most 5 MB and 25 megapixels each. Click a preview to enlarge it, or remove an image before sending.
+
+Add a question such as “Explain this chart using the selected sources,” or send the image on its own. Choose a model that supports images using the model selector. Images are sent to that model with your selected context and conversation history, saved with the session, and available in follow-up questions. If sending fails, the composer keeps the text and images so you can retry.
+
+Chat attachments do not become sources and do not require Docling or OCR. To extract text from a scanned PDF and make it searchable, enable [Docling and OCR](content-processing-engines.md#ocr-toggle) and use **Retry Processing** on the failed source.
+
 ---
 
 ## Working With Answers
@@ -96,3 +104,43 @@ Source chat always uses that source's full text and insights; there are no conte
 | *No model configured...* | Set the Chat Model in **Manage → Models → Default Model Assignments** |
 
 More in [AI & Chat Issues](../6-TROUBLESHOOTING/ai-chat-issues.md).
+
+
+## Images in answers
+
+Request an image or source crop directly in notebook or source chat; this activates visual tools automatically. Enable **Visual responses** below the composer to let the assistant choose relevant source figures for other messages.
+Choose a model that supports both vision and tool calling, such as GPT-4.1.
+
+- For source images, ask: “Explain this chart and include a crop from the PDF.”
+  The assistant searches the selected sources, previews the page, and crops the
+  relevant region. Each crop links to its source and shows its page number.
+- For generated images, ask explicitly: “Generate an illustration of the
+  clustering methods described in these sources.” Generated images are labeled
+  as illustrations; they are not source evidence.
+- Click an image to enlarge it. Images and provenance are saved with the chat.
+
+Crops support retained PDFs and PNG/JPEG/WebP source files, including scanned
+PDFs. Deleted original files must be re-uploaded with file retention enabled.
+Notebook crops are restricted to selected sources that belong to the notebook.
+The assistant can attach up to four images and generate one new image per turn.
+
+Image generation uses the selected OpenAI-compatible chat model's credential,
+or `OPENAI_API_KEY`/`OPENAI_BASE_URL` when no linked account is available. Operators
+can choose a separate saved OpenAI-compatible credential with
+`OPEN_NOTEBOOK_IMAGE_CREDENTIAL_ID`. The default image model is `gpt-image-1.5`;
+set `OPEN_NOTEBOOK_IMAGE_MODEL` to use another GPT Image model supported by the
+provider. Requests use the [OpenAI Images API](https://developers.openai.com/api/reference/python/resources/images/methods/generate).
+An account must support image generation; chat access alone does not guarantee it.
+Provider failures are explained in the answer without attaching a fabricated image.
+
+### Images in the explanation
+
+With visual responses enabled, figures appear beside the relevant explanation instead of in a separate gallery at the end. Click an image to enlarge it; source crops retain their source and page link. Previously saved attachments remain visible.
+
+### Practice inside the response
+
+Ask for a short test, practice questions or a self-check. The assistant can also include a test when applying an explained concept would help learning. Answer the interactive card directly in the chat and select **Submit answers** to see your score, feedback and solutions. Use **Try again** to take another attempt. Saved results remain available after reloading the conversation.
+
+Tests support single choice, multiple selection, blanks and open answers. Open answers are graded by AI. When a question needs a figure, its actual saved image is shown and used during grading. Ask directly for a source crop or a generated illustration for the test; you do not need to enable the visual responses checkbox. Requests for an exam or questionnaire also create an interactive test.
+
+If the model produces a malformed test, the app tries to repair it automatically. If it cannot, your explanation and images remain available; you can ask the assistant to generate the test again.

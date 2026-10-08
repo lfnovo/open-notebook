@@ -1,11 +1,9 @@
 import asyncio
 import json
 from typing import AsyncGenerator, List, Optional
-from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Path
 from fastapi.responses import StreamingResponse
-from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -24,6 +22,12 @@ from open_notebook.exceptions import (
     OpenNotebookError,
 )
 from open_notebook.graphs.source_chat import source_chat_graph as source_chat_graph
+from open_notebook.utils.chat_images import (
+    ChatImage,
+    ChatInput,
+    build_user_message,
+    message_images,
+)
 from open_notebook.utils.graph_utils import (
     get_session_message_count,
     invoke_chat_turn,
@@ -83,11 +87,8 @@ class SourceChatSessionWithMessagesResponse(SourceChatSessionResponse):
     )
 
 
-class SendMessageRequest(BaseModel):
-    message: str = Field(..., description="User message content")
-    model_override: Optional[str] = Field(
-        None, description="Optional model override for this message"
-    )
+class SendMessageRequest(ChatInput):
+    pass
 
 
 @router.post(
@@ -349,7 +350,12 @@ async def delete_source_chat_session(
 
 
 async def stream_source_chat_response(
-    session_id: str, source_id: str, message: str, model_override: Optional[str] = None
+    session_id: str,
+    source_id: str,
+    message: str,
+    model_override: Optional[str] = None,
+    images: Optional[list[ChatImage]] = None,
+    visual_tools: bool = False,
 ) -> AsyncGenerator[str, None]:
     """Stream the source chat response as Server-Sent Events."""
     try:
@@ -365,10 +371,11 @@ async def stream_source_chat_response(
         state_values["messages"] = state_values.get("messages", [])
         state_values["source_id"] = source_id
         state_values["model_override"] = model_override
+        state_values["visual_tools"] = visual_tools
 
         # Add user message to state
         # Explicit id so a failed turn can remove it from the checkpoint.
-        user_message = HumanMessage(content=message, id=str(uuid4()))
+        user_message = build_user_message(message, images or [])
         state_values["messages"].append(user_message)
 
         # Send user message event
@@ -398,6 +405,10 @@ async def stream_source_chat_response(
             if getattr(msg, "type", None) == "ai":
                 ai_event = {
                     "type": "ai_message",
+                    "images": [image.model_dump() for image in message_images(msg)],
+                    "quizzes": getattr(msg, "additional_kwargs", {}).get(
+                        "response_quizzes", []
+                    ),
                     "content": msg.content if hasattr(msg, "content") else str(msg),
                     "timestamp": None,
                 }
@@ -445,9 +456,6 @@ async def send_message_to_source_chat(
             session,
         ) = await get_verified_source_session(source_id, session_id)
 
-        if not request.message:
-            raise HTTPException(status_code=400, detail="Message content is required")
-
         # Determine model override (request override takes precedence over session override)
         model_override = request.model_override or getattr(
             session, "model_override", None
@@ -463,6 +471,8 @@ async def send_message_to_source_chat(
                 source_id=full_source_id,
                 message=request.message,
                 model_override=model_override,
+                images=request.images,
+                visual_tools=request.visual_tools,
             ),
             media_type="text/event-stream",
             headers={

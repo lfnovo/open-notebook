@@ -12,6 +12,7 @@ from open_notebook.exceptions import (
     ConfigurationError,
     ContextLengthExceededError,
     ExternalServiceError,
+    InvalidInputError,
     NetworkError,
     OpenNotebookError,
     RateLimitError,
@@ -19,6 +20,18 @@ from open_notebook.exceptions import (
 
 # Classification rules: (keywords, exception_class, user_message or None to pass through)
 _CLASSIFICATION_RULES: list[tuple[list[str], type[OpenNotebookError], str | None]] = [
+    (
+        [
+            "does not support image",
+            "does not support vision",
+            "image input is not supported",
+            "image_url is only supported",
+            "not a multimodal model",
+            "image content blocks are not supported",
+        ],
+        InvalidInputError,
+        "The selected model does not support images. Choose a vision-capable model in the chat model selector and try again.",
+    ),
     # Authentication errors
     (
         ["authentication", "unauthorized", "invalid api key", "invalid_api_key", "401"],

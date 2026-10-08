@@ -7,21 +7,25 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
-import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
+import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, Clock, ImagePlus } from 'lucide-react'
 import {
   SourceChatMessage,
   SourceChatContextIndicator,
-  BaseChatSession
+  BaseChatSession,
+  ChatImage
 } from '@/lib/types/api'
 import { ModelSelector } from './ModelSelector'
 import { ContextIndicator } from '@/components/common/ContextIndicator'
 import { SessionManager } from '@/components/sources/SessionManager'
 import { MessageActions } from '@/components/sources/MessageActions'
-import { convertReferencesToCompactMarkdown, createCompactReferenceLinkComponent } from '@/lib/utils/source-references'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { ChatImages } from './ChatImages'
+import { ChatResponseContent } from './ChatResponseContent'
+import { readChatImages, CHAT_IMAGE_TYPES } from '@/lib/utils/chat-images'
+
+type SendChatMessage = (message: string, modelOverride?: string, images?: ChatImage[], visualTools?: boolean) => void | boolean | Promise<void | boolean>
 
 interface NotebookContextStats {
   sourcesInsights: number
@@ -35,7 +39,7 @@ interface ChatPanelProps {
   messages: SourceChatMessage[]
   isStreaming: boolean
   contextIndicators: SourceChatContextIndicator | null
-  onSendMessage: (message: string, modelOverride?: string) => void
+  onSendMessage: SendChatMessage
   modelOverride?: string
   onModelChange?: (model?: string) => void
   // Session management props
@@ -232,7 +236,7 @@ export function ChatPanel({
 // Composer owns the input state so keystrokes (including IME composition) only
 // re-render this small component instead of the whole message history.
 interface ChatComposerProps {
-  onSendMessage: (message: string, modelOverride?: string) => void
+  onSendMessage: SendChatMessage
   isStreaming: boolean
   modelOverride?: string
   onModelChange?: (model?: string) => void
@@ -247,11 +251,49 @@ function ChatComposer({
   const { t } = useTranslation()
   const chatInputId = useId()
   const [input, setInput] = useState('')
+  const [images, setImages] = useState<ChatImage[]>([])
+  const [visualTools, setVisualTools] = useState(false)
+  const [readingImages, setReadingImages] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const readingRef = useRef(false)
+  const busy = isStreaming || readingImages || submitting
+
+  const addImages = async (files: File[]) => {
+    if (busy || readingRef.current || !files.length) return
+    readingRef.current = true
+    setReadingImages(true)
+    try {
+      const added = await readChatImages(files, images.length)
+      setImages(previous => [...previous, ...added])
+    } catch (error) {
+      toast.error(t(error instanceof Error ? error.message : 'chat.imageReadFailed'))
+    } finally {
+      readingRef.current = false
+      setReadingImages(false)
+    }
+  }
 
   const handleSend = () => {
-    if (input.trim() && !isStreaming) {
-      onSendMessage(input.trim(), modelOverride)
-      setInput('')
+    if ((!input.trim() && !images.length) || busy || readingRef.current) return
+    const clearDraft = (success: void | boolean) => {
+      if (success !== false) {
+        setInput('')
+        setImages([])
+      }
+    }
+    const result = visualTools
+      ? onSendMessage(input.trim(), modelOverride, images, true)
+      : images.length
+      ? onSendMessage(input.trim(), modelOverride, images)
+      : onSendMessage(input.trim(), modelOverride)
+    if (result instanceof Promise) {
+      setSubmitting(true)
+      result.then(clearDraft).catch(() => {
+        toast.error(t('apiErrors.failedToSendMessage'))
+      }).finally(() => setSubmitting(false))
+    } else {
+      clearDraft(result)
     }
   }
 
@@ -271,7 +313,12 @@ function ChatComposer({
   const keyHint = isMac ? '⌘+Enter' : 'Ctrl+Enter'
 
   return (
-    <div className="flex-shrink-0 p-4 space-y-3 border-t">
+    <div className="flex-shrink-0 p-4 space-y-3 border-t"
+      onDragOver={event => event.preventDefault()}
+      onDrop={event => {
+        event.preventDefault()
+        void addImages(Array.from(event.dataTransfer.files))
+      }}>
       {/* Model selector */}
       {onModelChange && (
         <div className="flex items-center justify-between">
@@ -279,12 +326,32 @@ function ChatComposer({
           <ModelSelector
             currentModel={modelOverride}
             onModelChange={onModelChange}
-            disabled={isStreaming}
+            disabled={busy}
           />
         </div>
       )}
 
+      {images.length > 0 && <ChatImages images={images} disabled={busy}
+        onRemove={index => setImages(previous => previous.filter((_, position) => position !== index))} />}
+      <p className="text-xs text-muted-foreground">{t('chat.imageHint')}</p>
+      <label className="flex items-center gap-2 text-xs text-muted-foreground">
+        <input type="checkbox" checked={visualTools} disabled={busy}
+          onChange={event => setVisualTools(event.target.checked)} />
+        {t('chat.visualResponses')}
+      </label>
+      {visualTools && <p className="text-xs text-muted-foreground">{t('chat.visualResponsesHint')}</p>}
+      <input ref={fileInputRef} type="file" accept={CHAT_IMAGE_TYPES.join(',')} multiple
+        aria-label={t('chat.attachImages')} className="hidden" disabled={busy}
+        onChange={event => {
+          void addImages(Array.from(event.target.files || []))
+          event.target.value = ''
+        }} />
       <div className="flex gap-2 items-end min-w-0">
+        <Button type="button" variant="outline" size="icon" className="h-[40px] w-[40px] flex-shrink-0"
+          aria-label={t('chat.attachImages')} title={t('chat.attachImages')} disabled={busy}
+          onClick={() => fileInputRef.current?.click()}>
+          {readingImages ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+        </Button>
         <Textarea
           id={chatInputId}
           name="chat-message"
@@ -292,18 +359,26 @@ function ChatComposer({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
+          onPaste={event => {
+            const files = Array.from(event.clipboardData.files)
+            if (files.length) {
+              event.preventDefault()
+              void addImages(files)
+            }
+          }}
           placeholder={`${t('chat.sendPlaceholder')} (${t('chat.pressToSend', { key: keyHint })})`}
-          disabled={isStreaming}
+          disabled={busy}
           className="flex-1 min-h-[40px] max-h-[100px] resize-none py-2 px-3 min-w-0"
           rows={1}
         />
         <Button
           onClick={handleSend}
-          disabled={!input.trim() || isStreaming}
+          disabled={(!input.trim() && !images.length) || busy}
+          aria-label={t('chat.sendMessage')}
           size="icon"
           className="h-[40px] w-[40px] flex-shrink-0"
         >
-          {isStreaming ? (
+          {busy ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <Send className="h-4 w-4" />
@@ -327,6 +402,11 @@ const ChatMessage = memo(function ChatMessage({
   notebookId,
   onReferenceClick
 }: ChatMessageProps) {
+  const { t } = useTranslation()
+  const exportContent = message.content
+    .replace(/\[\[image:(\d+)\]\]/g, (_, number) => message.images?.[Number(number) - 1]?.name ?? '')
+    .replace(/\[\[quiz:[^\]]+\]\]/g, t('chat.inlineQuiz'))
+    .replace(/\[\[quiz-unavailable\]\]/g, t('chat.quizPreparationFailed'))
   return (
     <div
       className={`flex gap-3 ${
@@ -349,17 +429,19 @@ const ChatMessage = memo(function ChatMessage({
           }`}
         >
           {message.type === 'ai' ? (
-            <AIMessageContent
-              content={message.content}
-              onReferenceClick={onReferenceClick}
-            />
+            <div className="space-y-3">
+              <ChatResponseContent content={message.content} images={message.images} quizzes={message.quizzes} onReferenceClick={onReferenceClick} />
+            </div>
           ) : (
-            <p className="text-sm break-all">{message.content}</p>
+            <div className="space-y-2">
+              {!!message.images?.length && <ChatImages images={message.images} />}
+              {message.content && <p className="text-sm break-all">{message.content}</p>}
+            </div>
           )}
         </div>
         {message.type === 'ai' && (
           <MessageActions
-            content={message.content}
+            content={exportContent}
             notebookId={notebookId}
           />
         )}
@@ -374,27 +456,3 @@ const ChatMessage = memo(function ChatMessage({
     </div>
   )
 })
-
-// Helper component to render AI messages with clickable references
-function AIMessageContent({
-  content,
-  onReferenceClick
-}: {
-  content: string
-  onReferenceClick: (type: string, id: string) => void
-}) {
-  const { t } = useTranslation()
-  // Convert references to compact markdown with numbered citations
-  const markdownWithCompactRefs = convertReferencesToCompactMarkdown(content, t('common.references'))
-
-  // Create custom link component for compact references
-  const LinkComponent = createCompactReferenceLinkComponent(onReferenceClick)
-
-  return (
-    <MarkdownRenderer components={{
-      a: LinkComponent
-    }}>
-      {markdownWithCompactRefs}
-    </MarkdownRenderer>
-  )
-}

@@ -36,6 +36,7 @@ What each feature needs:
 | [Working with Notes](working-with-notes.md) | Writing notes and saving AI answers |
 | [Search and Ask](search.md) | Text and vector search, and Ask across your knowledge base |
 | [Creating Podcasts](creating-podcasts.md) | Generating episodes, episode and speaker profiles |
+| [Practice Exams](practice-exams.md) | Generate quizzes from notebook sources, take them, and get graded |
 
 ---
 
@@ -59,6 +60,7 @@ What each feature needs:
 | Find content about an idea, whatever the wording | [Vector search](search.md#search) |
 | Get the same summary or extraction for each source | [Transformations](transformations.md) |
 | Listen to your research | [Podcasts](creating-podcasts.md) |
+| Practice what you studied | [Practice Exams](practice-exams.md) |
 
 ---
 

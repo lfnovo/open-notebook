@@ -1,0 +1,12 @@
+-- Migration 26: practice exams generated from notebook content, and graded attempts.
+DEFINE TABLE IF NOT EXISTS exam SCHEMALESS;
+DEFINE FIELD IF NOT EXISTS notebook_id ON TABLE exam TYPE record<notebook>;
+DEFINE FIELD IF NOT EXISTS title ON TABLE exam TYPE string;
+DEFINE FIELD IF NOT EXISTS questions ON TABLE exam FLEXIBLE TYPE array<object>;
+DEFINE INDEX IF NOT EXISTS idx_exam_notebook ON TABLE exam COLUMNS notebook_id;
+
+DEFINE TABLE IF NOT EXISTS exam_attempt SCHEMALESS;
+DEFINE FIELD IF NOT EXISTS exam_id ON TABLE exam_attempt TYPE record<exam>;
+DEFINE FIELD IF NOT EXISTS answers ON TABLE exam_attempt FLEXIBLE TYPE object;
+DEFINE FIELD IF NOT EXISTS results ON TABLE exam_attempt FLEXIBLE TYPE array<object>;
+DEFINE INDEX IF NOT EXISTS idx_exam_attempt_exam ON TABLE exam_attempt COLUMNS exam_id;

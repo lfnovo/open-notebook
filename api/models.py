@@ -2,6 +2,8 @@ from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from open_notebook.utils.chat_images import ChatImage
+
 
 # Notebook models
 class NotebookCreate(BaseModel):
@@ -824,3 +826,97 @@ class NotebookDeleteResponse(BaseModel):
     deleted_chat_sessions: int = Field(
         ..., description="Number of chat sessions deleted"
     )
+
+
+# Practice exam models
+class ExamCreateRequest(BaseModel):
+    notebook_id: str = Field(..., description="Notebook whose content the exam covers")
+    title: Optional[str] = Field(None, description="Exam title (generated if omitted)")
+    source_ids: Optional[List[str]] = Field(
+        None, description="Sources to use (all notebook sources if omitted or empty)"
+    )
+    include_notes: bool = Field(False, description="Also use the notebook's notes")
+    include_images: bool = Field(
+        True,
+        description="Include source crops or illustrations when useful to a question",
+    )
+    num_multiple_choice: int = Field(5, ge=0, le=50)
+    num_multiple_select: int = Field(0, ge=0, le=50)
+    num_fill_blank: int = Field(3, ge=0, le=50)
+    num_open: int = Field(2, ge=0, le=50)
+    difficulty: Literal["easy", "medium", "hard"] = "medium"
+    language: Optional[str] = Field(
+        None, description="Exam language (same as the sources if omitted)"
+    )
+    instructions: Optional[str] = Field(
+        None, description="Extra instructions for the exam writer"
+    )
+    model_id: Optional[str] = Field(
+        None,
+        description="Model for generation and grading (default transformation model if omitted)",
+    )
+
+
+class ExamQuestionResponse(BaseModel):
+    image_ids: List[str] = Field(default_factory=list)
+    id: str
+    type: Literal["multiple_choice", "multiple_select", "fill_blank", "open"]
+    prompt: str
+    points: float
+    options: List[str] = Field(default_factory=list)
+    blank_count: int = 0
+    # Answer key: only returned when explicitly requested (after an attempt).
+    correct_option: Optional[int] = None
+    correct_options: Optional[List[int]] = None
+    blanks: Optional[List[List[str]]] = None
+    reference_answer: Optional[str] = None
+    rubric: Optional[str] = None
+    explanation: Optional[str] = None
+
+
+class ExamResponse(BaseModel):
+    id: str
+    notebook_id: str
+    title: str
+    difficulty: str
+    language: Optional[str] = None
+    instructions: Optional[str] = None
+    source_ids: List[str]
+    question_count: int
+    max_score: float
+    attempt_count: int = 0
+    best_score: Optional[float] = None
+    questions: Optional[List[ExamQuestionResponse]] = None
+    images: Dict[str, ChatImage] = Field(default_factory=dict)
+    created: str
+    updated: str
+
+
+class ExamAttemptRequest(BaseModel):
+    answers: Dict[str, Any] = Field(
+        ...,
+        description=(
+            "Answers keyed by question id: option index for multiple_choice, "
+            "list of option indexes for multiple_select, "
+            "list of strings (one per blank) for fill_blank, text for open"
+        ),
+    )
+
+
+class ExamQuestionResultResponse(BaseModel):
+    question_id: str
+    score: float
+    max_score: float
+    is_correct: bool
+    graded_by: Literal["auto", "ai"]
+    feedback: Optional[str] = None
+
+
+class ExamAttemptResponse(BaseModel):
+    id: str
+    exam_id: str
+    answers: Dict[str, Any]
+    results: List[ExamQuestionResultResponse]
+    score: float
+    max_score: float
+    created: str

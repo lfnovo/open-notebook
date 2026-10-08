@@ -139,6 +139,22 @@ async def test_genuinely_empty_youtube_content_keeps_the_stt_hint():
         await _run({"url": YOUTUBE}, AsyncMock(return_value=empty))
 
 
+@pytest.mark.asyncio
+async def test_image_only_pdf_explains_how_to_enable_ocr():
+    empty = SimpleNamespace(title="Scanned quiz", content=" \n")
+    with pytest.raises(ValueError, match="OPEN_NOTEBOOK_ENABLE_DOCLING=true") as exc:
+        await _run({"file_path": "/tmp/quiz.PDF"}, AsyncMock(return_value=empty))
+    assert "OCR" in str(exc.value)
+    assert "retry" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_empty_non_pdf_keeps_generic_extraction_error():
+    empty = SimpleNamespace(title="Empty", content="")
+    with pytest.raises(ValueError, match="Could not extract any text"):
+        await _run({"file_path": "/tmp/empty.txt"}, AsyncMock(return_value=empty))
+
+
 def test_value_error_is_permanent_for_process_source():
     """The mapping relies on ValueError being in process_source's stop_on."""
     from surreal_commands import registry

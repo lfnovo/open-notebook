@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `make start-all` starts SurrealDB again (it pointed to a compose file removed long ago)
 - The legacy `SURREAL_ADDRESS` / `SURREAL_PORT` fallback builds a valid database URL (`ws://host:port/rpc`, was `ws://host/rpc:port`); an address that already includes the port is kept as is
 - `.env.example` names the chunking variables Open Notebook actually reads (`OPEN_NOTEBOOK_CHUNK_SIZE` / `OPEN_NOTEBOOK_CHUNK_OVERLAP`)
+- Chat no longer loses a message that fails to send (network down, API error): the text goes back into the input so you can send it again. The first message of a new chat also stays on screen while the answer is generated, instead of disappearing until it arrives. Both apply to notebook and source chat (#1391)
 
 ## [1.15.0] - 2026-10-04
 

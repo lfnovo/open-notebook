@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ChatPanel } from './ChatPanel'
 
@@ -23,7 +23,7 @@ describe('ChatPanel composer', () => {
   const getTextarea = () => screen.getByRole('textbox') as HTMLTextAreaElement
 
   it('sends the typed message and clears the input on send-button click', () => {
-    const onSendMessage = vi.fn()
+    const onSendMessage = vi.fn().mockResolvedValue(true)
     render(
       <ChatPanel
         messages={[]}
@@ -44,11 +44,32 @@ describe('ChatPanel composer', () => {
     expect(textarea.value).toBe('')
   })
 
+  // The input used to be cleared before the send finished, so a failed send
+  // lost the typed text (#1391).
+  it('puts the message back in the input when sending fails', async () => {
+    const onSendMessage = vi.fn().mockResolvedValue(false)
+    render(
+      <ChatPanel
+        messages={[]}
+        isStreaming={false}
+        contextIndicators={null}
+        onSendMessage={onSendMessage}
+      />
+    )
+
+    const textarea = getTextarea()
+    fireEvent.change(textarea, { target: { value: 'hello world' } })
+    fireEvent.click(screen.getByRole('button'))
+
+    expect(textarea.value).toBe('')
+    await waitFor(() => expect(textarea.value).toBe('hello world'))
+  })
+
   it('sends on Cmd+Enter on macOS', () => {
     const uaSpy = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
       'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'
     )
-    const onSendMessage = vi.fn()
+    const onSendMessage = vi.fn().mockResolvedValue(true)
     render(
       <ChatPanel
         messages={[]}
@@ -71,7 +92,7 @@ describe('ChatPanel composer', () => {
     const uaSpy = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
     )
-    const onSendMessage = vi.fn()
+    const onSendMessage = vi.fn().mockResolvedValue(true)
     render(
       <ChatPanel
         messages={[]}

@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `make start-all` starts SurrealDB again (it pointed to a compose file removed long ago)
 - The legacy `SURREAL_ADDRESS` / `SURREAL_PORT` fallback builds a valid database URL (`ws://host:port/rpc`, was `ws://host/rpc:port`); an address that already includes the port is kept as is
 - `.env.example` names the chunking variables Open Notebook actually reads (`OPEN_NOTEBOOK_CHUNK_SIZE` / `OPEN_NOTEBOOK_CHUNK_OVERLAP`)
+- Azure OpenAI credentials created in Manage → Models now work for models, not only for Test Connection. The form has an **API version** field, prefilled with `2024-10-21`, and a credential without a version uses that same default unless `AZURE_OPENAI_API_VERSION` (or a per-modality variable) sets one. Before, model calls failed with "Azure OpenAI API version not found" (#1470)
 
 ## [1.15.0] - 2026-10-04
 

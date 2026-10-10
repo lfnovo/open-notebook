@@ -48,6 +48,7 @@ export function CredentialFormDialog({
   const isOllama = provider === 'ollama'
   const isOmlx = provider === 'omlx'
   const isOpenAICompatible = provider === 'openai_compatible'
+  const isAzure = provider === 'azure'
   // oMLX is a local no-auth endpoint by default (optional --api-key).
   const requiresApiKey = !isVertex && !isOllama && !isOmlx && !isOpenAICompatible
 
@@ -59,6 +60,7 @@ export function CredentialFormDialog({
   const [location, setLocation] = useState('')
   const [credentialsPath, setCredentialsPath] = useState('')
   const [numCtx, setNumCtx] = useState('')
+  const [apiVersion, setApiVersion] = useState('')
   // Modalities
   const [modalities, setModalities] = useState<string[]>([])
 
@@ -71,6 +73,7 @@ export function CredentialFormDialog({
       setLocation(credential.location || '')
       setCredentialsPath(credential.credentials_path || '')
       setNumCtx(credential.num_ctx ? String(credential.num_ctx) : '')
+      setApiVersion(credential.api_version || '')
       setModalities(credential.modalities || [])
     } else {
       setName('')
@@ -81,6 +84,8 @@ export function CredentialFormDialog({
       setLocation('')
       setCredentialsPath('')
       setNumCtx('')
+      // Registry default; only Azure has one
+      setApiVersion(providerInfo?.default_api_version ?? '')
       setModalities(providerInfo?.modalities ?? ['language'])
     }
     // providerInfo keeps a stable reference for a given provider (react-query
@@ -98,7 +103,7 @@ export function CredentialFormDialog({
     if (isEditing && credential) {
       const data = buildCredentialUpdatePayload(credential, {
         name, apiKey, baseUrl, modalities, project, location,
-        credentialsPath, numCtx, isVertex, isOllama,
+        credentialsPath, numCtx, apiVersion, isVertex, isOllama, isAzure,
       })
       updateCredential.mutate({ credentialId: credential.id, data }, { onSuccess })
     } else {
@@ -116,6 +121,9 @@ export function CredentialFormDialog({
       }
       if (isOllama && numCtx.trim()) {
         data.num_ctx = Number(numCtx)
+      }
+      if (isAzure) {
+        data.api_version = apiVersion.trim() || undefined
       }
       createCredential.mutate(data, { onSuccess })
     }
@@ -256,6 +264,21 @@ export function CredentialFormDialog({
                     : 'apiKeys.baseUrlOverrideHint',
                 )}
               </p>
+            </div>
+          )}
+
+          {/* API version (Azure only) */}
+          {isAzure && (
+            <div className="space-y-2">
+              <Label htmlFor="api-version" className="text-muted-foreground">{t('apiKeys.apiVersion')}</Label>
+              <input
+                id="api-version"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={apiVersion}
+                onChange={(e) => setApiVersion(e.target.value)}
+                placeholder={providerInfo?.default_api_version ?? undefined}
+                disabled={isSubmitting}
+              />
             </div>
           )}
 

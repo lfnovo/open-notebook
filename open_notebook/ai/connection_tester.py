@@ -100,7 +100,7 @@ async def _test_azure_connection(
     test_endpoint = endpoint or os.environ.get("AZURE_OPENAI_ENDPOINT")
     test_api_key = api_key or os.environ.get("AZURE_OPENAI_API_KEY")
     test_api_version = api_version or os.environ.get(
-        "AZURE_OPENAI_API_VERSION", "2024-10-21"
+        "AZURE_OPENAI_API_VERSION", PROVIDERS["azure"].default_api_version
     )
 
     if not test_endpoint:

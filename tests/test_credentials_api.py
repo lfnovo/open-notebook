@@ -553,6 +553,96 @@ class TestCredentialVertexConfig:
         assert "vertex_location" not in config
 
 
+class TestCredentialAzureApiVersion:
+    """#1470 - an Azure credential without an API version must work for models,
+    not only for the connection test."""
+
+    AZURE_ENV = (
+        "AZURE_OPENAI_API_KEY",
+        "AZURE_OPENAI_ENDPOINT",
+        "AZURE_OPENAI_API_VERSION",
+        "AZURE_OPENAI_API_VERSION_LLM",
+        "AZURE_OPENAI_API_VERSION_EMBEDDING",
+        "AZURE_OPENAI_API_VERSION_STT",
+        "AZURE_OPENAI_API_VERSION_TTS",
+        "OPENAI_API_VERSION",
+    )
+
+    def _clear_azure_env(self, monkeypatch):
+        # setenv registers an undo, so values the code writes are removed
+        # after the test. Esperanto treats an empty value as unset.
+        for var in self.AZURE_ENV:
+            monkeypatch.setenv(var, "")
+
+    def _azure_credential(self, api_version=None):
+        from open_notebook.domain.credential import Credential
+
+        return Credential(
+            name="Azure",
+            provider="azure",
+            modalities=["language"],
+            api_key=SecretStr("azure-key"),
+            base_url="https://example.openai.azure.com",
+            api_version=api_version,
+        )
+
+    def test_language_model_builds_without_a_configured_version(self, monkeypatch):
+        from esperanto import AIFactory
+        from esperanto.providers.llm.azure import AzureLanguageModel
+
+        self._clear_azure_env(monkeypatch)
+        config = self._azure_credential().to_esperanto_config()
+
+        # Before the fix Esperanto raised "Azure OpenAI API version not found"
+        model = AIFactory.create_language(
+            model_name="gpt-4o-1470", provider="azure", config=config
+        )
+        assert isinstance(model, AzureLanguageModel)
+        assert model.api_version == "2024-10-21"
+
+    def test_saved_version_wins(self, monkeypatch):
+        self._clear_azure_env(monkeypatch)
+        monkeypatch.setenv("AZURE_OPENAI_API_VERSION", "2024-06-01")
+        config = self._azure_credential("2025-01-01-preview").to_esperanto_config()
+        assert config["api_version"] == "2025-01-01-preview"
+
+    def test_env_version_is_left_to_esperanto(self, monkeypatch):
+        self._clear_azure_env(monkeypatch)
+        monkeypatch.setenv("AZURE_OPENAI_API_VERSION_LLM", "2025-04-01-preview")
+        assert "api_version" not in self._azure_credential().to_esperanto_config()
+
+    def test_other_providers_get_no_api_version(self, monkeypatch):
+        from open_notebook.domain.credential import Credential
+
+        self._clear_azure_env(monkeypatch)
+        cred = Credential(name="OpenAI", provider="openai", api_key=SecretStr("sk"))
+        assert "api_version" not in cred.to_esperanto_config()
+
+    @pytest.mark.asyncio
+    async def test_env_provisioning_sets_the_default_version(self, monkeypatch):
+        from types import SimpleNamespace
+
+        from open_notebook.ai import key_provider
+
+        self._clear_azure_env(monkeypatch)
+        cred = SimpleNamespace(
+            api_key=SecretStr("azure-key"),
+            api_version=None,
+            endpoint=None,
+            base_url="https://example.openai.azure.com",
+            endpoint_llm=None,
+            endpoint_embedding=None,
+            endpoint_stt=None,
+            endpoint_tts=None,
+        )
+        monkeypatch.setattr(
+            key_provider, "_get_default_credential", AsyncMock(return_value=cred)
+        )
+
+        assert await key_provider._provision_azure() is True
+        assert os.environ["AZURE_OPENAI_API_VERSION"] == "2024-10-21"
+
+
 class TestAudioProviderWiring:
     """Tests for the new audio providers (Mistral STT/TTS, Deepgram TTS, xAI TTS)."""
 

@@ -68,7 +68,7 @@ This section decides which model each feature uses. Fields marked with an asteri
 | **Transformation Model** | Transformations (insights), titles for AI-generated notes | Uses the Chat Model |
 | **Tools Model** | Ask, when called through the API without explicit models | Uses the Chat Model |
 | **Large Context Model** | Any prompt over about 105,000 tokens | Uses the Chat Model |
-| **Text-to-Speech Model** | Nothing at the moment: podcasts take their voice model from the speaker profile | — |
+| **Text-to-Speech Model** | Podcasts: the voice model for speaker profiles that don't select their own | Speaker profiles without a voice model can't generate podcasts |
 | **Speech-to-Text Model** | Transcribing uploaded audio and video files, and YouTube videos without a transcript | Those sources can't be transcribed (YouTube videos with a transcript still work) |
 
 While the Chat Model or Embedding Model is missing, a notice offers **Auto-assign Defaults**, which fills those two from the models you have added (the other slots stay as they are). If it says *No models available to assign*, add some models first.

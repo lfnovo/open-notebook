@@ -22,7 +22,9 @@ import pytest
 from commands.podcast_commands import (
     PodcastGenerationInput,
     generate_podcast_command,
+    pick_voice_model,
 )
+from open_notebook.ai.models import DefaultModels
 from open_notebook.podcasts.models import EpisodeProfile, SpeakerProfile
 
 
@@ -39,6 +41,19 @@ def make_input(speaker_profile=None):
         speaker_profile=speaker_profile,
         episode_name="Test Episode",
         content="test content",
+    )
+
+
+def patch_default_tts(model_id=None):
+    """Patch the Default Models lookup so command tests never hit the DB.
+
+    generate_podcast_command reads the Default Text-to-Speech Model (#1467);
+    model_id=None means no default is set.
+    """
+    return patch.object(
+        DefaultModels,
+        "get_instance",
+        new=AsyncMock(return_value=Mock(default_text_to_speech_model=model_id)),
     )
 
 
@@ -337,6 +352,7 @@ class TestOrphanedProfileDoesNotPoisonConfig:
         resolved: tuple = ("openai", "model-name", {})
 
         with (
+            patch_default_tts(),
             patch.object(
                 EpisodeProfile,
                 "get_by_name",
@@ -402,7 +418,7 @@ class TestOrphanedProfileDoesNotPoisonConfig:
 class TestUnconfiguredSpeakerProfileDoesNotPoisonConfig:
     """A speaker profile without a voice model (the seeded ones ship that way)
     must not fail podcast-creator's validation of the whole speakers config
-    when generating with a different, complete profile (#1450)."""
+    when generating with a different, complete profile (#1450). With no default Text-to-Speech model set, it is dropped from the config."""
 
     @pytest.mark.asyncio
     async def test_unconfigured_profile_dropped_selected_kept(self, tmp_path):
@@ -465,6 +481,7 @@ class TestUnconfiguredSpeakerProfileDoesNotPoisonConfig:
         resolved: tuple = ("openai", "model-name", {})
 
         with (
+            patch_default_tts(),
             patch.object(
                 EpisodeProfile,
                 "get_by_name",
@@ -513,3 +530,205 @@ class TestUnconfiguredSpeakerProfileDoesNotPoisonConfig:
         from podcast_creator.speakers import SpeakerConfig
 
         SpeakerConfig(profiles=speakers_config)
+
+
+class TestPickVoiceModel:
+    """The speaker profile's own voice model wins, the Default Text-to-Speech
+    Model is the fallback, and having neither is a clear error (#1467)."""
+
+    def test_profile_voice_model_wins_over_default(self):
+        assert pick_voice_model("p", "model:own", "model:default") == "model:own"
+
+    def test_default_used_when_profile_has_none(self):
+        assert pick_voice_model("p", None, "model:default") == "model:default"
+
+    def test_error_names_both_places_when_neither_is_set(self):
+        with pytest.raises(ValueError) as exc_info:
+            pick_voice_model("solo_expert", None, None)
+
+        message = str(exc_info.value)
+        assert "solo_expert" in message
+        assert "speaker profile" in message
+        assert "Manage -> Models" in message
+
+
+SPEAKER = {"name": "Alex", "voice_id": "v1", "backstory": "b", "personality": "p"}
+
+
+async def run_generation(tmp_path, speaker_profile, speaker_rows, default_tts):
+    """Run generate_podcast_command with every external call mocked.
+
+    Returns the command result, the configs handed to podcast-creator and the
+    _resolve_model_config mock (to check which model IDs were resolved).
+    """
+
+    episode_profile = EpisodeProfile(
+        id="episode_profile:ep1",
+        name="Test Episode Profile",
+        speaker_config=str(speaker_profile.id),
+        outline_llm="model:llm",
+        transcript_llm="model:llm",
+        default_briefing="brief",
+        num_segments=3,
+    )
+    episode_rows = [
+        {
+            "id": "episode_profile:ep1",
+            "name": "Test Episode Profile",
+            "speaker_config": str(speaker_profile.id),
+            "default_briefing": "brief",
+            "num_segments": 3,
+        }
+    ]
+
+    async def fake_repo_query(query, *args, **kwargs):
+        if "episode_profile" in query:
+            return episode_rows
+        return speaker_rows
+
+    configure_calls = {}
+
+    def fake_configure(key, value):
+        configure_calls[key] = value
+
+    resolve = AsyncMock(return_value=("openai", "model-name", {}))
+
+    with (
+        patch_default_tts(default_tts),
+        patch.object(
+            EpisodeProfile, "get_by_name", new=AsyncMock(return_value=episode_profile)
+        ),
+        patch.object(
+            SpeakerProfile, "resolve", new=AsyncMock(return_value=speaker_profile)
+        ),
+        patch("open_notebook.podcasts.models._resolve_model_config", new=resolve),
+        patch("commands.podcast_commands._resolve_model_config", new=resolve),
+        patch("commands.podcast_commands.repo_query", new=fake_repo_query),
+        patch("commands.podcast_commands.configure", new=fake_configure),
+        patch(
+            "commands.podcast_commands.create_podcast",
+            new=AsyncMock(
+                return_value={
+                    "final_output_file_path": str(
+                        tmp_path / "episodes" / "ep-dir" / "out.mp3"
+                    ),
+                    "transcript": {},
+                    "outline": {},
+                }
+            ),
+        ),
+        patch("open_notebook.podcasts.audio_paths.PODCASTS_FOLDER", str(tmp_path)),
+        patch(
+            "commands.podcast_commands.build_episode_output_dir",
+            new=lambda *args: ("ep-dir", tmp_path / "ep-dir"),
+        ),
+        patch("open_notebook.podcasts.models.PodcastEpisode.save", new=AsyncMock()),
+    ):
+        result = await generate_podcast_command(make_input())
+
+    return result, configure_calls, resolve
+
+
+class TestDefaultTextToSpeechModel:
+    """Podcasts fall back to the Default Text-to-Speech Model when a speaker
+    profile has no voice model of its own (#1467)."""
+
+    @pytest.mark.asyncio
+    async def test_selected_profile_without_voice_model_uses_default(self, tmp_path):
+        speaker_profile = SpeakerProfile(
+            id="speaker_profile:sp1",
+            name="solo_expert",
+            voice_model=None,
+            speakers=[SPEAKER],
+        )
+
+        speaker_rows = [
+            {
+                "id": "speaker_profile:sp1",
+                "name": "solo_expert",
+                "voice_model": None,
+                "speakers": [dict(SPEAKER)],
+            }
+        ]
+
+        result, configure_calls, resolve = await run_generation(
+            tmp_path, speaker_profile, speaker_rows, default_tts="model:default_tts"
+        )
+
+        assert result.success is True
+        resolve.assert_any_await("model:default_tts")
+        speakers_config = configure_calls["speakers_config"]["profiles"]
+        assert speakers_config["solo_expert"]["tts_provider"] == "openai"
+
+        from podcast_creator.speakers import SpeakerConfig
+
+        SpeakerConfig(profiles=speakers_config)
+
+    @pytest.mark.asyncio
+    async def test_unrelated_profile_without_voice_model_kept_with_default(
+        self, tmp_path
+    ):
+        speaker_profile = SpeakerProfile(
+            id="speaker_profile:sp1",
+            name="Tech Experts",
+            voice_model="model:tts",
+            speakers=[SPEAKER],
+        )
+
+        speaker_rows = [
+            {
+                "id": "speaker_profile:sp1",
+                "name": "Tech Experts",
+                "voice_model": "model:tts",
+                "speakers": [dict(SPEAKER)],
+            },
+            {
+                "id": "speaker_profile:sp2",
+                "name": "business_panel",
+                "voice_model": None,
+                "speakers": [dict(SPEAKER)],
+            },
+        ]
+
+        result, configure_calls, resolve = await run_generation(
+            tmp_path, speaker_profile, speaker_rows, default_tts="model:default_tts"
+        )
+
+        assert result.success is True
+        speakers_config = configure_calls["speakers_config"]["profiles"]
+        # Kept and voiced by the default instead of being dropped
+        assert speakers_config["business_panel"]["tts_provider"] == "openai"
+        # The selected profile still uses its own voice model
+        resolve.assert_any_await("model:tts")
+        resolve.assert_any_await("model:default_tts")
+
+    @pytest.mark.asyncio
+    async def test_no_voice_model_and_no_default_is_a_clear_error(self):
+        speaker_profile = SpeakerProfile(
+            id="speaker_profile:sp1",
+            name="solo_expert",
+            voice_model=None,
+            speakers=[SPEAKER],
+        )
+
+        episode_profile = make_episode_profile(speaker_config="speaker_profile:sp1")
+        episode_profile.outline_llm = "model:llm"
+        episode_profile.transcript_llm = "model:llm"
+
+        with (
+            patch_default_tts(None),
+            patch.object(
+                EpisodeProfile,
+                "get_by_name",
+                new=AsyncMock(return_value=episode_profile),
+            ),
+            patch.object(
+                SpeakerProfile, "resolve", new=AsyncMock(return_value=speaker_profile)
+            ),
+        ):
+            with pytest.raises(ValueError) as exc_info:
+                await generate_podcast_command(make_input())
+
+        message = str(exc_info.value)
+        assert "solo_expert" in message
+        assert "default Text-to-Speech model" in message

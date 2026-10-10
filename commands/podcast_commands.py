@@ -6,6 +6,7 @@ from typing import Optional
 from loguru import logger
 from surreal_commands import CommandInput, CommandOutput, command
 
+from open_notebook.ai.models import DefaultModels
 from open_notebook.config import PODCASTS_FOLDER
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.podcasts.audio_paths import to_relative_audio_path
@@ -96,6 +97,32 @@ def explain_generation_failure(error_msg: str) -> Optional[str]:
     return None
 
 
+def pick_voice_model(
+    profile_name: str,
+    profile_voice_model: Optional[str],
+    default_voice_model: Optional[str],
+) -> str:
+    """
+    Pick the TTS model for a speaker profile.
+
+    The profile's own voice model wins. Without one, the Default
+    Text-to-Speech Model from Manage -> Models is used. Raises
+    ValueError (a permanent failure, no retry) when neither is set.
+    """
+
+    if profile_voice_model:
+        return str(profile_voice_model)
+
+    if default_voice_model:
+        return str(default_voice_model)
+
+    raise ValueError(
+        f"Speaker profile '{profile_name}' has no voice model configured and no "
+        "default Text-to-Speech model is set. Select a voice model in the speaker "
+        "profile, or set a default Text-to-Speech model in Manage -> Models."
+    )
+
+
 class PodcastGenerationInput(CommandInput):
     episode_profile: str
     # Speaker profile record ID or name (the API boundary resolves the
@@ -174,11 +201,14 @@ async def generate_podcast_command(
                 f"Episode profile '{episode_profile.name}' has no transcript model configured. "
                 "Please update the profile to select a transcript model."
             )
-        if not speaker_profile.voice_model:
-            raise ValueError(
-                f"Speaker profile '{speaker_profile.name}' has no voice model configured. "
-                "Please update the profile to select a voice model."
-            )
+
+        # The selected profile's own voice model wins; without one, fall back
+        # to the Default Text-to-Speech Model.
+        defaults = await DefaultModels.get_instance()
+        default_tts_model = defaults.default_text_to_speech_model
+        voice_model_id = pick_voice_model(
+            speaker_profile.name, speaker_profile.voice_model, default_tts_model
+        )
 
         # 3. Resolve model configs with credentials
         (
@@ -195,7 +225,7 @@ async def generate_podcast_command(
             tts_provider,
             tts_model_name,
             tts_config,
-        ) = await speaker_profile.resolve_tts_config()
+        ) = await _resolve_model_config(voice_model_id)
 
         logger.info(
             f"Resolved models - outline: {outline_provider}/{outline_model_name}, "
@@ -279,33 +309,38 @@ async def generate_podcast_command(
         # Remove profiles that fail resolution to prevent validation errors.
         for sp_name in list(speaker_profiles_dict.keys()):
             sp_dict = speaker_profiles_dict[sp_name]
-            if not sp_dict.get("voice_model") and sp_name != speaker_profile.name:
-                # podcast-creator requires tts_provider/tts_model on every
-                # profile in the config, so one unconfigured profile (the
-                # seeded ones ship without a voice model) would fail every
-                # generation (#1450). The selected profile never gets here
-                # without a voice model: it was validated above.
+            # Same rule as the selected profile: its own voice model, else the
+            # Default Text-to-Speech Model (#1467). podcast-creator requires
+            # tts_provider/tts_model on every profile in the config, so a
+            # profile with neither is removed instead of failing every
+            # generation (#1450). The selected profile always has one: it was
+            # validated above.
+            try:
+                sp_voice_model = pick_voice_model(
+                    sp_name, sp_dict.get("voice_model"), default_tts_model
+                )
+            except ValueError:
                 logger.warning(
-                    f"Speaker profile '{sp_name}' has no voice model, removing "
-                    "from config to prevent validation errors"
+                    f"Speaker profile '{sp_name}' has no voice model and no default "
+                    "Text-to-Speech model is set, removing from config to prevent "
+                    "validation errors"
                 )
                 del speaker_profiles_dict[sp_name]
                 continue
-            if sp_dict.get("voice_model"):
-                try:
-                    prov, model, conf = await _resolve_model_config(
-                        str(sp_dict["voice_model"])
-                    )
-                    sp_dict["tts_provider"] = prov
-                    sp_dict["tts_model"] = model
-                    sp_dict["tts_config"] = conf
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to resolve TTS for speaker profile '{sp_name}', "
-                        f"removing from config to prevent validation errors: {e}"
-                    )
-                    del speaker_profiles_dict[sp_name]
-                    continue
+
+            try:
+                prov, model, conf = await _resolve_model_config(sp_voice_model)
+
+                sp_dict["tts_provider"] = prov
+                sp_dict["tts_model"] = model
+                sp_dict["tts_config"] = conf
+            except Exception as e:
+                logger.warning(
+                    f"Failed to resolve TTS for speaker profile '{sp_name}', "
+                    f"removing from config to prevent validation errors: {e}"
+                )
+                del speaker_profiles_dict[sp_name]
+                continue
 
             # Per-speaker TTS overrides
             for speaker in sp_dict.get("speakers", []):

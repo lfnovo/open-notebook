@@ -8,7 +8,7 @@ Podcasts live on the **Podcasts** page (sidebar, under **Create**), which has tw
 
 ## Before Your First Episode: Set Up Profiles
 
-You need at least one **speaker profile** with a voice model and one **episode profile** with an outline and transcript model.
+You need at least one **speaker profile** with a voice model (or a **Default Text-to-Speech Model** set in Manage → Models) and one **episode profile** with an outline and transcript model.
 
 Open **Podcasts → Profiles**. A new install already has three speaker profiles and three episode profiles, but **none of them has models assigned**; they show a **Setup required** badge (upgraded installations may already have models on them). Either edit them or create your own. Create speakers first: episode profiles reference a speaker profile.
 

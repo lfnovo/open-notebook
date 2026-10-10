@@ -23,7 +23,7 @@ from esperanto import (
 from esperanto.common_types import ChatCompletion
 from loguru import logger
 
-from open_notebook.ai.provider_registry import AZURE_DEFAULT_API_VERSION, PROVIDERS
+from open_notebook.ai.provider_registry import PROVIDERS
 from open_notebook.utils.ssl_config import httpx_verify_setting
 from open_notebook.utils.url_validation import prepare_pinned_http_target
 
@@ -100,7 +100,7 @@ async def _test_azure_connection(
     test_endpoint = endpoint or os.environ.get("AZURE_OPENAI_ENDPOINT")
     test_api_key = api_key or os.environ.get("AZURE_OPENAI_API_KEY")
     test_api_version = api_version or os.environ.get(
-        "AZURE_OPENAI_API_VERSION", AZURE_DEFAULT_API_VERSION
+        "AZURE_OPENAI_API_VERSION", PROVIDERS["azure"].default_api_version
     )
 
     if not test_endpoint:

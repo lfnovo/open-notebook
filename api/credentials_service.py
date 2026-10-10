@@ -22,7 +22,7 @@ from open_notebook.ai.model_discovery import (
     classify_model_type,
     fetch_anthropic_model_ids,
 )
-from open_notebook.ai.provider_registry import AZURE_DEFAULT_API_VERSION, PROVIDERS
+from open_notebook.ai.provider_registry import PROVIDERS
 from open_notebook.domain.credential import Credential
 from open_notebook.utils.encryption import (
     PBKDF2_MARKER,
@@ -603,7 +603,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
 
     if provider == "azure":
         endpoint = config.get("endpoint")
-        api_version = config.get("api_version", AZURE_DEFAULT_API_VERSION)
+        api_version = config.get("api_version", PROVIDERS["azure"].default_api_version)
         if not endpoint or not api_key:
             return []
         try:

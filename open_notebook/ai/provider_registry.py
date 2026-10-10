@@ -52,6 +52,11 @@ class ProviderSpec:
     # For providers exposing an OpenAI-compatible GET /models endpoint,
     # the discovery URL. Drives OPENAI_COMPAT_PROVIDERS in model_discovery.
     openai_compat_discovery_url: Optional[str] = None
+    # API version used when neither the credential nor any of
+    # `api_version_env` sets one. The connection test, model discovery, the
+    # model config and the credential form all use it (#1470).
+    default_api_version: Optional[str] = None
+    api_version_env: Tuple[str, ...] = ()
 
     @property
     def base_url_env(self) -> Optional[str]:
@@ -76,11 +81,6 @@ class ProviderSpec:
 
 _LANGUAGE_ONLY = ("language",)
 _ALL_MODALITIES = ("language", "embedding", "speech_to_text", "text_to_speech")
-
-# Azure OpenAI API version used when neither the credential nor the environment
-# sets one. The connection test, model discovery and the model config all use
-# it, so a passing connection test means the models work too (#1470).
-AZURE_DEFAULT_API_VERSION = "2024-10-21"
 
 
 _PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
@@ -293,6 +293,16 @@ _PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
         ),
         test_model="gpt-35-turbo",  # Azure OpenAI deployment name
         docs_url="https://portal.azure.com/#view/Microsoft_Azure_ProjectOxford/CognitiveServicesHub/~/OpenAI",
+        default_api_version="2024-10-21",
+        # Every variable Esperanto's Azure providers read for the version.
+        api_version_env=(
+            "AZURE_OPENAI_API_VERSION",
+            "AZURE_OPENAI_API_VERSION_LLM",
+            "AZURE_OPENAI_API_VERSION_EMBEDDING",
+            "AZURE_OPENAI_API_VERSION_STT",
+            "AZURE_OPENAI_API_VERSION_TTS",
+            "OPENAI_API_VERSION",
+        ),
     ),
     ProviderSpec(
         name="vertex",

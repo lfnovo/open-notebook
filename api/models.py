@@ -630,6 +630,9 @@ class ProviderInfoResponse(BaseModel):
     env_configured: bool = Field(
         ..., description="Whether the provider is configured via environment variables"
     )
+    default_api_version: Optional[str] = Field(
+        None, description="API version used when a credential sets none (Azure)"
+    )
 
 
 class CapabilitiesResponse(BaseModel):

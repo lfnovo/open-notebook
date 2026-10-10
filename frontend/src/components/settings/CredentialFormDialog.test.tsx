@@ -13,8 +13,19 @@ vi.mock('@/lib/hooks/use-credentials', () => ({
   useUpdateCredential: () => ({ isPending: false, mutate: vi.fn() }),
 }))
 
+// Only Azure comes with registry metadata here, like GET /api/providers
+const providers = vi.hoisted(() => [
+  {
+    name: 'azure',
+    display_name: 'Azure OpenAI',
+    modalities: ['language'],
+    env_configured: false,
+    default_api_version: '2024-10-21',
+  },
+])
+
 vi.mock('@/lib/hooks/use-providers', () => ({
-  useProviders: () => ({ data: [] }),
+  useProviders: () => ({ data: providers }),
 }))
 
 function renderDialog(provider: string) {

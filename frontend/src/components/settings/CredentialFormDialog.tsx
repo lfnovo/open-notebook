@@ -19,9 +19,6 @@ import { useProviders } from '@/lib/hooks/use-providers'
 /** Default oMLX OpenAI base URL (port 11435 avoids SurrealDB on 8000). */
 const OMLX_DEFAULT_BASE_URL = 'http://localhost:11435/v1'
 
-/** Same Azure API version the backend falls back to (AZURE_DEFAULT_API_VERSION). */
-const AZURE_DEFAULT_API_VERSION = '2024-10-21'
-
 interface CredentialFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -87,7 +84,8 @@ export function CredentialFormDialog({
       setLocation('')
       setCredentialsPath('')
       setNumCtx('')
-      setApiVersion(provider === 'azure' ? AZURE_DEFAULT_API_VERSION : '')
+      // Registry default; only Azure has one
+      setApiVersion(providerInfo?.default_api_version ?? '')
       setModalities(providerInfo?.modalities ?? ['language'])
     }
     // providerInfo keeps a stable reference for a given provider (react-query
@@ -278,7 +276,7 @@ export function CredentialFormDialog({
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={apiVersion}
                 onChange={(e) => setApiVersion(e.target.value)}
-                placeholder={AZURE_DEFAULT_API_VERSION}
+                placeholder={providerInfo?.default_api_version ?? undefined}
                 disabled={isSubmitting}
               />
             </div>

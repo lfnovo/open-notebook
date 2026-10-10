@@ -21,20 +21,10 @@ from typing import Any, ClassVar, Dict, List, Optional
 from loguru import logger
 from pydantic import SecretStr, model_validator
 
-from open_notebook.ai.provider_registry import AZURE_DEFAULT_API_VERSION
+from open_notebook.ai.provider_registry import PROVIDERS
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel
 from open_notebook.utils.encryption import decrypt_value, encrypt_value
-
-# Env vars Esperanto's Azure providers read for the API version.
-_AZURE_API_VERSION_ENV_VARS = (
-    "AZURE_OPENAI_API_VERSION",
-    "AZURE_OPENAI_API_VERSION_LLM",
-    "AZURE_OPENAI_API_VERSION_EMBEDDING",
-    "AZURE_OPENAI_API_VERSION_STT",
-    "AZURE_OPENAI_API_VERSION_TTS",
-    "OPENAI_API_VERSION",
-)
 
 
 def default_azure_api_version() -> Optional[str]:
@@ -44,9 +34,10 @@ def default_azure_api_version() -> Optional[str]:
     Returns None when an env var already sets one, so Esperanto keeps reading
     it; otherwise the same default the connection test uses.
     """
-    if any(os.environ.get(var) for var in _AZURE_API_VERSION_ENV_VARS):
+    spec = PROVIDERS["azure"]
+    if any(os.environ.get(var) for var in spec.api_version_env):
         return None
-    return AZURE_DEFAULT_API_VERSION
+    return spec.default_api_version
 
 
 class Credential(ObjectModel):

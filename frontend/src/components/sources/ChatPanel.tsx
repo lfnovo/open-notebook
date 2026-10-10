@@ -35,7 +35,8 @@ interface ChatPanelProps {
   messages: SourceChatMessage[]
   isStreaming: boolean
   contextIndicators: SourceChatContextIndicator | null
-  onSendMessage: (message: string, modelOverride?: string) => void
+  // Resolves to false when the send failed
+  onSendMessage: (message: string, modelOverride?: string) => Promise<boolean>
   modelOverride?: string
   onModelChange?: (model?: string) => void
   // Session management props
@@ -117,7 +118,8 @@ export function ChatPanel({
                 size="sm"
                 className="gap-2 text-muted-foreground"
                 onClick={() => setSessionManagerOpen(true)}
-                disabled={loadingSessions}
+                // Switching mid-reply would show the old session's messages (#1391)
+                disabled={loadingSessions || isStreaming}
               >
                 <Clock className="h-4 w-4" />
                 <span className="text-xs">{t('chat.sessions')}</span>
@@ -232,7 +234,7 @@ export function ChatPanel({
 // Composer owns the input state so keystrokes (including IME composition) only
 // re-render this small component instead of the whole message history.
 interface ChatComposerProps {
-  onSendMessage: (message: string, modelOverride?: string) => void
+  onSendMessage: (message: string, modelOverride?: string) => Promise<boolean>
   isStreaming: boolean
   modelOverride?: string
   onModelChange?: (model?: string) => void
@@ -248,10 +250,16 @@ function ChatComposer({
   const chatInputId = useId()
   const [input, setInput] = useState('')
 
-  const handleSend = () => {
-    if (input.trim() && !isStreaming) {
-      onSendMessage(input.trim(), modelOverride)
+  const handleSend = async () => {
+    const message = input.trim()
+    if (message && !isStreaming) {
       setInput('')
+      // Give the text back if the send failed, so it isn't lost (#1391),
+      // unless something new was typed while it was pending
+      const sent = await onSendMessage(message, modelOverride)
+      if (!sent) {
+        setInput(currentInput => currentInput || message)
+      }
     }
   }
 

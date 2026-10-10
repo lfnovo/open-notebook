@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { getApiErrorMessage } from '@/lib/utils/error-handler'
@@ -29,6 +29,8 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<NotebookChatMessage[]>([])
   const [isSending, setIsSending] = useState(false)
+  // Same as isSending, but readable from the session effect without re-running it
+  const sendingRef = useRef(false)
   const [tokenCount, setTokenCount] = useState<number>(0)
   const [charCount, setCharCount] = useState<number>(0)
   // Pending model override for when user changes model before a session exists
@@ -55,9 +57,11 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     enabled: !!notebookId && !!currentSessionId
   })
 
-  // Update messages when current session changes
+  // Update messages when current session changes. Skipped while a send is in
+  // flight: the session can load mid-send without the optimistic message, and
+  // would hide it until the reply arrives (#1391).
   useEffect(() => {
-    if (currentSession?.messages) {
+    if (currentSession?.messages && !sendingRef.current) {
       setMessages(currentSession.messages)
     }
   }, [currentSession])
@@ -198,7 +202,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       } catch (err: unknown) {
         const error = err as { response?: { data?: { detail?: string } }, message?: string };
         toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToCreateSession'))
-        return
+        return false
       }
     }
 
@@ -210,6 +214,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       timestamp: new Date().toISOString()
     }
     setMessages(prev => [...prev, userMessage])
+    sendingRef.current = true
     setIsSending(true)
 
     try {
@@ -227,13 +232,16 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
 
       // Refetch current session to get updated data
       await refetchCurrentSession()
+      return true
     } catch (err: unknown) {
       const error = err as { response?: { data?: { detail?: string } }, message?: string };
       console.error('Error sending message:', error)
       toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToSendMessage'))
       // Remove optimistic message on error
       setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
+      return false
     } finally {
+      sendingRef.current = false
       setIsSending(false)
     }
   }, [

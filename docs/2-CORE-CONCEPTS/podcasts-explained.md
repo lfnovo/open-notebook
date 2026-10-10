@@ -7,7 +7,7 @@ Open Notebook can turn sources and notes into a podcast episode: a scripted conv
 ## The Building Blocks
 
 **Speaker profile**: who talks and how they sound.
-- A **voice model** (a text-to-speech model, selected in the speaker profile), required.
+- A **voice model** (a text-to-speech model, selected in the speaker profile). Without one, the **Default Text-to-Speech Model** from Manage → Models is used; generation fails only if neither is set.
 - One to four **speakers**, each with a name, a **Voice ID** (a voice name of that TTS model), a backstory and a personality.
 - Optionally, a different voice model per speaker (*Per-speaker TTS override*), so speakers can come from different TTS providers.
 
@@ -21,7 +21,7 @@ Open Notebook can turn sources and notes into a podcast episode: a scripted conv
 
 **Episode**: one generation run. You pick the content, an episode profile, a name and optional additional instructions.
 
-Open Notebook ships with three episode profiles (`tech_discussion`, `solo_expert`, `business_analysis`) and three speaker profiles (`tech_experts`, `solo_expert`, `business_panel`). On a new install **they have no models assigned**, so they show a *Setup required* badge until you edit them and pick an outline model, a transcript model and a voice model. (Installations upgraded from older versions may already have models on them, if matching models were registered.) Their Voice IDs are OpenAI voice names (`nova`, `alloy`, ...); change them if you use another TTS provider.
+Open Notebook ships with three episode profiles (`tech_discussion`, `solo_expert`, `business_analysis`) and three speaker profiles (`tech_experts`, `solo_expert`, `business_panel`). On a new install **they have no models assigned**, so they show a *Setup required* badge until you edit them and pick an outline model, a transcript model and a voice model. The speaker profiles also work without a voice model once a Default Text-to-Speech Model is set in Manage → Models (the badge still shows). (Installations upgraded from older versions may already have models on them, if matching models were registered.) Their Voice IDs are OpenAI voice names (`nova`, `alloy`, ...); change them if you use another TTS provider.
 
 ---
 
@@ -74,7 +74,8 @@ To try again, click **Retry** on the failed episode. The failed episode is delet
 
 | Error | What to do |
 |-------|-----------|
-| `... has no outline model configured` / `no transcript model configured` / `no voice model configured` | Edit the episode or speaker profile and pick the model. The seeded profiles ship without models. |
+| `... has no outline model configured` / `no transcript model configured` | Edit the episode profile and pick the model. The seeded profiles ship without models. |
+| `... has no voice model configured and no default Text-to-Speech model is set` | Pick a voice model in the speaker profile, or set a **Default Text-to-Speech Model** in Manage → Models. |
 | `Invalid speaker name` | The transcript model used a name that isn't in the speaker profile. Retrying usually works. |
 | `Voice name ... not supported` or `Requested entity was not found` (Google) | The Voice ID doesn't exist for that voice model. Use a voice name your TTS model provides. |
 | `Invalid json output` / `Expecting value` | The model's output was cut off or empty. Lower **Max output tokens** to the model's real limit, use fewer segments, or avoid models that put all output in thinking blocks. |

@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `make start-all` starts SurrealDB again (it pointed to a compose file removed long ago)
 - The legacy `SURREAL_ADDRESS` / `SURREAL_PORT` fallback builds a valid database URL (`ws://host:port/rpc`, was `ws://host/rpc:port`); an address that already includes the port is kept as is
 - `.env.example` names the chunking variables Open Notebook actually reads (`OPEN_NOTEBOOK_CHUNK_SIZE` / `OPEN_NOTEBOOK_CHUNK_OVERLAP`)
+- **The Default Text-to-Speech Model is used by podcasts.** A speaker profile without a voice model now falls back to it instead of failing with "has no voice model configured", so the seeded `solo_expert`, `business_panel` and `tech_experts` profiles work as soon as a default is set in Manage → Models. Other speaker profiles without a voice model are kept instead of dropped when a default exists. Generation only fails when neither the profile nor the default has a model (#1467)
 
 ## [1.15.0] - 2026-10-04
 

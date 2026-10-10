@@ -18,7 +18,7 @@ from typing import Optional
 from loguru import logger
 
 from open_notebook.ai.provider_registry import PROVIDERS
-from open_notebook.domain.credential import Credential
+from open_notebook.domain.credential import Credential, default_azure_api_version
 
 # =============================================================================
 # Provider Configuration Mapping
@@ -220,6 +220,11 @@ async def _provision_azure() -> bool:
         os.environ["AZURE_OPENAI_API_VERSION"] = cred.api_version
         logger.debug("Set AZURE_OPENAI_API_VERSION from Credential")
         any_set = True
+    else:
+        default_version = default_azure_api_version()
+        if default_version:
+            os.environ["AZURE_OPENAI_API_VERSION"] = default_version
+            logger.debug("Set AZURE_OPENAI_API_VERSION to the default")
     # For Azure, base_url from the UI form maps to endpoint
     azure_endpoint = cred.endpoint or cred.base_url
     if azure_endpoint:

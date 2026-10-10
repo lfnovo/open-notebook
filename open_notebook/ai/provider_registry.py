@@ -77,6 +77,11 @@ class ProviderSpec:
 _LANGUAGE_ONLY = ("language",)
 _ALL_MODALITIES = ("language", "embedding", "speech_to_text", "text_to_speech")
 
+# Azure OpenAI API version used when neither the credential nor the environment
+# sets one. The connection test, model discovery and the model config all use
+# it, so a passing connection test means the models work too (#1470).
+AZURE_DEFAULT_API_VERSION = "2024-10-21"
+
 
 _PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
     ProviderSpec(

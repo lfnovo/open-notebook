@@ -15,14 +15,38 @@ Usage:
     await cred.save()
 """
 
+import os
 from typing import Any, ClassVar, Dict, List, Optional
 
 from loguru import logger
 from pydantic import SecretStr, model_validator
 
+from open_notebook.ai.provider_registry import AZURE_DEFAULT_API_VERSION
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel
 from open_notebook.utils.encryption import decrypt_value, encrypt_value
+
+# Env vars Esperanto's Azure providers read for the API version.
+_AZURE_API_VERSION_ENV_VARS = (
+    "AZURE_OPENAI_API_VERSION",
+    "AZURE_OPENAI_API_VERSION_LLM",
+    "AZURE_OPENAI_API_VERSION_EMBEDDING",
+    "AZURE_OPENAI_API_VERSION_STT",
+    "AZURE_OPENAI_API_VERSION_TTS",
+    "OPENAI_API_VERSION",
+)
+
+
+def default_azure_api_version() -> Optional[str]:
+    """
+    API version for an Azure credential that has none.
+
+    Returns None when an env var already sets one, so Esperanto keeps reading
+    it; otherwise the same default the connection test uses.
+    """
+    if any(os.environ.get(var) for var in _AZURE_API_VERSION_ENV_VARS):
+        return None
+    return AZURE_DEFAULT_API_VERSION
 
 
 class Credential(ObjectModel):
@@ -117,6 +141,10 @@ class Credential(ObjectModel):
             config["endpoint"] = self.endpoint
         if self.api_version:
             config["api_version"] = self.api_version
+        elif self.provider and self.provider.lower() == "azure":
+            default_version = default_azure_api_version()
+            if default_version:
+                config["api_version"] = default_version
         if self.endpoint_llm:
             config["endpoint_llm"] = self.endpoint_llm
         if self.endpoint_embedding:

@@ -118,7 +118,8 @@ export function ChatPanel({
                 size="sm"
                 className="gap-2 text-muted-foreground"
                 onClick={() => setSessionManagerOpen(true)}
-                disabled={loadingSessions}
+                // Switching mid-reply would show the old session's messages (#1391)
+                disabled={loadingSessions || isStreaming}
               >
                 <Clock className="h-4 w-4" />
                 <span className="text-xs">{t('chat.sessions')}</span>
@@ -253,10 +254,11 @@ function ChatComposer({
     const message = input.trim()
     if (message && !isStreaming) {
       setInput('')
-      // Give the text back if the send failed, so it isn't lost (#1391)
+      // Give the text back if the send failed, so it isn't lost (#1391),
+      // unless something new was typed while it was pending
       const sent = await onSendMessage(message, modelOverride)
       if (!sent) {
-        setInput(message)
+        setInput(currentInput => currentInput || message)
       }
     }
   }

@@ -73,7 +73,7 @@ This section decides which model each feature uses. Fields marked with an asteri
 
 While the Chat Model or Embedding Model is missing, a notice offers **Auto-assign Defaults**, which fills those two from the models you have added (the other slots stay as they are). If it says *No models available to assign*, add some models first.
 
-Podcasts use the models set in their episode and speaker profiles, not these defaults (see [Creating Podcasts](creating-podcasts.md)).
+Podcasts take their outline and transcript models from the episode profile and their voice model from the speaker profile; the Text-to-Speech Model here is only the fallback for speaker profiles without their own voice model (see [Creating Podcasts](creating-podcasts.md)).
 
 **Changing the Embedding Model** opens a confirmation: existing embeddings were made by the old model and won't match new queries. Choose **Change & Go to Rebuild** to go to **Advanced → Rebuild Embeddings**, or **Change Model Only** to rebuild later.
 

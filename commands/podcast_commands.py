@@ -305,6 +305,11 @@ async def generate_podcast_command(
                 )
                 del episode_profiles_dict[ep_name]
 
+        # Resolved TTS configs by model ID: the default model shared by several
+        # profiles, and the selected profile's model resolved above, are
+        # resolved only once.
+        tts_configs = {voice_model_id: (tts_provider, tts_model_name, tts_config)}
+
         # Resolve TTS for ALL speaker profiles (podcast-creator validates all).
         # Remove profiles that fail resolution to prevent validation errors.
         for sp_name in list(speaker_profiles_dict.keys()):
@@ -329,11 +334,16 @@ async def generate_podcast_command(
                 continue
 
             try:
-                prov, model, conf = await _resolve_model_config(sp_voice_model)
+                if sp_voice_model not in tts_configs:
+                    tts_configs[sp_voice_model] = await _resolve_model_config(
+                        sp_voice_model
+                    )
+
+                prov, model, conf = tts_configs[sp_voice_model]
 
                 sp_dict["tts_provider"] = prov
                 sp_dict["tts_model"] = model
-                sp_dict["tts_config"] = conf
+                sp_dict["tts_config"] = dict(conf)
             except Exception as e:
                 logger.warning(
                     f"Failed to resolve TTS for speaker profile '{sp_name}', "

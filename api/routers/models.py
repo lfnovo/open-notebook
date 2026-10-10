@@ -794,11 +794,11 @@ async def auto_assign_defaults():
         # Only REQUIRED slots are auto-assigned. Optional slots
         # (transformation, tools, large_context, TTS, STT) are intentionally
         # left untouched: transformation, tools and large_context fall back to
-        # the chat model when empty; an empty TTS slot means podcasts need a
-        # voice model on each speaker profile (#1467), and an empty STT slot
-        # means no default transcription model. Either way an empty optional
-        # slot may be a deliberate user choice (see #1097/#1098), so
-        # re-populating them here would silently undo that intent.
+        # the chat model when empty; with an empty TTS slot, podcasts can only
+        # use speaker profiles that have their own voice model (#1467), and an
+        # empty STT slot means no default transcription model. Either way an
+        # empty optional slot may be a deliberate user choice (see #1097/#1098),
+        # so re-populating them here would silently undo that intent.
         required_slot_configs = [
             ("default_chat_model", "language", defaults.default_chat_model),  # type: ignore[attr-defined]
             ("default_embedding_model", "embedding", defaults.default_embedding_model),  # type: ignore[attr-defined]

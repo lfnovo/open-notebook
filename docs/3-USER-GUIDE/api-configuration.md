@@ -63,10 +63,10 @@ This section decides which model each feature uses. Fields marked with an asteri
 
 | Assignment | Used for | If not set |
 |------------|----------|-----------|
-| **Chat Model** * | Notebook chat, source chat; the default for all three Ask stages on the Ask page | Chat and Ask fail |
+| **Chat Model** * | Notebook chat, source chat; Ask when no Tools Model is set | Chat and Ask fail |
 | **Embedding Model** * | Embedding sources, notes and insights; vector search; Ask | Ask and vector search are unavailable |
 | **Transformation Model** | Transformations (insights), titles for AI-generated notes | Uses the Chat Model |
-| **Tools Model** | Ask, when called through the API without explicit models | Uses the Chat Model |
+| **Tools Model** | Ask: the default for all three stages on the Ask page, and for API requests without explicit models | Uses the Chat Model |
 | **Large Context Model** | Any prompt over about 105,000 tokens | Uses the Chat Model |
 | **Text-to-Speech Model** | Nothing at the moment: podcasts take their voice model from the speaker profile | — |
 | **Speech-to-Text Model** | Transcribing uploaded audio and video files, and YouTube videos without a transcript | Those sources can't be transcribed (YouTube videos with a transcript still work) |

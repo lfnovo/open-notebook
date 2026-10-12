@@ -272,8 +272,11 @@ Off unless the URL is set. Ask then calls one tool on a Streamable HTTP MCP serv
 | Variable | Default | Read by | Description |
 |----------|---------|---------|-------------|
 | `OPEN_NOTEBOOK_EXTERNAL_MCP_URL` | none | API | Streamable HTTP endpoint. Unset means the feature is off |
-| `OPEN_NOTEBOOK_EXTERNAL_MCP_TOKEN` | none | API | Optional bearer token (`Authorization: Bearer`) |
-| `OPEN_NOTEBOOK_EXTERNAL_MCP_SEARCH_TOOL` | `search` | API | Tool name. Called with `query` and `limit` |
+| `OPEN_NOTEBOOK_EXTERNAL_MCP_TOKEN` | none | API | Optional bearer token (`Authorization: Bearer`). Wins over the token file |
+| `OPEN_NOTEBOOK_EXTERNAL_MCP_TOKEN_FILE` | none | API | File whose contents are the bearer token, used when `TOKEN` is unset |
+| `OPEN_NOTEBOOK_EXTERNAL_MCP_SEARCH_TOOL` | `search` | API | Tool name. Called with `query` and the limit argument below |
+| `OPEN_NOTEBOOK_EXTERNAL_MCP_LIMIT` | `5` | API | Integer sent as the limit. A non-numeric or non-positive value falls back to 5 |
+| `OPEN_NOTEBOOK_EXTERNAL_MCP_LIMIT_ARG` | `limit` | API | Name of that integer argument. A value that is not an identifier, or `query`, falls back to `limit` |
 | `OPEN_NOTEBOOK_EXTERNAL_MCP_TIMEOUT` | `30` | API | HTTP timeout in seconds. A non-numeric or non-positive value falls back to 30 |
 
 ---

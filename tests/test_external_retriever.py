@@ -16,7 +16,10 @@ def _clear_mcp_env(monkeypatch: pytest.MonkeyPatch) -> None:
     for name in (
         "OPEN_NOTEBOOK_EXTERNAL_MCP_URL",
         "OPEN_NOTEBOOK_EXTERNAL_MCP_TOKEN",
+        "OPEN_NOTEBOOK_EXTERNAL_MCP_TOKEN_FILE",
         "OPEN_NOTEBOOK_EXTERNAL_MCP_SEARCH_TOOL",
+        "OPEN_NOTEBOOK_EXTERNAL_MCP_LIMIT",
+        "OPEN_NOTEBOOK_EXTERNAL_MCP_LIMIT_ARG",
         "OPEN_NOTEBOOK_EXTERNAL_MCP_TIMEOUT",
     ):
         monkeypatch.delenv(name, raising=False)
@@ -60,6 +63,37 @@ def test_structured_results_are_namespaced():
     ]
 
 
+def test_json_text_results_are_unpacked():
+    payload = (
+        '{"results": ['
+        '{"id": 42, "content": "alpha", "title": "T", '
+        '"relevance_score": 0.5, "confidence": "not-a-number"}'
+        "]}"
+    )
+    result = SimpleNamespace(
+        isError=False,
+        structuredContent=None,
+        content=[SimpleNamespace(text=payload)],
+    )
+    assert rows_from_tool_result(result) == [
+        {
+            "id": "external:42",
+            "content": "alpha",
+            "similarity": 0.5,
+            "title": "T",
+        }
+    ]
+
+
+def test_json_text_with_no_hits_stays_empty():
+    result = SimpleNamespace(
+        isError=False,
+        structuredContent=None,
+        content=[SimpleNamespace(text='{"results": []}')],
+    )
+    assert rows_from_tool_result(result) == []
+
+
 def test_text_content_becomes_one_snippet():
     result = SimpleNamespace(
         isError=False,
@@ -88,6 +122,33 @@ async def test_connector_failure_does_not_raise(monkeypatch: pytest.MonkeyPatch)
         new=AsyncMock(side_effect=ConnectionError("down")),
     ):
         assert await external_mcp_search("term") == []
+
+
+@pytest.mark.asyncio
+async def test_limit_argument_and_token_file_are_configuration(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    _clear_mcp_env(monkeypatch)
+    token_file = tmp_path / "token"
+    token_file.write_text("sekret\n", encoding="utf-8")
+    monkeypatch.setenv("OPEN_NOTEBOOK_EXTERNAL_MCP_URL", "https://mcp.example.com/mcp")
+    monkeypatch.setenv("OPEN_NOTEBOOK_EXTERNAL_MCP_TOKEN_FILE", str(token_file))
+    monkeypatch.setenv("OPEN_NOTEBOOK_EXTERNAL_MCP_LIMIT_ARG", "max_hits")
+    monkeypatch.setenv("OPEN_NOTEBOOK_EXTERNAL_MCP_LIMIT", "8")
+    called = AsyncMock(
+        return_value=SimpleNamespace(
+            isError=False, structuredContent={"results": []}, content=[]
+        )
+    )
+    with patch("open_notebook.ai.external_retriever._call_search_tool", new=called):
+        assert await external_mcp_search("term") == []
+    called.assert_awaited_once_with(
+        "https://mcp.example.com/mcp",
+        "sekret",
+        "search",
+        {"query": "term", "max_hits": 8},
+        30.0,
+    )
 
 
 @pytest.mark.asyncio

@@ -201,11 +201,18 @@ The feature is off until `OPEN_NOTEBOOK_EXTERNAL_MCP_URL` is set. Set it on the 
 OPEN_NOTEBOOK_EXTERNAL_MCP_URL=https://mcp.example.com/mcp
 
 # Optional bearer token, sent as Authorization. Leave unset for an open server.
+# If TOKEN is unset, the same token is read from TOKEN_FILE instead.
 OPEN_NOTEBOOK_EXTERNAL_MCP_TOKEN=
+OPEN_NOTEBOOK_EXTERNAL_MCP_TOKEN_FILE=
 
 # Tool the client calls. Default: search
-# The tool is called with {"query": "<ask search term>", "limit": 5}.
+# Called with {"query": "<ask search term>", "<LIMIT_ARG>": <LIMIT>}.
 OPEN_NOTEBOOK_EXTERNAL_MCP_SEARCH_TOOL=search
+
+# How many hits to request, and the argument name the tool actually uses.
+# Defaults: 5 and limit. Set LIMIT_ARG when the tool names that integer something else.
+OPEN_NOTEBOOK_EXTERNAL_MCP_LIMIT=5
+OPEN_NOTEBOOK_EXTERNAL_MCP_LIMIT_ARG=limit
 
 # Seconds for the HTTP connection. Default: 30
 OPEN_NOTEBOOK_EXTERNAL_MCP_TIMEOUT=30
@@ -222,10 +229,13 @@ The connector is responsible for ranking, access control and freshness. Open Not
 
 Result shape the client understands, in order:
 
-- `structuredContent.results` (also `items` or `documents`): a list of objects with `content` or `text`, and optionally `id`, `title`, and `score` or `similarity`.
+- `structuredContent.results` (also `items` or `documents`): a list of objects with `content` or `text`, and optionally `id`, `title`, and `score`, `similarity`, `relevance_score`, or a numeric `confidence`.
+- The same object when the tool returns it as a JSON text block instead of `structuredContent`. An empty list stays empty. It is not pasted into the prompt as raw JSON.
 - Otherwise, text content blocks from the tool are joined into one snippet.
 
-Ids are prefixed with `external:` so they cannot collide with `source:`, `note:` or `insight:` records. Those citations are labels in the answer. They are not notebook records, and the UI cannot open them.
+Ids may be strings or numbers. They are prefixed with `external:` so they cannot collide with `source:`, `note:` or `insight:` records.
+
+Those citations are labels in the answer. They are not notebook records, and the UI cannot open them.
 
 The search term is sent to the connector. Leave the URL unset if that term must not leave the machine.
 

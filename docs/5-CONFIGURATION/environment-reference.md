@@ -265,6 +265,19 @@ If you have them set, **Manage → Models** shows **Environment Variables Detect
 
 ---
 
+## External MCP connector (Ask)
+
+Off unless the URL is set. Ask then calls one tool on a Streamable HTTP MCP server and mixes the snippets with local results. The search term is sent to that server. Read by the API process. Details: [MCP integration](mcp-integration.md#external-mcp-retriever-ask-context).
+
+| Variable | Default | Read by | Description |
+|----------|---------|---------|-------------|
+| `OPEN_NOTEBOOK_EXTERNAL_MCP_URL` | none | API | Streamable HTTP endpoint. Unset means the feature is off |
+| `OPEN_NOTEBOOK_EXTERNAL_MCP_TOKEN` | none | API | Optional bearer token (`Authorization: Bearer`) |
+| `OPEN_NOTEBOOK_EXTERNAL_MCP_SEARCH_TOOL` | `search` | API | Tool name. Called with `query` and `limit` |
+| `OPEN_NOTEBOOK_EXTERNAL_MCP_TIMEOUT` | `30` | API | HTTP timeout in seconds. A non-numeric or non-positive value falls back to 30 |
+
+---
+
 ## Variables that do nothing
 
 These appear in older guides, examples or forum posts. Nothing in Open Notebook or its libraries reads them:

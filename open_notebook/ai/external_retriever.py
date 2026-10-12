@@ -1,87 +1,168 @@
-"""Generic external MCP retriever for Ask / source-chat context.
+"""Optional external MCP retriever for Ask.
 
-When OPEN_NOTEBOOK_EXTERNAL_MCP_URL is set, Ask (and optionally other
-retrieval paths) can augment local vector search with results from any
-MCP server that exposes a search-style tool.
+When ``OPEN_NOTEBOOK_EXTERNAL_MCP_URL`` is set, Ask also calls one tool on a
+Streamable HTTP MCP server and mixes those snippets with local vector hits.
 
-This module is deliberately free of any vendor- or product-specific logic.
-The external server is responsible for ranking, freshness, access control, etc.
+The connector is an opaque context source. This module does not rank, filter,
+or interpret its results beyond shaping them into the dicts Ask already puts
+in the prompt. It is off unless the URL is set, and any failure returns no
+rows so a down connector cannot break local Ask.
 """
 
 from __future__ import annotations
 
 import os
-from typing import Any, List, Optional
+from typing import Any
 
-import httpx
+from loguru import logger
 
-from open_notebook.exceptions import ExternalServiceError
+_DEFAULT_TIMEOUT_SECONDS = 30.0
+_DEFAULT_TOOL = "search"
 
 
-def _get_config() -> Optional[dict]:
+def _config() -> dict[str, Any] | None:
     url = os.environ.get("OPEN_NOTEBOOK_EXTERNAL_MCP_URL", "").strip()
     if not url:
         return None
+    tool = os.environ.get("OPEN_NOTEBOOK_EXTERNAL_MCP_SEARCH_TOOL", "").strip()
     return {
-        "url": url.rstrip("/"),
+        "url": url,
         "token": os.environ.get("OPEN_NOTEBOOK_EXTERNAL_MCP_TOKEN", "").strip() or None,
-        "tool": os.environ.get("OPEN_NOTEBOOK_EXTERNAL_MCP_SEARCH_TOOL", "search").strip() or "search",
-        "timeout": float(os.environ.get("OPEN_NOTEBOOK_EXTERNAL_MCP_TIMEOUT", "15")),
+        "tool": tool or _DEFAULT_TOOL,
+        "timeout": _timeout_seconds(),
     }
 
 
-async def external_mcp_search(query: str, limit: int = 5) -> List[dict[str, Any]]:
-    """Call the configured external MCP search tool.
+def _timeout_seconds() -> float:
+    raw = os.environ.get("OPEN_NOTEBOOK_EXTERNAL_MCP_TIMEOUT", "").strip()
+    if not raw:
+        return _DEFAULT_TIMEOUT_SECONDS
+    try:
+        value = float(raw)
+    except ValueError:
+        return _DEFAULT_TIMEOUT_SECONDS
+    if value <= 0:
+        return _DEFAULT_TIMEOUT_SECONDS
+    return value
 
-    Returns a list of result dicts. Expected (but not strictly required) shape
-    from the MCP tool:
-        {"content": str, "id": str | None, "score": float | None, "metadata": dict | None}
 
-    If the external server is unreachable or returns an error, an
-    ExternalServiceError is raised so the caller can decide whether to fail
-    open or closed.
+def _external_id(raw: Any, index: int) -> str:
+    """Keep connector ids from colliding with notebook record ids.
+
+    Local citations look like ``source:…``, ``note:…`` or ``insight:…``.
+    External snippets are not those records, so every id is namespaced.
     """
-    cfg = _get_config()
-    if not cfg:
+    text = raw.strip() if isinstance(raw, str) else ""
+    if not text:
+        return f"external:{index}"
+    if text.startswith("external:"):
+        return text
+    return f"external:{text}"
+
+
+def _row(item: dict[str, Any], index: int) -> dict[str, Any] | None:
+    content = item.get("content")
+    if not isinstance(content, str) or not content.strip():
+        content = item.get("text")
+    if not isinstance(content, str) or not content.strip():
+        return None
+    row: dict[str, Any] = {
+        "id": _external_id(item.get("id"), index),
+        "content": content.strip(),
+    }
+    score = item.get("score", item.get("similarity"))
+    if isinstance(score, (int, float)) and not isinstance(score, bool):
+        row["similarity"] = float(score)
+    title = item.get("title")
+    if isinstance(title, str) and title.strip():
+        row["title"] = title.strip()
+    return row
+
+
+def rows_from_tool_result(result: Any) -> list[dict[str, Any]]:
+    """Turn one MCP ``tools/call`` result into Ask result dicts."""
+    if getattr(result, "isError", False):
         return []
 
-    headers = {"Content-Type": "application/json"}
-    if cfg["token"]:
-        headers["Authorization"] = f"Bearer {cfg['token']}"
+    structured = getattr(result, "structuredContent", None)
+    candidates: list[Any] | None = None
+    if isinstance(structured, dict):
+        for key in ("results", "items", "documents"):
+            value = structured.get(key)
+            if isinstance(value, list):
+                candidates = value
+                break
+        if candidates is None and (
+            isinstance(structured.get("content"), str)
+            or isinstance(structured.get("text"), str)
+        ):
+            candidates = [structured]
 
-    payload = {
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "tools/call",
-        "params": {
-            "name": cfg["tool"],
-            "arguments": {"query": query, "limit": limit},
-        },
-    }
+    rows: list[dict[str, Any]] = []
+    if candidates is not None:
+        for item in candidates:
+            if not isinstance(item, dict):
+                continue
+            row = _row(item, len(rows) + 1)
+            if row is not None:
+                rows.append(row)
+        return rows
 
+    parts: list[str] = []
+    for block in getattr(result, "content", None) or []:
+        text = getattr(block, "text", None)
+        if isinstance(text, str) and text.strip():
+            parts.append(text.strip())
+    if not parts:
+        return []
+    row = _row({"content": "\n\n".join(parts)}, 1)
+    return [row] if row is not None else []
+
+
+async def _call_search_tool(
+    url: str,
+    token: str | None,
+    tool: str,
+    query: str,
+    limit: int,
+    timeout: float,
+) -> Any:
+    from mcp import ClientSession
+    from mcp.client.streamable_http import streamablehttp_client
+
+    headers = {"Authorization": f"Bearer {token}"} if token else None
+    async with streamablehttp_client(url, headers=headers, timeout=timeout) as (
+        read,
+        write,
+        _session_id,
+    ):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            return await session.call_tool(tool, {"query": query, "limit": limit})
+
+
+async def external_mcp_search(query: str, limit: int = 5) -> list[dict[str, Any]]:
+    """Search the configured MCP connector, or return no rows.
+
+    The tool is called with ``{"query": query, "limit": limit}``. Connectors
+    that use different argument names are not mapped here.
+    """
+    cfg = _config()
+    if cfg is None or not query.strip():
+        return []
     try:
-        async with httpx.AsyncClient(timeout=cfg["timeout"]) as client:
-            resp = await client.post(f"{cfg['url']}/mcp", headers=headers, json=payload)
-            resp.raise_for_status()
-            data = resp.json()
-    except Exception as e:
-        raise ExternalServiceError(f"External MCP retriever failed: {e}") from e
-
-    if "error" in data:
-        raise ExternalServiceError(f"External MCP tool error: {data['error']}")
-
-    result = data.get("result", {})
-    # MCP tools/call result is usually {"content": [{"type": "text", "text": "..."}], ...}
-    # or a direct structured content. We normalise to a list of dicts.
-    content = result.get("content") or result.get("contents") or []
-    if isinstance(content, list) and content and isinstance(content[0], dict) and "text" in content[0]:
-        # Simple text content — wrap as one result
-        text = "\n".join(item.get("text", "") for item in content if isinstance(item, dict))
-        return [{"content": text, "id": None, "score": None, "source": "external_mcp"}]
-
-    # Assume the tool already returned a list of structured results
-    if isinstance(result.get("results"), list):
-        return result["results"]
-    if isinstance(content, list):
-        return content
-    return []
+        result = await _call_search_tool(
+            cfg["url"],
+            cfg["token"],
+            cfg["tool"],
+            query,
+            limit,
+            cfg["timeout"],
+        )
+    except Exception as exc:
+        logger.warning("External MCP retriever failed: {}", exc)
+        return []
+    if getattr(result, "isError", False):
+        logger.warning("External MCP tool {!r} returned an error", cfg["tool"])
+        return []
+    return rows_from_tool_result(result)

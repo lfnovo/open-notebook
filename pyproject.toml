@@ -37,6 +37,7 @@ dependencies = [
     "tomli>=2.0.2",
     "python-dotenv>=1.2.2",
     "httpx[socks]>=0.27.0",
+    "mcp>=1.28.1,<2",
     "content-core>=2.2.0,<3",
     "ai-prompter>=0.4,<1",
     "esperanto>=2.28.0,<3",

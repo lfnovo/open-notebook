@@ -188,6 +188,30 @@ The Open Notebook MCP server is published to the official MCP Registry:
 
 The Open Notebook MCP server follows the standard MCP protocol and can be used with any MCP-compatible client. Check your client's documentation for configuration details.
 
+## External MCP Retriever (Ask context)
+
+Open Notebook can optionally augment its local vector search with results from an external MCP server. This is useful when you already have a specialised knowledge base, enterprise search, or another system that exposes an MCP search tool.
+
+Set the following environment variables (or Docker `environment:`):
+
+```bash
+# Required to enable the feature
+OPEN_NOTEBOOK_EXTERNAL_MCP_URL=http://localhost:8766
+
+# Optional bearer token
+OPEN_NOTEBOOK_EXTERNAL_MCP_TOKEN=your-read-only-token
+
+# Tool name to call (default: search)
+OPEN_NOTEBOOK_EXTERNAL_MCP_SEARCH_TOOL=search
+
+# Timeout in seconds (default: 15)
+OPEN_NOTEBOOK_EXTERNAL_MCP_TIMEOUT=15
+```
+
+When enabled, every Ask search term is also sent to the external tool. Results are merged with local vector hits before the answer model sees them. External failures are ignored so a down MCP server never breaks local Ask.
+
+The external server is responsible for ranking, access control, and freshness. Open Notebook treats it as an opaque source of additional context.
+
 ## Learn More
 
 - [Model Context Protocol Documentation](https://modelcontextprotocol.io)

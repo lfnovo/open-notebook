@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
 from open_notebook.ai.provision import provision_langchain_model
+from open_notebook.ai.external_retriever import external_mcp_search
 from open_notebook.domain.notebook import vector_search
 from open_notebook.exceptions import (
     ExternalServiceError,
@@ -138,6 +139,25 @@ async def provide_answer(state: SubGraphState, config: RunnableConfig) -> dict:
             True,
             notebook_ids=state.get("notebook_ids") or None,
         )
+
+        # Optional external MCP augmentation (generic, no vendor logic).
+        # Failures are logged and ignored so a down external server never
+        # breaks local Ask.
+        try:
+            external = await external_mcp_search(state["term"], limit=5)
+            for item in external:
+                # Normalise to the shape expected by the prompt template.
+                results.append(
+                    {
+                        "id": item.get("id") or "external",
+                        "content": item.get("content") or item.get("text") or "",
+                        "similarity": item.get("score") or item.get("similarity") or 0.5,
+                        "source": "external_mcp",
+                    }
+                )
+        except Exception:
+            pass  # external is best-effort
+
         if len(results) == 0:
             return {"answers": []}
         payload["results"] = results

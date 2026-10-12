@@ -9,6 +9,7 @@ from langgraph.types import Send
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
+from open_notebook.ai.external_retriever import external_mcp_search
 from open_notebook.ai.provision import provision_langchain_model
 from open_notebook.domain.notebook import vector_search
 from open_notebook.exceptions import (
@@ -138,6 +139,8 @@ async def provide_answer(state: SubGraphState, config: RunnableConfig) -> dict:
             True,
             notebook_ids=state.get("notebook_ids") or None,
         )
+        results.extend(await external_mcp_search(state["term"]))
+
         if len(results) == 0:
             return {"answers": []}
         payload["results"] = results

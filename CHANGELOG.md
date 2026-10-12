@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Ask can call an external MCP connector.** Set `OPEN_NOTEBOOK_EXTERNAL_MCP_URL` to a Streamable HTTP MCP endpoint and each Ask search term is also sent to that server's search tool (`OPEN_NOTEBOOK_EXTERNAL_MCP_SEARCH_TOOL`, default `search`). The call is `query` plus an integer whose name and value are `OPEN_NOTEBOOK_EXTERNAL_MCP_LIMIT_ARG` (default `limit`) and `OPEN_NOTEBOOK_EXTERNAL_MCP_LIMIT` (default 5). The optional bearer token is `OPEN_NOTEBOOK_EXTERNAL_MCP_TOKEN`, or `OPEN_NOTEBOOK_EXTERNAL_MCP_TOKEN_FILE` when the token is not inline. Snippets are mixed with local results. A JSON text payload with `results`, `items`, or `documents` is read the same way as `structuredContent`. Nothing is called unless the URL is set, and a connector that is down or returns an error does not break Ask. Snippets are labeled `external:…`; they are not notebook records, so those citations are not links. The connector receives the search term. See [MCP integration](docs/5-CONFIGURATION/mcp-integration.md#external-mcp-retriever-ask-context).
+
 ### Changed
 - **Documentation rewritten against the code.** Every page under `docs/` was checked against v1.15.0 and rewritten where it described an older or imagined product (#1458, #1459, #1460, #1461):
   - **Install:** one canonical path built on the shipped `docker-compose.yml`, with small override files for the Ollama and LM Studio variants. The network-exposure warning (bind ports to `127.0.0.1` or set a password) comes before the first `docker compose up -d`. Example encryption keys are generated, never copied. First-run setup lives in one place, [Connect a provider](docs/4-AI-PROVIDERS/index.md#connect-a-provider), and ends in a working chat via **Auto-assign Defaults**. The provider table is built from the provider registry: 24 providers, with the model types each one offers

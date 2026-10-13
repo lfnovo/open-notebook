@@ -120,3 +120,10 @@ async def test_non_tts_voice_model_raises_a_typed_error(mocks):
 
     with pytest.raises(ConfigurationError):
         await _validate_voice_models("model:llm", [])
+
+
+def test_rejects_non_string_voice_model_override(client, mocks):
+    get, pget, _ = mocks
+    resp = _call(client, pget, "post", "/api/speaker-profiles", None, (123,))
+    assert resp.status_code == 400
+    get.assert_not_awaited()

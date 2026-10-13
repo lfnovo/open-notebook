@@ -14,6 +14,7 @@ import { Transformation } from '@/lib/types/transformations'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ContentUnavailable } from '@/components/common/ContentUnavailable'
 import { getApiErrorMessage, isNotFoundError } from '@/lib/utils/error-handler'
+import { markdownPreview } from '@/lib/utils/markdown-preview'
 import { InlineEdit } from '@/components/common/InlineEdit'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -655,7 +656,7 @@ function SourceDetailContentInner({
                         </span>
                       </div>
                       <p className="mt-2 text-sm text-muted-foreground">
-                        {insight.content.slice(0, 180)}{insight.content.length > 180 ? '…' : ''}
+                        {markdownPreview(insight.content)}
                       </p>
                       <div className="mt-3 flex justify-end gap-2">
                         <Button size="sm" variant="outline" onClick={() => setSelectedInsight(insight)}>

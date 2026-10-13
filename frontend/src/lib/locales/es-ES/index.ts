@@ -300,7 +300,7 @@ export const esES = {
     deleteSourceConfirm: "¿Estás seguro de que quieres eliminar esta fuente?",
     deleteConfirm: "¿Estás seguro de que quieres eliminar esto?",
     deleteConfirmWithTitle: "¿Estás seguro de que quieres eliminar \"{{title}}\"?",
-    deleteSuccess: "Fuente eliminada exitosamente. Nota: Para eliminar el archivo del almacenamiento, debes habilitar la opción \"eliminar archivo\" en la página de configuración.",
+    deleteSuccess: "Fuente eliminada exitosamente.",
     failedToDelete: "Error al eliminar la fuente",
     sourceQueued: "Fuente en cola",
     sourceQueuedDesc: "Fuente enviada para procesamiento en segundo plano. Puedes monitorear el progreso en la lista de fuentes.",

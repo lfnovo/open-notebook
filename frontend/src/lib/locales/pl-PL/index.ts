@@ -300,7 +300,7 @@ export const plPL = {
     deleteSourceConfirm: "Czy na pewno chcesz usunąć to źródło?",
     deleteConfirm: "Czy na pewno chcesz to usunąć?",
     deleteConfirmWithTitle: "Czy na pewno chcesz usunąć „{{title}}”?",
-    deleteSuccess: "Źródło usunięte pomyślnie. Uwaga: aby usunąć plik z magazynu, musisz włączyć opcję „usuń plik” na stronie ustawień.",
+    deleteSuccess: "Źródło usunięte pomyślnie.",
     failedToDelete: "Nie udało się usunąć źródła",
     sourceQueued: "Źródło w kolejce",
     sourceQueuedDesc: "Źródło przekazano do przetwarzania w tle. Postęp możesz śledzić na liście źródeł.",

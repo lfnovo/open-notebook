@@ -300,7 +300,7 @@ export const ptBR = {
     deleteSourceConfirm: "Tem certeza que deseja excluir esta fonte?",
     deleteConfirm: "Tem certeza que deseja excluir isto?",
     deleteConfirmWithTitle: "Tem certeza que deseja excluir \"{{title}}\"?",
-    deleteSuccess: "Fonte excluída com sucesso. Nota: Para excluir o arquivo do armazenamento, você deve habilitar a opção \"excluir arquivo\" na página de configurações.",
+    deleteSuccess: "Fonte excluída com sucesso.",
     failedToDelete: "Falha ao excluir fonte",
     sourceQueued: "Fonte Enfileirada",
     sourceQueuedDesc: "Fonte enviada para processamento em segundo plano. Você pode monitorar o progresso na lista de fontes.",

@@ -7,7 +7,9 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
+from api.routers.speaker_profiles import _validate_voice_models
 from open_notebook.ai.models import Model
+from open_notebook.exceptions import ConfigurationError
 from open_notebook.podcasts.models import SpeakerProfile
 
 MODELS = {
@@ -102,3 +104,18 @@ def test_update_checks_the_incoming_voice_models(client, mocks):
     assert resp.status_code == 200
     save.assert_called_once()
     assert [c.args for c in get.await_args_list] == [("model:tts",), ("model:tts",)]
+
+
+@pytest.mark.parametrize("method,url", ENDPOINTS)
+@pytest.mark.parametrize("bad_id", ["model:", "model:a:b", "notebook:abc"])
+def test_rejects_malformed_voice_model_id(client, mocks, method, url, bad_id):
+    get, pget, save = mocks
+    assert _call(client, pget, method, url, bad_id).status_code == 400
+    get.assert_not_awaited()
+    save.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_non_tts_voice_model_raises_a_typed_error(mocks):
+    with pytest.raises(ConfigurationError):
+        await _validate_voice_models("model:llm", [])

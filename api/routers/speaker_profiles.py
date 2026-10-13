@@ -5,7 +5,12 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from open_notebook.ai.models import Model
-from open_notebook.exceptions import OpenNotebookError
+from open_notebook.database.repository import ensure_record_id
+from open_notebook.exceptions import (
+    ConfigurationError,
+    InvalidInputError,
+    OpenNotebookError,
+)
 from open_notebook.podcasts.models import SpeakerProfile
 
 router = APIRouter()
@@ -81,11 +86,19 @@ async def _validate_voice_models(
     for model_id in [voice_model, *(s.get("voice_model") for s in speakers)]:
         if not model_id:
             continue
+        if (
+            not isinstance(model_id, str)
+            or not model_id.startswith("model:")
+            or not model_id[len("model:") :]
+        ):
+            raise InvalidInputError(f"Invalid voice model id: {model_id}")
+        try:
+            ensure_record_id(model_id)
+        except Exception:
+            raise InvalidInputError(f"Invalid voice model id: {model_id}")
         model = await Model.get(model_id)
-        if not isinstance(model, Model) or model.type != "text_to_speech":
-            raise HTTPException(
-                status_code=422, detail="voice_model must be a text-to-speech model"
-            )
+        if model.type != "text_to_speech":
+            raise ConfigurationError("voice_model must be a text-to-speech model")
 
 
 @router.post("/speaker-profiles", response_model=SpeakerProfileResponse)

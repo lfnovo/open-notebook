@@ -1,0 +1,79 @@
+-- Migration 26 rollback: restore the single-statement fn::vector_search from
+-- migration 24 (#1431).
+--
+-- This reinstates the defect deliberately: vector search will again return
+-- notes only for any $match_count below the number of embedded notes.
+
+REMOVE FUNCTION IF EXISTS fn::vector_search;
+
+DEFINE FUNCTION IF NOT EXISTS fn::vector_search($query: array<float>, $match_count: int, $sources: bool, $show_notes: bool, $min_similarity: float, $notebook_ids: option<array<record<notebook>>>) {
+
+    let $scoped = $notebook_ids != NONE AND array::len($notebook_ids) > 0;
+    let $scoped_sources = IF $scoped { (SELECT VALUE in FROM reference WHERE out IN $notebook_ids) } ELSE { [] };
+    let $scoped_notes = IF $scoped { (SELECT VALUE in FROM artifact WHERE out IN $notebook_ids) } ELSE { [] };
+
+    let $source_embedding_search =
+        IF $sources {(
+            SELECT
+                source.id as id,
+                source.title as title,
+                content,
+                source.id as parent_id,
+                vector::similarity::cosine(embedding, $query) as similarity
+            FROM source_embedding
+            WHERE embedding != none and array::len(embedding)=array::len($query) AND
+                 vector::similarity::cosine(embedding, $query) >= $min_similarity
+              AND (!$scoped OR source IN $scoped_sources)
+            ORDER BY similarity DESC
+            LIMIT $match_count
+        )}
+        ELSE { [] };
+
+    let $source_insight_search =
+        IF $sources {(
+            SELECT
+                id,
+                insight_type + ' - ' + (source.title OR '') as title,
+                content,
+                source.id as parent_id,
+                vector::similarity::cosine(embedding, $query) as similarity
+            FROM source_insight
+             WHERE embedding != none and array::len(embedding)=array::len($query) AND
+            vector::similarity::cosine(embedding, $query) >= $min_similarity
+              AND (!$scoped OR source IN $scoped_sources)
+            ORDER BY similarity DESC
+            LIMIT $match_count
+        )}
+        ELSE { [] };
+
+
+    let $note_content_search =
+        IF $show_notes {(
+            SELECT
+                id,
+                title,
+                content,
+                id as parent_id,
+                vector::similarity::cosine(embedding, $query) as similarity
+            FROM note
+            WHERE embedding != none and array::len(embedding)=array::len($query) AND
+            vector::similarity::cosine(embedding, $query) >= $min_similarity
+              AND (!$scoped OR id IN $scoped_notes)
+            ORDER BY similarity DESC
+            LIMIT $match_count
+        )}
+        ELSE { [] };
+
+
+    let $all_results = array::union(
+        array::union($source_embedding_search, $source_insight_search),
+        $note_content_search
+    );
+
+
+    RETURN (select id, parent_id, title, math::max(similarity) as similarity,
+    array::flatten(content) as matches
+    from $all_results where id is not None
+    group by id, parent_id, title ORDER BY similarity DESC LIMIT $match_count);
+
+};

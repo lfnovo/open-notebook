@@ -84,7 +84,7 @@ async def _validate_voice_models(
     voice_model: Optional[str], speakers: List[Dict[str, Any]]
 ) -> None:
     for model_id in [voice_model, *(s.get("voice_model") for s in speakers)]:
-        if not model_id:
+        if model_id is None:
             continue
         if (
             not isinstance(model_id, str)

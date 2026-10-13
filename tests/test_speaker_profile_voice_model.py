@@ -24,7 +24,10 @@ ENDPOINTS = [
 
 def _speakers(overrides=(None,)):
     speaker = {"name": "Host", "voice_id": "v", "backstory": "b", "personality": "p"}
-    return [{**speaker, "voice_model": o} if o else dict(speaker) for o in overrides]
+    return [
+        {**speaker, "voice_model": o} if o is not None else dict(speaker)
+        for o in overrides
+    ]
 
 
 @pytest.fixture
@@ -122,8 +125,15 @@ async def test_non_tts_voice_model_raises_a_typed_error(mocks):
         await _validate_voice_models("model:llm", [])
 
 
-def test_rejects_non_string_voice_model_override(client, mocks):
-    get, pget, _ = mocks
-    resp = _call(client, pget, "post", "/api/speaker-profiles", None, (123,))
+@pytest.mark.parametrize("method,url", ENDPOINTS[:2])
+@pytest.mark.parametrize(
+    "override", [123, False, 0, ""], ids=["int", "false", "zero", "empty"]
+)
+def test_rejects_non_string_or_empty_voice_model_override(
+    client, mocks, method, url, override
+):
+    get, pget, save = mocks
+    resp = _call(client, pget, method, url, None, (override,), stored=(None, (None,)))
     assert resp.status_code == 400
     get.assert_not_awaited()
+    save.assert_not_called()

@@ -4,7 +4,13 @@ from fastapi import APIRouter, HTTPException
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from open_notebook.exceptions import OpenNotebookError
+from open_notebook.ai.models import Model
+from open_notebook.database.repository import ensure_record_id
+from open_notebook.exceptions import (
+    ConfigurationError,
+    InvalidInputError,
+    OpenNotebookError,
+)
 from open_notebook.podcasts.models import SpeakerProfile
 
 router = APIRouter()
@@ -74,10 +80,32 @@ class SpeakerProfileCreate(BaseModel):
     )
 
 
+async def _validate_voice_models(
+    voice_model: Optional[str], speakers: List[Dict[str, Any]]
+) -> None:
+    for model_id in [voice_model, *(s.get("voice_model") for s in speakers)]:
+        if model_id is None:
+            continue
+        if (
+            not isinstance(model_id, str)
+            or not model_id.startswith("model:")
+            or not model_id[len("model:") :]
+        ):
+            raise InvalidInputError(f"Invalid voice model id: {model_id}")
+        try:
+            ensure_record_id(model_id)
+        except Exception:
+            raise InvalidInputError(f"Invalid voice model id: {model_id}")
+        model = await Model.get(model_id)
+        if model.type != "text_to_speech":
+            raise ConfigurationError("voice_model must be a text-to-speech model")
+
+
 @router.post("/speaker-profiles", response_model=SpeakerProfileResponse)
 async def create_speaker_profile(profile_data: SpeakerProfileCreate):
     """Create a new speaker profile"""
     try:
+        await _validate_voice_models(profile_data.voice_model, profile_data.speakers)
         profile = SpeakerProfile(
             name=profile_data.name,
             description=profile_data.description,
@@ -108,6 +136,7 @@ async def update_speaker_profile(profile_id: str, profile_data: SpeakerProfileCr
                 status_code=404, detail=f"Speaker profile '{profile_id}' not found"
             )
 
+        await _validate_voice_models(profile_data.voice_model, profile_data.speakers)
         for field, value in profile_data.model_dump(exclude_unset=True).items():
             setattr(profile, field, value)
 
@@ -160,6 +189,7 @@ async def duplicate_speaker_profile(profile_id: str):
                 status_code=404, detail=f"Speaker profile '{profile_id}' not found"
             )
 
+        await _validate_voice_models(original.voice_model, original.speakers)
         duplicate = SpeakerProfile(
             name=f"{original.name} - Copy",
             description=original.description,

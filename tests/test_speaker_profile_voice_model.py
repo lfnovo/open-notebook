@@ -21,9 +21,9 @@ ENDPOINTS = [
 ]
 
 
-def _speakers(override=None):
+def _speakers(overrides=(None,)):
     speaker = {"name": "Host", "voice_id": "v", "backstory": "b", "personality": "p"}
-    return [{**speaker, "voice_model": override} if override else speaker]
+    return [{**speaker, "voice_model": o} if o else dict(speaker) for o in overrides]
 
 
 @pytest.fixture
@@ -48,24 +48,32 @@ def mocks():
         yield get, pget, save
 
 
-def _call(client, pget, method, url, voice_model, override=None, stored=None):
-    """Send the request; `stored` is the profile that update/duplicate load."""
+def _call(client, pget, method, url, voice_model, overrides=(None,), stored=None):
+    """Send the request; `stored` = (voice_model, overrides) update/duplicate load."""
+    stored_model, stored_overrides = stored or (voice_model, overrides)
     pget.return_value = SpeakerProfile(
-        name="p", voice_model=stored or voice_model, speakers=_speakers(override)
+        name="p", voice_model=stored_model, speakers=_speakers(stored_overrides)
     )
-    body = {"name": "p", "voice_model": voice_model, "speakers": _speakers(override)}
+    body = {"name": "p", "voice_model": voice_model, "speakers": _speakers(overrides)}
     return client.request(method, url, json=body)
 
 
 @pytest.mark.parametrize("method,url", ENDPOINTS)
 @pytest.mark.parametrize(
-    "voice_model,override",
-    [("model:llm", None), ("model:tts", "model:llm")],
-    ids=["top-level", "per-speaker"],
+    "voice_model,overrides",
+    [
+        ("model:llm", (None,)),
+        ("model:tts", ("model:llm",)),
+        ("model:tts", ("model:tts", "model:llm")),
+        (None, ("model:llm",)),
+    ],
+    ids=["top-level", "per-speaker", "second-speaker", "override-only"],
 )
-def test_rejects_non_tts_voice_model(client, mocks, method, url, voice_model, override):
+def test_rejects_non_tts_voice_model(
+    client, mocks, method, url, voice_model, overrides
+):
     _, pget, save = mocks
-    resp = _call(client, pget, method, url, voice_model, override)
+    resp = _call(client, pget, method, url, voice_model, overrides)
     assert resp.status_code == 422
     save.assert_not_called()
 
@@ -73,7 +81,7 @@ def test_rejects_non_tts_voice_model(client, mocks, method, url, voice_model, ov
 @pytest.mark.parametrize("method,url", ENDPOINTS)
 def test_accepts_tts_voice_models(client, mocks, method, url):
     _, pget, save = mocks
-    resp = _call(client, pget, method, url, "model:tts", "model:tts")
+    resp = _call(client, pget, method, url, "model:tts", ("model:tts",))
     assert resp.status_code == 200
     save.assert_called_once()
 
@@ -86,10 +94,11 @@ def test_create_without_voice_model_skips_lookup(client, mocks):
     save.assert_called_once()
 
 
-def test_update_checks_the_incoming_voice_model(client, mocks):
+def test_update_checks_the_incoming_voice_models(client, mocks):
     get, pget, save = mocks
+    stored = ("model:llm", ("model:llm",))
     url = "/api/speaker-profiles/sp:1"
-    resp = _call(client, pget, "put", url, "model:tts", stored="model:llm")
+    resp = _call(client, pget, "put", url, "model:tts", ("model:tts",), stored)
     assert resp.status_code == 200
     save.assert_called_once()
-    assert [c.args for c in get.await_args_list] == [("model:tts",)]
+    assert [c.args for c in get.await_args_list] == [("model:tts",), ("model:tts",)]

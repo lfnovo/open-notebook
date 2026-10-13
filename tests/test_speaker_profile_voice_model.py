@@ -1,5 +1,6 @@
-"""Regression tests for #1488: a speaker profile must only accept a
-text-to-speech model as its voice_model (create, update and duplicate)."""
+"""Regression tests for #1488: a speaker profile's voice_model, and every
+per-speaker voice_model override, must be a text-to-speech model (create,
+update and duplicate)."""
 
 from unittest.mock import AsyncMock, patch
 
@@ -9,8 +10,20 @@ from fastapi.testclient import TestClient
 from open_notebook.ai.models import Model
 from open_notebook.podcasts.models import SpeakerProfile
 
-SPEAKERS = [{"name": "Host", "voice_id": "v1", "backstory": "b", "personality": "p"}]
-BODY = {"name": "p", "speakers": SPEAKERS, "voice_model": "model:m1"}
+MODELS = {
+    "model:tts": Model(name="t", provider="openai", type="text_to_speech"),
+    "model:llm": Model(name="l", provider="openai", type="language"),
+}
+ENDPOINTS = [
+    ("post", "/api/speaker-profiles"),
+    ("put", "/api/speaker-profiles/sp:1"),
+    ("post", "/api/speaker-profiles/sp:1/duplicate"),
+]
+
+
+def _speakers(override=None):
+    speaker = {"name": "Host", "voice_id": "v", "backstory": "b", "personality": "p"}
+    return [{**speaker, "voice_model": override} if override else speaker]
 
 
 @pytest.fixture
@@ -18,14 +31,6 @@ def client():
     from api.main import app
 
     return TestClient(app)
-
-
-def _model(model_type):
-    return Model(name="m", provider="openai", type=model_type)
-
-
-def _profile():
-    return SpeakerProfile(name="p", speakers=SPEAKERS, voice_model="model:m1")
 
 
 @pytest.fixture
@@ -39,41 +44,52 @@ def mocks():
             "api.routers.speaker_profiles.SpeakerProfile.save", new_callable=AsyncMock
         ) as save,
     ):
-        pget.return_value = _profile()
-        yield get, save
+        get.side_effect = MODELS.__getitem__
+        yield get, pget, save
 
 
-def test_create_rejects_non_tts_voice_model(client, mocks):
-    get, save = mocks
-    get.return_value = _model("language")
-    assert client.post("/api/speaker-profiles", json=BODY).status_code == 422
+def _call(client, pget, method, url, voice_model, override=None, stored=None):
+    """Send the request; `stored` is the profile that update/duplicate load."""
+    pget.return_value = SpeakerProfile(
+        name="p", voice_model=stored or voice_model, speakers=_speakers(override)
+    )
+    body = {"name": "p", "voice_model": voice_model, "speakers": _speakers(override)}
+    return client.request(method, url, json=body)
+
+
+@pytest.mark.parametrize("method,url", ENDPOINTS)
+@pytest.mark.parametrize(
+    "voice_model,override",
+    [("model:llm", None), ("model:tts", "model:llm")],
+    ids=["top-level", "per-speaker"],
+)
+def test_rejects_non_tts_voice_model(client, mocks, method, url, voice_model, override):
+    _, pget, save = mocks
+    resp = _call(client, pget, method, url, voice_model, override)
+    assert resp.status_code == 422
     save.assert_not_called()
 
 
-def test_create_accepts_tts_voice_model(client, mocks):
-    get, save = mocks
-    get.return_value = _model("text_to_speech")
-    assert client.post("/api/speaker-profiles", json=BODY).status_code == 200
+@pytest.mark.parametrize("method,url", ENDPOINTS)
+def test_accepts_tts_voice_models(client, mocks, method, url):
+    _, pget, save = mocks
+    resp = _call(client, pget, method, url, "model:tts", "model:tts")
+    assert resp.status_code == 200
     save.assert_called_once()
 
 
 def test_create_without_voice_model_skips_lookup(client, mocks):
-    get, save = mocks
-    body = {"name": "p", "speakers": SPEAKERS}
+    get, _, save = mocks
+    body = {"name": "p", "speakers": _speakers()}
     assert client.post("/api/speaker-profiles", json=body).status_code == 200
     get.assert_not_called()
     save.assert_called_once()
 
 
-def test_update_rejects_non_tts_voice_model(client, mocks):
-    get, save = mocks
-    get.return_value = _model("language")
-    assert client.put("/api/speaker-profiles/sp:1", json=BODY).status_code == 422
-    save.assert_not_called()
-
-
-def test_duplicate_rejects_non_tts_voice_model(client, mocks):
-    get, save = mocks
-    get.return_value = _model("language")
-    assert client.post("/api/speaker-profiles/sp:1/duplicate").status_code == 422
-    save.assert_not_called()
+def test_update_checks_the_incoming_voice_model(client, mocks):
+    get, pget, save = mocks
+    url = "/api/speaker-profiles/sp:1"
+    resp = _call(client, pget, "put", url, "model:tts", stored="model:llm")
+    assert resp.status_code == 200
+    save.assert_called_once()
+    assert [c.args for c in get.await_args_list] == [("model:tts",)]

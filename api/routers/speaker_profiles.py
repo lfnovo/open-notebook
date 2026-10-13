@@ -75,21 +75,24 @@ class SpeakerProfileCreate(BaseModel):
     )
 
 
-async def _validate_voice_model(voice_model: Optional[str]) -> None:
-    if not voice_model:
-        return
-    model = await Model.get(voice_model)
-    if not isinstance(model, Model) or model.type != "text_to_speech":
-        raise HTTPException(
-            status_code=422, detail="voice_model must be a text-to-speech model"
-        )
+async def _validate_voice_models(
+    voice_model: Optional[str], speakers: List[Dict[str, Any]]
+) -> None:
+    for model_id in [voice_model, *(s.get("voice_model") for s in speakers)]:
+        if not model_id:
+            continue
+        model = await Model.get(model_id)
+        if not isinstance(model, Model) or model.type != "text_to_speech":
+            raise HTTPException(
+                status_code=422, detail="voice_model must be a text-to-speech model"
+            )
 
 
 @router.post("/speaker-profiles", response_model=SpeakerProfileResponse)
 async def create_speaker_profile(profile_data: SpeakerProfileCreate):
     """Create a new speaker profile"""
     try:
-        await _validate_voice_model(profile_data.voice_model)
+        await _validate_voice_models(profile_data.voice_model, profile_data.speakers)
         profile = SpeakerProfile(
             name=profile_data.name,
             description=profile_data.description,
@@ -120,7 +123,7 @@ async def update_speaker_profile(profile_id: str, profile_data: SpeakerProfileCr
                 status_code=404, detail=f"Speaker profile '{profile_id}' not found"
             )
 
-        await _validate_voice_model(profile_data.voice_model)
+        await _validate_voice_models(profile_data.voice_model, profile_data.speakers)
         for field, value in profile_data.model_dump(exclude_unset=True).items():
             setattr(profile, field, value)
 
@@ -173,7 +176,7 @@ async def duplicate_speaker_profile(profile_id: str):
                 status_code=404, detail=f"Speaker profile '{profile_id}' not found"
             )
 
-        await _validate_voice_model(original.voice_model)
+        await _validate_voice_models(original.voice_model, original.speakers)
         duplicate = SpeakerProfile(
             name=f"{original.name} - Copy",
             description=original.description,

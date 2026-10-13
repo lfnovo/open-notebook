@@ -300,7 +300,7 @@ export const frFR = {
     deleteSourceConfirm: "Êtes-vous sûr de vouloir supprimer cette source ?",
     deleteConfirm: "Êtes-vous sûr de vouloir supprimer cet élément ?",
     deleteConfirmWithTitle: "Êtes-vous sûr de vouloir supprimer \"{{title}}\" ?",
-    deleteSuccess: "Source supprimée avec succès. Note : Pour supprimer le fichier du stockage, vous devez activer l'option \"supprimer le fichier\" dans la page des paramètres.",
+    deleteSuccess: "Source supprimée avec succès.",
     failedToDelete: "Échec de la suppression de la source",
     sourceQueued: "Source mise en attente",
     sourceQueuedDesc: "Source soumise pour traitement en arrière-plan. Vous pouvez suivre la progression dans la liste des sources.",

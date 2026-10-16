@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
@@ -12,6 +12,7 @@ export default defineConfig({
   // to resolve the postcss config; this bypasses it outright.
   css: { postcss: { plugins: [] } },
   test: {
+    exclude: [...configDefaults.exclude, '**/*.browser.test.tsx'],
     environment: 'jsdom',
     globals: true,
     css: false,

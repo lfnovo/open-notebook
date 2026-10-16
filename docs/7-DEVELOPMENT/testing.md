@@ -15,6 +15,8 @@ uv run pytest tests/ --cov=open_notebook --cov=api     # with coverage
 npm run test              # vitest run, once
 npm run test:watch        # watch mode
 npm run test:coverage     # what CI runs
+npx playwright install --with-deps chromium  # once, after npm ci
+npm run test:browser      # real Chromium component regressions, also run in CI
 ```
 
 The backend suite needs **no running SurrealDB, worker or AI provider**. CI runs it with nothing but `uv sync`. SurrealDB access, models and HTTP requests are mocked; a few tests use in-memory substitutes instead (for example an in-memory `SqliteSaver` in `tests/test_empty_model_reply.py`).
@@ -77,6 +79,12 @@ def test_delete_notebook_missing_returns_404(mock_get, client):
 Tests are colocated with the code as `*.test.ts` / `*.test.tsx` (for example `src/lib/locales/index.test.ts`, `src/components/common/ConfirmDialog.test.tsx`). `frontend/src/test/` holds only the shared setup (`setup.ts`: jest-dom matchers and mocks for `next/navigation`, `matchMedia` and `@/lib/hooks/use-translation`, whose `t()` returns the key itself, so assert on keys rather than English text).
 
 Vitest runs in `jsdom` with globals enabled and the `@/` alias (`frontend/vitest.config.ts`). Use Testing Library to render components; mock API modules rather than the network.
+
+Tests that need real CSS use `*.browser.test.tsx` and `frontend/vitest.browser.config.ts`.
+They run in headless Chromium, import the app's `globals.css`, and use `userEvent`
+from `vitest/browser` for real keyboard input. Assert computed styles for opacity
+regressions: an element with `opacity: 0` can still pass `toBeVisible()`. The jsdom
+suite excludes these files and does not require a browser installation.
 
 ## What to test
 

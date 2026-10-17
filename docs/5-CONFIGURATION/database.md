@@ -14,7 +14,7 @@ SURREAL_NAMESPACE=open_notebook
 SURREAL_DATABASE=open_notebook
 ```
 
-Set all five explicitly. The API and the job queue fall back to different defaults when a variable is missing (`open_notebook` versus `test` for namespace and database), and with mismatched values background jobs never get processed. Defaults and legacy names are in the [Environment Reference](environment-reference.md#database-surrealdb).
+Set all five explicitly. Namespace and database default to `open_notebook` for the API and the job queue alike, but the user and password defaults differ between the two. Defaults and legacy names are in the [Environment Reference](environment-reference.md#database-surrealdb).
 
 `SURREAL_USER` and `SURREAL_PASSWORD` must match the `--user` and `--pass` that SurrealDB was started with.
 

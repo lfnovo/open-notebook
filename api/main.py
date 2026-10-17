@@ -10,6 +10,12 @@ from open_notebook.utils.proxy import ensure_internal_no_proxy
 
 ensure_internal_no_proxy()
 
+# The job queue (surreal-commands) must use the same namespace and database
+# as Open Notebook, defaults included (#1466).
+from open_notebook.database.repository import apply_database_defaults
+
+apply_database_defaults()
+
 import asyncio
 import os
 from contextlib import asynccontextmanager

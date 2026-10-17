@@ -15,7 +15,8 @@
 #
 # Usage:
 #   1. Copy this file to your project folder as docker-compose.yml
-#   2. Change OPEN_NOTEBOOK_ENCRYPTION_KEY below
+#   2. Set OPEN_NOTEBOOK_ENCRYPTION_KEY in a .env file next to this file
+#      (see .env.example), or change the default below
 #   3. Run: docker compose up -d
 #   4. Pull models (see instructions below)
 #   5. Configure providers in UI
@@ -75,8 +76,12 @@ services:
       - "8502:8502"
       - "5055:5055"
     environment:
-      # REQUIRED: Change this to your own secret string
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
+      # Encryption key and password. Put them in a .env file next to this
+      # file (see .env.example), the same way SURREAL_USER / SURREAL_PASSWORD
+      # work in the shipped docker-compose.yml. The key encrypts API keys in
+      # the database. An empty password leaves authentication off.
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=${OPEN_NOTEBOOK_ENCRYPTION_KEY:-change-me-to-a-secret-string}
+      - OPEN_NOTEBOOK_PASSWORD=${OPEN_NOTEBOOK_PASSWORD:-}
 
       # Database connection
       - SURREAL_URL=ws://surrealdb:8000/rpc

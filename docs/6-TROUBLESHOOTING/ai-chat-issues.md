@@ -115,16 +115,15 @@ The model answered with no text. Common with reasoning models that use their who
 
 Shown in **Manage → Models** and as a banner: "Set the OPEN_NOTEBOOK_ENCRYPTION_KEY environment variable…". Saving a credential fails with `Encryption key not configured. Set OPEN_NOTEBOOK_ENCRYPTION_KEY to enable storing API keys.`, and the API log shows `OPEN_NOTEBOOK_ENCRYPTION_KEY not set. API key encryption will fail until this is configured.`
 
-**Fix:** add the key to the `open_notebook` service and run `docker compose up -d`:
+**Fix:** set the key in a `.env` file next to `docker-compose.yml` (the shipped compose file reads it) and run `docker compose up -d`. Editing the `OPEN_NOTEBOOK_ENCRYPTION_KEY` line in the compose file is a valid alternative.
 
-```yaml
-environment:
-  - OPEN_NOTEBOOK_ENCRYPTION_KEY=<generated-key>
+```text
+OPEN_NOTEBOOK_ENCRYPTION_KEY=<generated-key>
 ```
 
 Generate the value yourself, for example with `openssl rand -hex 32` (on Windows, see [Set your encryption key](../1-INSTALLATION/docker-compose.md#step-2-set-your-encryption-key)). Don't reuse an example value.
 
-If you set it only in `.env`, it never reaches the container: the shipped compose file doesn't load `.env` into it. Don't keep the `change-me-to-a-secret-string` placeholder. See [Security](../5-CONFIGURATION/security.md#api-key-encryption).
+Don't keep the `change-me-to-a-secret-string` placeholder. See [Security](../5-CONFIGURATION/security.md#api-key-encryption).
 
 ### "Decryption Error"
 

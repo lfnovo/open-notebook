@@ -6,19 +6,23 @@ The complete list of environment variables Open Notebook and its libraries read.
 
 ## How to set a variable
 
-**Docker Compose:** add it under the `open_notebook` service's `environment:` block in `docker-compose.yml`, then run `docker compose up -d`. `docker compose restart` keeps the old environment, so it does not apply changes.
+**Docker Compose:** the shipped `docker-compose.yml` reads four variables from a `.env` file next to it: `OPEN_NOTEBOOK_ENCRYPTION_KEY`, `OPEN_NOTEBOOK_PASSWORD`, `SURREAL_USER` and `SURREAL_PASSWORD`. Everything else goes under the `open_notebook` service's `environment:` block. Then run `docker compose up -d`. `docker compose restart` keeps the old environment, so it does not apply changes.
+
+```text
+# .env — these four are the ones the shipped compose file reads
+OPEN_NOTEBOOK_ENCRYPTION_KEY=<generated-key>
+```
 
 ```yaml
 services:
   open_notebook:
     environment:
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=<generated-key>
       - ESPERANTO_LLM_TIMEOUT=300
 ```
 
 Replace `<generated-key>` with a value you generate yourself, for example with `openssl rand -hex 32` (on Windows, see [Set your encryption key](../1-INSTALLATION/docker-compose.md#step-2-set-your-encryption-key)). Don't reuse an example value.
 
-The shipped `docker-compose.yml` does not load an env file into the container. A `.env` file next to it only fills the `${...}` placeholders in the compose file (`SURREAL_USER`, `SURREAL_PASSWORD`). If you prefer a file, add `env_file: .env` to the `open_notebook` service yourself.
+Editing those four lines in `docker-compose.yml` is a valid alternative. The compose file does not load the rest of `.env` into the container (there is no `env_file:`).
 
 **From source:** put backend variables in `.env` in the project root and restart the API and the worker (`make api`, `make worker-start` both load `.env`). The exception is `OPEN_NOTEBOOK_WORKER_MAX_TASKS`: `make worker-start` reads it from your shell before `.env` is loaded, so `export` it.
 
@@ -63,7 +67,7 @@ Set all five `SURREAL_*` variables explicitly, as the shipped compose file does.
 | `SURREAL_ADDRESS`, `SURREAL_PORT` | `localhost`, `8000` | API + Worker | Legacy fallback used only when `SURREAL_URL` is unset. `SURREAL_ADDRESS` may already include the port. Prefer `SURREAL_URL` |
 | `SURREAL_PASS` | none | API + Worker | Legacy alias of `SURREAL_PASSWORD` |
 
-With Docker Compose, `SURREAL_USER` and `SURREAL_PASSWORD` are the two values you can keep in `.env`: the compose file passes them to both the `surrealdb` and `open_notebook` services.
+With Docker Compose, the shipped compose file reads `OPEN_NOTEBOOK_ENCRYPTION_KEY`, `OPEN_NOTEBOOK_PASSWORD`, `SURREAL_USER` and `SURREAL_PASSWORD` from `.env`, and it passes the database user and password to both the `surrealdb` and `open_notebook` services. Every other variable goes under `environment:`.
 
 ---
 

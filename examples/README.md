@@ -113,7 +113,7 @@ See [Development Guide](../docs/7-DEVELOPMENT/index.md)
    ```bash
    cp examples/docker-compose-ollama.yml docker-compose.yml
    ```
-3. **Edit** the `OPEN_NOTEBOOK_ENCRYPTION_KEY` value
+3. **Set** `OPEN_NOTEBOOK_ENCRYPTION_KEY` in a `.env` file next to the compose file (see `.env.example`), or change the default in the file
 4. **Run** the services:
    ```bash
    docker compose up -d
@@ -145,10 +145,7 @@ volumes:
 See [Reverse Proxy Guide](../docs/5-CONFIGURATION/reverse-proxy.md)
 
 ### Add Password Protection
-Add to `open_notebook` service environment:
-```yaml
-- OPEN_NOTEBOOK_PASSWORD=your-secure-password
-```
+Set `OPEN_NOTEBOOK_PASSWORD` in `.env` (see `.env.example`). The example compose files read it. Leave it empty to leave authentication off.
 
 ---
 

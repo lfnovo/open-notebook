@@ -83,8 +83,8 @@ class TestTransformationGraphPropagatesFailure:
 
         with (
             patch(
-                "open_notebook.graphs.transformation.DefaultPrompts",
-                return_value=MagicMock(transformation_instructions=None),
+                "open_notebook.graphs.transformation.DefaultPrompts.get_instance",
+                new=AsyncMock(return_value=MagicMock(transformation_instructions=None)),
             ),
             patch("open_notebook.graphs.transformation.Prompter") as mock_prompter_cls,
             patch(
@@ -125,8 +125,8 @@ class TestTransformationGraphPropagatesFailure:
 
         with (
             patch(
-                "open_notebook.graphs.transformation.DefaultPrompts",
-                return_value=MagicMock(transformation_instructions=None),
+                "open_notebook.graphs.transformation.DefaultPrompts.get_instance",
+                new=AsyncMock(return_value=MagicMock(transformation_instructions=None)),
             ),
             patch("open_notebook.graphs.transformation.Prompter") as mock_prompter_cls,
             patch(

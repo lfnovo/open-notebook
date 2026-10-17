@@ -51,7 +51,7 @@ Frontend variables (`API_URL`, `INTERNAL_API_URL`, `NEXT_PUBLIC_*`) are not read
 - OPEN_NOTEBOOK_ENCRYPTION_KEY=<generated-key>
 ```
 
-Encrypts the provider API keys you save in Manage → Models. Generate the value yourself, for example with `openssl rand -hex 32`. With the shipped compose file, put it in `.env`. Without it you can't save credentials. Replace the `change-me-to-a-secret-string` placeholder, and don't change the value later: credentials saved with the old key become unreadable. See [Security](security.md#api-key-encryption).
+Encrypts the provider API keys you save in Manage → Models. Generate the value yourself, for example with `openssl rand -hex 32`, and with the shipped compose file put it in `.env`. From source, an unset key means you can't save credentials. The shipped compose file falls back to the public placeholder `change-me-to-a-secret-string` when the variable is unset, so saving still works, but that key is published in this repo and must be replaced before you save credentials. Don't change the value later: credentials saved with the old key become unreadable. See [Security](security.md#api-key-encryption).
 
 ### Database
 

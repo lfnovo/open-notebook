@@ -9,8 +9,13 @@ The complete list of environment variables Open Notebook and its libraries read.
 **Docker Compose:** the shipped `docker-compose.yml` reads four variables from a `.env` file next to it: `OPEN_NOTEBOOK_ENCRYPTION_KEY`, `OPEN_NOTEBOOK_PASSWORD`, `SURREAL_USER` and `SURREAL_PASSWORD`. Everything else goes under the `open_notebook` service's `environment:` block. Then run `docker compose up -d`. `docker compose restart` keeps the old environment, so it does not apply changes.
 
 ```text
-# .env — these four are the ones the shipped compose file reads
+# .env — these four are the ones the shipped compose file reads.
+# Leave the password empty to leave authentication off.
+# root:root is the local database default.
 OPEN_NOTEBOOK_ENCRYPTION_KEY=<generated-key>
+OPEN_NOTEBOOK_PASSWORD=
+SURREAL_USER=root
+SURREAL_PASSWORD=root
 ```
 
 ```yaml

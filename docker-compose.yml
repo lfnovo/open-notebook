@@ -29,10 +29,11 @@ services:
       - "8502:8502"  # Web UI
       - "5055:5055"  # REST API
     environment:
-      # Encryption key and password. Put them in a .env file next to this
-      # file (see .env.example), the same way SURREAL_USER / SURREAL_PASSWORD
-      # work. The key encrypts API keys in the database. An empty password
-      # leaves authentication off.
+      # Encryption key and password. Put a generated key in a .env file next
+      # to this file (see .env.example), the same way SURREAL_USER /
+      # SURREAL_PASSWORD work. The fallback is the public placeholder, kept
+      # so an install with no .env can still decrypt credentials. Replace it
+      # before saving provider keys. An empty password leaves authentication off.
       - OPEN_NOTEBOOK_ENCRYPTION_KEY=${OPEN_NOTEBOOK_ENCRYPTION_KEY:-change-me-to-a-secret-string}
       - OPEN_NOTEBOOK_PASSWORD=${OPEN_NOTEBOOK_PASSWORD:-}
 

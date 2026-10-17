@@ -12,7 +12,10 @@
 #
 # Usage:
 #   1. Copy this file to your project folder as docker-compose.yml
-#   2. Change OPEN_NOTEBOOK_ENCRYPTION_KEY below
+#   2. Set OPEN_NOTEBOOK_ENCRYPTION_KEY in a .env file next to this file
+#      to a unique value you generate (see .env.example), or replace the
+#      default below with one. The placeholder only keeps an install with
+#      no .env decryptable; do not save credentials with it.
 #   3. Run: docker compose up -d
 #   4. Download models (see instructions below)
 #   5. Configure in UI: Manage → Models → Add OpenAI-Compatible
@@ -54,8 +57,13 @@ services:
       - "8502:8502"
       - "5055:5055"
     environment:
-      # REQUIRED: Change this to your own secret string
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
+      # Encryption key and password. Put a generated key in a .env file next
+      # to this file (see .env.example). The fallback below is the public
+      # placeholder, kept so an install with no .env can still decrypt
+      # credentials. Replace it before saving provider keys. An empty
+      # password leaves authentication off.
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=${OPEN_NOTEBOOK_ENCRYPTION_KEY:-change-me-to-a-secret-string}
+      - OPEN_NOTEBOOK_PASSWORD=${OPEN_NOTEBOOK_PASSWORD:-}
 
       # Database connection
       - SURREAL_URL=ws://surrealdb:8000/rpc

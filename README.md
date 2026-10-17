@@ -111,13 +111,9 @@ curl -o docker-compose.yml https://raw.githubusercontent.com/lfnovo/open-noteboo
 This is the official [docker-compose.yml](docker-compose.yml) from this repository. It runs two services: `surrealdb` (the database) and `open_notebook` (UI, API and background worker).
 
 ### Step 2: Set your encryption key
-Edit `docker-compose.yml` and change this line:
-```yaml
-- OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
-```
-to a long random secret you generate yourself (for example with `openssl rand -hex 32`; [other options](docs/1-INSTALLATION/docker-compose.md#step-2-set-your-encryption-key)). It encrypts the API keys you store; keep it.
+Create a `.env` file next to `docker-compose.yml` and set `OPEN_NOTEBOOK_ENCRYPTION_KEY` to a long random secret you generate yourself (for example with `openssl rand -hex 32`; [other options](docs/1-INSTALLATION/docker-compose.md#step-2-set-your-encryption-key)). The shipped compose file reads it from `.env`. Editing that line in `docker-compose.yml` is a valid alternative. It encrypts the API keys you store; keep it. When neither is set, the file falls back to `change-me-to-a-secret-string` only for installs that used that placeholder. If an existing install has a custom key in its old compose file, copy that exact key into `.env` before replacing the file; do not generate a new one. That fallback is public. Replace it before you save provider keys.
 
-> **Shared network or server?** The UI (`8502`) and API (`5055`) are published on all network interfaces and there is no password by default. If other devices can reach this machine, change those two port lines to `"127.0.0.1:8502:8502"` and `"127.0.0.1:5055:5055"`, or add `- OPEN_NOTEBOOK_PASSWORD=your-password` to the `environment:` block, before starting.
+> **Shared network or server?** The UI (`8502`) and API (`5055`) are published on all network interfaces and there is no password by default. If other devices can reach this machine, change those two port lines to `"127.0.0.1:8502:8502"` and `"127.0.0.1:5055:5055"`, or set `OPEN_NOTEBOOK_PASSWORD` in the same `.env` file, before starting.
 
 ### Step 3: Start services
 ```bash

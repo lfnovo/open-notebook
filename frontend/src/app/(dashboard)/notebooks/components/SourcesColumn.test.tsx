@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, renderHook, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { PropsWithChildren } from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
@@ -54,10 +54,15 @@ afterEach(() => {
   client.clear()
   apiClient.defaults.adapter = originalAdapter
   apiClient.defaults.baseURL = originalBaseURL
+  vi.useRealTimers()
 })
 
 function wrapper({ children }: PropsWithChildren) {
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>
+}
+
+async function advanceTime(milliseconds: number) {
+  await act(async () => { await vi.advanceTimersByTimeAsync(milliseconds) })
 }
 
 it('keeps the context toggle off and usable before a source has a selection', () => {
@@ -110,13 +115,14 @@ it.each([
   { status: 'completed', cached: true },
   { status: 'failed', cached: true },
 ])('polls an unknown source until $status and refreshes the list (cached=$cached, #1397)', async ({ status, cached }) => {
+  vi.useFakeTimers()
   if (cached) {
     client.setQueryData(['sources', source.id, 'status'], completedStatus)
   }
   fetchSourceStatus
     .mockReturnValueOnce({ status: 'unknown', message: 'Command status unavailable' })
     .mockReturnValue({ status, message: `Source processing ${status}` })
-  const onRefresh = vi.fn(() => fetchSourceStatus.mock.results.at(-1)?.value.status)
+  const onRefresh = vi.fn()
   render(
     <SourcesColumn
       sources={[{ ...source, status: 'unknown' }]}
@@ -128,10 +134,61 @@ it.each([
     { wrapper },
   )
 
-  await waitFor(() => expect(fetchSourceStatus).toHaveBeenCalledTimes(1))
-  expect(onRefresh).not.toHaveBeenCalled()
-  await waitFor(() => expect(onRefresh).toHaveReturnedWith(status), { timeout: 3500 })
+  await advanceTime(0)
+  expect(fetchSourceStatus).toHaveBeenCalledTimes(1)
+  await advanceTime(cached ? 3999 : 1999)
+  expect(fetchSourceStatus).toHaveBeenCalledTimes(1)
+  await advanceTime(1)
   expect(fetchSourceStatus).toHaveBeenCalledTimes(2)
+  // An old terminal cache can refresh once before the unknown response arrives.
+  expect(onRefresh).toHaveBeenCalledTimes(cached ? 1 : 0)
+  await advanceTime(501)
+  expect(onRefresh).toHaveBeenCalledTimes(cached ? 2 : 1)
+  await advanceTime(30000)
+  expect(fetchSourceStatus).toHaveBeenCalledTimes(2)
+  expect(onRefresh).toHaveBeenCalledTimes(cached ? 2 : 1)
+})
+
+it.each(['completed', 'failed'])('backs off persistent unknown status, resumes active polling, and stops on %s (#1397)', async (status) => {
+  vi.useFakeTimers()
+  fetchSourceStatus.mockReturnValue({ status: 'unknown', message: 'Command status unavailable' })
+  const onRefresh = vi.fn()
+  render(
+    <SourcesColumn
+      sources={[{ ...source, status: 'unknown' }]}
+      isLoading={false}
+      notebookId="notebook:test"
+      contextSelections={{}}
+      onRefresh={onRefresh}
+    />,
+    { wrapper },
+  )
+
+  await advanceTime(0)
+  expect(fetchSourceStatus).toHaveBeenCalledTimes(1)
+  let requests = 1
+  for (const interval of [2000, 4000, 8000, 16000, 30000, 30000]) {
+    await advanceTime(interval - 1)
+    expect(fetchSourceStatus).toHaveBeenCalledTimes(requests)
+    await advanceTime(1)
+    expect(fetchSourceStatus).toHaveBeenCalledTimes(++requests)
+    expect(onRefresh).not.toHaveBeenCalled()
+  }
+
+  fetchSourceStatus.mockReturnValue({ status: 'running', message: 'Source processing' })
+  await advanceTime(30000)
+  expect(fetchSourceStatus).toHaveBeenCalledTimes(++requests)
+  await advanceTime(1999)
+  expect(fetchSourceStatus).toHaveBeenCalledTimes(requests)
+  fetchSourceStatus.mockReturnValue({ status, message: `Source processing ${status}` })
+  await advanceTime(1)
+  expect(fetchSourceStatus).toHaveBeenCalledTimes(++requests)
+  expect(onRefresh).not.toHaveBeenCalled()
+  await advanceTime(501)
+  expect(onRefresh).toHaveBeenCalledTimes(1)
+  await advanceTime(60000)
+  expect(fetchSourceStatus).toHaveBeenCalledTimes(requests)
+  expect(onRefresh).toHaveBeenCalledTimes(1)
 })
 
 it('refreshes a failed source that completes immediately after retry', async () => {

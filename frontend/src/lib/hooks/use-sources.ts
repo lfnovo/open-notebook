@@ -240,11 +240,14 @@ export function useSourceStatus(sourceId: string, enabled = true) {
       // Keep polling unresolved commands until a terminal status arrives.
       // The query.state.data contains the SourceStatusResponse
       const data = query.state.data as SourceStatusResponse | undefined
+      if (data?.status === 'unknown') {
+        // Missing commands can stay unknown permanently; slow down repeated checks.
+        return Math.min(2000 * 2 ** Math.max(0, query.state.dataUpdateCount - 1), 30000)
+      }
       if (
         data?.status === 'running' ||
         data?.status === 'queued' ||
-        data?.status === 'new' ||
-        data?.status === 'unknown'
+        data?.status === 'new'
       ) {
         return 2000
       }

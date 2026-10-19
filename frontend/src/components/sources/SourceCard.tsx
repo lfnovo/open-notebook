@@ -138,12 +138,12 @@ function SourceCardImpl({
   // A source with a `command_id` but no resolved `status` yet is still ambiguous
   // (it renders as a synthetic "new"), so keep polling those until a real status
   // arrives — otherwise such a card would be stuck "processing" forever.
-  const shouldFetchStatus =
+  const sourceIsProcessing =
     sourceWithStatus.status === 'new' ||
     sourceWithStatus.status === 'queued' ||
     sourceWithStatus.status === 'running' ||
-    (!!sourceWithStatus.command_id && !sourceWithStatus.status) ||
-    wasProcessing // Keep polling if we were processing to catch the completion
+    (!!sourceWithStatus.command_id && !sourceWithStatus.status)
+  const shouldFetchStatus = sourceIsProcessing || wasProcessing
 
   const { data: statusData, isLoading: statusLoading } = useSourceStatus(
     source.id,
@@ -157,6 +157,11 @@ function SourceCardImpl({
     ? rawStatus
     : (sourceWithStatus.command_id ? 'new' : 'completed')
 
+
+  // Remember pending list data even when the first polled status is terminal.
+  useEffect(() => {
+    if (sourceIsProcessing) setWasProcessing(true)
+  }, [sourceIsProcessing, sourceWithStatus.command_id])
 
   // Track processing state and detect completion
   useEffect(() => {

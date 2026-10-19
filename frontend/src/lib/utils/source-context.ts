@@ -18,6 +18,8 @@ export type SourceBulkAction = Exclude<SourceContextDefault, 'include'>
 interface SourceLike {
   id: string
   insights_count: number
+  status?: string | null
+  command_id?: string | null
 }
 
 /** The "included" context mode for a source: insights when available, else full. */
@@ -49,7 +51,7 @@ export function bulkModeForSource(
  * Compute chat-context selections for a batch of sources while preserving
  * existing choices.
  *
- * Newly-seen sources adopt `defaultMode`, so a prior bulk action also governs
+ * Newly-seen sources adopt `defaultMode` once ready, so a prior bulk action governs
  * sources that load later via pagination — otherwise a bulk action would
  * silently miss sources loaded after it (#223/#915).
  */
@@ -62,6 +64,11 @@ export function computeSourceSelections(
   for (const source of sources) {
     const current = next[source.id]
     if (current === undefined) {
+      const isLegacySource = !source.status && !source.command_id
+      if (source.status !== 'completed' && !isLegacySource) {
+        // Leave the choice unset so completion can apply the default.
+        continue
+      }
       next[source.id] = bulkModeForSource(defaultMode, source.insights_count)
     } else if (defaultMode === 'include' && current === 'full' && source.insights_count > 0) {
       // Auto-upgrade only under the implicit default: a source included as

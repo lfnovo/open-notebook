@@ -35,6 +35,82 @@ describe('bulkModeForSource', () => {
 })
 
 describe('computeSourceSelections', () => {
+  it.each([undefined, null, ''])('waits for the status of an async source (%s)', (status) => {
+    const source = { ...src('s:1'), status, command_id: 'command:1' }
+
+    expect(computeSourceSelections({}, [source])['s:1'] ?? 'off').toBe('off')
+  })
+
+  it('defers the default selection until a processing source completes', () => {
+    const source = { ...src('s:1'), status: 'running', command_id: 'command:1' }
+    const pending = computeSourceSelections({}, [source])
+
+    expect(pending['s:1'] ?? 'off').toBe('off')
+    expect(computeSourceSelections(pending, [{ ...source, status: 'completed' }])).toEqual({
+      's:1': 'full',
+    })
+  })
+
+  it.each(['new', 'queued', 'running', 'failed', 'unknown'])(
+    'does not automatically include %s sources, even with insights',
+    (status) => {
+      const sources = [
+        { ...src('s:1'), status },
+        { ...src('s:2', 2), status },
+      ]
+
+      expect(computeSourceSelections({}, sources)).toEqual({})
+    },
+  )
+
+  it.each([undefined, null, ''])('keeps legacy sources included without processing metadata (%s)', (status) => {
+    const source = { ...src('s:1', 2), status, command_id: null }
+
+    expect(computeSourceSelections({}, [source])).toEqual({ 's:1': 'insights' })
+  })
+
+  it.each([
+    ['include', 'insights'],
+    ['insights', 'insights'],
+    ['full', 'full'],
+    ['exclude', 'off'],
+  ] as const)('applies the %s default when a later-loaded source completes', (mode, expected) => {
+    const source = { ...src('s:1', 2), status: 'running', command_id: 'command:1' }
+    const pending = computeSourceSelections({}, [source], mode)
+
+    expect(pending).toEqual({})
+    expect(computeSourceSelections(pending, [{ ...source, status: 'completed' }], mode)).toEqual({
+      's:1': expected,
+    })
+  })
+
+  it('keeps a failed source excluded while including completed sources', () => {
+    const source = { ...src('s:1'), status: 'running' }
+    const completed = { ...src('s:2'), status: 'completed' }
+    const pending = computeSourceSelections({}, [source, completed])
+
+    expect(computeSourceSelections(pending, [{ ...source, status: 'failed' }, completed])).toEqual({
+      's:2': 'full',
+    })
+  })
+
+  it('preserves explicit choices for sources that are not completed', () => {
+    const existing = { 's:1': 'off' as const, 's:2': 'full' as const }
+    const sources = [
+      { ...src('s:1'), status: 'running' },
+      { ...src('s:2'), status: 'failed' },
+    ]
+
+    expect(computeSourceSelections(existing, sources)).toEqual({ 's:1': 'off', 's:2': 'full' })
+  })
+
+  it('preserves a bulk full choice for a failed source', () => {
+    const source = { ...src('s:1'), status: 'failed' }
+    const selections = applyBulkSourceContext({}, [source], 'full')
+
+    expect(computeSourceSelections(selections, [source], 'full')).toEqual({ 's:1': 'full' })
+  })
+
   it('defaults new sources to included (insights/full)', () => {
     const result = computeSourceSelections({}, [src('s:1', 2), src('s:2', 0)], 'include')
     expect(result).toEqual({ 's:1': 'insights', 's:2': 'full' })

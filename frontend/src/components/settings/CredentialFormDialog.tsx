@@ -131,7 +131,7 @@ export function CredentialFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+      <DialogContent className="max-h-[90vh] grid-rows-[auto_1fr] sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
             {isEditing
@@ -139,7 +139,7 @@ export function CredentialFormDialog({
               : t('apiKeys.addConfig', { provider: providerDisplayName })}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="min-h-0 space-y-4 overflow-y-auto">
           {/* Name */}
           <div className="space-y-2">
             <Label htmlFor="cred-name">{t('apiKeys.configName')}</Label>

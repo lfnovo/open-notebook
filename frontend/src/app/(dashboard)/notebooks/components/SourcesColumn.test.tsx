@@ -22,12 +22,14 @@ const source: SourceListResponse = {
   command_id: 'command:test',
 }
 const completedStatus = { status: 'completed', message: 'Source processing completed' }
+const fetchSourceStatus = vi.fn(() => completedStatus)
 const originalAdapter = apiClient.defaults.adapter
 const originalBaseURL = apiClient.defaults.baseURL
 let client: QueryClient
 let contextRequests: unknown[]
 
 beforeEach(() => {
+  fetchSourceStatus.mockReset().mockReturnValue(completedStatus)
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   contextRequests = []
   apiClient.defaults.baseURL = 'https://api.example.test/api'
@@ -38,7 +40,7 @@ beforeEach(() => {
     return {
       data: config.url === '/chat/context'
         ? { context: { sources: [], notes: [] }, token_count: 0, char_count: 0 }
-        : config.url?.endsWith('/status') ? completedStatus : config.url === '/settings' ? {} : [],
+        : config.url?.endsWith('/status') ? fetchSourceStatus() : config.url === '/settings' ? {} : [],
       status: 200,
       statusText: 'OK',
       headers: {},
@@ -81,6 +83,8 @@ it.each([
   { status: undefined, cached: false },
   { status: undefined, cached: true },
   { status: 'running', cached: true },
+  { status: 'unknown', cached: false },
+  { status: 'unknown', cached: true },
 ])('refreshes a source when its first status is completed ($status, cached=$cached)', async ({ status, cached }) => {
   if (cached) {
     client.setQueryData(['sources', source.id, 'status'], completedStatus)
@@ -98,6 +102,36 @@ it.each([
   )
 
   await waitFor(() => expect(onRefresh).toHaveBeenCalledTimes(1), { timeout: 2000 })
+})
+
+it.each([
+  { status: 'completed', cached: false },
+  { status: 'failed', cached: false },
+  { status: 'completed', cached: true },
+  { status: 'failed', cached: true },
+])('polls an unknown source until $status and refreshes the list (cached=$cached, #1397)', async ({ status, cached }) => {
+  if (cached) {
+    client.setQueryData(['sources', source.id, 'status'], completedStatus)
+  }
+  fetchSourceStatus
+    .mockReturnValueOnce({ status: 'unknown', message: 'Command status unavailable' })
+    .mockReturnValue({ status, message: `Source processing ${status}` })
+  const onRefresh = vi.fn(() => fetchSourceStatus.mock.results.at(-1)?.value.status)
+  render(
+    <SourcesColumn
+      sources={[{ ...source, status: 'unknown' }]}
+      isLoading={false}
+      notebookId="notebook:test"
+      contextSelections={{}}
+      onRefresh={onRefresh}
+    />,
+    { wrapper },
+  )
+
+  await waitFor(() => expect(fetchSourceStatus).toHaveBeenCalledTimes(1))
+  expect(onRefresh).not.toHaveBeenCalled()
+  await waitFor(() => expect(onRefresh).toHaveReturnedWith(status), { timeout: 3500 })
+  expect(fetchSourceStatus).toHaveBeenCalledTimes(2)
 })
 
 it('refreshes a failed source that completes immediately after retry', async () => {

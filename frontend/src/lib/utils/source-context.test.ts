@@ -105,7 +105,7 @@ describe('computeSourceSelections', () => {
   })
 
   it('preserves a bulk full choice for a failed source', () => {
-    const source = { ...src('s:1'), status: 'failed' }
+    const source = { ...src('s:1', 2), status: 'failed' }
     const selections = applyBulkSourceContext({}, [source], 'full')
 
     expect(computeSourceSelections(selections, [source], 'full')).toEqual({ 's:1': 'full' })

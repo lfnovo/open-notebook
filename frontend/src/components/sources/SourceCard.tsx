@@ -135,13 +135,13 @@ function SourceCardImpl({
   // completed source — that scaled linearly with the number of cards and caused the
   // list lag reported in #503.
   //
-  // A source with a `command_id` but no resolved `status` yet is still ambiguous
-  // (it renders as a synthetic "new"), so keep polling those until a real status
-  // arrives — otherwise such a card would be stuck "processing" forever.
+  // A command status that is missing or "unknown" still renders as "new",
+  // so keep polling until it resolves instead of leaving the card stuck.
   const sourceIsProcessing =
     sourceWithStatus.status === 'new' ||
     sourceWithStatus.status === 'queued' ||
     sourceWithStatus.status === 'running' ||
+    sourceWithStatus.status === 'unknown' ||
     (!!sourceWithStatus.command_id && !sourceWithStatus.status)
   const shouldFetchStatus = sourceIsProcessing || wasProcessing
 
@@ -167,8 +167,13 @@ function SourceCardImpl({
   useEffect(() => {
     const currentStatusFromData = statusData?.status || sourceWithStatus.status
 
-    // If we're currently processing, mark that we were processing
-    if (currentStatusFromData === 'new' || currentStatusFromData === 'running' || currentStatusFromData === 'queued') {
+    // Remember unresolved responses even after a stale terminal cache was read.
+    if (
+      currentStatusFromData === 'new' ||
+      currentStatusFromData === 'running' ||
+      currentStatusFromData === 'queued' ||
+      currentStatusFromData === 'unknown'
+    ) {
       setWasProcessing(true)
     }
 

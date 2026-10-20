@@ -195,7 +195,7 @@ class ProviderConfig(RecordModel):
     )
 
     @classmethod
-    async def get_instance(cls) -> "ProviderConfig":
+    async def get_instance(cls, force_reload: bool = False) -> "ProviderConfig":
         """
         Always fetch fresh configuration from database.
 

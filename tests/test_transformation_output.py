@@ -53,7 +53,7 @@ async def test_default_prompt_is_applied_without_mutating_cached_prompt():
         )
 
     assert result == {"output": "Transformed content"}
-    get_default_prompts.assert_awaited_once_with()
+    get_default_prompts.assert_awaited_once_with(force_reload=True)
     system_prompt = chain.ainvoke.await_args.args[0][0].content
     assert system_prompt.index(default_prompt) < system_prompt.index(
         transformation_prompt

@@ -59,6 +59,33 @@ class TestRecordModelSingleton:
         # Cleanup
         TestRecord.clear_instance()
 
+    @pytest.mark.asyncio
+    async def test_recordmodel_force_reload_refreshes_cached_instance(self):
+        """Test that force_reload refreshes a cached singleton from the database."""
+
+        class TestRecord(RecordModel):
+            record_id = "test:force-reload"
+            value: str = ""
+
+        TestRecord.clear_instance()
+        cached_instance = TestRecord(value="ALPHA")
+
+        with patch(
+            "open_notebook.domain.base.repo_query",
+            new=AsyncMock(return_value=[{"value": "BETA"}]),
+        ) as repo_query:
+            refreshed_instance = await TestRecord.get_instance(force_reload=True)
+
+        assert refreshed_instance is cached_instance
+        assert refreshed_instance.value == "BETA"
+        repo_query.assert_awaited_once()
+        assert repo_query.await_args is not None
+        assert repo_query.await_args.args[0] == "SELECT * FROM ONLY $record_id"
+        record_id = repo_query.await_args.args[1]["record_id"]
+        assert record_id.table_name == "test"
+        assert "force-reload" in str(record_id)
+        TestRecord.clear_instance()
+
 
 # ============================================================================
 # TEST SUITE 2: ModelManager Instance Isolation

@@ -49,7 +49,7 @@ export function LanguageToggle({ iconOnly = false }: LanguageToggleProps) {
             onClick={() => setLanguage(code)}
             className={isActive(code, currentLang) ? 'bg-accent' : ''}
           >
-            <span>{label}</span>
+            <span dir="auto">{label}</span>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

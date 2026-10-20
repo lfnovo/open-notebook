@@ -1,0 +1,116 @@
+# .maintainer/profile.toml — profile for the oss-maintainer plugin (schema v1)
+# Every path is relative to the repository root. Values marked TODO block the capability
+# that needs them; values starting with "CONFIRM:" are detected proposals awaiting confirmation.
+schema_version = 1
+
+[project]
+name = "Open Notebook"
+repo = "lfnovo/open-notebook"
+artifact = "app-docker"
+commands_doc = "AGENTS.md"                  # canonical commands: AGENTS.md → Commands, Makefile
+
+# Backend validator: the three required CI gates (AGENTS.md → Commands). `ruff check .` without
+# `--fix`, as .github/workflows/test.yml runs it: a gate never mutates the tree.
+[commands.validator]
+run = "uv run pytest tests/ && ruff check . && uv run python -m mypy ."
+cwd = "."
+timeout = "20m"
+
+# Frontend gate (lint, unit tests, production build), as AGENTS.md documents it.
+[commands.frontend]
+run = "npm run lint && npm run test && npm run build"
+cwd = "frontend"
+timeout = "20m"
+
+[contributing]
+conventions = "docs/7-DEVELOPMENT/contributing.md"   # root CONTRIBUTING.md only points here
+
+[release]
+process_doc = ".github/RELEASE_PROCESS.md"  # the human process: model, confidence process, cut, gotchas
+change_delivery = "pr"                      # every repo change goes through a PR; never push to main
+versioning = "semver"
+changelog = "CHANGELOG.md"
+version_files = ["pyproject.toml"]
+lock_command = "uv lock"           # uv.lock records the package's own version (line 2053)
+# First action that can start public distribution: the CI workflow pushes the <version> and
+# <version>-single tags to both registries (public, but v1-latest untouched). Publication of
+# the GitHub release is what promotes v1-latest — see latest_promotion.
+distribution_trigger = "gh workflow run build-and-release.yml --ref main -f push_latest=false"
+publish_workflow = ".github/workflows/build-and-release.yml"
+latest_promotion = "publishing a non-prerelease GitHub release (gh release create v<ver> --latest) re-runs build-and-release.yml, which adds the v1-latest and v1-latest-single tags on both registries; manual equivalent: the same workflow with push_latest=true"
+notes_source = "CHANGELOG.md"
+consumer_surfaces = [
+  "REST API under /api (the UI is one client; integrations are others)",
+  "environment variables and config keys (docs/5-CONFIGURATION/environment-reference.md)",
+  "docker-compose files, image variants (regular, -single) and the v1-latest / v1-dev tags",
+  "SurrealDB schema and migrations (upgrades run them on boot)",
+  "transformation, prompt-template and command extension points",
+]
+
+[release.gates]
+# What each gate means: .maintainer/release/runbook.md
+mandatory = ["validator", "frontend", "image-gate", "owner-checks", "notes-approved", "security-alerts"]
+optional = []
+alerts_policy = "open Dependabot highs are resolved or explicitly accepted by the owner before GO"
+merge_own_prs = "ask-once-per-session"      # ask once per session ("merge when clean?") and honor the answer
+
+[artifacts.docker]
+registries = ["lfnovo/open_notebook", "ghcr.io/lfnovo/open-notebook"]
+variants = ["", "-single"]                  # runtime target and --target single, same Dockerfile
+platforms = ["amd64", "arm64"]
+dev_tag = "v1-dev"                          # rebuilt from main on every push (build-dev.yml)
+gate = "make docker-build-local && make release-test TAG=<ver> OLD_TAG=<prev>"
+identity = "manifest-digest"
+
+[labels]                                    # canonical -> real
+needs_triage = "needs-triage"               # referenced by the maintainer guide and the issue forms; recreate if missing
+needs_design = "needs-design"
+needs_vision = "needs-vision"
+awaiting_demand = "awaiting-demand"         # not part of the curated set; recognised only, never assigned
+ready = "ready"
+released = "released"
+bug = "bug"
+
+[triage]
+preset = "maturity-ladder"
+assignable = ["close", "needs-design", "ready", "needs-info"]
+extra_states = { needs-info = "Waiting on the reporter to confirm or provide more information" }
+rules = ".maintainer/triage.md"
+batch_approval = "one-at-a-time"
+
+[review]
+docs = [
+  "AGENTS.md",
+  "VISION.md",
+  "docs/7-DEVELOPMENT/architecture.md",
+  "docs/7-DEVELOPMENT/design-principles.md",
+  "docs/7-DEVELOPMENT/code-standards.md",
+  "docs/7-DEVELOPMENT/decisions/README.md",
+]
+reviewers = ["cubic"]                       # findings are hypotheses to verify, never verdicts
+
+[discussions]
+batch_approval = "one-at-a-time"
+categories = { ideas = "DIC_kwDONDsQ184CjkD_", feedback-requests = "DIC_kwDONDsQ184DBrfp", q-a = "DIC_kwDONDsQ184CjkD-", general = "DIC_kwDONDsQ184CjkD9", announcements = "DIC_kwDONDsQ184CjkD8" }
+regenerate = "gh api graphql -f query='{ repository(owner: \"lfnovo\", name: \"open-notebook\") { discussionCategories(first: 20) { nodes { id name } } } }'"
+public_anchors = ["VISION.md", "docs/7-DEVELOPMENT/decisions/README.md", "docs/7-DEVELOPMENT/contributing.md"]
+never_cite = [".tmp-context/", "CLAUDE.local.md", "private maintainer drafts", "unpublished vision specifics"]
+graduation = "pull"                         # an Issue is born when someone will build it (ratified 2026-09-02)
+close_on = ["answer", "graduated-work-landed"]
+
+[smoke]
+api_url = "http://localhost:5055"
+frontend_url = "http://localhost:3000"
+journey = ".maintainer/smoke/journey.md"
+mandatory_surfaces = ["api", "ui"]
+report_path = ".maintainer/state/smoke-report.md"
+poll_interval = "5s"
+step_timeout = "5m"
+
+[comms]
+owner_language = "pt-BR"
+public_language = "en"
+agent_attribution = "none"
+
+[channels]
+announce = ["discord"]                      # texts are delivered to the owner, never posted by a skill

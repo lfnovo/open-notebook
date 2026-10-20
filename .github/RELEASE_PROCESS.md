@@ -161,7 +161,7 @@ accepted improvements immediately — update this document, the scripts under
   `v1-latest`) and a blocker is found in bucket C, the tag must move to the new
   commit AND the version images must be rebuilt — a stale tag or stale registry
   image will otherwise be what publication promotes to `v1-latest`. The exact
-  sequence is in `runbook.md` → "Re-cut after a post-tag fix" (v1.14.0 lesson).
+  sequence is in `.maintainer/release/runbook.md` → "Re-cut after a post-tag fix" (v1.14.0 lesson).
 - **RC stack on non-default ports needs `API_URL`** or the browser talks to
   `host:5055` — on a dev machine that is the development API (data crossover).
   `rc-stack.sh` sets it; remember this for any custom setup.

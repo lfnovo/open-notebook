@@ -46,6 +46,12 @@ class ExternalServiceError(OpenNotebookError):
     pass
 
 
+class IncompleteGenerationError(ExternalServiceError):
+    """The model returned truncated or empty output; do not retry automatically."""
+
+    pass
+
+
 class ContextLengthExceededError(ExternalServiceError):
     """Content exceeds the model's context window. Retrying sends the same
     oversized payload, so background commands must not retry this."""

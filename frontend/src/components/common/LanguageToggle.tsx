@@ -11,6 +11,14 @@ import { Languages } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { languages, type LanguageCode } from '@/lib/locales'
 
+// Every language registered in lib/locales is listed, so a new locale can't be
+// left out of the menu. Browser-detected codes ("pt", "zh-Hant") match by prefix.
+function isActive(code: LanguageCode, current: string): boolean {
+  if (code === 'zh-CN') return current === 'zh-CN' || current === 'zh' || current.startsWith('zh-Hans')
+  if (code === 'zh-TW') return current === 'zh-TW' || current.startsWith('zh-Hant')
+  return current === code || current.startsWith(code.split('-')[0])
+}
+
 interface LanguageToggleProps {
   iconOnly?: boolean
 }
@@ -20,24 +28,6 @@ export function LanguageToggle({ iconOnly = false }: LanguageToggleProps) {
   
   // Keep the actual language code for proper comparison
   const currentLang = language || 'en-US'
-  // Exhaustive so adding a locale also requires its translated menu name.
-  const translatedLabels: Record<LanguageCode, string> = {
-    'en-US': t('common.english'),
-    'ca-ES': t('common.catalan'),
-    'zh-CN': t('common.chinese'),
-    'zh-TW': t('common.traditionalChinese'),
-    'pt-BR': t('common.portuguese'),
-    'ja-JP': t('common.japanese'),
-    'fr-FR': t('common.french'),
-    'ru-RU': t('common.russian'),
-    'bn-IN': t('common.bengali'),
-    'es-ES': t('common.spanish'),
-    'de-DE': t('common.german'),
-    'pl-PL': t('common.polish'),
-    'tr-TR': t('common.turkish'),
-    'it-IT': t('common.italian'),
-    'ar-SA': t('common.arabic'),
-  }
 
   return (
     <DropdownMenu>
@@ -53,24 +43,15 @@ export function LanguageToggle({ iconOnly = false }: LanguageToggleProps) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        {languages.map(({ code }) => {
-          // Keep Simplified and Traditional Chinese distinct when matching variants.
-          const isSelected = code === 'zh-CN'
-            ? currentLang === code || currentLang.startsWith('zh-Hans') || currentLang === 'zh'
-            : code === 'zh-TW'
-              ? currentLang === code || currentLang.startsWith('zh-Hant')
-              : currentLang.split('-')[0] === code.split('-')[0]
-
-          return (
-            <DropdownMenuItem
-              key={code}
-              onClick={() => setLanguage(code)}
-              className={isSelected ? 'bg-accent' : ''}
-            >
-              <span dir="auto">{translatedLabels[code]}</span>
-            </DropdownMenuItem>
-          )
-        })}
+        {languages.map(({ code, label }) => (
+          <DropdownMenuItem
+            key={code}
+            onClick={() => setLanguage(code)}
+            className={isActive(code, currentLang) ? 'bg-accent' : ''}
+          >
+            <span dir="auto">{label}</span>
+          </DropdownMenuItem>
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   )

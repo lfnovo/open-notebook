@@ -62,9 +62,7 @@ def format_source_context(context_data: Dict[str, Any]) -> str:
         context_parts.append("## SOURCE INSIGHTS")
         for insight in context_data["insights"]:
             if isinstance(insight, dict):
-                context_parts.append(
-                    f"**Insight ID:** {insight.get('id', 'Unknown')}"
-                )
+                context_parts.append(f"**Insight ID:** {insight.get('id', 'Unknown')}")
                 context_parts.append(
                     f"**Type:** {insight.get('insight_type', 'Unknown')}"
                 )
@@ -228,9 +226,9 @@ def _truncate_source_to_token_budget(
             source_tokens = encoding.encode(full_text, disallowed_special=())
 
         def token_prefix(prefix_token_count: int) -> str:
-            return encoding.decode_bytes(
-                source_tokens[:prefix_token_count]
-            ).decode("utf-8", errors="ignore")
+            return encoding.decode_bytes(source_tokens[:prefix_token_count]).decode(
+                "utf-8", errors="ignore"
+            )
 
         best = find_fitting_prefix(
             min(len(source_tokens), max_tokens),
@@ -459,11 +457,14 @@ async def build_source_context(
             else:
                 for insight_content in insight_items:
                     candidate_insights = [*insights, insight_content]
-                    if _rendered_source_context_tokens(
-                        source_context,
-                        candidate_insights,
-                        encoding,
-                    ) > max_tokens:
+                    if (
+                        _rendered_source_context_tokens(
+                            source_context,
+                            candidate_insights,
+                            encoding,
+                        )
+                        > max_tokens
+                    ):
                         continue
                     insights.append(insight_content)
 

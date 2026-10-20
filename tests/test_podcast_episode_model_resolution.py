@@ -84,9 +84,7 @@ def unresolvable_episode(suffix="gone"):
 class TestGetDisplayInfoForIdsUnit:
     @pytest.mark.asyncio
     async def test_empty_input_returns_empty_without_querying(self):
-        with patch(
-            "open_notebook.ai.models.repo_query", new=AsyncMock()
-        ) as mock_query:
+        with patch("open_notebook.ai.models.repo_query", new=AsyncMock()) as mock_query:
             result = await Model.get_display_info_for_ids([])
         assert result == {}
         mock_query.assert_not_called()

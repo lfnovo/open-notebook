@@ -132,9 +132,7 @@ class TestResolveContainedAudioPath:
 
     def test_real_podcasts_folder_resolves(self):
         """Sanity check against the real (non-monkeypatched) config constant."""
-        assert (
-            resolve_contained_audio_path("episodes/abc/out.mp3") is not None
-        )
+        assert resolve_contained_audio_path("episodes/abc/out.mp3") is not None
         assert resolve_contained_audio_path("../elsewhere.mp3") is None
 
 

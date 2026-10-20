@@ -27,7 +27,9 @@ class TestAsyncSourceAssetPersistence:
     """
 
     @pytest.mark.asyncio
-    @patch("api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock)
+    @patch(
+        "api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock
+    )
     @patch("api.routers.sources.Source.add_to_notebook", new_callable=AsyncMock)
     @patch("api.routers.sources.Notebook.get", new_callable=AsyncMock)
     async def test_async_link_source_persists_url_asset(
@@ -64,7 +66,9 @@ class TestAsyncSourceAssetPersistence:
         assert source.asset.file_path is None
 
     @pytest.mark.asyncio
-    @patch("api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock)
+    @patch(
+        "api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock
+    )
     @patch("api.routers.sources.Source.add_to_notebook", new_callable=AsyncMock)
     @patch("api.routers.sources.Notebook.get", new_callable=AsyncMock)
     @patch("api.routers.sources.save_uploaded_file", new_callable=AsyncMock)
@@ -73,7 +77,9 @@ class TestAsyncSourceAssetPersistence:
     ):
         """POST /sources with type=upload and async_processing=true persists Asset(file_path=...)."""
         mock_nb_get.return_value = MagicMock()
-        mock_upload.return_value = os.path.join(os.path.abspath(UPLOADS_FOLDER), "video.mp4")
+        mock_upload.return_value = os.path.join(
+            os.path.abspath(UPLOADS_FOLDER), "video.mp4"
+        )
         mock_submit.return_value = "command:123"
 
         saved_sources = []
@@ -99,11 +105,15 @@ class TestAsyncSourceAssetPersistence:
 
         source = saved_sources[0]
         assert source.asset is not None
-        assert source.asset.file_path == os.path.join(os.path.abspath(UPLOADS_FOLDER), "video.mp4")
+        assert source.asset.file_path == os.path.join(
+            os.path.abspath(UPLOADS_FOLDER), "video.mp4"
+        )
         assert source.asset.url is None
 
     @pytest.mark.asyncio
-    @patch("api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock)
+    @patch(
+        "api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock
+    )
     @patch("api.routers.sources.Source.add_to_notebook", new_callable=AsyncMock)
     @patch("api.routers.sources.Notebook.get", new_callable=AsyncMock)
     async def test_async_text_source_has_no_asset(
@@ -143,7 +153,9 @@ class TestRetrySourceProcessing:
     edge's in/out columns, not a non-existent `source` column (#861)."""
 
     @pytest.mark.asyncio
-    @patch("api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock)
+    @patch(
+        "api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock
+    )
     @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
     @patch("api.routers.sources.Source.get", new_callable=AsyncMock)
     async def test_retry_finds_notebooks_and_requeues(
@@ -243,7 +255,14 @@ class TestTitleSortUsesAlias:
     @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
     async def test_all_sort_fields_return_200(self, mock_query, client):
         mock_query.return_value = []
-        for field in ["type", "title", "created", "updated", "insights_count", "embedded"]:
+        for field in [
+            "type",
+            "title",
+            "created",
+            "updated",
+            "insights_count",
+            "embedded",
+        ]:
             response = client.get(f"/api/sources?sort_by={field}")
             assert response.status_code == 200, f"sort_by={field}"
 

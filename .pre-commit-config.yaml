@@ -28,9 +28,8 @@ repos:
       # --fix; the local auto-fix saves iteration with no drift risk.
       - id: ruff
         args: [--fix]
-      # `ruff format --check` — fails if files don't match ruff's formatter.
-      # Run `ruff format .` to fix. Not yet gated in CI but uses the exact
-      # same tool config, so there is no drift.
+      # `ruff format` — reformats files to match ruff's formatter. CI runs
+      # `ruff format --check .` with the same tool config, so there is no drift.
       - id: ruff-format
 
   # ── Mypy: Python type check (mirrors CI backend-typecheck job) ────

@@ -24,7 +24,9 @@ except ImportError as e:
     raise ValueError("podcast_creator library not available")
 
 
-def build_episode_output_dir(podcasts_folder: str = PODCASTS_FOLDER) -> tuple[str, Path]:
+def build_episode_output_dir(
+    podcasts_folder: str = PODCASTS_FOLDER,
+) -> tuple[str, Path]:
     """Build a filesystem-safe output directory path for a podcast episode.
 
     Uses a UUID as the directory name so the path is safe regardless of
@@ -39,6 +41,59 @@ def build_episode_output_dir(podcasts_folder: str = PODCASTS_FOLDER) -> tuple[st
     episode_dir_name = str(uuid.uuid4())
     output_dir = Path(podcasts_folder) / "episodes" / episode_dir_name
     return episode_dir_name, output_dir
+
+
+def explain_generation_failure(error_msg: str) -> Optional[str]:
+    """Map a podcast-generation failure to an actionable hint, or None.
+
+    Ordered most specific first. The GPT-5 extended-thinking hint used to be
+    the only one, so the two most common real failures got either nothing
+    (`Invalid speaker name`) or advice about the wrong provider - a truncated
+    Gemini response was told to switch to gpt-4o (#1238).
+    """
+    if "Invalid speaker name" in error_msg:
+        return (
+            "The transcript model returned a speaker name that is not in the "
+            "speaker profile - usually a placeholder copied from the prompt "
+            'such as "..." rather than an invented person. Speaker names must '
+            "match the profile exactly. Retrying the episode often succeeds, "
+            "since each attempt is a fresh sample."
+        )
+
+    if "Voice name" in error_msg and "not supported" in error_msg:
+        return (
+            "The speaker profile's voice_id is not valid for its TTS model. "
+            "Check the speaker profile voices in Podcasts -> Profiles against the ones "
+            "your voice model provides (the profiles seeded on install use "
+            "OpenAI voice names)."
+        )
+
+    if "Requested entity was not found" in error_msg:
+        return (
+            "Google returns this for any resource it cannot find, without "
+            "naming which one. Two candidates, likeliest first: a speaker "
+            "profile voice_id that its TTS model doesn't provide (the profiles "
+            "seeded on install use OpenAI voice names, which Gemini voice "
+            "models reject with exactly this message), or a model id in the "
+            "episode profile that doesn't exist for its provider. If the "
+            "transcript finished and the failure came during audio, it is the "
+            "voice."
+        )
+
+    if "Invalid json output" in error_msg or "Expecting value" in error_msg:
+        return (
+            "The model's response could not be parsed as JSON. Two common "
+            "causes: (1) the response was truncated - podcast-creator requests "
+            "up to 8192 output tokens per outline or transcript step unless the "
+            "episode profile sets max_tokens; if the model stops earlier (a "
+            "lower output limit, or a token-expensive language), set max_tokens "
+            "to its limit or use fewer and shorter segments; (2) a model using "
+            "extended thinking (e.g. "
+            "GPT-5) put all of its output inside <think> tags, leaving nothing "
+            "to parse - try gpt-4o, gpt-4o-mini or gpt-4-turbo instead."
+        )
+
+    return None
 
 
 class PodcastGenerationInput(CommandInput):
@@ -126,15 +181,21 @@ async def generate_podcast_command(
             )
 
         # 3. Resolve model configs with credentials
-        outline_provider, outline_model_name, outline_config = (
-            await episode_profile.resolve_outline_config()
-        )
-        transcript_provider, transcript_model_name, transcript_config = (
-            await episode_profile.resolve_transcript_config()
-        )
-        tts_provider, tts_model_name, tts_config = (
-            await speaker_profile.resolve_tts_config()
-        )
+        (
+            outline_provider,
+            outline_model_name,
+            outline_config,
+        ) = await episode_profile.resolve_outline_config()
+        (
+            transcript_provider,
+            transcript_model_name,
+            transcript_config,
+        ) = await episode_profile.resolve_transcript_config()
+        (
+            tts_provider,
+            tts_model_name,
+            tts_config,
+        ) = await speaker_profile.resolve_tts_config()
 
         logger.info(
             f"Resolved models - outline: {outline_provider}/{outline_model_name}, "
@@ -218,6 +279,18 @@ async def generate_podcast_command(
         # Remove profiles that fail resolution to prevent validation errors.
         for sp_name in list(speaker_profiles_dict.keys()):
             sp_dict = speaker_profiles_dict[sp_name]
+            if not sp_dict.get("voice_model") and sp_name != speaker_profile.name:
+                # podcast-creator requires tts_provider/tts_model on every
+                # profile in the config, so one unconfigured profile (the
+                # seeded ones ship without a voice model) would fail every
+                # generation (#1450). The selected profile never gets here
+                # without a voice model: it was validated above.
+                logger.warning(
+                    f"Speaker profile '{sp_name}' has no voice model, removing "
+                    "from config to prevent validation errors"
+                )
+                del speaker_profiles_dict[sp_name]
+                continue
             if sp_dict.get("voice_model"):
                 try:
                     prov, model, conf = await _resolve_model_config(
@@ -357,19 +430,27 @@ async def generate_podcast_command(
             processing_time=processing_time,
         )
 
-    except ValueError:
-        raise
+    except ValueError as e:
+        # ValueError is the command layer's "permanent failure, do not retry"
+        # signal (retry config uses stop_on=[ValueError]), so the type has to
+        # survive - but LangChain's OutputParserException and
+        # json.JSONDecodeError are ValueError subclasses too. Every parser
+        # failure therefore left through here, past the hint mapper below:
+        # the placeholder speaker name and the truncated-JSON cases reached
+        # the user with no guidance at all (#1238).
+        hint = explain_generation_failure(str(e))
+        if not hint:
+            raise
+        logger.error(f"Podcast generation failed: {e}")
+        raise ValueError(f"{e}\n\nNOTE: {hint}") from e
 
     except Exception as e:
         logger.error(f"Podcast generation failed: {e}")
         logger.exception(e)
 
         error_msg = str(e)
-        if "Invalid json output" in error_msg or "Expecting value" in error_msg:
-            error_msg += (
-                "\n\nNOTE: This error commonly occurs with GPT-5 models that use extended thinking. "
-                "The model may be putting all output inside <think> tags, leaving nothing to parse. "
-                "Try using gpt-4o, gpt-4o-mini, or gpt-4-turbo instead in your episode profile."
-            )
+        hint = explain_generation_failure(error_msg)
+        if hint:
+            error_msg += f"\n\nNOTE: {hint}"
 
         raise RuntimeError(error_msg) from e

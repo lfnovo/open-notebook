@@ -8,7 +8,7 @@ AI providers and automatically register them in the database.
 import asyncio
 import os
 from dataclasses import dataclass
-from typing import Awaitable, Callable, Dict, List, Optional, Tuple
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
 import httpx
 from loguru import logger
@@ -18,6 +18,7 @@ from open_notebook.ai.models import Model
 from open_notebook.ai.provider_registry import PROVIDERS
 from open_notebook.database.repository import repo_query
 from open_notebook.domain.credential import Credential
+from open_notebook.utils.ssl_config import httpx_verify_setting
 from open_notebook.utils.url_validation import prepare_pinned_http_target
 
 
@@ -161,7 +162,16 @@ DASHSCOPE_MODEL_TYPES = {
     "language": ["qwen"],
 }
 
+# SiliconFlow's /models catalog mixes chat models with embedding, rerank and
+# audio models; keep those out of the language slot.
+SILICONFLOW_MODEL_TYPES = {
+    "embedding": ["bge-", "bce-embedding", "embedding"],
+    "speech_to_text": ["sensevoice", "telespeech"],
+    "text_to_speech": ["cosyvoice", "fish-speech", "moss-tts"],
+}
+
 MINIMAX_MODEL_TYPES = {
+    "text_to_speech": ["speech-"],
     "language": ["minimax", "abab"],
 }
 
@@ -182,6 +192,18 @@ PPQ_MODEL_TYPES = {
 OPENROUTER_AUDIO_MODELS: Dict[str, List[str]] = {
     "text_to_speech": ["microsoft/mai-voice-2"],
     "speech_to_text": ["openai/whisper-1", "openai/whisper-large-v3"],
+}
+
+# MiniMax TTS (esperanto 2.27, native /v1/t2a_v2) is not listed by its /models
+# endpoint either; seed the speech models esperanto supports, newest first.
+MINIMAX_AUDIO_MODELS: Dict[str, List[str]] = {
+    "text_to_speech": ["speech-2.8-hd", "speech-2.8-turbo"],
+}
+
+# Providers whose live /models listing needs a static audio seed on top.
+PROVIDER_AUDIO_SEEDS: Dict[str, Dict[str, List[str]]] = {
+    "openrouter": OPENROUTER_AUDIO_MODELS,
+    "minimax": MINIMAX_AUDIO_MODELS,
 }
 
 
@@ -205,6 +227,7 @@ def classify_model_type(model_name: str, provider: str) -> str:
         "elevenlabs": ELEVENLABS_MODEL_TYPES,
         "deepgram": DEEPGRAM_MODEL_TYPES,
         "dashscope": DASHSCOPE_MODEL_TYPES,
+        "siliconflow": SILICONFLOW_MODEL_TYPES,
         "minimax": MINIMAX_MODEL_TYPES,
         "ppq": PPQ_MODEL_TYPES,
     }
@@ -248,6 +271,9 @@ class ProviderDiscoverySpec:
     # and no description.
     classify: Optional[Callable[[dict], str]] = None
     description: Optional[Callable[[dict], Optional[str]]] = None
+    # Env var with an endpoint override (regional base URL); when set, models
+    # are listed at <base_url>/models instead of `url`.
+    base_url_env: Optional[str] = None
 
 
 # Per-provider quirk hooks that can't live in the (pure data) registry.
@@ -269,6 +295,7 @@ OPENAI_COMPAT_PROVIDERS: Dict[str, ProviderDiscoverySpec] = {
         env_var=spec.required_env[0],
         classify=_COMPAT_CLASSIFY.get(name),
         description=_COMPAT_DESCRIPTION.get(name),
+        base_url_env=spec.base_url_env,
     )
     for name, spec in PROVIDERS.items()
     if spec.openai_compat_discovery_url
@@ -282,14 +309,29 @@ async def discover_openai_compatible_provider(provider: str) -> List[DiscoveredM
     if not api_key:
         return []
 
+    url = spec.url
+    headers = {"Authorization": f"Bearer {api_key}"}
+    extensions: Dict[str, Any] = {}
+    base_url = (
+        os.environ.get(spec.base_url_env, "").strip() if spec.base_url_env else ""
+    )
+
     models = []
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                spec.url,
-                headers={"Authorization": f"Bearer {api_key}"},
-                timeout=30.0,
-            )
+        if base_url:
+            # Endpoint override from the environment: validate and pin it like
+            # any other user-supplied URL (DNS-rebinding safe).
+            trimmed = base_url.rstrip("/")
+            override = trimmed if trimmed.endswith("/models") else f"{trimmed}/models"
+            target = await prepare_pinned_http_target(override, provider)
+            url = target.url
+            headers.update(target.headers)
+            extensions = target.extensions
+        async with httpx.AsyncClient(verify=httpx_verify_setting()) as client:
+            get_kwargs: Dict[str, Any] = {"headers": headers, "timeout": 30.0}
+            if extensions:
+                get_kwargs["extensions"] = extensions
+            response = await client.get(url, **get_kwargs)
             response.raise_for_status()
             data = response.json()
 
@@ -336,8 +378,9 @@ discover_mistral_models = _make_openai_compat_discoverer("mistral")
 discover_deepseek_models = _make_openai_compat_discoverer("deepseek")
 discover_xai_models = _make_openai_compat_discoverer("xai")
 discover_dashscope_models = _make_openai_compat_discoverer("dashscope")
-discover_minimax_models = _make_openai_compat_discoverer("minimax")
 discover_novita_models = _make_openai_compat_discoverer("novita")
+discover_siliconflow_models = _make_openai_compat_discoverer("siliconflow")
+discover_zai_models = _make_openai_compat_discoverer("zai")
 discover_ppq_models = _make_openai_compat_discoverer("ppq")
 
 
@@ -486,6 +529,41 @@ async def discover_ollama_models() -> List[DiscoveredModel]:
     return models
 
 
+def audio_seed(provider: str) -> List[Tuple[str, str]]:
+    """The provider's static audio models as (name, model_type) pairs.
+
+    Shared by env-based and credential-based discovery so both seed the same
+    models.
+    """
+    return [
+        (name, model_type)
+        for model_type, names in PROVIDER_AUDIO_SEEDS.get(provider, {}).items()
+        for name in names
+    ]
+
+
+def _with_audio_seed(
+    provider: str, models: List[DiscoveredModel]
+) -> List[DiscoveredModel]:
+    """Append the provider's static audio seed to a live discovery result.
+
+    Only seeds when live discovery actually returned something. An empty result
+    means the /models call failed (invalid key, HTTP error, network) — seeding
+    on top of a failed discovery would make it look successful and
+    auto-register unusable audio models during sync.
+    """
+    if not models:
+        return models
+
+    seen = {(m.name, m.model_type) for m in models}
+    for name, model_type in audio_seed(provider):
+        if (name, model_type) not in seen:
+            models.append(
+                DiscoveredModel(name=name, provider=provider, model_type=model_type)
+            )
+    return models
+
+
 async def discover_openrouter_models() -> List[DiscoveredModel]:
     """Discover OpenRouter models (language/embedding + a static audio seed).
 
@@ -493,30 +571,16 @@ async def discover_openrouter_models() -> List[DiscoveredModel]:
     embedding) models but does not reliably surface its TTS/STT catalog, so we
     combine live API discovery with a small static seed of the audio model ids
     esperanto ships as defaults (see OPENROUTER_AUDIO_MODELS). Returns [] when
-    live discovery yields nothing (missing key, HTTP/network error), so the
-    audio seed is never registered on top of a failed discovery.
+    live discovery yields nothing (missing key, HTTP/network error).
     """
     models = await discover_openai_compatible_provider("openrouter")
+    return _with_audio_seed("openrouter", models)
 
-    # Only seed the static audio models when live discovery actually returned
-    # something. An empty result means the /models call failed (invalid key,
-    # HTTP error, network) — seeding on top of a failed discovery would make it
-    # look successful and auto-register unusable audio models during sync.
-    if not models:
-        return models
 
-    seen = {(m.name, m.model_type) for m in models}
-    for model_type, names in OPENROUTER_AUDIO_MODELS.items():
-        for name in names:
-            if (name, model_type) not in seen:
-                models.append(
-                    DiscoveredModel(
-                        name=name,
-                        provider="openrouter",
-                        model_type=model_type,
-                    )
-                )
-    return models
+async def discover_minimax_models() -> List[DiscoveredModel]:
+    """Discover MiniMax language models plus its TTS models (static seed)."""
+    models = await discover_openai_compatible_provider("minimax")
+    return _with_audio_seed("minimax", models)
 
 
 async def discover_voyage_models() -> List[DiscoveredModel]:
@@ -717,7 +781,9 @@ async def discover_openai_compatible_models() -> List[DiscoveredModel]:
                         )
                     )
     except httpx.HTTPStatusError as e:
-        logger.warning(f"Failed to discover openai_compatible models: HTTP {e.response.status_code}")
+        logger.warning(
+            f"Failed to discover openai_compatible models: HTTP {e.response.status_code}"
+        )
     except Exception as e:
         logger.warning(f"Failed to discover openai_compatible models: {e}")
 
@@ -736,7 +802,9 @@ async def discover_anthropic_compatible_models() -> List[DiscoveredModel]:
             api_key = config.get("api_key")
             base_url = config.get("base_url", "")
     except Exception as e:
-        logger.warning(f"Failed to read anthropic_compatible config from Credential: {e}")
+        logger.warning(
+            f"Failed to read anthropic_compatible config from Credential: {e}"
+        )
 
     if not api_key:
         api_key = os.environ.get("ANTHROPIC_COMPATIBLE_API_KEY")
@@ -874,6 +942,8 @@ PROVIDER_DISCOVERY_FUNCTIONS = {
     "dashscope": discover_dashscope_models,
     "minimax": discover_minimax_models,
     "novita": discover_novita_models,
+    "siliconflow": discover_siliconflow_models,
+    "zai": discover_zai_models,
     "ppq": discover_ppq_models,
     "cohere": discover_cohere_models,
     "azure": None,  # Azure requires credential-based discovery (different auth)
@@ -961,7 +1031,9 @@ async def sync_provider_models(
             )
             await new_model.save()
             new_count += 1
-            logger.info(f"Registered new model: {model.provider}/{model.name} ({model.model_type})")
+            logger.info(
+                f"Registered new model: {model.provider}/{model.name} ({model.model_type})"
+            )
         except Exception as e:
             logger.warning(f"Failed to register model {model.name}: {e}")
 

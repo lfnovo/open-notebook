@@ -52,44 +52,63 @@ export const insightsApi = {
     await apiClient.delete(`/insights/${insightId}`)
   },
 
-  getCommandStatus: async (commandId: string) => {
+  getCommandStatus: async (commandId: string, signal?: AbortSignal) => {
     const response = await apiClient.get<CommandJobStatusResponse>(
-      `/commands/jobs/${commandId}`
+      `/commands/jobs/${commandId}`,
+      { signal }
     )
     return response.data
   },
 
   /**
-   * Poll command status until completed or failed.
-   * Returns true if completed successfully, false if failed.
+   * Poll command status until it reaches a terminal state.
+   * Returns the terminal status, or null if polling is aborted or repeatedly errors.
    */
   waitForCommand: async (
     commandId: string,
-    options?: { maxAttempts?: number; intervalMs?: number }
-  ): Promise<boolean> => {
-    const maxAttempts = options?.maxAttempts ?? 60 // Default 60 attempts
+    options?: { intervalMs?: number; signal?: AbortSignal }
+  ): Promise<CommandJobStatusResponse | null> => {
     const intervalMs = options?.intervalMs ?? 2000 // Default 2 seconds
+    const signal = options?.signal
+    let consecutiveErrors = 0
 
-    for (let i = 0; i < maxAttempts; i++) {
+    while (!signal?.aborted) {
+      let status: CommandJobStatusResponse | undefined
       try {
-        const status = await insightsApi.getCommandStatus(commandId)
-        if (status.status === 'completed') {
-          return true
-        }
+        status = await insightsApi.getCommandStatus(commandId, signal)
+        consecutiveErrors = 0
+      } catch {
+        if (signal?.aborted) return null
+        console.error('Error checking command status')
+        consecutiveErrors += 1
+        if (consecutiveErrors >= 3) return null
+      }
+
+      if (status && ['completed', 'failed', 'canceled', 'error', 'unknown'].includes(status.status)) {
         if (status.status === 'failed' || status.status === 'canceled') {
           console.error('Command failed:', status.error_message)
-          return false
         }
-        // Still running, wait and retry
-        await new Promise(resolve => setTimeout(resolve, intervalMs))
-      } catch (error) {
-        console.error('Error checking command status:', error)
-        // Continue polling on error
-        await new Promise(resolve => setTimeout(resolve, intervalMs))
+        return status
       }
+
+      await new Promise<void>(resolve => {
+        if (signal?.aborted) {
+          resolve()
+          return
+        }
+
+        const onAbort = () => {
+          clearTimeout(timeout)
+          resolve()
+        }
+        const timeout = setTimeout(() => {
+          signal?.removeEventListener('abort', onAbort)
+          resolve()
+        }, intervalMs)
+        signal?.addEventListener('abort', onAbort, { once: true })
+      })
     }
-    // Timeout
-    console.warn('Command polling timed out')
-    return false
+
+    return null
   }
 }

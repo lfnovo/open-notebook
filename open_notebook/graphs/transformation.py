@@ -7,7 +7,11 @@ from typing_extensions import TypedDict
 from open_notebook.ai.provision import provision_langchain_model
 from open_notebook.domain.notebook import Source
 from open_notebook.domain.transformation import DefaultPrompts, Transformation
-from open_notebook.exceptions import OpenNotebookError
+from open_notebook.exceptions import (
+    IncompleteGenerationError,
+    InvalidInputError,
+    OpenNotebookError,
+)
 from open_notebook.utils import clean_thinking_content
 from open_notebook.utils.error_classifier import classify_error
 from open_notebook.utils.text_utils import extract_text_content
@@ -30,20 +34,32 @@ async def run_transformation(state: dict, config: RunnableConfig) -> dict:
     try:
         if not content:
             content = source.full_text
+        if not content or not str(content).strip():
+            # A source whose extraction produced no text would hand the model
+            # an empty input, and whatever it invents would be saved as an
+            # insight.
+            raise InvalidInputError("There is no text content to transform")
         # transformation.prompt is user-controlled free text. Never compile it as
         # Jinja template *source* (Prompter(template_text=...)) - pass it as a
         # plain render variable into a fixed, developer-authored template instead.
         # See docs/7-DEVELOPMENT/security.md (GHSA-f35w-wx37-26q7).
         instructions = transformation.prompt
-        default_prompts: DefaultPrompts = DefaultPrompts(transformation_instructions=None)
+        default_prompts: DefaultPrompts = DefaultPrompts(
+            transformation_instructions=None
+        )
         if default_prompts.transformation_instructions:
-            instructions = f"{default_prompts.transformation_instructions}\n\n{instructions}"
+            instructions = (
+                f"{default_prompts.transformation_instructions}\n\n{instructions}"
+            )
 
         system_prompt = Prompter(prompt_template="transformation/execute").render(
             data={**state, "instructions": instructions}
         )
         content_str = str(content) if content else ""
-        payload = [SystemMessage(content=system_prompt), HumanMessage(content=content_str)]
+        payload = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=content_str),
+        ]
         chain = await provision_langchain_model(
             str(payload),
             config.get("configurable", {}).get("model_id"),
@@ -53,9 +69,27 @@ async def run_transformation(state: dict, config: RunnableConfig) -> dict:
 
         response = await chain.ainvoke(payload)
 
+        # Provider adapters use different keys for the termination reason.
+        # Check before saving: a nonempty answer can still be incomplete.
+        metadata = response.response_metadata
+        for key in ("finish_reason", "stop_reason", "done_reason"):
+            reason = metadata.get(key)
+            if isinstance(reason, str) and reason.lower() in ("length", "max_tokens"):
+                raise IncompleteGenerationError(
+                    "The model reached its generation limit before completing the "
+                    "transformation. Try a shorter transformation or a different model."
+                )
+
         # Clean thinking content from the response
         response_content = extract_text_content(response.content)
         cleaned_content = clean_thinking_content(response_content)
+
+        if not cleaned_content.strip():
+            raise IncompleteGenerationError(
+                "The model returned no usable text for the transformation after "
+                "removing thinking content. Try a shorter transformation or a "
+                "different model."
+            )
 
         if source:
             await source.add_insight(transformation.title, cleaned_content)

@@ -1,6 +1,7 @@
 import asyncio
 import json
 from typing import AsyncGenerator, List, Optional
+from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Path
 from fastapi.responses import StreamingResponse
@@ -23,7 +24,10 @@ from open_notebook.exceptions import (
     OpenNotebookError,
 )
 from open_notebook.graphs.source_chat import source_chat_graph as source_chat_graph
-from open_notebook.utils.graph_utils import get_session_message_count
+from open_notebook.utils.graph_utils import (
+    get_session_message_count,
+    invoke_chat_turn,
+)
 
 router = APIRouter()
 
@@ -36,11 +40,13 @@ class CreateSourceChatSessionRequest(BaseModel):
         None, description="Optional model override for this session"
     )
 
+
 class UpdateSourceChatSessionRequest(BaseModel):
     title: Optional[str] = Field(None, description="New session title")
     model_override: Optional[str] = Field(
         None, description="Model override for this session"
     )
+
 
 class ContextIndicator(BaseModel):
     sources: List[str] = Field(
@@ -52,6 +58,7 @@ class ContextIndicator(BaseModel):
     notes: List[str] = Field(
         default_factory=list, description="Note IDs used in context"
     )
+
 
 class SourceChatSessionResponse(BaseModel):
     id: str = Field(..., description="Session ID")
@@ -66,6 +73,7 @@ class SourceChatSessionResponse(BaseModel):
         None, description="Number of messages in session"
     )
 
+
 class SourceChatSessionWithMessagesResponse(SourceChatSessionResponse):
     messages: List[ChatMessage] = Field(
         default_factory=list, description="Session messages"
@@ -74,11 +82,13 @@ class SourceChatSessionWithMessagesResponse(SourceChatSessionResponse):
         None, description="Context indicators from last response"
     )
 
+
 class SendMessageRequest(BaseModel):
     message: str = Field(..., description="User message content")
     model_override: Optional[str] = Field(
         None, description="Optional model override for this message"
     )
+
 
 @router.post(
     "/sources/{source_id}/chat/sessions", response_model=SourceChatSessionResponse
@@ -195,9 +205,12 @@ async def get_source_chat_session(
     """Get a specific source chat session with its messages."""
     try:
         # Verify source + session exist and are related (404s otherwise)
-        _full_source_id, _source, full_session_id, session = (
-            await get_verified_source_session(source_id, session_id)
-        )
+        (
+            _full_source_id,
+            _source,
+            full_session_id,
+            session,
+        ) = await get_verified_source_session(source_id, session_id)
 
         # Get session state from LangGraph to retrieve messages
         # Use sync get_state() in a thread since SqliteSaver doesn't support async
@@ -260,9 +273,12 @@ async def update_source_chat_session(
     """Update source chat session title and/or model override."""
     try:
         # Verify source + session exist and are related (404s otherwise)
-        _full_source_id, _source, full_session_id, session = (
-            await get_verified_source_session(source_id, session_id)
-        )
+        (
+            _full_source_id,
+            _source,
+            full_session_id,
+            session,
+        ) = await get_verified_source_session(source_id, session_id)
 
         # Update session fields
         if request.title is not None:
@@ -307,9 +323,12 @@ async def delete_source_chat_session(
     """Delete a source chat session."""
     try:
         # Verify source + session exist and are related (404s otherwise)
-        _full_source_id, _source, full_session_id, session = (
-            await get_verified_source_session(source_id, session_id)
-        )
+        (
+            _full_source_id,
+            _source,
+            full_session_id,
+            session,
+        ) = await get_verified_source_session(source_id, session_id)
 
         await session.delete()
 
@@ -348,7 +367,8 @@ async def stream_source_chat_response(
         state_values["model_override"] = model_override
 
         # Add user message to state
-        user_message = HumanMessage(content=message)
+        # Explicit id so a failed turn can remove it from the checkpoint.
+        user_message = HumanMessage(content=message, id=str(uuid4()))
         state_values["messages"].append(user_message)
 
         # Send user message event
@@ -359,29 +379,29 @@ async def stream_source_chat_response(
         # event loop. While blocked, even the already-yielded SSE events can't
         # flush and every other request stalls until the LLM finishes. Mirrors the
         # get_state() calls above.
-        # The lambda pins down which `invoke` overload is used; asyncio.to_thread
-        # can't resolve overloaded callables on its own. The ignore is a langgraph
-        # typing limitation: it accepts a partial state dict at runtime, but the
-        # signature requires the full state type.
+        # invoke_chat_turn also drops the question from the checkpoint when the
+        # turn fails, so a retry doesn't add it twice.
         result = await asyncio.to_thread(
-            lambda: source_chat_graph.invoke(
-                input=state_values,  # type: ignore[arg-type]
-                config=RunnableConfig(
-                    configurable={"thread_id": session_id, "model_id": model_override}
-                ),
-            )
+            invoke_chat_turn,
+            source_chat_graph,
+            state_values,
+            RunnableConfig(
+                configurable={"thread_id": session_id, "model_id": model_override}
+            ),
+            user_message,
         )
 
-        # Stream the complete AI response
-        if "messages" in result:
-            for msg in result["messages"]:
-                if hasattr(msg, "type") and msg.type == "ai":
-                    ai_event = {
-                        "type": "ai_message",
-                        "content": msg.content if hasattr(msg, "content") else str(msg),
-                        "timestamp": None,
-                    }
-                    yield f"data: {json.dumps(ai_event)}\n\n"
+        # Stream this turn's AI response. result["messages"] is the full
+        # checkpointed history, so only the last message is new.
+        if result.get("messages"):
+            msg = result["messages"][-1]
+            if getattr(msg, "type", None) == "ai":
+                ai_event = {
+                    "type": "ai_message",
+                    "content": msg.content if hasattr(msg, "content") else str(msg),
+                    "timestamp": None,
+                }
+                yield f"data: {json.dumps(ai_event)}\n\n"
 
         # Stream context indicators
         if "context_indicators" in result:
@@ -398,7 +418,12 @@ async def stream_source_chat_response(
     except Exception as e:
         from open_notebook.utils.error_classifier import classify_error
 
-        _, error_message = classify_error(e)
+        # Typed errors already carry a user-facing message; only raw provider
+        # exceptions need classifying.
+        if isinstance(e, OpenNotebookError):
+            error_message = str(e)
+        else:
+            _, error_message = classify_error(e)
         logger.error(f"Error in source chat streaming: {str(e)}")
         error_event = {"type": "error", "message": error_message}
         yield f"data: {json.dumps(error_event)}\n\n"
@@ -413,9 +438,12 @@ async def send_message_to_source_chat(
     """Send a message to source chat session with SSE streaming response."""
     try:
         # Verify source + session exist and are related (404s otherwise)
-        full_source_id, _source, full_session_id, session = (
-            await get_verified_source_session(source_id, session_id)
-        )
+        (
+            full_source_id,
+            _source,
+            full_session_id,
+            session,
+        ) = await get_verified_source_session(source_id, session_id)
 
         if not request.message:
             raise HTTPException(status_code=400, detail="Message content is required")

@@ -33,9 +33,7 @@ async def _echo_body_app(scope, receive, send):
 
 
 def make_scope(headers=None, method="POST", path="/upload"):
-    raw_headers = [
-        (k.lower().encode(), v.encode()) for k, v in (headers or {}).items()
-    ]
+    raw_headers = [(k.lower().encode(), v.encode()) for k, v in (headers or {}).items()]
     return {
         "type": "http",
         "method": method,
@@ -129,7 +127,9 @@ class TestMiddlewareAsgiLevel:
         send = CollectingSend()
         await middleware(scope, FakeReceiveStream([b"x" * 1000]), send)
 
-        assert not app_called, "inner app must not run when Content-Length exceeds the limit"
+        assert not app_called, (
+            "inner app must not run when Content-Length exceeds the limit"
+        )
         assert send.status == 413
 
     @pytest.mark.asyncio

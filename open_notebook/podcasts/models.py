@@ -145,9 +145,7 @@ class SpeakerProfile(ObjectModel):
     description: Optional[str] = Field(None, description="Profile description")
 
     # Model registry reference
-    voice_model: Optional[str] = Field(
-        None, description="Model record ID for TTS"
-    )
+    voice_model: Optional[str] = Field(None, description="Model record ID for TTS")
 
     speakers: List[Dict[str, Any]] = Field(
         ..., description="Array of speaker configurations"
@@ -197,9 +195,7 @@ class SpeakerProfile(ObjectModel):
         return None
 
     @classmethod
-    async def resolve(
-        cls, ref: Union[str, RecordID]
-    ) -> Optional["SpeakerProfile"]:
+    async def resolve(cls, ref: Union[str, RecordID]) -> Optional["SpeakerProfile"]:
         """Resolve a speaker profile by record ID or by unique name.
 
         The API contract accepts speaker profiles by NAME (see

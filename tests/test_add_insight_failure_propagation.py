@@ -86,9 +86,7 @@ class TestTransformationGraphPropagatesFailure:
                 "open_notebook.graphs.transformation.DefaultPrompts",
                 return_value=MagicMock(transformation_instructions=None),
             ),
-            patch(
-                "open_notebook.graphs.transformation.Prompter"
-            ) as mock_prompter_cls,
+            patch("open_notebook.graphs.transformation.Prompter") as mock_prompter_cls,
             patch(
                 "open_notebook.graphs.transformation.provision_langchain_model",
                 new=AsyncMock(return_value=fake_chain),
@@ -130,9 +128,7 @@ class TestTransformationGraphPropagatesFailure:
                 "open_notebook.graphs.transformation.DefaultPrompts",
                 return_value=MagicMock(transformation_instructions=None),
             ),
-            patch(
-                "open_notebook.graphs.transformation.Prompter"
-            ) as mock_prompter_cls,
+            patch("open_notebook.graphs.transformation.Prompter") as mock_prompter_cls,
             patch(
                 "open_notebook.graphs.transformation.provision_langchain_model",
                 new=AsyncMock(return_value=fake_chain),

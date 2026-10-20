@@ -72,18 +72,42 @@ class TestRecordModelSingleton:
 
         with patch(
             "open_notebook.domain.base.repo_query",
-            new=AsyncMock(return_value=[{"value": "BETA"}]),
+            new=AsyncMock(side_effect=[[{"value": "ALPHA"}], [{"value": "BETA"}]]),
         ) as repo_query:
+            await TestRecord.get_instance()
             refreshed_instance = await TestRecord.get_instance(force_reload=True)
 
         assert refreshed_instance is cached_instance
         assert refreshed_instance.value == "BETA"
-        repo_query.assert_awaited_once()
+        assert repo_query.await_count == 2
         assert repo_query.await_args is not None
         assert repo_query.await_args.args[0] == "SELECT * FROM ONLY $record_id"
         record_id = repo_query.await_args.args[1]["record_id"]
         assert record_id.table_name == "test"
         assert "force-reload" in str(record_id)
+        TestRecord.clear_instance()
+
+    @pytest.mark.asyncio
+    async def test_recordmodel_force_reload_resets_missing_fields(self):
+        """Test that a missing database record restores field defaults."""
+
+        class TestRecord(RecordModel):
+            record_id = "test:force-reload-empty"
+            value: str | None = None
+
+        TestRecord.clear_instance()
+        cached_instance = TestRecord(value="ALPHA")
+
+        with patch(
+            "open_notebook.domain.base.repo_query",
+            new=AsyncMock(side_effect=[[{"value": "ALPHA"}], []]),
+        ) as repo_query:
+            await TestRecord.get_instance()
+            refreshed_instance = await TestRecord.get_instance(force_reload=True)
+
+        assert refreshed_instance is cached_instance
+        assert refreshed_instance.value is None
+        assert repo_query.await_count == 2
         TestRecord.clear_instance()
 
 

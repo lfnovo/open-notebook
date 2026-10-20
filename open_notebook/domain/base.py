@@ -10,6 +10,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+from pydantic_core import PydanticUndefined
 
 from open_notebook.database.repository import (
     ensure_record_id,
@@ -290,6 +291,12 @@ class RecordModel(BaseModel):
 
     async def _load_from_db(self, force_reload: bool = False):
         """Load data from database if not already loaded or when forced."""
+        if force_reload:
+            for field_name, field_info in type(self).model_fields.items():
+                default = field_info.get_default(call_default_factory=True)
+                if default is not PydanticUndefined:
+                    object.__setattr__(self, field_name, default)
+
         if force_reload or not getattr(self, "_db_loaded", False):
             result = await repo_query(
                 "SELECT * FROM ONLY $record_id",

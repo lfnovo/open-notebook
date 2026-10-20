@@ -10,6 +10,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+from pydantic_core import PydanticUndefined
 
 from open_notebook.database.repository import (
     ensure_record_id,
@@ -27,6 +28,7 @@ from open_notebook.exceptions import (
 )
 
 T = TypeVar("T", bound="ObjectModel")
+RecordT = TypeVar("RecordT", bound="RecordModel")
 
 
 class ObjectModel(BaseModel):
@@ -287,9 +289,15 @@ class RecordModel(BaseModel):
             object.__setattr__(self, "_initialized", True)
             object.__setattr__(self, "_db_loaded", False)
 
-    async def _load_from_db(self):
-        """Load data from database if not already loaded"""
-        if not getattr(self, "_db_loaded", False):
+    async def _load_from_db(self, force_reload: bool = False):
+        """Load data from database if not already loaded or when forced."""
+        if force_reload:
+            for field_name, field_info in type(self).model_fields.items():
+                default = field_info.get_default(call_default_factory=True)
+                if default is not PydanticUndefined:
+                    object.__setattr__(self, field_name, default)
+
+        if force_reload or not getattr(self, "_db_loaded", False):
             result = await repo_query(
                 "SELECT * FROM ONLY $record_id",
                 {"record_id": ensure_record_id(self.record_id)},
@@ -313,10 +321,10 @@ class RecordModel(BaseModel):
             object.__setattr__(self, "_db_loaded", True)
 
     @classmethod
-    async def get_instance(cls) -> "RecordModel":
-        """Get or create the singleton instance and load from DB"""
+    async def get_instance(cls: Type[RecordT], force_reload: bool = False) -> RecordT:
+        """Get or create the singleton instance and load it from the DB."""
         instance = cls()
-        await instance._load_from_db()
+        await instance._load_from_db(force_reload=force_reload)
         return instance
 
     @model_validator(mode="after")

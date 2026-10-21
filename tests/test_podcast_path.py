@@ -35,9 +35,7 @@ class TestBuildEpisodeOutputDir:
         from open_notebook.config import PODCASTS_FOLDER
 
         dir_name, output_dir = build_episode_output_dir()
-        assert str(output_dir) == str(
-            Path(PODCASTS_FOLDER) / "episodes" / dir_name
-        )
+        assert str(output_dir) == str(Path(PODCASTS_FOLDER) / "episodes" / dir_name)
 
     def test_no_collision_between_calls(self):
         dir1, _ = build_episode_output_dir("/data/podcasts")

@@ -44,9 +44,7 @@ class TestToRelativeAudioPath:
 
         assert to_relative_audio_path(uri) == "episodes/uuid-3/a.mp3"
 
-    def test_cwd_relative_path_under_root_becomes_relative(
-        self, tmp_path, monkeypatch
-    ):
+    def test_cwd_relative_path_under_root_becomes_relative(self, tmp_path, monkeypatch):
         """podcast-creator receives a CWD-relative output_dir when
         DATA_FOLDER is './data'; the helper must normalize either form."""
         root = tmp_path / "data" / "podcasts"

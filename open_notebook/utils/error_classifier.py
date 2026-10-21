@@ -23,7 +23,7 @@ _CLASSIFICATION_RULES: list[tuple[list[str], type[OpenNotebookError], str | None
     (
         ["authentication", "unauthorized", "invalid api key", "invalid_api_key", "401"],
         AuthenticationError,
-        "Authentication failed. Please check your API key in Settings -> Credentials.",
+        "Authentication failed. Please check your API key in Manage -> Models.",
     ),
     # Rate limit errors
     (
@@ -39,19 +39,38 @@ _CLASSIFICATION_RULES: list[tuple[list[str], type[OpenNotebookError], str | None
     ),
     # Configuration errors from provision.py (pass through)
     (
-        ["no model configured", "please go to settings"],
+        ["no model configured", "please go to settings", "please go to manage"],
         ConfigurationError,
         None,
     ),
-    # Network errors
+    # Network errors (connect timeouts included: the provider was never reached)
     (
-        ["connecterror", "timeoutexception", "connection refused", "connection error", "timed out", "timeout"],
+        [
+            "connecterror",
+            "connecttimeout",
+            "connection timed out",
+            "connection refused",
+            "connection error",
+        ],
         NetworkError,
         "Could not connect to the AI provider. Please check your network connection and provider URL.",
     ),
+    # Read timeouts: the provider was reached but didn't answer within
+    # ESPERANTO_LLM_TIMEOUT (180 s unless set)
+    (
+        ["timeoutexception", "timed out", "timeout"],
+        NetworkError,
+        "The AI provider took too long to respond. Try again, use a faster model, or raise ESPERANTO_LLM_TIMEOUT (180 seconds by default).",
+    ),
     # Context length errors
     (
-        ["context length", "token limit", "maximum context", "context_length_exceeded", "max_tokens"],
+        [
+            "context length",
+            "token limit",
+            "maximum context",
+            "context_length_exceeded",
+            "max_tokens",
+        ],
         ContextLengthExceededError,
         "Content too large for the selected model. Try using a smaller selection or a model with a larger context window.",
     ),
@@ -63,7 +82,14 @@ _CLASSIFICATION_RULES: list[tuple[list[str], type[OpenNotebookError], str | None
     ),
     # Provider availability errors
     (
-        ["500", "502", "503", "service unavailable", "overloaded", "internal server error"],
+        [
+            "500",
+            "502",
+            "503",
+            "service unavailable",
+            "overloaded",
+            "internal server error",
+        ],
         ExternalServiceError,
         "The AI provider is temporarily unavailable. Please try again in a few minutes.",
     ),
@@ -87,13 +113,13 @@ def classify_error(exception: BaseException) -> tuple[type[OpenNotebookError], s
     for keywords, exc_class, message in _CLASSIFICATION_RULES:
         for keyword in keywords:
             if keyword in combined:
-                user_message = message if message is not None else _truncate(str(exception))
+                user_message = (
+                    message if message is not None else _truncate(str(exception))
+                )
                 return exc_class, user_message
 
     # Unclassified error - log for future improvement
-    logger.warning(
-        f"Unclassified LLM error ({type(exception).__name__}): {exception}"
-    )
+    logger.warning(f"Unclassified LLM error ({type(exception).__name__}): {exception}")
     return ExternalServiceError, f"AI service error: {_truncate(str(exception))}"
 
 

@@ -17,6 +17,7 @@ from typing import Optional
 
 from loguru import logger
 
+from open_notebook.ai.provider_registry import PROVIDERS
 from open_notebook.domain.credential import Credential
 
 # =============================================================================
@@ -78,6 +79,12 @@ PROVIDER_CONFIG = {
     },
     "novita": {
         "env_var": "NOVITA_API_KEY",
+    },
+    "siliconflow": {
+        "env_var": "SILICONFLOW_API_KEY",
+    },
+    "zai": {
+        "env_var": "ZAI_API_KEY",
     },
     "ppq": {
         "env_var": "PPQ_API_KEY",
@@ -153,6 +160,12 @@ async def _provision_simple_provider(provider: str) -> bool:
         provider_upper = provider_lower.upper()
         os.environ[f"{provider_upper}_API_BASE"] = cred.base_url
         logger.debug(f"Set {provider_upper}_API_BASE from Credential")
+        # Providers with a registry-declared endpoint override (ADR-012) read
+        # it under that name (esperanto's profiles and env discovery).
+        spec = PROVIDERS.get(provider_lower)
+        if spec and spec.base_url_env:
+            os.environ[spec.base_url_env] = cred.base_url
+            logger.debug(f"Set {spec.base_url_env} from Credential")
 
     return True
 

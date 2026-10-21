@@ -12,10 +12,12 @@ import pytest
 from open_notebook.ai import model_discovery
 from open_notebook.ai.model_discovery import (
     ANTHROPIC_FALLBACK_MODELS,
+    MINIMAX_AUDIO_MODELS,
     OPENAI_COMPAT_PROVIDERS,
     OPENROUTER_AUDIO_MODELS,
     PROVIDER_DISCOVERY_FUNCTIONS,
     discover_anthropic_models,
+    discover_minimax_models,
     discover_openai_compatible_provider,
     discover_openrouter_models,
 )
@@ -25,6 +27,10 @@ def make_fake_client(handler):
     """Build a fake httpx.AsyncClient class whose .get() delegates to handler."""
 
     class FakeAsyncClient:
+        def __init__(self, *args, **kwargs):
+            # Accept httpx.AsyncClient kwargs (e.g. verify=...)
+            pass
+
         async def __aenter__(self):
             return self
 
@@ -38,9 +44,7 @@ def make_fake_client(handler):
 
 
 def json_response(url, payload, status_code=200):
-    return httpx.Response(
-        status_code, json=payload, request=httpx.Request("GET", url)
-    )
+    return httpx.Response(status_code, json=payload, request=httpx.Request("GET", url))
 
 
 class TestOpenAICompatTable:
@@ -57,6 +61,8 @@ class TestOpenAICompatTable:
             "dashscope",
             "minimax",
             "novita",
+            "siliconflow",
+            "zai",
             "ppq",
         }
 
@@ -80,6 +86,8 @@ class TestOpenAICompatTable:
             "dashscope",
             "minimax",
             "novita",
+            "siliconflow",
+            "zai",
             "ppq",
             "cohere",
             "azure",
@@ -151,9 +159,15 @@ class TestGenericOpenAICompatDiscovery:
                 {
                     "data": [
                         # capabilities flag wins over name-based classification
-                        {"id": "magistral-medium", "capabilities": {"completion_chat": True}},
+                        {
+                            "id": "magistral-medium",
+                            "capabilities": {"completion_chat": True},
+                        },
                         # no chat capability -> falls back to name patterns
-                        {"id": "mistral-embed", "capabilities": {"completion_chat": False}},
+                        {
+                            "id": "mistral-embed",
+                            "capabilities": {"completion_chat": False},
+                        },
                     ]
                 },
             )
@@ -222,6 +236,51 @@ class TestOpenRouterDiscovery:
         assert all(m.provider == "openrouter" for m in models)
 
 
+class TestMiniMaxDiscovery:
+    """MiniMax TTS (esperanto 2.27) is seeded on top of live discovery (#1438)."""
+
+    @pytest.mark.asyncio
+    async def test_missing_key_returns_empty(self, monkeypatch):
+        monkeypatch.delenv("MINIMAX_API_KEY", raising=False)
+        assert await discover_minimax_models() == []
+
+    @pytest.mark.asyncio
+    async def test_seeds_tts_models_alongside_language_models(self, monkeypatch):
+        def handler(url, headers, params, timeout):
+            return json_response(url, {"data": [{"id": "MiniMax-M3"}]})
+
+        monkeypatch.setenv("MINIMAX_API_KEY", "mm-test")
+        monkeypatch.setattr(
+            model_discovery.httpx, "AsyncClient", make_fake_client(handler)
+        )
+
+        models = await discover_minimax_models()
+        by_type = {(m.name, m.model_type) for m in models}
+
+        assert ("MiniMax-M3", "language") in by_type
+        for name in MINIMAX_AUDIO_MODELS["text_to_speech"]:
+            assert (name, "text_to_speech") in by_type
+        assert all(m.provider == "minimax" for m in models)
+
+    @pytest.mark.asyncio
+    async def test_failed_discovery_seeds_nothing(self, monkeypatch):
+        def handler(url, headers, params, timeout):
+            return json_response(url, {"error": "unauthorized"}, status_code=401)
+
+        monkeypatch.setenv("MINIMAX_API_KEY", "bad")
+        monkeypatch.setattr(
+            model_discovery.httpx, "AsyncClient", make_fake_client(handler)
+        )
+
+        assert await discover_minimax_models() == []
+
+    def test_speech_models_classify_as_tts(self):
+        from open_notebook.ai.model_discovery import classify_model_type
+
+        assert classify_model_type("speech-2.8-hd", "minimax") == "text_to_speech"
+        assert classify_model_type("MiniMax-M3", "minimax") == "language"
+
+
 class TestAnthropicDiscovery:
     @pytest.mark.asyncio
     async def test_missing_key_returns_empty(self, monkeypatch):
@@ -260,9 +319,7 @@ class TestAnthropicDiscovery:
         models = await discover_anthropic_models()
 
         assert len(requests) == 2
-        assert all(
-            r["url"] == "https://api.anthropic.com/v1/models" for r in requests
-        )
+        assert all(r["url"] == "https://api.anthropic.com/v1/models" for r in requests)
         assert requests[0]["headers"] == {
             "x-api-key": "sk-ant-test",
             "anthropic-version": "2023-06-01",
@@ -354,7 +411,9 @@ class TestNewEsperantoProviders:
     def test_ppq_classification_by_substring(self):
         from open_notebook.ai.model_discovery import classify_model_type
 
-        assert classify_model_type("openai/text-embedding-3-small", "ppq") == "embedding"
+        assert (
+            classify_model_type("openai/text-embedding-3-small", "ppq") == "embedding"
+        )
         assert classify_model_type("nova-3", "ppq") == "speech_to_text"
         assert classify_model_type("deepgram_aura_2", "ppq") == "text_to_speech"
         assert classify_model_type("auto", "ppq") == "language"

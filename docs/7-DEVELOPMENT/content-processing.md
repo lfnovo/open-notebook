@@ -42,13 +42,14 @@ The single implementation behind both context consumers:
 - Every call re-fetches — there is no cache layer.
 - Token counting uses `o200k_base` via tiktoken and is an estimate (±5-10% vs. the actual model); `token_count()` falls back to a coarse estimate if tiktoken is unavailable.
 
-## Encryption (`utils/encryption.py`) {#encryption}
+## Encryption
 
-Field-level encryption for sensitive values (API keys) stored in the database, using Fernet (AES-128-CBC + HMAC-SHA256).
+`utils/encryption.py` provides field-level encryption for sensitive values (API keys) stored in the database, using Fernet (AES-128-CBC + HMAC-SHA256).
 
 - Key source: `OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE` (Docker secrets) → `OPEN_NOTEBOOK_ENCRYPTION_KEY`. **No default** — credential storage is unavailable until the key is set.
-- Any string works as key: it's derived to a Fernet key via SHA-256, lazily on first use.
-- Decryption falls back gracefully: an `InvalidToken` (legacy unencrypted data) returns the original value, so pre-encryption databases keep working.
+- Any string works as key: it's derived to a Fernet key via PBKDF2-HMAC-SHA256 (600k iterations, fixed app salt), lazily on first use; the derived instance is cached per process.
+- New values carry a `pbkdf2v1:` marker. Decryption branches on it: marked values decrypt under PBKDF2 only (any failure raises — never returned as a key); unmarked values try the legacy SHA-256 derivation, then fall back to plaintext for pre-encryption data.
+- One-shot upgrade: `POST /api/credentials/migrate-encryption` rewrites stored keys into the marked format (idempotent, fail-closed per record). Lazy re-encrypt-on-save alone is not enough since keys are set once.
 - Key rotation is **not implemented** — changing the key orphans previously encrypted values.
 
 ## Text utilities (`utils/text_utils.py`)

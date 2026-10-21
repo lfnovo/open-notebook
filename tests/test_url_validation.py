@@ -116,9 +116,7 @@ class TestUrlValidation:
 
     async def test_azure_specific_urls(self):
         """Azure OpenAI endpoints should be validated."""
-        await validate_url(
-            "https://my-resource.openai.azure.com", "azure"
-        )
+        await validate_url("https://my-resource.openai.azure.com", "azure")
         # Localhost is allowed for self-hosted
         await validate_url("http://localhost:8000", "azure")
         # Should not raise

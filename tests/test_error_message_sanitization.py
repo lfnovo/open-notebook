@@ -97,9 +97,7 @@ class TestInvalidInputErrorsStillReturnTheirOwnSafeMessage:
         with patch(
             "api.routers.sources.Source.get", new=AsyncMock(return_value=mock_source)
         ):
-            response = client.put(
-                "/api/sources/source:abc123", json={"title": "x"}
-            )
+            response = client.put("/api/sources/source:abc123", json={"title": "x"})
 
         assert response.status_code == 400
         assert response.json()["detail"] == "Title cannot be empty"

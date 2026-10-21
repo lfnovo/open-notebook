@@ -37,7 +37,7 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
     
     await updateNotebook.mutateAsync({
       id: notebook.id,
-      data: { description: description || undefined }
+      data: { description }
     })
   }
 

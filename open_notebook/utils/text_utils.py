@@ -138,6 +138,8 @@ def extract_text_content(content) -> str:
     Returns:
         The extracted text content as a string.
     """
+    if content is None:
+        return ""
     if isinstance(content, str):
         return content
     if isinstance(content, list):

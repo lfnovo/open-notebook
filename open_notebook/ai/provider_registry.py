@@ -53,6 +53,15 @@ class ProviderSpec:
     # the discovery URL. Drives OPENAI_COMPAT_PROVIDERS in model_discovery.
     openai_compat_discovery_url: Optional[str] = None
 
+    @property
+    def base_url_env(self) -> Optional[str]:
+        """Optional env var overriding the provider's endpoint (`*_BASE_URL`).
+
+        Declared through `optional_env`; providers that have one accept a
+        user-supplied base URL for discovery (e.g. regional endpoints).
+        """
+        return next((v for v in self.optional_env if v.endswith("_BASE_URL")), None)
+
     def env_config(self) -> Dict[str, List[str]]:
         """Env var config in the legacy PROVIDER_ENV_CONFIG dict shape."""
         config: Dict[str, List[str]] = {}
@@ -70,222 +79,247 @@ _ALL_MODALITIES = ("language", "embedding", "speech_to_text", "text_to_speech")
 
 
 _PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
-        ProviderSpec(
-            name="openai",
-            display_name="OpenAI",
-            modalities=_ALL_MODALITIES,
-            required_env=("OPENAI_API_KEY",),
-            test_model="gpt-3.5-turbo",
-            docs_url="https://platform.openai.com/api-keys",
-            openai_compat_discovery_url="https://api.openai.com/v1/models",
+    ProviderSpec(
+        name="openai",
+        display_name="OpenAI",
+        modalities=_ALL_MODALITIES,
+        required_env=("OPENAI_API_KEY",),
+        test_model="gpt-3.5-turbo",
+        docs_url="https://platform.openai.com/api-keys",
+        openai_compat_discovery_url="https://api.openai.com/v1/models",
+    ),
+    ProviderSpec(
+        name="anthropic",
+        display_name="Anthropic",
+        modalities=_LANGUAGE_ONLY,
+        required_env=("ANTHROPIC_API_KEY",),
+        test_model="claude-haiku-4-5-20251001",
+        docs_url="https://console.anthropic.com/settings/keys",
+    ),
+    ProviderSpec(
+        name="google",
+        display_name="Google AI",
+        modalities=_ALL_MODALITIES,
+        required_any_env=("GOOGLE_API_KEY", "GEMINI_API_KEY"),
+        test_model="gemini-flash-latest",
+        docs_url="https://aistudio.google.com/app/apikey",
+    ),
+    ProviderSpec(
+        name="groq",
+        display_name="Groq",
+        modalities=("language", "speech_to_text"),
+        required_env=("GROQ_API_KEY",),
+        test_model="llama-3.1-8b-instant",
+        docs_url="https://console.groq.com/keys",
+        openai_compat_discovery_url="https://api.groq.com/openai/v1/models",
+    ),
+    ProviderSpec(
+        name="mistral",
+        display_name="Mistral AI",
+        modalities=("language", "embedding", "speech_to_text", "text_to_speech"),
+        required_env=("MISTRAL_API_KEY",),
+        test_model="mistral-small-latest",
+        docs_url="https://console.mistral.ai/api-keys/",
+        openai_compat_discovery_url="https://api.mistral.ai/v1/models",
+    ),
+    ProviderSpec(
+        name="deepseek",
+        display_name="DeepSeek",
+        modalities=_LANGUAGE_ONLY,
+        required_env=("DEEPSEEK_API_KEY",),
+        test_model="deepseek-chat",
+        docs_url="https://platform.deepseek.com/api_keys",
+        openai_compat_discovery_url="https://api.deepseek.com/models",
+    ),
+    ProviderSpec(
+        name="xai",
+        display_name="xAI (Grok)",
+        modalities=("language", "text_to_speech"),
+        required_env=("XAI_API_KEY",),
+        test_model="grok-beta",
+        docs_url="https://console.x.ai/",
+        openai_compat_discovery_url="https://api.x.ai/v1/models",
+    ),
+    ProviderSpec(
+        name="openrouter",
+        display_name="OpenRouter",
+        modalities=_ALL_MODALITIES,
+        required_env=("OPENROUTER_API_KEY",),
+        test_model="openai/gpt-3.5-turbo",
+        docs_url="https://openrouter.ai/keys",
+        openai_compat_discovery_url="https://openrouter.ai/api/v1/models",
+    ),
+    ProviderSpec(
+        name="dashscope",
+        display_name="DashScope (Qwen)",
+        modalities=_LANGUAGE_ONLY,
+        required_env=("DASHSCOPE_API_KEY",),
+        test_model="qwen-plus",
+        docs_url="https://help.aliyun.com/zh/model-studio/getting-started/",
+        openai_compat_discovery_url="https://dashscope.aliyuncs.com/compatible-mode/v1/models",
+    ),
+    ProviderSpec(
+        name="minimax",
+        display_name="MiniMax",
+        modalities=("language", "text_to_speech"),
+        required_env=("MINIMAX_API_KEY",),
+        # Keys are region-specific; mainland China uses https://api.minimax.cn/v1
+        # (esperanto reads MINIMAX_BASE_URL for both chat and TTS).
+        optional_env=("MINIMAX_BASE_URL",),
+        test_model="MiniMax-M3",
+        docs_url="https://platform.minimaxi.com/document/Guides",
+        openai_compat_discovery_url="https://api.minimax.io/v1/models",
+    ),
+    ProviderSpec(
+        name="novita",
+        display_name="Novita",
+        modalities=_LANGUAGE_ONLY,
+        required_env=("NOVITA_API_KEY",),
+        test_model="moonshotai/kimi-k2.5",
+        docs_url="https://novita.ai/settings/key-management",
+        openai_compat_discovery_url="https://api.novita.ai/openai/models",
+    ),
+    ProviderSpec(
+        name="siliconflow",
+        display_name="SiliconFlow",
+        modalities=_LANGUAGE_ONLY,
+        required_env=("SILICONFLOW_API_KEY",),
+        optional_env=("SILICONFLOW_BASE_URL",),
+        # esperanto's default for the profile; mainland China accounts set
+        # the credential's base URL to https://api.siliconflow.cn/v1.
+        test_model="deepseek-ai/DeepSeek-V3.1-Terminus",
+        docs_url="https://cloud.siliconflow.com/account/ak",
+        openai_compat_discovery_url="https://api.siliconflow.com/v1/models",
+    ),
+    ProviderSpec(
+        name="zai",
+        display_name="Z.ai",
+        modalities=_LANGUAGE_ONLY,
+        required_env=("ZAI_API_KEY",),
+        optional_env=("ZAI_BASE_URL",),
+        test_model="glm-5.2",
+        docs_url="https://z.ai/manage-apikey/apikey-list",
+        openai_compat_discovery_url="https://api.z.ai/api/paas/v4/models",
+    ),
+    ProviderSpec(
+        name="ppq",
+        display_name="PayPerQ",
+        modalities=_ALL_MODALITIES,
+        required_env=("PPQ_API_KEY",),
+        test_model="auto",
+        docs_url="https://ppq.ai",
+        # PPQ's bare /models returns only chat/language models; ?type=all is
+        # required to also list embedding, STT and TTS models (PPQ is a
+        # multi-modality gateway). Without it, the non-language modalities
+        # this provider advertises never surface in discovery.
+        openai_compat_discovery_url="https://api.ppq.ai/v1/models?type=all",
+    ),
+    ProviderSpec(
+        name="cohere",
+        display_name="Cohere",
+        # Native v2 API (/v2/chat, /v2/embed) — NOT OpenAI-compatible, so no
+        # openai_compat_discovery_url; discovery is bespoke (esperanto's
+        # AIFactory.get_provider_models). Reranking is out of scope (#1087).
+        modalities=("language", "embedding"),
+        required_env=("COHERE_API_KEY",),
+        test_model="command-a-03-2025",
+        docs_url="https://dashboard.cohere.com/api-keys",
+    ),
+    ProviderSpec(
+        name="voyage",
+        display_name="Voyage AI",
+        modalities=("embedding",),
+        required_env=("VOYAGE_API_KEY",),
+        test_model="voyage-3-lite",
+        test_model_type="embedding",
+        docs_url="https://dash.voyageai.com/api-keys",
+    ),
+    ProviderSpec(
+        name="elevenlabs",
+        display_name="ElevenLabs",
+        modalities=("text_to_speech", "speech_to_text"),
+        required_env=("ELEVENLABS_API_KEY",),
+        test_model="eleven_multilingual_v2",
+        test_model_type="text_to_speech",
+        docs_url="https://elevenlabs.io/app/settings/api-keys",
+    ),
+    ProviderSpec(
+        name="deepgram",
+        display_name="Deepgram",
+        modalities=("text_to_speech", "speech_to_text"),
+        required_env=("DEEPGRAM_API_KEY",),
+        test_model="aura-2-thalia-en",
+        test_model_type="text_to_speech",
+        docs_url="https://console.deepgram.com/",
+    ),
+    ProviderSpec(
+        name="ollama",
+        display_name="Ollama",
+        modalities=("language", "embedding"),
+        required_env=("OLLAMA_API_BASE",),
+        test_model=None,  # Dynamic - uses first available model
+    ),
+    ProviderSpec(
+        name="omlx",
+        display_name="oMLX",
+        modalities=("language", "embedding"),
+        required_env=("OMLX_API_BASE",),
+        optional_env=("OMLX_API_KEY",),
+        test_model=None,  # Dynamic - uses first available model via /v1/models
+        docs_url="https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/omlx.md",
+        # No openai_compat_discovery_url: base URL is user-supplied (default
+        # http://localhost:11435/v1) and API key is optional — discovery is
+        # handled like openai_compatible, not the fixed-URL OPENAI_COMPAT table.
+    ),
+    ProviderSpec(
+        name="azure",
+        display_name="Azure OpenAI",
+        modalities=_ALL_MODALITIES,
+        required_env=(
+            "AZURE_OPENAI_API_KEY",
+            "AZURE_OPENAI_ENDPOINT",
+            "AZURE_OPENAI_API_VERSION",
         ),
-        ProviderSpec(
-            name="anthropic",
-            display_name="Anthropic",
-            modalities=_LANGUAGE_ONLY,
-            required_env=("ANTHROPIC_API_KEY",),
-            test_model="claude-haiku-4-5-20251001",
-            docs_url="https://console.anthropic.com/settings/keys",
+        optional_env=(
+            "AZURE_OPENAI_ENDPOINT_LLM",
+            "AZURE_OPENAI_ENDPOINT_EMBEDDING",
+            "AZURE_OPENAI_ENDPOINT_STT",
+            "AZURE_OPENAI_ENDPOINT_TTS",
         ),
-        ProviderSpec(
-            name="google",
-            display_name="Google AI",
-            modalities=_ALL_MODALITIES,
-            required_any_env=("GOOGLE_API_KEY", "GEMINI_API_KEY"),
-            test_model="gemini-flash-latest",
-            docs_url="https://aistudio.google.com/app/apikey",
+        test_model="gpt-35-turbo",  # Azure OpenAI deployment name
+        docs_url="https://portal.azure.com/#view/Microsoft_Azure_ProjectOxford/CognitiveServicesHub/~/OpenAI",
+    ),
+    ProviderSpec(
+        name="vertex",
+        display_name="Google Vertex AI",
+        modalities=("language", "embedding", "text_to_speech"),
+        required_env=("VERTEX_PROJECT", "VERTEX_LOCATION"),
+        optional_env=("GOOGLE_APPLICATION_CREDENTIALS",),
+        test_model="gemini-flash-latest",  # Uses Google Vertex AI
+        docs_url="https://cloud.google.com/vertex-ai/docs/start/cloud-environment",
+    ),
+    ProviderSpec(
+        name="openai_compatible",
+        display_name="OpenAI Compatible",
+        modalities=_ALL_MODALITIES,
+        required_any_env=("OPENAI_COMPATIBLE_BASE_URL", "OPENAI_COMPATIBLE_API_KEY"),
+        test_model=None,  # Dynamic - uses first available model
+        docs_url="https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/openai-compatible.md",
+    ),
+    ProviderSpec(
+        name="anthropic_compatible",
+        display_name="Anthropic Compatible",
+        modalities=_LANGUAGE_ONLY,
+        required_env=(
+            "ANTHROPIC_COMPATIBLE_BASE_URL",
+            "ANTHROPIC_COMPATIBLE_API_KEY",
         ),
-        ProviderSpec(
-            name="groq",
-            display_name="Groq",
-            modalities=("language", "speech_to_text"),
-            required_env=("GROQ_API_KEY",),
-            test_model="llama-3.1-8b-instant",
-            docs_url="https://console.groq.com/keys",
-            openai_compat_discovery_url="https://api.groq.com/openai/v1/models",
-        ),
-        ProviderSpec(
-            name="mistral",
-            display_name="Mistral AI",
-            modalities=("language", "embedding", "speech_to_text", "text_to_speech"),
-            required_env=("MISTRAL_API_KEY",),
-            test_model="mistral-small-latest",
-            docs_url="https://console.mistral.ai/api-keys/",
-            openai_compat_discovery_url="https://api.mistral.ai/v1/models",
-        ),
-        ProviderSpec(
-            name="deepseek",
-            display_name="DeepSeek",
-            modalities=_LANGUAGE_ONLY,
-            required_env=("DEEPSEEK_API_KEY",),
-            test_model="deepseek-chat",
-            docs_url="https://platform.deepseek.com/api_keys",
-            openai_compat_discovery_url="https://api.deepseek.com/models",
-        ),
-        ProviderSpec(
-            name="xai",
-            display_name="xAI (Grok)",
-            modalities=("language", "text_to_speech"),
-            required_env=("XAI_API_KEY",),
-            test_model="grok-beta",
-            docs_url="https://console.x.ai/",
-            openai_compat_discovery_url="https://api.x.ai/v1/models",
-        ),
-        ProviderSpec(
-            name="openrouter",
-            display_name="OpenRouter",
-            modalities=_ALL_MODALITIES,
-            required_env=("OPENROUTER_API_KEY",),
-            test_model="openai/gpt-3.5-turbo",
-            docs_url="https://openrouter.ai/keys",
-            openai_compat_discovery_url="https://openrouter.ai/api/v1/models",
-        ),
-        ProviderSpec(
-            name="dashscope",
-            display_name="DashScope (Qwen)",
-            modalities=_LANGUAGE_ONLY,
-            required_env=("DASHSCOPE_API_KEY",),
-            test_model="qwen-plus",
-            docs_url="https://help.aliyun.com/zh/model-studio/getting-started/",
-            openai_compat_discovery_url="https://dashscope.aliyuncs.com/compatible-mode/v1/models",
-        ),
-        ProviderSpec(
-            name="minimax",
-            display_name="MiniMax",
-            modalities=_LANGUAGE_ONLY,
-            required_env=("MINIMAX_API_KEY",),
-            test_model="MiniMax-M2.5",
-            docs_url="https://platform.minimaxi.com/document/Guides",
-            openai_compat_discovery_url="https://api.minimax.io/v1/models",
-        ),
-        ProviderSpec(
-            name="novita",
-            display_name="Novita",
-            modalities=_LANGUAGE_ONLY,
-            required_env=("NOVITA_API_KEY",),
-            test_model="moonshotai/kimi-k2.5",
-            docs_url="https://novita.ai/settings/key-management",
-            openai_compat_discovery_url="https://api.novita.ai/openai/models",
-        ),
-        ProviderSpec(
-            name="ppq",
-            display_name="PayPerQ",
-            modalities=_ALL_MODALITIES,
-            required_env=("PPQ_API_KEY",),
-            test_model="auto",
-            docs_url="https://ppq.ai",
-            # PPQ's bare /models returns only chat/language models; ?type=all is
-            # required to also list embedding, STT and TTS models (PPQ is a
-            # multi-modality gateway). Without it, the non-language modalities
-            # this provider advertises never surface in discovery.
-            openai_compat_discovery_url="https://api.ppq.ai/v1/models?type=all",
-        ),
-        ProviderSpec(
-            name="cohere",
-            display_name="Cohere",
-            # Native v2 API (/v2/chat, /v2/embed) — NOT OpenAI-compatible, so no
-            # openai_compat_discovery_url; discovery is bespoke (esperanto's
-            # AIFactory.get_provider_models). Reranking is out of scope (#1087).
-            modalities=("language", "embedding"),
-            required_env=("COHERE_API_KEY",),
-            test_model="command-a-03-2025",
-            docs_url="https://dashboard.cohere.com/api-keys",
-        ),
-        ProviderSpec(
-            name="voyage",
-            display_name="Voyage AI",
-            modalities=("embedding",),
-            required_env=("VOYAGE_API_KEY",),
-            test_model="voyage-3-lite",
-            test_model_type="embedding",
-            docs_url="https://dash.voyageai.com/api-keys",
-        ),
-        ProviderSpec(
-            name="elevenlabs",
-            display_name="ElevenLabs",
-            modalities=("text_to_speech", "speech_to_text"),
-            required_env=("ELEVENLABS_API_KEY",),
-            test_model="eleven_multilingual_v2",
-            test_model_type="text_to_speech",
-            docs_url="https://elevenlabs.io/app/settings/api-keys",
-        ),
-        ProviderSpec(
-            name="deepgram",
-            display_name="Deepgram",
-            modalities=("text_to_speech", "speech_to_text"),
-            required_env=("DEEPGRAM_API_KEY",),
-            test_model="aura-2-thalia-en",
-            test_model_type="text_to_speech",
-            docs_url="https://console.deepgram.com/",
-        ),
-        ProviderSpec(
-            name="ollama",
-            display_name="Ollama",
-            modalities=("language", "embedding"),
-            required_env=("OLLAMA_API_BASE",),
-            test_model=None,  # Dynamic - uses first available model
-        ),
-        ProviderSpec(
-            name="omlx",
-            display_name="oMLX",
-            modalities=("language", "embedding"),
-            required_env=("OMLX_API_BASE",),
-            optional_env=("OMLX_API_KEY",),
-            test_model=None,  # Dynamic - uses first available model via /v1/models
-            docs_url="https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/omlx.md",
-            # No openai_compat_discovery_url: base URL is user-supplied (default
-            # http://localhost:11435/v1) and API key is optional — discovery is
-            # handled like openai_compatible, not the fixed-URL OPENAI_COMPAT table.
-        ),
-        ProviderSpec(
-            name="azure",
-            display_name="Azure OpenAI",
-            modalities=_ALL_MODALITIES,
-            required_env=(
-                "AZURE_OPENAI_API_KEY",
-                "AZURE_OPENAI_ENDPOINT",
-                "AZURE_OPENAI_API_VERSION",
-            ),
-            optional_env=(
-                "AZURE_OPENAI_ENDPOINT_LLM",
-                "AZURE_OPENAI_ENDPOINT_EMBEDDING",
-                "AZURE_OPENAI_ENDPOINT_STT",
-                "AZURE_OPENAI_ENDPOINT_TTS",
-            ),
-            test_model="gpt-35-turbo",  # Azure OpenAI deployment name
-            docs_url="https://portal.azure.com/#view/Microsoft_Azure_ProjectOxford/CognitiveServicesHub/~/OpenAI",
-        ),
-        ProviderSpec(
-            name="vertex",
-            display_name="Google Vertex AI",
-            modalities=("language", "embedding", "text_to_speech"),
-            required_env=("VERTEX_PROJECT", "VERTEX_LOCATION"),
-            optional_env=("GOOGLE_APPLICATION_CREDENTIALS",),
-            test_model="gemini-flash-latest",  # Uses Google Vertex AI
-            docs_url="https://cloud.google.com/vertex-ai/docs/start/cloud-environment",
-        ),
-        ProviderSpec(
-            name="openai_compatible",
-            display_name="OpenAI Compatible",
-            modalities=_ALL_MODALITIES,
-            required_any_env=("OPENAI_COMPATIBLE_BASE_URL", "OPENAI_COMPATIBLE_API_KEY"),
-            test_model=None,  # Dynamic - uses first available model
-            docs_url="https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/openai-compatible.md",
-        ),
-        ProviderSpec(
-            name="anthropic_compatible",
-            display_name="Anthropic Compatible",
-            modalities=_LANGUAGE_ONLY,
-            required_env=(
-                "ANTHROPIC_COMPATIBLE_BASE_URL",
-                "ANTHROPIC_COMPATIBLE_API_KEY",
-            ),
-            test_model=None,  # Dynamic - uses the endpoint's model list
-            docs_url="https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/ai-providers.md",
-            # No openai_compat_discovery_url: anthropic-compatible discovery uses
-            # Anthropic's GET /v1/models with x-api-key + anthropic-version headers
-            # (bespoke), not the OpenAI-compatible GET /models discovery table.
-        ),
+        test_model=None,  # Dynamic - uses the endpoint's model list
+        docs_url="https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/ai-providers.md",
+        # No openai_compat_discovery_url: anthropic-compatible discovery uses
+        # Anthropic's GET /v1/models with x-api-key + anthropic-version headers
+        # (bespoke), not the OpenAI-compatible GET /models discovery table.
+    ),
 )
 
 
@@ -298,9 +332,7 @@ def _build_registry(specs: Tuple[ProviderSpec, ...]) -> Dict[str, ProviderSpec]:
     registry: Dict[str, ProviderSpec] = {}
     for spec in specs:
         if spec.name in registry:
-            raise ValueError(
-                f"Duplicate provider name in registry: {spec.name!r}"
-            )
+            raise ValueError(f"Duplicate provider name in registry: {spec.name!r}")
         registry[spec.name] = spec
     return registry
 

@@ -49,9 +49,7 @@ async def test_update_rejects_clearing_compatible_base_url():
         patch("api.routers.credentials.require_encryption_key"),
         pytest.raises(HTTPException) as exc_info,
     ):
-        await update_credential(
-            "credential:test", UpdateCredentialRequest(base_url="")
-        )
+        await update_credential("credential:test", UpdateCredentialRequest(base_url=""))
 
     assert exc_info.value.status_code == 400
     assert "require a base URL" in exc_info.value.detail
@@ -159,7 +157,10 @@ async def test_model_manager_maps_normalized_url_to_anthropic_factory(
 
     assert result is factory_model
     assert validate_url_mock.await_count >= 1
-    assert validate_url_mock.await_args_list[0].args == (base_url, "anthropic_compatible")
+    assert validate_url_mock.await_args_list[0].args == (
+        base_url,
+        "anthropic_compatible",
+    )
     create_language.assert_called_once_with(
         model_name="compatible-model",
         provider="anthropic",
@@ -168,7 +169,9 @@ async def test_model_manager_maps_normalized_url_to_anthropic_factory(
 
 
 @pytest.mark.asyncio
-async def test_model_manager_uses_default_database_credential_when_unlinked(monkeypatch):
+async def test_model_manager_uses_default_database_credential_when_unlinked(
+    monkeypatch,
+):
     from open_notebook.ai.models import Model, ModelManager
 
     credential = Credential(
@@ -189,7 +192,9 @@ async def test_model_manager_uses_default_database_credential_when_unlinked(monk
 
     with (
         patch.object(Model, "get", AsyncMock(return_value=model)),
-        patch.object(Credential, "get_by_provider", AsyncMock(return_value=[credential])),
+        patch.object(
+            Credential, "get_by_provider", AsyncMock(return_value=[credential])
+        ),
         patch(
             "open_notebook.ai.models.AIFactory.create_language",
             return_value=factory_model,

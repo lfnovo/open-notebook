@@ -8,7 +8,7 @@ All functions raise ValueError for business errors (router converts to HTTPExcep
 """
 
 import os
-from typing import Dict, List
+from typing import Any, Dict, List, Literal
 
 import httpx
 from loguru import logger
@@ -18,13 +18,18 @@ from api.models import CredentialResponse, validate_url_key_provider_required_fi
 from open_notebook.ai.connection_tester import normalize_anthropic_compatible_base_url
 from open_notebook.ai.model_discovery import (
     ANTHROPIC_FALLBACK_MODELS,
-    OPENROUTER_AUDIO_MODELS,
+    audio_seed,
     classify_model_type,
     fetch_anthropic_model_ids,
 )
 from open_notebook.ai.provider_registry import PROVIDERS
 from open_notebook.domain.credential import Credential
-from open_notebook.utils.encryption import get_secret_from_env
+from open_notebook.utils.encryption import (
+    PBKDF2_MARKER,
+    decrypt_value,
+    encrypt_value,
+    get_secret_from_env,
+)
 from open_notebook.utils.ssl_config import httpx_verify_setting
 from open_notebook.utils.url_validation import (
     prepare_pinned_http_target,
@@ -65,7 +70,9 @@ def require_encryption_key() -> None:
         )
 
 
-def credential_to_response(cred: Credential, model_count: int = 0) -> CredentialResponse:
+def credential_to_response(
+    cred: Credential, model_count: int = 0
+) -> CredentialResponse:
     """Convert a Credential domain object to API response."""
     return CredentialResponse(
         id=cred.id or "",
@@ -180,16 +187,22 @@ def create_credential_from_env(provider: str) -> Credential:
             api_key=SecretStr(api_key) if api_key else None,
         )
     else:
-        # Simple API key providers
+        # Simple API key providers (plus an optional *_BASE_URL endpoint
+        # override for providers that declare one, e.g. regional endpoints)
         config = PROVIDER_ENV_CONFIG.get(provider, {})
         required = config.get("required", [])
         env_var = required[0] if required else None
         api_key = os.environ.get(env_var) if env_var else None
+        spec = PROVIDERS.get(provider)
+        base_url_env = spec.base_url_env if spec else None
         return Credential(
             name=name,
             provider=provider,
             modalities=modalities,
             api_key=SecretStr(api_key) if api_key else None,
+            base_url=(os.environ.get(base_url_env, "").strip() or None)
+            if base_url_env
+            else None,
         )
 
 
@@ -339,17 +352,27 @@ async def test_credential(credential_id: str) -> dict:
             )
             lc_model = model.to_langchain()
             await lc_model.ainvoke("Hi")
-            return {"provider": provider, "success": True, "message": "Connection successful"}
+            return {
+                "provider": provider,
+                "success": True,
+                "message": "Connection successful",
+            }
 
         elif test_type == "embedding":
             embedding_model = AIFactory.create_embedding(
                 model_name=test_model, provider=provider, config=config
             )
             await embedding_model.aembed(["test"])
-            return {"provider": provider, "success": True, "message": "Connection successful"}
+            return {
+                "provider": provider,
+                "success": True,
+                "message": "Connection successful",
+            }
 
         elif test_type == "text_to_speech":
-            AIFactory.create_text_to_speech(model_name=test_model, provider=provider, config=config)
+            AIFactory.create_text_to_speech(
+                model_name=test_model, provider=provider, config=config
+            )
             return {
                 "provider": provider,
                 "success": True,
@@ -364,7 +387,9 @@ async def test_credential(credential_id: str) -> dict:
 
     except Exception as e:
         if provider == "vertex" and _is_vertex_credentials_file_error(e):
-            logger.debug(f"Vertex credentials file error for credential {credential_id}: {e}")
+            logger.debug(
+                f"Vertex credentials file error for credential {credential_id}: {e}"
+            )
             return {
                 "provider": provider,
                 "success": False,
@@ -397,33 +422,47 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
     # Static model lists for providers without a listing API
     STATIC_MODELS: Dict[str, List[str]] = {
         "voyage": [
-            "voyage-3", "voyage-3-lite", "voyage-code-3",
-            "voyage-finance-2", "voyage-law-2", "voyage-multilingual-2",
+            "voyage-3",
+            "voyage-3-lite",
+            "voyage-code-3",
+            "voyage-finance-2",
+            "voyage-law-2",
+            "voyage-multilingual-2",
         ],
         "elevenlabs": [
-            "eleven_multilingual_v2", "eleven_turbo_v2_5",
-            "eleven_turbo_v2", "eleven_monolingual_v1",
+            "eleven_multilingual_v2",
+            "eleven_turbo_v2_5",
+            "eleven_turbo_v2",
+            "eleven_monolingual_v1",
             "scribe_v1",  # speech-to-text
         ],
         "deepgram": [
             # TTS (Aura) voices
-            "aura-2-thalia-en", "aura-2-andromeda-en", "aura-2-helena-en",
-            "aura-2-apollo-en", "aura-2-arcas-en", "aura-2-asteria-en",
-            "aura-2-athena-en", "aura-2-hera-en", "aura-2-hermes-en",
+            "aura-2-thalia-en",
+            "aura-2-andromeda-en",
+            "aura-2-helena-en",
+            "aura-2-apollo-en",
+            "aura-2-arcas-en",
+            "aura-2-asteria-en",
+            "aura-2-athena-en",
+            "aura-2-hera-en",
+            "aura-2-hermes-en",
             "aura-2-atlas-en",
             # STT (Nova / Whisper) transcription models
-            "nova-3", "nova-2", "whisper-large", "whisper-medium",
-            "whisper-small", "whisper-base", "whisper-tiny",
+            "nova-3",
+            "nova-2",
+            "whisper-large",
+            "whisper-medium",
+            "whisper-small",
+            "whisper-base",
+            "whisper-tiny",
         ],
     }
 
     if provider in STATIC_MODELS:
         if not api_key and provider != "ollama":
             return []
-        return [
-            {"name": m, "provider": provider}
-            for m in STATIC_MODELS[provider]
-        ]
+        return [{"name": m, "provider": provider} for m in STATIC_MODELS[provider]]
 
     if provider == "anthropic":
         if not api_key:
@@ -540,9 +579,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
     if provider == "omlx":
         omlx_url = base_url or "http://localhost:11435/v1"
         try:
-            target = await prepare_pinned_http_target(
-                models_endpoint(omlx_url), "omlx"
-            )
+            target = await prepare_pinned_http_target(models_endpoint(omlx_url), "omlx")
             headers = dict(target.headers)
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
@@ -653,8 +690,14 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
     # Standard OpenAI-style API discovery
     discovery_url = url_map.get(provider)
     user_supplied_url = False
-    if provider == "openai" and base_url:
-        discovery_url = models_endpoint(base_url)
+    # A credential's base URL override is also where its models are listed:
+    # OpenAI (gateways) and providers that declare a *_BASE_URL override, e.g.
+    # SiliconFlow's mainland-China api.siliconflow.cn. Other providers keep
+    # their registry URL, which may carry provider-specific query params.
+    spec = PROVIDERS.get(provider)
+    honors_base_url = provider == "openai" or bool(spec and spec.base_url_env)
+    if base_url and base_url.strip() and discovery_url and honors_base_url:
+        discovery_url = models_endpoint(base_url.strip())
         user_supplied_url = True
     if not discovery_url or not api_key:
         return []
@@ -691,15 +734,15 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
                 for m in data.get("data", [])
                 if m.get("id")
             ]
-            # OpenRouter's /models listing does not reliably surface its TTS/STT
-            # catalog, so seed the audio model ids esperanto ships as defaults.
-            if provider == "openrouter":
+            # Some /models listings (OpenRouter, MiniMax) don't surface their
+            # TTS/STT catalog, so seed the audio model ids esperanto supports
+            # (only on top of a successful listing).
+            if discovered:
                 seen = {m["name"] for m in discovered}
-                for names in OPENROUTER_AUDIO_MODELS.values():
-                    for name in names:
-                        if name not in seen:
-                            discovered.append({"name": name, "provider": provider})
-                            seen.add(name)
+                for name, _model_type in audio_seed(provider):
+                    if name not in seen:
+                        discovered.append({"name": name, "provider": provider})
+                        seen.add(name)
             return discovered
     except Exception as e:
         logger.warning(f"Failed to discover {provider} models: {e}")
@@ -889,7 +932,9 @@ async def migrate_from_env() -> dict:
                 not_configured.append(provider)
                 continue
 
-            logger.info(f"[{provider}] Env vars detected, checking for existing credentials")
+            logger.info(
+                f"[{provider}] Env vars detected, checking for existing credentials"
+            )
 
             existing = await Credential.get_by_provider(provider)
             if existing:
@@ -901,6 +946,9 @@ async def migrate_from_env() -> dict:
 
             logger.info(f"[{provider}] Creating credential from env vars")
             cred = create_credential_from_env(provider)
+            # Same URL checks as credentials created through the API.
+            if cred.base_url:
+                await validate_url(cred.base_url, provider)
             await cred.save()
             logger.info(f"[{provider}] Credential saved successfully (id={cred.id})")
 
@@ -947,5 +995,217 @@ async def migrate_from_env() -> dict:
         "migrated": migrated,
         "skipped": skipped,
         "not_configured": not_configured,
+        "errors": errors,
+    }
+
+
+# Placeholder the domain layer substitutes when a stored key cannot be
+# decrypted (open_notebook/domain/credential.py). Must never be re-encrypted:
+# it is a marker of a previous failure, not a secret.
+_UNDECRYPTABLE_PLACEHOLDER = "UNDECRYPTABLE"
+
+# Closed set of per-record outcomes for the encryption-scheme pass.
+ReencryptStatus = Literal["migrated", "skipped", "error"]
+
+
+def _reencrypt_stored_value(stored: object) -> tuple[ReencryptStatus, str]:
+    """
+    Decide the fate of one stored api_key value.
+
+    Returns (status, payload) where status is one of migrated, skipped, or
+    error. Payload is the new marked value for migrated rows, otherwise a
+    short reason code. Reasons carry record context only, never key material.
+
+    Args:
+        stored: The raw api_key value read from the database.
+
+    Returns:
+        Tuple of status and payload.
+    """
+    if stored is None or stored == "":
+        return ("skipped", "empty")
+    if not isinstance(stored, str):
+        return ("error", "unexpected-type")
+    if stored == _UNDECRYPTABLE_PLACEHOLDER:
+        return ("error", "decrypt-placeholder")
+    if stored.startswith(PBKDF2_MARKER):
+        try:
+            decrypt_value(stored)
+        except ValueError:
+            return ("error", "undecryptable-marked")
+        return ("skipped", "already-migrated")
+    try:
+        secret = decrypt_value(stored)
+    except ValueError:
+        return ("error", "undecryptable-legacy")
+    return ("migrated", encrypt_value(secret))
+
+
+def _record_settled_outcome(
+    status: ReencryptStatus,
+    payload: str,
+    label: str,
+    skipped: List[str],
+    errors: List[str],
+) -> None:
+    """
+    Record a skipped/error outcome plus its log line.
+
+    Only called for settled (non-migrated) outcomes; migrated rows take
+    their own write path. Reasons carry record context only, never key
+    material.
+
+    Args:
+        status: Settled outcome (skipped or error).
+        payload: Skip reason or error reason.
+        label: Record label for logs and summaries.
+        skipped: Summary list to append skip entries to.
+        errors: Summary list to append error entries to.
+    """
+    if status == "skipped":
+        skipped.append(f"{label}: {payload}")
+    else:
+        logger.warning(f"[{label}] Left untouched: {payload}")
+        errors.append(f"{label}: {payload}")
+
+
+def _migrate_provider_config_entries(
+    creds: Dict[str, Any],
+    skipped: List[str],
+    errors: List[str],
+) -> List[str]:
+    """
+    Re-encrypt nested provider_configs entries in memory.
+
+    Mutates entries with successfully decrypted values; undecryptable
+    entries are left untouched and reported. Never writes to the database:
+    the caller persists the map and owns the migrated labels, so a failed
+    rewrite is never reported as migrated.
+
+    Args:
+        creds: The raw credentials map from the singleton record.
+        skipped: Summary list to append skip entries to.
+        errors: Summary list to append error entries to.
+
+    Returns:
+        Labels re-encrypted in memory, pending persistence.
+    """
+    pending: List[str] = []
+    for provider, entries in creds.items():
+        if not isinstance(entries, list):
+            errors.append(f"provider_configs/{provider}: unexpected-group-type")
+            continue
+        for index, entry in enumerate(entries):
+            if not isinstance(entry, dict):
+                errors.append(
+                    f"provider_configs/{provider}/{index}: unexpected-entry-type"
+                )
+                continue
+            label = f"provider_configs/{provider}/{entry.get('name', index)}"
+            try:
+                status, payload = _reencrypt_stored_value(entry.get("api_key"))
+            except Exception as e:
+                logger.error(f"[{label}] Re-encryption FAILED: {type(e).__name__}")
+                errors.append(f"{label}: unexpected-failure")
+                continue
+            if status == "migrated":
+                entry["api_key"] = payload
+                pending.append(label)
+            else:
+                _record_settled_outcome(status, payload, label, skipped, errors)
+    return pending
+
+
+async def migrate_encryption_scheme() -> dict:
+    """
+    Re-encrypt stored API keys into the versioned PBKDF2 format.
+
+    One-shot, idempotent, and fail-closed per record. Reads raw database
+    rows (never domain-decrypted objects, which can carry UNDECRYPTABLE
+    placeholders) and writes a row back only when its value decrypted
+    successfully. Undecryptable rows are left untouched and reported.
+
+    Run as a single-admin operation: there is no locking, so concurrent
+    credential edits during the pass can be overwritten. Re-running over a
+    migrated corpus changes nothing.
+
+    Returns dict with message, migrated, skipped, errors.
+    """
+    from open_notebook.database.repository import (
+        ensure_record_id,
+        repo_query,
+        repo_update,
+        repo_upsert,
+    )
+    from open_notebook.domain.provider_config import ProviderConfig
+
+    logger.info("=== Starting encryption-scheme migration ===")
+
+    require_encryption_key()
+    logger.info("Encryption key verified")
+
+    migrated: List[str] = []
+    skipped: List[str] = []
+    errors: List[str] = []
+
+    rows = await repo_query("SELECT id, api_key FROM credential")
+    for row in rows:
+        record_id = str(row.get("id", ""))
+        try:
+            status, payload = _reencrypt_stored_value(row.get("api_key"))
+        except Exception as e:
+            logger.error(f"[{record_id}] Re-encryption FAILED: {type(e).__name__}")
+            errors.append(f"{record_id}: unexpected-failure")
+            continue
+        if status == "migrated":
+            try:
+                await repo_update("credential", record_id, {"api_key": payload})
+            except Exception as e:
+                logger.error(f"[{record_id}] Write FAILED: {type(e).__name__}")
+                errors.append(f"{record_id}: write-failed")
+                continue
+            logger.info(f"[{record_id}] Re-encrypted to versioned format")
+            migrated.append(record_id)
+        else:
+            _record_settled_outcome(status, payload, record_id, skipped, errors)
+
+    singleton_rows = await repo_query(
+        "SELECT * FROM ONLY $record_id",
+        {"record_id": ensure_record_id(ProviderConfig.record_id)},
+    )
+    if singleton_rows:
+        data = singleton_rows[0] if isinstance(singleton_rows, list) else singleton_rows
+        creds = data.get("credentials") if isinstance(data, dict) else None
+        if isinstance(creds, dict):
+            pending = _migrate_provider_config_entries(creds, skipped, errors)
+            if pending:
+                try:
+                    await repo_upsert(
+                        "open_notebook",
+                        ProviderConfig.record_id,
+                        {"credentials": creds},
+                    )
+                except Exception as e:
+                    logger.error(f"Singleton rewrite FAILED: {type(e).__name__}")
+                    errors.extend(f"{label}: write-failed" for label in pending)
+                    pending = []
+                migrated.extend(pending)
+
+    logger.info(
+        "=== Encryption-scheme migration complete === "
+        f"migrated={len(migrated)} skipped={len(skipped)} errors={len(errors)}"
+    )
+    if migrated:
+        logger.info(f"  Migrated: {', '.join(migrated)}")
+    if errors:
+        logger.error(f"  Errors: {'; '.join(errors)}")
+
+    return {
+        "message": (
+            f"Encryption migration complete. Migrated {len(migrated)} "
+            f"record(s) with {len(errors)} error(s)."
+        ),
+        "migrated": migrated,
+        "skipped": skipped,
         "errors": errors,
     }

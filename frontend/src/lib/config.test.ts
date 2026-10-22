@@ -97,4 +97,21 @@ describe('Config Priority', () => {
     const url = await getApiUrl()
     expect(url).toBe('')
   })
+
+  it('should not double the /api segment when the API URL already ends with /api', async () => {
+    process.env.NEXT_PUBLIC_API_URL = '/api'
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ apiUrl: '' }),
+    } as Response)
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ version: '1.0.0' }),
+    } as Response)
+
+    await getApiUrl()
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/config', expect.anything())
+  })
 })

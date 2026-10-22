@@ -112,8 +112,14 @@ async function fetchConfig(): Promise<AppConfig> {
 
   try {
     if (isDev) console.log('🔧 [Config] Fetching backend config from:', `${baseUrl}/api/config`)
+    // Build the backend config URL. The baseUrl may already end with "/api" (in
+    // the case of NEXT_PUBLIC_API_URL=/api), so we strip a trailing "/api" to
+    // avoid producing paths like "/api/api/config".
+    const trimmedBase = baseUrl.replace(/\/api\/?$/, '')
+    const backendConfigUrl = `${trimmedBase}/api/config`
+
     // Try to fetch runtime config from backend API
-    const response = await fetch(`${baseUrl}/api/config`, {
+    const response = await fetch(backendConfigUrl, {
       cache: 'no-store',
     })
 

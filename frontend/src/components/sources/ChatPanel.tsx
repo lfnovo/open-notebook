@@ -7,8 +7,11 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
-import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
+import { Bot, User, Send, Square, Loader2, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
 import {
   SourceChatMessage,
   SourceChatContextIndicator,
@@ -16,8 +19,8 @@ import {
 } from '@/lib/types/api'
 import { ModelSelector } from './ModelSelector'
 import { ContextIndicator } from '@/components/common/ContextIndicator'
-import { SessionManager } from '@/components/sources/SessionManager'
-import { MessageActions } from '@/components/sources/MessageActions'
+import { SessionManager } from './SessionManager'
+import { MessageActions } from './MessageActions'
 import { convertReferencesToCompactMarkdown, createCompactReferenceLinkComponent } from '@/lib/utils/source-references'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { toast } from 'sonner'
@@ -36,6 +39,8 @@ interface ChatPanelProps {
   isStreaming: boolean
   contextIndicators: SourceChatContextIndicator | null
   onSendMessage: (message: string, modelOverride?: string) => void
+  /** Stop the in-flight answer; cancels generation server-side. */
+  onStop?: () => void
   modelOverride?: string
   onModelChange?: (model?: string) => void
   // Session management props
@@ -60,6 +65,7 @@ export function ChatPanel({
   isStreaming,
   contextIndicators,
   onSendMessage,
+  onStop,
   modelOverride,
   onModelChange,
   sessions = [],
@@ -100,6 +106,11 @@ export function ChatPanel({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // While the model is still prefilling there is no answer bubble to show yet;
+  // once the first token lands the bubble itself is the progress indicator.
+  const awaitingFirstToken =
+    isStreaming && messages[messages.length - 1]?.type !== 'ai'
 
   return (
     <>
@@ -162,7 +173,7 @@ export function ChatPanel({
                 />
               ))
             )}
-            {isStreaming && (
+            {awaitingFirstToken && (
               <div className="flex gap-3 justify-start">
                 <div className="flex-shrink-0">
                   <div className="h-8 w-8 rounded-full bg-teal-tint flex items-center justify-center">
@@ -218,6 +229,7 @@ export function ChatPanel({
         {/* Input Area */}
         <ChatComposer
           onSendMessage={onSendMessage}
+          onStop={onStop}
           isStreaming={isStreaming}
           modelOverride={modelOverride}
           onModelChange={onModelChange}
@@ -233,6 +245,8 @@ export function ChatPanel({
 // re-render this small component instead of the whole message history.
 interface ChatComposerProps {
   onSendMessage: (message: string, modelOverride?: string) => void
+  /** Renders the Stop control while streaming. */
+  onStop?: () => void
   isStreaming: boolean
   modelOverride?: string
   onModelChange?: (model?: string) => void
@@ -240,6 +254,7 @@ interface ChatComposerProps {
 
 function ChatComposer({
   onSendMessage,
+  onStop,
   isStreaming,
   modelOverride,
   onModelChange
@@ -293,22 +308,36 @@ function ChatComposer({
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={`${t('chat.sendPlaceholder')} (${t('chat.pressToSend', { key: keyHint })})`}
-          disabled={isStreaming}
+          // Left enabled while streaming so the next question can be typed
+          // ahead; `handleSend` holds the send until the turn finishes.
           className="flex-1 min-h-[40px] max-h-[100px] resize-none py-2 px-3 min-w-0"
           rows={1}
         />
-        <Button
-          onClick={handleSend}
-          disabled={!input.trim() || isStreaming}
-          size="icon"
-          className="h-[40px] w-[40px] flex-shrink-0"
-        >
-          {isStreaming ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Send className="h-4 w-4" />
-          )}
-        </Button>
+        {isStreaming && onStop ? (
+          <Button
+            onClick={onStop}
+            size="icon"
+            variant="outline"
+            className="h-[40px] w-[40px] flex-shrink-0"
+            aria-label={t('chat.stop')}
+            title={t('chat.stop')}
+          >
+            <Square className="h-4 w-4 fill-current" />
+          </Button>
+        ) : (
+          <Button
+            onClick={handleSend}
+            disabled={!input.trim() || isStreaming}
+            size="icon"
+            className="h-[40px] w-[40px] flex-shrink-0"
+          >
+            {isStreaming ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+          </Button>
+        )}
       </div>
     </div>
   )
@@ -391,10 +420,34 @@ function AIMessageContent({
   const LinkComponent = createCompactReferenceLinkComponent(onReferenceClick)
 
   return (
-    <MarkdownRenderer components={{
-      a: LinkComponent
-    }}>
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm, remarkMath]}
+      rehypePlugins={[rehypeKatex]}
+      components={{
+        a: LinkComponent,
+        p: ({ children }) => <p className="mb-4">{children}</p>,
+        h1: ({ children }) => <h1 className="mb-4 mt-6">{children}</h1>,
+        h2: ({ children }) => <h2 className="mb-3 mt-5">{children}</h2>,
+        h3: ({ children }) => <h3 className="mb-3 mt-4">{children}</h3>,
+        h4: ({ children }) => <h4 className="mb-2 mt-4">{children}</h4>,
+        h5: ({ children }) => <h5 className="mb-2 mt-3">{children}</h5>,
+        h6: ({ children }) => <h6 className="mb-2 mt-3">{children}</h6>,
+        li: ({ children }) => <li className="mb-1">{children}</li>,
+        ul: ({ children }) => <ul className="mb-4 space-y-1">{children}</ul>,
+        ol: ({ children }) => <ol className="mb-4 space-y-1">{children}</ol>,
+        table: ({ children }) => (
+          <div className="my-4 overflow-x-auto">
+            <table className="min-w-full border-collapse border border-border">{children}</table>
+          </div>
+        ),
+        thead: ({ children }) => <thead className="bg-muted">{children}</thead>,
+        tbody: ({ children }) => <tbody>{children}</tbody>,
+        tr: ({ children }) => <tr className="border-b border-border">{children}</tr>,
+        th: ({ children }) => <th className="border border-border px-3 py-2 text-left font-semibold">{children}</th>,
+        td: ({ children }) => <td className="border border-border px-3 py-2">{children}</td>,
+      }}
+    >
       {markdownWithCompactRefs}
-    </MarkdownRenderer>
+    </ReactMarkdown>
   )
 }

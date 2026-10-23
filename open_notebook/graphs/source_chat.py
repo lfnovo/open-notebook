@@ -1,6 +1,7 @@
 import asyncio
 import sqlite3
-from typing import Annotated, Dict, List, Optional
+from dataclasses import dataclass
+from typing import Annotated, Any, Dict, List, Optional
 
 from ai_prompter import Prompter
 from langchain_core.messages import SystemMessage
@@ -33,6 +34,11 @@ class SourceChatState(TypedDict):
     context_indicators: Optional[Dict[str, List[str]]]
 
 
+# The graph's only node. Streaming turns bypass the graph but still attribute
+# their checkpoint writes to it (`persist_state(as_node=...)`).
+NODE_NAME = "source_chat_agent"
+
+
 def _source_content_is_available(
     source_info: Dict,
     context_data: Dict,
@@ -58,7 +64,28 @@ def call_model_with_source_context(
     4. Tracks context indicators for referenced insights/content
     """
     try:
-        return _call_model_with_source_context_inner(state, config)
+        turn = prepare_source_chat_turn(state)
+        model_id = config.get("configurable", {}).get("model_id") or state.get(
+            "model_override"
+        )
+        model = _provision_model(turn.payload, model_id)
+
+        ai_message = model.invoke(turn.payload)
+
+        # Clean thinking content from AI response (e.g.,  thinking...</think> tags)
+        content = extract_text_content(ai_message.content)
+        cleaned_content = clean_thinking_content(content)
+        if not cleaned_content.strip():
+            # Raising inside the node keeps LangGraph from checkpointing a
+            # blank AI message that would be replayed as context later.
+            raise IncompleteGenerationError(
+                "The model returned an empty response. Try again, or pick a "
+                "different model if this keeps happening."
+            )
+        cleaned_message = ai_message.model_copy(update={"content": cleaned_content})
+
+        # Update state with context information
+        return {"messages": cleaned_message, **turn.updates}
     except OpenNotebookError:
         raise
     except Exception as e:
@@ -66,9 +93,21 @@ def call_model_with_source_context(
         raise error_class(user_message) from e
 
 
-def _call_model_with_source_context_inner(
-    state: SourceChatState, config: RunnableConfig
-) -> dict:
+@dataclass
+class SourceChatTurn:
+    """Everything gathered before the model call for one source-chat turn.
+
+    `payload` is the ready-to-send message list; `updates` is the checkpoint
+    delta the node returns. Split out so the streaming endpoint can generate
+    token-by-token and still persist the same state a buffered turn would.
+    """
+
+    payload: list
+    updates: dict
+
+
+def prepare_source_chat_turn(state: SourceChatState) -> SourceChatTurn:
+    """Build the source context, prompt and payload for one turn."""
     source_id = state.get("source_id")
     if not source_id:
         raise ValueError("source_id is required in state")
@@ -149,6 +188,20 @@ def _call_model_with_source_context_inner(
     )
     payload = [SystemMessage(content=system_prompt)] + state.get("messages", [])
 
+    return SourceChatTurn(
+        payload=payload,
+        updates={
+            "source": source,
+            "insights": insights,
+            "context": formatted_context,
+            "context_indicators": context_indicators,
+        },
+    )
+
+
+def _provision_model(payload: list, model_id: Optional[str]) -> Any:
+    """Provision the chat model from sync code (node and stream share this)."""
+
     # Handle async model provisioning from sync context
     def run_in_new_loop():
         """Run the async function in a new event loop"""
@@ -158,8 +211,7 @@ def _call_model_with_source_context_inner(
             return new_loop.run_until_complete(
                 provision_langchain_model(
                     str(payload),
-                    config.get("configurable", {}).get("model_id")
-                    or state.get("model_override"),
+                    model_id,
                     "chat",
                     max_tokens=8192,
                 )
@@ -176,41 +228,17 @@ def _call_model_with_source_context_inner(
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
             future = executor.submit(run_in_new_loop)
-            model = future.result()
+            return future.result()
     except RuntimeError:
         # No event loop running, safe to use asyncio.run()
-        model = asyncio.run(
+        return asyncio.run(
             provision_langchain_model(
                 str(payload),
-                config.get("configurable", {}).get("model_id")
-                or state.get("model_override"),
+                model_id,
                 "chat",
                 max_tokens=8192,
             )
         )
-
-    ai_message = model.invoke(payload)
-
-    # Clean thinking content from AI response (e.g., <think>...</think> tags)
-    content = extract_text_content(ai_message.content)
-    cleaned_content = clean_thinking_content(content)
-    if not cleaned_content.strip():
-        # Raising inside the node keeps LangGraph from checkpointing a blank
-        # AI message that would be replayed as context later.
-        raise IncompleteGenerationError(
-            "The model returned an empty response. Try again, or pick a "
-            "different model if this keeps happening."
-        )
-    cleaned_message = ai_message.model_copy(update={"content": cleaned_content})
-
-    # Update state with context information
-    return {
-        "messages": cleaned_message,
-        "source": source,
-        "insights": insights,
-        "context": formatted_context,
-        "context_indicators": context_indicators,
-    }
 
 
 def _format_source_context(context_data: Dict) -> str:
@@ -227,7 +255,7 @@ memory = SqliteSaver(conn)
 
 # Create the StateGraph
 source_chat_state = StateGraph(SourceChatState)
-source_chat_state.add_node("source_chat_agent", call_model_with_source_context)
+source_chat_state.add_node(NODE_NAME, call_model_with_source_context)
 source_chat_state.add_edge(START, "source_chat_agent")
 source_chat_state.add_edge("source_chat_agent", END)
 source_chat_graph = source_chat_state.compile(checkpointer=memory)

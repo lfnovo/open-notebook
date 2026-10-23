@@ -434,6 +434,7 @@ export const caES = {
     deleteSession: "Suprimeix la sessió",
     deleteSessionDesc: "Segur que vols suprimir aquesta sessió de xat? Aquesta acció no es pot desfer.",
     sendPlaceholder: "Pregunta qualsevol cosa sobre les teves fonts...",
+    stop: "Atura",
     sessionsTitle: "Sessions de xat",
     chatWith: "Xat amb {{name}}",
     startConversation: "Inicia una conversa sobre aquest/a {{type}}",

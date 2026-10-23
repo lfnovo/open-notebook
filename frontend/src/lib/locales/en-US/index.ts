@@ -432,6 +432,7 @@ export const enUS = {
     deleteSession: "Delete Session",
     deleteSessionDesc: "Are you sure you want to delete this chat session? This action cannot be undone.",
     sendPlaceholder: "Ask anything about your sources...",
+    stop: "Stop",
     sessionsTitle: "Chat Sessions",
     chatWith: "Chat with {{name}}",
     startConversation: "Start a conversation about this {{type}}",

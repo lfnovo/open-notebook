@@ -21,10 +21,11 @@ Provider tree in `app/layout.tsx` (outermost → innermost): ErrorBoundary → T
 ## Flow walkthrough: notebook chat
 
 1. `notebooks/[id]/page.tsx` passes `notebookId` to `ChatColumn`.
-2. `useNotebookChat()` queries sessions, manages message state, returns `{ messages, sendMessage(), setModelOverride() }`.
-3. On send: `buildContext()` assembles selected sources/notes (token/char counts), calls `chatApi.sendMessage()`, and applies an **optimistic update** (message added locally, removed on error).
-4. Response updates the TanStack Query cache; related source/note mutations elsewhere invalidate broadly so stale UI refreshes.
-5. Model override before a session exists is stored as pending and applied on session creation.
+2. `useNotebookChat()` queries sessions, manages message state, returns `{ messages, sendMessage(), stopStreaming(), setModelOverride() }`.
+3. On send: `buildContext()` assembles selected sources/notes (token/char counts), then `chatApi.sendMessageStream()` posts to the dedicated `/api/chat/execute/stream` route handler (not the gzipping rewrite proxy) and parses SSE frames: an optimistic message is added locally, `token` events append to the answer bubble, `complete` adopts the cleaned persisted text.
+4. Stop calls `stopStreaming()`, which aborts the fetch — the server cancels generation and checkpoints the partial answer; the hook resyncs the session afterwards.
+5. Response updates the TanStack Query cache; related source/note mutations elsewhere invalidate broadly so stale UI refreshes.
+6. Model override before a session exists is stored as pending and applied on session creation.
 
 ## Flow walkthrough: file upload
 

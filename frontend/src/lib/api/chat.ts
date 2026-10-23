@@ -1,4 +1,5 @@
 import apiClient from './client'
+import { getAuthToken } from '@/lib/auth-token'
 import {
   NotebookChatSession,
   NotebookChatSessionWithMessages,
@@ -57,6 +58,35 @@ export const chatApi = {
       data
     )
     return response.data
+  },
+
+  /**
+   * Streaming variant of `sendMessage`.
+   *
+   * Uses the dedicated route handler (not the rewrite proxy, which gzips the
+   * response to completion) and returns the raw SSE body for the caller to
+   * parse. `signal` cancels the request, which stops server-side generation.
+   */
+  sendMessageStream: (
+    data: SendNotebookChatMessageRequest,
+    signal?: AbortSignal
+  ) => {
+    const token = getAuthToken()
+
+    return fetch('/api/chat/execute/stream', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` })
+      },
+      body: JSON.stringify(data),
+      signal
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return response.body
+    })
   },
 
   buildContext: async (data: BuildContextRequest) => {

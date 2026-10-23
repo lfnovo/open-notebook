@@ -108,7 +108,7 @@ class _State(TypedDict, total=False):
     notebook: object
 
 
-def _toy_graph(replies: list):
+def _toy_graph(replies: list, node_name: str = "agent"):
     """A checkpointed graph whose node raises like the real one on an empty
     reply, then answers on the next call."""
 
@@ -119,9 +119,9 @@ def _toy_graph(replies: list):
         return {"messages": AIMessage(content=reply)}
 
     builder = StateGraph(_State)
-    builder.add_node("agent", node)
-    builder.add_edge(START, "agent")
-    builder.add_edge("agent", END)
+    builder.add_node(node_name, node)
+    builder.add_edge(START, node_name)
+    builder.add_edge(node_name, END)
     saver = SqliteSaver(sqlite3.connect(":memory:", check_same_thread=False))
     return builder.compile(checkpointer=saver)
 
@@ -137,27 +137,53 @@ def _history(graph, thread_id):
 
 @pytest.mark.asyncio
 async def test_source_chat_failed_turn_is_rolled_back_and_retry_is_clean():
+    """The streaming source-chat endpoint persists nothing for an empty reply.
+
+    Generation bypasses the graph there, so the model is mocked directly; the
+    toy graph only supplies the checkpoint the question and answer land in.
+    """
+    from types import SimpleNamespace
+
     from api.routers.source_chat import stream_source_chat_response
 
-    graph = _toy_graph(["", "the answer"])
-    with patch("api.routers.source_chat.source_chat_graph", graph):
+    graph = _toy_graph(["", "the answer"], node_name="source_chat_agent")
+
+    class _EmptyThenAnswer:
+        def __init__(self):
+            self.calls = 0
+
+        async def astream(self, _payload):
+            self.calls += 1
+            if self.calls == 1:
+                yield SimpleNamespace(content="")
+            else:
+                yield SimpleNamespace(content="the answer")
+
+    turn = SimpleNamespace(payload=["payload"], updates={})
+    with (
+        patch("api.routers.source_chat.source_chat_graph", graph),
+        patch("api.routers.source_chat.prepare_source_chat_turn", return_value=turn),
+        patch(
+            "api.routers.source_chat.provision_langchain_model",
+            new=AsyncMock(return_value=_EmptyThenAnswer()),
+        ),
+    ):
         failed = await _events(
             stream_source_chat_response("chat_session:s", "source:1", "question")
         )
         assert failed[-1] == {
             "type": "error",
-            "message": "The model returned an empty response.",
+            "message": "The model returned an empty response. Try again, or pick a "
+            "different model if this keeps happening.",
         }
-        assert not any(e["type"] == "ai_message" for e in failed)
         assert _history(graph, "chat_session:s") == []
 
         retried = await _events(
             stream_source_chat_response("chat_session:s", "source:1", "question")
         )
 
-    assert [e["content"] for e in retried if e["type"] == "ai_message"] == [
-        "the answer"
-    ]
+    assert [e["content"] for e in retried if e["type"] == "token"] == ["the answer"]
+    assert retried[-1]["type"] == "complete"
     assert _history(graph, "chat_session:s") == [
         ("human", "question"),
         ("ai", "the answer"),

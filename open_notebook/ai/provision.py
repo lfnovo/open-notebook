@@ -8,17 +8,26 @@ from open_notebook.utils import token_count
 
 
 async def provision_langchain_model(
-    content, model_id, default_type, **kwargs
+    content, model_id, default_type, *, streaming: bool = False, **kwargs
 ) -> BaseChatModel:
     """
     Returns the best model to use based on the context size and on whether there is a specific model being requested in Config.
     If context > 105_000, returns the large_context_model
     If model_id is specified in Config, returns that model
     Otherwise, returns the default model for the given type
+
+    `streaming=True` builds the model with streaming enabled. This is required
+    for `astream()` to actually stream: Esperanto's `to_langchain()` always
+    passes `streaming` explicitly, and langchain-core treats an explicit
+    `streaming=False` as a hard opt-out — `astream()` then silently falls back
+    to `ainvoke()` and yields the whole answer as a single chunk.
     """
     tokens = token_count(content)
     model = None
     selection_reason = ""
+
+    if streaming:
+        kwargs["streaming"] = True
 
     if tokens > 105_000:
         selection_reason = f"large_context (content has {tokens} tokens)"

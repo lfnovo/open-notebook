@@ -55,7 +55,9 @@ class Model(ObjectModel):
         try:
             return await Credential.get(self.credential)
         except Exception:
-            logger.warning(f"Could not load credential {self.credential} for model {self.id}")
+            logger.warning(
+                f"Could not load credential {self.credential} for model {self.id}"
+            )
             return None
 
 
@@ -244,7 +246,7 @@ class ModelManager:
         elif model_type == "speech_to_text":
             model_id = defaults.default_speech_to_text_model
         elif model_type == "large_context":
-            model_id = defaults.large_context_model
+            model_id = defaults.large_context_model or defaults.default_chat_model
 
         if not model_id:
             logger.warning(

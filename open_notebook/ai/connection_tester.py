@@ -5,10 +5,11 @@ This module provides functionality to test if a provider's API key is valid
 by making minimal API calls to each provider, and to test individual model
 configurations end-to-end.
 """
+
 import io
 import os
 import struct
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
 import httpx
 from loguru import logger
@@ -50,7 +51,9 @@ async def _test_azure_connection(
     """
     test_endpoint = endpoint or os.environ.get("AZURE_OPENAI_ENDPOINT")
     test_api_key = api_key or os.environ.get("AZURE_OPENAI_API_KEY")
-    test_api_version = api_version or os.environ.get("AZURE_OPENAI_API_VERSION", "2024-10-21")
+    test_api_version = api_version or os.environ.get(
+        "AZURE_OPENAI_API_VERSION", "2024-10-21"
+    )
 
     if not test_endpoint:
         return False, "No Azure endpoint configured"
@@ -111,7 +114,10 @@ async def _test_ollama_connection(base_url: str) -> Tuple[bool, str]:
                     model_list = ", ".join(model_names)
                     if model_count > 3:
                         model_list += f" (+{model_count - 3} more)"
-                    return True, f"Connected. {model_count} models available: {model_list}"
+                    return (
+                        True,
+                        f"Connected. {model_count} models available: {model_list}",
+                    )
                 else:
                     return True, "Connected successfully (no models listed)"
             elif response.status_code == 401:
@@ -129,7 +135,9 @@ async def _test_ollama_connection(base_url: str) -> Tuple[bool, str]:
         return False, f"Connection error: {str(e)[:100]}"
 
 
-async def _test_openai_compatible_connection(base_url: str, api_key: Optional[str] = None) -> Tuple[bool, str]:
+async def _test_openai_compatible_connection(
+    base_url: str, api_key: Optional[str] = None
+) -> Tuple[bool, str]:
     """Test OpenAI-compatible server connectivity."""
     try:
         headers = {}
@@ -150,7 +158,10 @@ async def _test_openai_compatible_connection(base_url: str, api_key: Optional[st
                     model_list = ", ".join(model_names)
                     if model_count > 3:
                         model_list += f" (+{model_count - 3} more)"
-                    return True, f"Connected. {model_count} models available: {model_list}"
+                    return (
+                        True,
+                        f"Connected. {model_count} models available: {model_list}",
+                    )
                 else:
                     return True, "Connected successfully (no models listed)"
             elif response.status_code == 401:
@@ -166,6 +177,7 @@ async def _test_openai_compatible_connection(base_url: str, api_key: Optional[st
         return False, "Connection timed out. Check if server is accessible."
     except Exception as e:
         return False, f"Connection error: {str(e)[:100]}"
+
 
 # Default voices for TTS testing per provider
 # ElevenLabs and Mistral excluded: voices looked up dynamically via available_voices
@@ -267,7 +279,7 @@ async def test_individual_model(model) -> Tuple[bool, str]:
 
     try:
         manager = ModelManager()
-        esp_model = await manager.get_model(model.id)
+        esp_model: Any = await manager.get_model(model.id)
 
         if esp_model is None:
             return False, "Could not create model instance"
@@ -309,12 +321,17 @@ async def test_individual_model(model) -> Tuple[bool, str]:
 
         elif model.type == "speech_to_text":
             audio_file = _get_test_audio()
-            result = await esp_model.atranscribe(
-                audio_file=audio_file, language="en"
+            result = await esp_model.atranscribe(audio_file=audio_file, language="en")
+            text = (
+                str(result.text).strip()
+                if hasattr(result, "text")
+                else str(result).strip()
             )
-            text = str(result.text).strip() if hasattr(result, "text") else str(result).strip()
             if not text:
-                return True, "Connection successful (test clip produced no transcription)"
+                return (
+                    True,
+                    "Connection successful (test clip produced no transcription)",
+                )
             return True, f"Transcription: {text[:100]}"
 
         else:

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useId } from 'react'
+import { memo, useCallback, useState, useRef, useEffect, useId } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -19,8 +19,8 @@ import {
 } from '@/lib/types/api'
 import { ModelSelector } from './ModelSelector'
 import { ContextIndicator } from '@/components/common/ContextIndicator'
-import { SessionManager } from '@/components/source/SessionManager'
-import { MessageActions } from '@/components/source/MessageActions'
+import { SessionManager } from './SessionManager'
+import { MessageActions } from './MessageActions'
 import { convertReferencesToCompactMarkdown, createCompactReferenceLinkComponent } from '@/lib/utils/source-references'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { toast } from 'sonner'
@@ -37,12 +37,10 @@ interface NotebookContextStats {
 interface ChatPanelProps {
   messages: SourceChatMessage[]
   isStreaming: boolean
-  // Partial content of the AI response currently being generated (SSE token deltas)
-  streamingContent?: string
-  // Stop in-flight streaming response (cancel client + server generation)
-  onStop?: () => void
   contextIndicators: SourceChatContextIndicator | null
   onSendMessage: (message: string, modelOverride?: string) => void
+  /** Stop the in-flight answer; cancels generation server-side. */
+  onStop?: () => void
   modelOverride?: string
   onModelChange?: (model?: string) => void
   // Session management props
@@ -65,10 +63,9 @@ interface ChatPanelProps {
 export function ChatPanel({
   messages,
   isStreaming,
-  streamingContent,
-  onStop,
   contextIndicators,
   onSendMessage,
+  onStop,
   modelOverride,
   onModelChange,
   sessions = [],
@@ -84,14 +81,15 @@ export function ChatPanel({
   notebookId
 }: ChatPanelProps) {
   const { t } = useTranslation()
-  const chatInputId = useId()
-  const [input, setInput] = useState('')
   const [sessionManagerOpen, setSessionManagerOpen] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { openModal } = useModalManager()
 
-  const handleReferenceClick = (type: string, id: string) => {
+  // Stable reference-click handler so memoized messages don't re-render on
+  // composer keystrokes (which no longer re-render this component at all, since
+  // the input state lives in the ChatComposer child).
+  const handleReferenceClick = useCallback((type: string, id: string) => {
     const modalType = type === 'source_insight' ? 'insight' : type as 'source' | 'note' | 'insight'
 
     try {
@@ -102,57 +100,33 @@ export function ChatPanel({
     } catch {
       toast.error(t('common.noResults'))
     }
-  }
+  }, [openModal, t])
 
-  // Auto-scroll to bottom: smooth on new messages, instant during streaming
-  // (per-token smooth scroll causes jank and prevents users from staying
-  // scrolled up to read earlier content).
-  const lastMessageCountRef = useRef(messages.length)
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    const messageAdded = messages.length !== lastMessageCountRef.current
-    lastMessageCountRef.current = messages.length
-    messagesEndRef.current?.scrollIntoView({
-      behavior: messageAdded ? 'smooth' : 'auto',
-    })
-  }, [messages, streamingContent])
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
 
-  const handleSend = () => {
-    if (input.trim() && !isStreaming) {
-      onSendMessage(input.trim(), modelOverride)
-      setInput('')
-    }
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Detect platform for correct modifier key
-    const isMac = typeof navigator !== 'undefined' && navigator.userAgent.toUpperCase().indexOf('MAC') >= 0
-    const isModifierPressed = isMac ? e.metaKey : e.ctrlKey
-
-    if (e.key === 'Enter' && isModifierPressed) {
-      e.preventDefault()
-      handleSend()
-    }
-  }
-
-  // Detect platform for placeholder text
-  const isMac = typeof navigator !== 'undefined' && navigator.userAgent.toUpperCase().indexOf('MAC') >= 0
-  const keyHint = isMac ? '⌘+Enter' : 'Ctrl+Enter'
+  // While the model is still prefilling there is no answer bubble to show yet;
+  // once the first token lands the bubble itself is the progress indicator.
+  const awaitingFirstToken =
+    isStreaming && messages[messages.length - 1]?.type !== 'ai'
 
   return (
     <>
     <Card className="flex flex-col h-full flex-1 overflow-hidden">
       <CardHeader className="pb-3 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Bot className="h-5 w-5" />
-            {title || (contextType === 'source' ? t('chat.chatWith').replace('{name}', t('navigation.sources')) : t('chat.chatWith').replace('{name}', t('common.notebook')))}
+          <CardTitle className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.13em] text-muted-foreground">
+            <span aria-hidden className="h-3.5 w-[3px] rounded-full bg-teal" />
+            {title || (contextType === 'source' ? t('chat.chatWith', { name: t('navigation.sources') }) : t('chat.chatWith', { name: t('common.notebook') }))}
           </CardTitle>
           {onSelectSession && onCreateSession && onDeleteSession && (
             <Dialog open={sessionManagerOpen} onOpenChange={setSessionManagerOpen}>
               <Button
                 variant="ghost"
                 size="sm"
-                className="gap-2"
+                className="gap-2 text-muted-foreground"
                 onClick={() => setSessionManagerOpen(true)}
                 disabled={loadingSessions}
               >
@@ -185,75 +159,29 @@ export function ChatPanel({
               <div className="text-center text-muted-foreground py-8">
                 <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p className="text-sm">
-                  {t('chat.startConversation').replace('{type}', contextType === 'source' ? t('navigation.sources') : t('common.notebook'))}
+                  {t('chat.startConversation', { type: contextType === 'source' ? t('navigation.sources') : t('common.notebook') })}
                 </p>
                 <p className="text-xs mt-2">{t('chat.askQuestions')}</p>
               </div>
             ) : (
               messages.map((message) => (
-                <div
+                <ChatMessage
                   key={message.id}
-                  className={`flex gap-3 ${
-                    message.type === 'human' ? 'justify-end' : 'justify-start'
-                  }`}
-                >
-                  {message.type === 'ai' && (
-                    <div className="flex-shrink-0">
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Bot className="h-4 w-4" />
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex flex-col gap-2 max-w-[80%]">
-                    <div
-                      className={`rounded-lg px-4 py-2 ${
-                        message.type === 'human'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                      }`}
-                    >
-                      {message.type === 'ai' ? (
-                        <AIMessageContent
-                          content={message.content}
-                          onReferenceClick={handleReferenceClick}
-                        />
-                      ) : (
-                        <p className="text-sm break-all">{message.content}</p>
-                      )}
-                    </div>
-                    {message.type === 'ai' && (
-                      <MessageActions
-                        content={message.content}
-                        notebookId={notebookId}
-                      />
-                    )}
-                  </div>
-                  {message.type === 'human' && (
-                    <div className="flex-shrink-0">
-                      <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
-                        <User className="h-4 w-4 text-primary-foreground" />
-                      </div>
-                    </div>
-                  )}
-                </div>
+                  message={message}
+                  notebookId={notebookId}
+                  onReferenceClick={handleReferenceClick}
+                />
               ))
             )}
-            {isStreaming && (
+            {awaitingFirstToken && (
               <div className="flex gap-3 justify-start">
                 <div className="flex-shrink-0">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Bot className="h-4 w-4" />
+                  <div className="h-8 w-8 rounded-full bg-teal-tint flex items-center justify-center">
+                    <Bot className="h-4 w-4 text-teal" />
                   </div>
                 </div>
-                <div className="rounded-lg px-4 py-2 bg-muted min-w-0 max-w-[85%]">
-                  {streamingContent ? (
-                    <AIMessageContent
-                      content={streamingContent}
-                      onReferenceClick={handleReferenceClick}
-                    />
-                  ) : (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  )}
+                <div className="rounded-lg px-4 py-2 bg-card border">
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 </div>
               </div>
             )}
@@ -299,63 +227,182 @@ export function ChatPanel({
         )}
 
         {/* Input Area */}
-        <div className="flex-shrink-0 p-4 space-y-3 border-t">
-          {/* Model selector */}
-          {onModelChange && (
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">{t('chat.model')}</span>
-              <ModelSelector
-                currentModel={modelOverride}
-                onModelChange={onModelChange}
-                disabled={isStreaming}
-              />
-            </div>
-          )}
-
-          <div className="flex gap-2 items-end min-w-0">
-            <Textarea
-              id={chatInputId}
-              name="chat-message"
-              autoComplete="off"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={`${t('chat.sendPlaceholder')} (${t('chat.pressToSend').replace('{key}', keyHint)})`}
-              className="flex-1 min-h-[40px] max-h-[100px] resize-none py-2 px-3 min-w-0"
-              rows={1}
-            />
-            {isStreaming && onStop ? (
-              <Button
-                onClick={onStop}
-                size="icon"
-                variant="destructive"
-                className="h-[40px] w-[40px] flex-shrink-0"
-                aria-label="Stop"
-              >
-                <Square className="h-4 w-4 fill-current" />
-              </Button>
-            ) : (
-              <Button
-                onClick={handleSend}
-                disabled={!input.trim() || isStreaming}
-                size="icon"
-                className="h-[40px] w-[40px] flex-shrink-0"
-              >
-                {isStreaming ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
-            )}
-          </div>
-        </div>
+        <ChatComposer
+          onSendMessage={onSendMessage}
+          onStop={onStop}
+          isStreaming={isStreaming}
+          modelOverride={modelOverride}
+          onModelChange={onModelChange}
+        />
       </CardContent>
     </Card>
 
     </>
   )
 }
+
+// Composer owns the input state so keystrokes (including IME composition) only
+// re-render this small component instead of the whole message history.
+interface ChatComposerProps {
+  onSendMessage: (message: string, modelOverride?: string) => void
+  /** Renders the Stop control while streaming. */
+  onStop?: () => void
+  isStreaming: boolean
+  modelOverride?: string
+  onModelChange?: (model?: string) => void
+}
+
+function ChatComposer({
+  onSendMessage,
+  onStop,
+  isStreaming,
+  modelOverride,
+  onModelChange
+}: ChatComposerProps) {
+  const { t } = useTranslation()
+  const chatInputId = useId()
+  const [input, setInput] = useState('')
+
+  const handleSend = () => {
+    if (input.trim() && !isStreaming) {
+      onSendMessage(input.trim(), modelOverride)
+      setInput('')
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Detect platform for correct modifier key
+    const isMac = typeof navigator !== 'undefined' && navigator.userAgent.toUpperCase().indexOf('MAC') >= 0
+    const isModifierPressed = isMac ? e.metaKey : e.ctrlKey
+
+    if (e.key === 'Enter' && isModifierPressed) {
+      e.preventDefault()
+      handleSend()
+    }
+  }
+
+  // Detect platform for placeholder text
+  const isMac = typeof navigator !== 'undefined' && navigator.userAgent.toUpperCase().indexOf('MAC') >= 0
+  const keyHint = isMac ? '⌘+Enter' : 'Ctrl+Enter'
+
+  return (
+    <div className="flex-shrink-0 p-4 space-y-3 border-t">
+      {/* Model selector */}
+      {onModelChange && (
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">{t('chat.model')}</span>
+          <ModelSelector
+            currentModel={modelOverride}
+            onModelChange={onModelChange}
+            disabled={isStreaming}
+          />
+        </div>
+      )}
+
+      <div className="flex gap-2 items-end min-w-0">
+        <Textarea
+          id={chatInputId}
+          name="chat-message"
+          autoComplete="off"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={`${t('chat.sendPlaceholder')} (${t('chat.pressToSend', { key: keyHint })})`}
+          // Left enabled while streaming so the next question can be typed
+          // ahead; `handleSend` holds the send until the turn finishes.
+          className="flex-1 min-h-[40px] max-h-[100px] resize-none py-2 px-3 min-w-0"
+          rows={1}
+        />
+        {isStreaming && onStop ? (
+          <Button
+            onClick={onStop}
+            size="icon"
+            variant="outline"
+            className="h-[40px] w-[40px] flex-shrink-0"
+            aria-label={t('chat.stop')}
+            title={t('chat.stop')}
+          >
+            <Square className="h-4 w-4 fill-current" />
+          </Button>
+        ) : (
+          <Button
+            onClick={handleSend}
+            disabled={!input.trim() || isStreaming}
+            size="icon"
+            className="h-[40px] w-[40px] flex-shrink-0"
+          >
+            {isStreaming ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+          </Button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Single chat message row. Memoized so historical messages don't re-render when
+// unrelated state (e.g. the composer input) changes.
+interface ChatMessageProps {
+  message: SourceChatMessage
+  notebookId?: string
+  onReferenceClick: (type: string, id: string) => void
+}
+
+const ChatMessage = memo(function ChatMessage({
+  message,
+  notebookId,
+  onReferenceClick
+}: ChatMessageProps) {
+  return (
+    <div
+      className={`flex gap-3 ${
+        message.type === 'human' ? 'justify-end' : 'justify-start'
+      }`}
+    >
+      {message.type === 'ai' && (
+        <div className="flex-shrink-0">
+          <div className="h-8 w-8 rounded-full bg-teal-tint flex items-center justify-center">
+            <Bot className="h-4 w-4 text-teal" />
+          </div>
+        </div>
+      )}
+      <div className="flex flex-col gap-2 max-w-[80%]">
+        <div
+          className={`rounded-lg px-4 py-2 border ${
+            message.type === 'human'
+              ? 'bg-muted'
+              : 'bg-card'
+          }`}
+        >
+          {message.type === 'ai' ? (
+            <AIMessageContent
+              content={message.content}
+              onReferenceClick={onReferenceClick}
+            />
+          ) : (
+            <p className="text-sm break-all">{message.content}</p>
+          )}
+        </div>
+        {message.type === 'ai' && (
+          <MessageActions
+            content={message.content}
+            notebookId={notebookId}
+          />
+        )}
+      </div>
+      {message.type === 'human' && (
+        <div className="flex-shrink-0">
+          <div className="h-8 w-8 rounded-full bg-muted border flex items-center justify-center">
+            <User className="h-4 w-4 text-muted-foreground" />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+})
 
 // Helper component to render AI messages with clickable references
 function AIMessageContent({
@@ -373,36 +420,34 @@ function AIMessageContent({
   const LinkComponent = createCompactReferenceLinkComponent(onReferenceClick)
 
   return (
-    <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none break-words prose-headings:font-semibold prose-a:text-blue-600 prose-a:break-all prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-p:mb-4 prose-p:leading-7 prose-li:mb-2">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex]}
-        components={{
-          a: LinkComponent,
-          p: ({ children }) => <p className="mb-4">{children}</p>,
-          h1: ({ children }) => <h1 className="mb-4 mt-6">{children}</h1>,
-          h2: ({ children }) => <h2 className="mb-3 mt-5">{children}</h2>,
-          h3: ({ children }) => <h3 className="mb-3 mt-4">{children}</h3>,
-          h4: ({ children }) => <h4 className="mb-2 mt-4">{children}</h4>,
-          h5: ({ children }) => <h5 className="mb-2 mt-3">{children}</h5>,
-          h6: ({ children }) => <h6 className="mb-2 mt-3">{children}</h6>,
-          li: ({ children }) => <li className="mb-1">{children}</li>,
-          ul: ({ children }) => <ul className="mb-4 space-y-1">{children}</ul>,
-          ol: ({ children }) => <ol className="mb-4 space-y-1">{children}</ol>,
-          table: ({ children }) => (
-            <div className="my-4 overflow-x-auto">
-              <table className="min-w-full border-collapse border border-border">{children}</table>
-            </div>
-          ),
-          thead: ({ children }) => <thead className="bg-muted">{children}</thead>,
-          tbody: ({ children }) => <tbody>{children}</tbody>,
-          tr: ({ children }) => <tr className="border-b border-border">{children}</tr>,
-          th: ({ children }) => <th className="border border-border px-3 py-2 text-left font-semibold">{children}</th>,
-          td: ({ children }) => <td className="border border-border px-3 py-2">{children}</td>,
-        }}
-      >
-        {markdownWithCompactRefs}
-      </ReactMarkdown>
-    </div>
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm, remarkMath]}
+      rehypePlugins={[rehypeKatex]}
+      components={{
+        a: LinkComponent,
+        p: ({ children }) => <p className="mb-4">{children}</p>,
+        h1: ({ children }) => <h1 className="mb-4 mt-6">{children}</h1>,
+        h2: ({ children }) => <h2 className="mb-3 mt-5">{children}</h2>,
+        h3: ({ children }) => <h3 className="mb-3 mt-4">{children}</h3>,
+        h4: ({ children }) => <h4 className="mb-2 mt-4">{children}</h4>,
+        h5: ({ children }) => <h5 className="mb-2 mt-3">{children}</h5>,
+        h6: ({ children }) => <h6 className="mb-2 mt-3">{children}</h6>,
+        li: ({ children }) => <li className="mb-1">{children}</li>,
+        ul: ({ children }) => <ul className="mb-4 space-y-1">{children}</ul>,
+        ol: ({ children }) => <ol className="mb-4 space-y-1">{children}</ol>,
+        table: ({ children }) => (
+          <div className="my-4 overflow-x-auto">
+            <table className="min-w-full border-collapse border border-border">{children}</table>
+          </div>
+        ),
+        thead: ({ children }) => <thead className="bg-muted">{children}</thead>,
+        tbody: ({ children }) => <tbody>{children}</tbody>,
+        tr: ({ children }) => <tr className="border-b border-border">{children}</tr>,
+        th: ({ children }) => <th className="border border-border px-3 py-2 text-left font-semibold">{children}</th>,
+        td: ({ children }) => <td className="border border-border px-3 py-2">{children}</td>,
+      }}
+    >
+      {markdownWithCompactRefs}
+    </ReactMarkdown>
   )
 }

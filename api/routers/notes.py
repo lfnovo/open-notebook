@@ -57,7 +57,7 @@ async def create_note(note_data: NoteCreate):
 
             prompt = "Based on the Note below, please provide a Title for this content, with max 15 words"
             result = await prompt_graph.ainvoke(
-                {  # type: ignore[arg-type]
+                {  # type: ignore[arg-type,call-overload]
                     "input_text": note_data.content,
                     "prompt": prompt,
                 }

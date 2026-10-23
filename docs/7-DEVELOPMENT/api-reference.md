@@ -112,13 +112,53 @@ Password configured via `OPEN_NOTEBOOK_PASSWORD` environment variable.
 - JWT tokens
 - API keys
 
+<<<<<<< Updated upstream
 See [Security Configuration](../5-CONFIGURATION/security.md) for production setup.
+=======
+| Area | Paths |
+|---|---|
+| Notebooks | `/api/notebooks`, `/api/notebooks/{id}/sources/{source_id}` (link/unlink), `/api/recently-viewed` |
+| Sources | `/api/sources` (multipart create with optional file upload), `/api/sources/json`, `/api/sources/{id}/status`, `/api/sources/{id}/retry`, `/api/sources/{id}/insights`, `/api/sources/{id}/download` |
+| Notes, insights | `/api/notes`, `/api/insights/{id}`, `/api/insights/{id}/save-as-note` |
+| Chat | `/api/chat/sessions`, `/api/chat/execute`, `/api/chat/execute/stream` (SSE), `/api/chat/context`; source chat under `/api/sources/{id}/chat/sessions` (messages stream as SSE) |
+| Search and Ask | `/api/search`, `/api/search/ask` (streaming), `/api/search/ask/simple` |
+| Transformations | `/api/transformations`, `/api/transformations/execute`, `/api/transformations/default-prompt` |
+| Models and providers | `/api/models`, `/api/models/defaults`, `/api/models/sync`, `/api/models/auto-assign`, `/api/providers` |
+| Credentials | `/api/credentials`, `/api/credentials/{id}/test`, `/api/credentials/{id}/discover`, `/api/credentials/{id}/register-models`, `/api/credentials/migrate-*` |
+| Podcasts | `/api/podcasts/generate`, `/api/podcasts/episodes`, `/api/episode-profiles`, `/api/speaker-profiles` |
+| Background jobs | `/api/commands/jobs`, `/api/commands/jobs/{job_id}` |
+| Embeddings | `/api/embed`, `/api/embeddings/rebuild` |
+| Settings and config | `/api/settings`, `/api/config`, `/api/capabilities`, `/api/languages`, `/api/auth/status` |
+>>>>>>> Stashed changes
 
 ---
 
 ## Common Patterns
 
+<<<<<<< Updated upstream
 ### Pagination
+=======
+- Creating a source with `async_processing=true` (the UI does this) saves it, submits a `process_source` job and returns at once; poll `GET /api/sources/{id}/status` until it is `completed` or `failed`. Without it (the default), the request waits until processing finishes.
+- `POST /api/podcasts/generate` returns a job id; poll `GET /api/podcasts/jobs/{job_id}` or list `GET /api/podcasts/episodes`.
+- Any job: `GET /api/commands/jobs/{job_id}`.
+
+If the worker isn't running, jobs stay queued.
+
+## Streaming
+
+`POST /api/search/ask`, `POST /api/chat/execute/stream` and `POST /api/sources/{id}/chat/sessions/{session_id}/messages` return Server-Sent Events (`text/event-stream`). Each event is a `data: {json}` line with a `type` field; `: ping` comment frames keep proxies from cutting an idle connection during prefill.
+
+Chat streams emit `user_message`, then `token` (one model delta each, the only event the UI needs to render progressively), optionally `context_indicators` (source chat), then `complete` with the cleaned final text — already persisted to the session — or `error` with a user-facing message. The buffered `/api/chat/execute` remains for API consumers.
+
+```bash
+curl -N http://localhost:5055/api/chat/execute/stream \
+  -H "Authorization: Bearer $OPEN_...WORD" \
+  -H "Content-Type: application/json" \
+  -d '{"session_id": "chat_session:...", "message": "Summarise the notebook", "context": {}}'
+```
+
+For Ask, the types are `strategy`, `answer`, `final_answer`, `complete` and `error`.
+>>>>>>> Stashed changes
 
 ```bash
 # List sources with limit/offset

@@ -30,6 +30,9 @@ class EpisodeProfilesService:
                 outline_model=profile_data["outline_model"],
                 transcript_provider=profile_data["transcript_provider"],
                 transcript_model=profile_data["transcript_model"],
+                outline_llm=profile_data.get("outline_llm"),
+                transcript_llm=profile_data.get("transcript_llm"),
+                language=profile_data.get("language"),
                 default_briefing=profile_data["default_briefing"],
                 num_segments=profile_data["num_segments"],
             )
@@ -53,6 +56,9 @@ class EpisodeProfilesService:
             outline_model=profile_data["outline_model"],
             transcript_provider=profile_data["transcript_provider"],
             transcript_model=profile_data["transcript_model"],
+            outline_llm=profile_data.get("outline_llm"),
+            transcript_llm=profile_data.get("transcript_llm"),
+            language=profile_data.get("language"),
             default_briefing=profile_data["default_briefing"],
             num_segments=profile_data["num_segments"],
         )
@@ -96,6 +102,9 @@ class EpisodeProfilesService:
             outline_model=profile_data["outline_model"],
             transcript_provider=profile_data["transcript_provider"],
             transcript_model=profile_data["transcript_model"],
+            outline_llm=profile_data.get("outline_llm"),
+            transcript_llm=profile_data.get("transcript_llm"),
+            language=profile_data.get("language"),
             default_briefing=profile_data["default_briefing"],
             num_segments=profile_data["num_segments"],
         )

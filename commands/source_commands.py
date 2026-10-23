@@ -54,7 +54,10 @@ class SourceProcessingOutput(CommandOutput):
         "wait_strategy": "exponential_jitter",
         "wait_min": 1,
         "wait_max": 120,  # Allow queue to drain
-        "stop_on": [ValueError, ConfigurationError],  # Don't retry validation/config errors
+        "stop_on": [
+            ValueError,
+            ConfigurationError,
+        ],  # Don't retry validation/config errors
         "retry_log_level": "debug",  # Avoid log noise during transaction conflicts
     },
 )
@@ -103,7 +106,7 @@ async def process_source_command(
 
         # Execute source_graph with all notebooks
         result = await source_graph.ainvoke(
-            {  # type: ignore[arg-type]
+            {  # type: ignore[arg-type,call-overload]
                 "content_state": input_data.content_state,
                 "notebook_ids": input_data.notebook_ids,  # Use notebook_ids (plural) as expected by SourceState
                 "apply_transformations": transformations,
@@ -126,9 +129,7 @@ async def process_source_command(
         logger.info(
             f"Successfully processed source: {processed_source.id} in {processing_time:.2f}s"
         )
-        logger.info(
-            f"Created {insights_created} insights, embedding {embed_status}"
-        )
+        logger.info(f"Created {insights_created} insights, embedding {embed_status}")
 
         return SourceProcessingOutput(
             success=True,
@@ -149,9 +150,7 @@ async def process_source_command(
         raise
     except Exception as e:
         # Transient failure - will be retried (surreal-commands logs final failure)
-        logger.debug(
-            f"Transient error processing source {input_data.source_id}: {e}"
-        )
+        logger.debug(f"Transient error processing source {input_data.source_id}: {e}")
         raise
 
 
@@ -185,7 +184,10 @@ class RunTransformationOutput(CommandOutput):
         "wait_strategy": "exponential_jitter",
         "wait_min": 1,
         "wait_max": 60,
-        "stop_on": [ValueError, ConfigurationError],  # Don't retry validation/config errors
+        "stop_on": [
+            ValueError,
+            ConfigurationError,
+        ],  # Don't retry validation/config errors
         "retry_log_level": "debug",
     },
 )
@@ -230,7 +232,7 @@ async def run_transformation_command(
 
         # Run transformation graph (includes LLM call + insight creation)
         await transform_graph.ainvoke(
-            input=dict(source=source, transformation=transformation)
+            input=dict(source=source, transformation=transformation)  # type: ignore[call-overload]
         )
 
         processing_time = time.time() - start_time

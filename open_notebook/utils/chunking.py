@@ -18,7 +18,7 @@ import os
 import re
 from enum import Enum
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 from langchain_text_splitters import (
     HTMLHeaderTextSplitter,
@@ -446,6 +446,7 @@ def chunk_text(
     logger.debug(f"Chunking text with content type: {content_type.value}")
 
     # Select appropriate splitter
+    splitter: Any
     if content_type == ContentType.HTML:
         splitter = _get_html_splitter()
         # HTML splitter returns Document objects

@@ -1,4 +1,5 @@
 import apiClient from './client'
+import { getAuthToken } from '@/lib/auth-token'
 import {
   NotebookChatSession,
   NotebookChatSessionWithMessages,
@@ -59,58 +60,33 @@ export const chatApi = {
     return response.data
   },
 
-  // Messaging with SSE token streaming (uses relative URL for Docker compatibility)
-  sendMessageStream: async (
+  /**
+   * Streaming variant of `sendMessage`.
+   *
+   * Uses the dedicated route handler (not the rewrite proxy, which gzips the
+   * response to completion) and returns the raw SSE body for the caller to
+   * parse. `signal` cancels the request, which stops server-side generation.
+   */
+  sendMessageStream: (
     data: SendNotebookChatMessageRequest,
     signal?: AbortSignal
   ) => {
-    // Get auth token using the same logic as apiClient interceptor
-    let token = null
-    if (typeof window !== 'undefined') {
-      const authStorage = localStorage.getItem('auth-storage')
-      if (authStorage) {
-        try {
-          const { state } = JSON.parse(authStorage)
-          if (state?.token) {
-            token = state.token
-          }
-        } catch (error) {
-          console.error('Error parsing auth storage:', error)
-        }
-      }
-    }
+    const token = getAuthToken()
 
-    // Relative URL handled by the dedicated SSE route handler
-    // (app/api/chat/execute/stream/route.ts), which proxies to the backend
-    // without the rewrites() gzip buffering that breaks streaming.
-    const url = '/api/chat/execute/stream'
-
-    const response = await fetch(url, {
+    return fetch('/api/chat/execute/stream', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
+        ...(token && { 'Authorization': `Bearer ${token}` })
       },
       body: JSON.stringify(data),
-      signal,
-    })
-
-    if (!response.ok) {
-      let errorMessage = `HTTP error! status: ${response.status}`
-      try {
-        const errorData = await response.json()
-        errorMessage = errorData.detail || errorData.message || errorMessage
-      } catch {
-        errorMessage = response.statusText || errorMessage
+      signal
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
-      throw new Error(errorMessage)
-    }
-
-    if (!response.body) {
-      throw new Error('No response body received')
-    }
-
-    return response.body
+      return response.body
+    })
   },
 
   buildContext: async (data: BuildContextRequest) => {

@@ -31,7 +31,9 @@ async def run_transformation(state: dict, config: RunnableConfig) -> dict:
         if not content:
             content = source.full_text
         transformation_template_text = transformation.prompt
-        default_prompts: DefaultPrompts = DefaultPrompts(transformation_instructions=None)
+        default_prompts: DefaultPrompts = DefaultPrompts(
+            transformation_instructions=None
+        )
         if default_prompts.transformation_instructions:
             transformation_template_text = f"{default_prompts.transformation_instructions}\n\n{transformation_template_text}"
 
@@ -41,7 +43,10 @@ async def run_transformation(state: dict, config: RunnableConfig) -> dict:
             data=state
         )
         content_str = str(content) if content else ""
-        payload = [SystemMessage(content=system_prompt), HumanMessage(content=content_str)]
+        payload = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=content_str),
+        ]
         chain = await provision_langchain_model(
             str(payload),
             config.get("configurable", {}).get("model_id"),

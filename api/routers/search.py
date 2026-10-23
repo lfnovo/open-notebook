@@ -66,7 +66,7 @@ async def stream_ask_response(
         final_answer = None
 
         async for chunk in ask_graph.astream(
-            input=dict(question=question),  # type: ignore[arg-type]
+            input=dict(question=question),  # type: ignore[arg-type,call-overload]
             config=dict(
                 configurable=dict(
                     strategy_model=strategy_model.id,
@@ -197,7 +197,7 @@ async def ask_knowledge_base_simple(ask_request: AskRequest):
         # Run the ask graph and get final result
         final_answer = None
         async for chunk in ask_graph.astream(
-            input=dict(question=ask_request.question),  # type: ignore[arg-type]
+            input=dict(question=ask_request.question),  # type: ignore[arg-type,call-overload]
             config=dict(
                 configurable=dict(
                     strategy_model=strategy_model.id,

@@ -42,6 +42,8 @@ export function useSourceChat(sourceId: string) {
     if (currentSession?.messages) {
       setMessages(currentSession.messages)
     }
+    // Also clears the badge when the session goes away (deleted / switched).
+    setContextIndicators(currentSession?.context_indicators ?? null)
   }, [currentSession])
 
   // Auto-select most recent session when sessions are loaded
@@ -131,11 +133,37 @@ export function useSourceChat(sourceId: string) {
     setMessages(prev => [...prev, userMessage])
     setIsStreaming(true)
 
+    // A new turn cancels any previous one still in flight.
+    abortControllerRef.current?.abort()
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
+    const aiId = `ai-${Date.now()}`
+    let answer = ''
+    let aiStarted = false
+
+    const renderAnswer = (content: string) => {
+      answer = content
+      if (!aiStarted) {
+        aiStarted = true
+        setMessages(prev => [...prev, {
+          id: aiId,
+          type: 'ai',
+          content,
+          timestamp: new Date().toISOString()
+        }])
+        return
+      }
+      setMessages(prev => prev.map(msg => msg.id === aiId ? { ...msg, content } : msg))
+    }
+
+    let aborted = false
+
     try {
       const response = await sourceChatApi.sendMessage(sourceId, sessionId, {
         message,
         model_override: modelOverride
-      })
+      }, controller.signal)
 
       if (!response) {
         throw new Error('No response body')
@@ -143,38 +171,32 @@ export function useSourceChat(sourceId: string) {
 
       const reader = response.getReader()
       const decoder = new TextDecoder()
-      let aiMessage: SourceChatMessage | null = null
+      let buffer = ''
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
 
-        const text = decoder.decode(value)
-        const lines = text.split('\n')
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+
+        // Keep the last incomplete line in buffer
+        buffer = lines.pop() || ''
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             try {
-              const data = JSON.parse(line.slice(6))
-              
-              if (data.type === 'ai_message') {
-                // Create AI message on first content chunk to avoid empty bubble
-                if (!aiMessage) {
-                  aiMessage = {
-                    id: `ai-${Date.now()}`,
-                    type: 'ai',
-                    content: data.content || '',
-                    timestamp: new Date().toISOString()
-                  }
-                  setMessages(prev => [...prev, aiMessage!])
-                } else {
-                  aiMessage.content += data.content || ''
-                  setMessages(prev =>
-                    prev.map(msg => msg.id === aiMessage!.id
-                      ? { ...msg, content: aiMessage!.content }
-                      : msg
-                    )
-                  )
+              const jsonStr = line.slice(6).trim()
+              if (!jsonStr) continue
+
+              const data = JSON.parse(jsonStr)
+
+              if (data.type === 'token') {
+                renderAnswer(answer + (data.content || ''))
+              } else if (data.type === 'complete') {
+                // Cleaned final text (thinking stripped); already persisted.
+                if (data.content !== undefined) {
+                  renderAnswer(data.content)
                 }
               } else if (data.type === 'context_indicators') {
                 setContextIndicators(data.data)
@@ -192,17 +214,37 @@ export function useSourceChat(sourceId: string) {
         }
       }
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { detail?: string } }, message?: string };
-      console.error('Error sending message:', error)
-      toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToSendMessage'))
-      // Remove optimistic messages on error
-      setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
+      const error = err as { name?: string, response?: { data?: { detail?: string } }, message?: string };
+      aborted = error.name === 'AbortError'
+
+      if (!aborted) {
+        console.error('Error sending message:', error)
+        toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToSendMessage'))
+        // Remove optimistic messages on error
+        setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
+      }
     } finally {
       setIsStreaming(false)
-      // Refetch session to get persisted messages
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null
+      }
+      // Refetch session to get persisted messages (a stopped turn keeps its
+      // partial answer, so this is what makes Stop non-destructive). Give the
+      // server a beat to checkpoint it — an immediate refetch can beat the
+      // cancellation handler and drop the partial from the view.
+      if (aborted) {
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
       refetchCurrentSession()
     }
   }, [sourceId, currentSessionId, refetchCurrentSession, queryClient, t])
+
+  // Abort an in-flight stream when the component unmounts
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort()
+    }
+  }, [])
 
   // Cancel streaming
   const cancelStreaming = useCallback(() => {

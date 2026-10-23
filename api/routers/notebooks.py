@@ -331,7 +331,9 @@ async def delete_notebook(
     try:
         notebook = await Notebook.get(notebook_id)
 
-        result = await notebook.delete(delete_exclusive_sources=delete_exclusive_sources)
+        result = await notebook.delete(
+            delete_exclusive_sources=delete_exclusive_sources
+        )
 
         return NotebookDeleteResponse(
             message="Notebook deleted successfully",

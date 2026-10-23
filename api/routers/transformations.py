@@ -94,7 +94,7 @@ async def execute_transformation(execute_request: TransformationExecuteRequest):
 
         # Execute the transformation
         result = await transformation_graph.ainvoke(
-            dict(  # type: ignore[arg-type]
+            dict(  # type: ignore[arg-type,call-overload]
                 input_text=execute_request.input_text,
                 transformation=transformation,
             ),

@@ -54,7 +54,8 @@ async def db_connection():
         }
     )
     await db.use(
-        os.environ.get("SURREAL_NAMESPACE"), os.environ.get("SURREAL_DATABASE")
+        os.environ.get("SURREAL_NAMESPACE") or "",
+        os.environ.get("SURREAL_DATABASE") or "",
     )
     try:
         yield db

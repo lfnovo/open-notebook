@@ -147,9 +147,7 @@ class SpeakerProfile(ObjectModel):
     tts_model: Optional[str] = Field(None, description="[Legacy] TTS model name")
 
     # New field: Model registry reference
-    voice_model: Optional[str] = Field(
-        None, description="Model record ID for TTS"
-    )
+    voice_model: Optional[str] = Field(None, description="Model record ID for TTS")
 
     speakers: List[Dict[str, Any]] = Field(
         ..., description="Array of speaker configurations"

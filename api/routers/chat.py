@@ -1,21 +1,52 @@
 import asyncio
-import json
 import traceback
 from typing import Any, AsyncGenerator, Dict, List, Optional
+from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from open_notebook.database.repository import ensure_record_id, repo_query
-from open_notebook.domain.notebook import ChatSession, Note, Notebook, Source
-from open_notebook.exceptions import (
-    NotFoundError,
+from api.routers._chat_shared import (
+    ChatMessage,
+    SuccessResponse,
+    extract_chat_messages,
+    get_session_or_404,
 )
+from api.routers._sse import (
+    EMPTY_REPLY_MESSAGE,
+    MAX_STREAM_SECONDS,
+    StreamOutcome,
+    finalize_stream,
+    format_error_event,
+    run_generation,
+    sse,
+    stream_events,
+    stream_headers,
+)
+from open_notebook.ai.provision import provision_langchain_model
+from open_notebook.database.repository import ensure_record_id, repo_query
+from open_notebook.domain.notebook import ChatSession, Notebook
+from open_notebook.exceptions import (
+    IncompleteGenerationError,
+    NotFoundError,
+    OpenNotebookError,
+)
+from open_notebook.graphs.chat import NODE_NAME as CHAT_NODE
+from open_notebook.graphs.chat import build_chat_payload
 from open_notebook.graphs.chat import graph as chat_graph
-from open_notebook.utils.graph_utils import get_session_message_count
+from open_notebook.utils import clean_thinking_content, token_count
+from open_notebook.utils.context_builder import ContextConfig, build_notebook_context
+from open_notebook.utils.graph_utils import (
+    discard_message,
+    get_session_message_count,
+    invoke_chat_turn,
+    persist_pending_human_turn,
+    persist_state,
+)
 
 router = APIRouter()
 
@@ -34,13 +65,6 @@ class UpdateSessionRequest(BaseModel):
     model_override: Optional[str] = Field(
         None, description="Model override for this session"
     )
-
-
-class ChatMessage(BaseModel):
-    id: str = Field(..., description="Message ID")
-    type: str = Field(..., description="Message type (human|ai)")
-    content: str = Field(..., description="Message content")
-    timestamp: Optional[str] = Field(None, description="Message timestamp")
 
 
 class ChatSessionResponse(BaseModel):
@@ -90,11 +114,6 @@ class BuildContextResponse(BaseModel):
     char_count: int = Field(..., description="Character count")
 
 
-class SuccessResponse(BaseModel):
-    success: bool = Field(True, description="Operation success status")
-    message: str = Field(..., description="Success message")
-
-
 @router.get("/chat/sessions", response_model=List[ChatSessionResponse])
 async def get_sessions(notebook_id: str = Query(..., description="Notebook ID")):
     """Get all chat sessions for a notebook."""
@@ -129,6 +148,10 @@ async def get_sessions(notebook_id: str = Query(..., description="Notebook ID"))
         return results
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Notebook not found")
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching chat sessions: {str(e)}")
         raise HTTPException(
@@ -167,6 +190,10 @@ async def create_session(request: CreateSessionRequest):
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Notebook not found")
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error creating chat session: {str(e)}")
         raise HTTPException(
@@ -180,16 +207,8 @@ async def create_session(request: CreateSessionRequest):
 async def get_session(session_id: str):
     """Get a specific session with its messages."""
     try:
-        # Get session
-        # Ensure session_id has proper table prefix
-        full_session_id = (
-            session_id
-            if session_id.startswith("chat_session:")
-            else f"chat_session:{session_id}"
-        )
-        session = await ChatSession.get(full_session_id)
-        if not session:
-            raise HTTPException(status_code=404, detail="Session not found")
+        # Get session (normalizes the ID and 404s if missing)
+        full_session_id, session = await get_session_or_404(session_id)
 
         # Get session state from LangGraph to retrieve messages
         # Use sync get_state() in a thread since SqliteSaver doesn't support async
@@ -201,24 +220,9 @@ async def get_session(session_id: str):
         # Extract messages from state
         messages: list[ChatMessage] = []
         if thread_state and thread_state.values and "messages" in thread_state.values:
-            for msg in thread_state.values["messages"]:
-                messages.append(
-                    ChatMessage(
-                        id=getattr(msg, "id", f"msg_{len(messages)}"),
-                        type=msg.type if hasattr(msg, "type") else "unknown",
-                        content=msg.content if hasattr(msg, "content") else str(msg),
-                        timestamp=None,  # LangChain messages don't have timestamps by default
-                    )
-                )
+            messages = extract_chat_messages(thread_state.values["messages"])
 
         # Find notebook_id (we need to query the relationship)
-        # Ensure session_id has proper table prefix
-        full_session_id = (
-            session_id
-            if session_id.startswith("chat_session:")
-            else f"chat_session:{session_id}"
-        )
-
         notebook_query = await repo_query(
             "SELECT out FROM refers_to WHERE in = $session_id",
             {"session_id": ensure_record_id(full_session_id)},
@@ -244,6 +248,10 @@ async def get_session(session_id: str):
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Session not found")
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching session: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching session: {str(e)}")
@@ -253,15 +261,8 @@ async def get_session(session_id: str):
 async def update_session(session_id: str, request: UpdateSessionRequest):
     """Update session title."""
     try:
-        # Ensure session_id has proper table prefix
-        full_session_id = (
-            session_id
-            if session_id.startswith("chat_session:")
-            else f"chat_session:{session_id}"
-        )
-        session = await ChatSession.get(full_session_id)
-        if not session:
-            raise HTTPException(status_code=404, detail="Session not found")
+        # Get session (normalizes the ID and 404s if missing)
+        full_session_id, session = await get_session_or_404(session_id)
 
         update_data = request.model_dump(exclude_unset=True)
 
@@ -274,12 +275,6 @@ async def update_session(session_id: str, request: UpdateSessionRequest):
         await session.save()
 
         # Find notebook_id
-        # Ensure session_id has proper table prefix
-        full_session_id = (
-            session_id
-            if session_id.startswith("chat_session:")
-            else f"chat_session:{session_id}"
-        )
         notebook_query = await repo_query(
             "SELECT out FROM refers_to WHERE in = $session_id",
             {"session_id": ensure_record_id(full_session_id)},
@@ -300,6 +295,10 @@ async def update_session(session_id: str, request: UpdateSessionRequest):
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Session not found")
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error updating session: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error updating session: {str(e)}")
@@ -309,21 +308,18 @@ async def update_session(session_id: str, request: UpdateSessionRequest):
 async def delete_session(session_id: str):
     """Delete a chat session."""
     try:
-        # Ensure session_id has proper table prefix
-        full_session_id = (
-            session_id
-            if session_id.startswith("chat_session:")
-            else f"chat_session:{session_id}"
-        )
-        session = await ChatSession.get(full_session_id)
-        if not session:
-            raise HTTPException(status_code=404, detail="Session not found")
+        # Get session (normalizes the ID and 404s if missing)
+        _full_session_id, session = await get_session_or_404(session_id)
 
         await session.delete()
 
         return SuccessResponse(success=True, message="Session deleted successfully")
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Session not found")
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error deleting session: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error deleting session: {str(e)}")
@@ -333,16 +329,8 @@ async def delete_session(session_id: str):
 async def execute_chat(request: ExecuteChatRequest):
     """Execute a chat request and get AI response."""
     try:
-        # Verify session exists
-        # Ensure session_id has proper table prefix
-        full_session_id = (
-            request.session_id
-            if request.session_id.startswith("chat_session:")
-            else f"chat_session:{request.session_id}"
-        )
-        session = await ChatSession.get(full_session_id)
-        if not session:
-            raise HTTPException(status_code=404, detail="Session not found")
+        # Verify session exists (normalizes the ID and 404s if missing)
+        full_session_id, session = await get_session_or_404(request.session_id)
 
         # Fetch notebook linked to this session
         notebook_query = await repo_query(
@@ -375,40 +363,42 @@ async def execute_chat(request: ExecuteChatRequest):
         state_values["model_override"] = model_override
 
         # Add user message to state
-        from langchain_core.messages import HumanMessage
-
-        user_message = HumanMessage(content=request.message)
+        # Explicit id so a failed turn can remove it from the checkpoint.
+        user_message = HumanMessage(content=request.message, id=str(uuid4()))
         state_values["messages"].append(user_message)
 
-        # Execute chat graph
-        result = chat_graph.invoke(
-            input=state_values,  # type: ignore[arg-type]
-            config=RunnableConfig(
+        # Execute chat graph in a thread so the synchronous LangGraph invoke
+        # (SqliteSaver checkpoints are sync) doesn't block the event loop and
+        # freeze the rest of the API while the LLM responds. Mirrors the
+        # get_state() calls above.
+        # invoke_chat_turn also drops the question from the checkpoint when the
+        # turn fails, so a retry doesn't add it twice.
+        result = await asyncio.to_thread(
+            invoke_chat_turn,
+            chat_graph,
+            state_values,
+            RunnableConfig(
                 configurable={
                     "thread_id": full_session_id,
                     "model_id": model_override,
                 }
             ),
+            user_message,
         )
 
         # Update session timestamp
         await session.save()
 
         # Convert messages to response format
-        messages: list[ChatMessage] = []
-        for msg in result.get("messages", []):
-            messages.append(
-                ChatMessage(
-                    id=getattr(msg, "id", f"msg_{len(messages)}"),
-                    type=msg.type if hasattr(msg, "type") else "unknown",
-                    content=msg.content if hasattr(msg, "content") else str(msg),
-                    timestamp=None,
-                )
-            )
+        messages = extract_chat_messages(result.get("messages", []))
 
         return ExecuteChatResponse(session_id=request.session_id, messages=messages)
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Session not found")
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         # Log detailed error with context for debugging
         logger.error(
@@ -420,35 +410,187 @@ async def execute_chat(request: ExecuteChatRequest):
         raise HTTPException(status_code=500, detail=f"Error executing chat: {str(e)}")
 
 
+async def _settle_turn(thread_id: str, content: str, question: HumanMessage) -> None:
+    """Persist what a streamed turn produced, or drop the question if nothing.
+
+    Called on every exit path that did not already persist the answer: a partial
+    answer is kept (with the question), a turn that produced nothing is rolled
+    back so a retry doesn't stack the same question twice.
+    """
+    if content.strip():
+        await persist_state(
+            chat_graph,
+            thread_id,
+            {"messages": [AIMessage(content=content)]},
+            as_node=CHAT_NODE,
+        )
+    else:
+        await discard_message(chat_graph, thread_id, question)
+
+
+async def _settle_safely(
+    thread_id: str, content: str, question: Optional[HumanMessage]
+) -> None:
+    """`_settle_turn` for teardown paths, where raising would mask the cause."""
+    if not question:
+        return
+    try:
+        await _settle_turn(thread_id, content, question)
+    except Exception:
+        logger.exception(f"Could not settle streamed turn in {thread_id}")
+
+
 async def _stream_execute_chat(
     request: ExecuteChatRequest,
+    http_request: Request,
+    thread_id: str,
+    session: Any,
+    notebook: Optional[Notebook],
+    model_override: Optional[str],
 ) -> AsyncGenerator[str, None]:
-    from ai_prompter import Prompter
-    from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+    """Stream one notebook-chat turn as SSE: `user_message` -> `token`… -> `complete`.
 
-    from open_notebook.ai.provision import provision_langchain_model
-    from open_notebook.utils import clean_thinking_content
-    from open_notebook.utils.error_classifier import classify_error
-    from open_notebook.utils.text_utils import extract_text_content
-
-    # Initialize before try so the finally block can reference them even if an
-    # exception is raised before model provisioning completes.
-    accumulated = ""
+    Generation runs outside the graph (the model is streamed directly): the
+    sync-node/SqliteSaver graph cannot yield tokens, and `astream` is the only
+    way for a client disconnect to cancel the provider request instead of
+    letting it run to completion. The turn is still checkpointed exactly like
+    the buffered endpoint — question up front, answer (or partial answer) on the
+    way out — so history is identical whichever endpoint ran it.
+    """
+    queue: "asyncio.Queue[Any]" = asyncio.Queue()
+    outcome = StreamOutcome()
+    parts: list[str] = []
+    task: Optional["asyncio.Task[Any]"] = None
+    question: Optional[HumanMessage] = None
     persisted = False
-    state_values: Dict[str, Any] = {}
-    full_session_id = ""
-    session: Optional[ChatSession] = None
+    settled = False
 
     try:
-        full_session_id = (
-            request.session_id
-            if request.session_id.startswith("chat_session:")
-            else f"chat_session:{request.session_id}"
+        # Snapshot the thread; the sync-node graph and its SqliteSaver
+        # checkpointer have no async API, so reads go through a thread.
+        current_state = await asyncio.to_thread(
+            chat_graph.get_state,
+            config=RunnableConfig(configurable={"thread_id": thread_id}),
         )
-        session = await ChatSession.get(full_session_id)
-        if not session:
-            yield f'data: {json.dumps({"type": "error", "message": "Session not found"})}\n\n'
+
+        state_values = current_state.values if current_state else {}
+        state_values["messages"] = state_values.get("messages", [])
+        state_values["context"] = request.context
+        state_values["notebook"] = notebook
+        state_values["model_override"] = model_override
+
+        # Explicit id so a failed turn can remove it from the checkpoint.
+        question = HumanMessage(content=request.message, id=str(uuid4()))
+        state_values["messages"].append(question)
+
+        yield sse({"type": "user_message", "content": request.message})
+
+        # Persist the question before generating: SSE returns tokens long before
+        # the graph would checkpoint its input, and a disconnect must not lose
+        # what the user asked.
+        await persist_pending_human_turn(
+            chat_graph, thread_id, question, as_node=CHAT_NODE
+        )
+        persisted = True
+
+        # Same prompt the node builds, so streamed and buffered answers match.
+        payload = await asyncio.to_thread(build_chat_payload, state_values)  # type: ignore[arg-type]
+
+        model = await provision_langchain_model(
+            str(payload),
+            model_override,
+            "chat",
+            max_tokens=8192,
+            streaming=True,
+        )
+
+        task = asyncio.create_task(run_generation(queue, model, payload, parts))
+        async for frame in stream_events(
+            queue, outcome, is_disconnected=http_request.is_disconnected
+        ):
+            yield frame
+
+        content = clean_thinking_content("".join(parts))
+
+        if outcome.kind == "done":
+            if not content.strip():
+                # Raised here so the handler below settles (rolls back) the turn.
+                raise IncompleteGenerationError(EMPTY_REPLY_MESSAGE)
+            await persist_state(
+                chat_graph,
+                thread_id,
+                {"messages": [AIMessage(content=content)]},
+                as_node=CHAT_NODE,
+            )
+            settled = True
+            await session.save()
+            yield sse({"type": "complete", "content": content})
             return
+
+        if outcome.kind == "timeout":
+            await _settle_safely(thread_id, content, question)
+            settled = True
+            yield format_error_event(
+                IncompleteGenerationError(
+                    "The model did not finish within "
+                    f"{int(MAX_STREAM_SECONDS)}s. Partial answer kept."
+                )
+            )
+            return
+
+        if outcome.kind == "error":
+            await _settle_safely(thread_id, content, question)
+            settled = True
+            yield format_error_event(outcome.payload)
+            return
+
+        # Disconnected: keep whatever arrived; the client is gone.
+        await _settle_safely(thread_id, content, question)
+        settled = True
+
+    except asyncio.CancelledError:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Error streaming chat: {str(e)}\n"
+            f"  Session ID: {request.session_id}\n"
+            f"  Model override: {request.model_override}\n"
+            f"  Traceback:\n{traceback.format_exc()}"
+        )
+        if persisted and question and not settled:
+            await _settle_safely(
+                thread_id, clean_thinking_content("".join(parts)), question
+            )
+            settled = True
+        yield format_error_event(e)
+    finally:
+
+        async def _settle_if_needed() -> None:
+            if persisted and question and not settled:
+                await _settle_safely(
+                    thread_id, clean_thinking_content("".join(parts)), question
+                )
+
+        await finalize_stream(task, _settle_if_needed)
+
+
+@router.post("/chat/execute/stream")
+async def execute_chat_stream(request: ExecuteChatRequest, http_request: Request):
+    """Execute a chat request and stream the response as SSE.
+
+    Additive sibling of `/chat/execute`, which stays for API consumers: same
+    body, same persistence, but `text/event-stream` frames.
+    """
+    try:
+        full_session_id, session = await get_session_or_404(request.session_id)
+
+        notebook_query = await repo_query(
+            "SELECT out FROM refers_to WHERE in = $session_id",
+            {"session_id": ensure_record_id(full_session_id)},
+        )
+        notebook = None
+        if notebook_query:
+            notebook = await Notebook.get(notebook_query[0]["out"])
 
         model_override = (
             request.model_override
@@ -456,96 +598,27 @@ async def _stream_execute_chat(
             else getattr(session, "model_override", None)
         )
 
-        current_state = await asyncio.to_thread(
-            chat_graph.get_state,
-            config=RunnableConfig(configurable={"thread_id": full_session_id}),
+        return StreamingResponse(
+            _stream_execute_chat(
+                request,
+                http_request,
+                full_session_id,
+                session,
+                notebook,
+                model_override,
+            ),
+            media_type="text/event-stream",
+            headers=stream_headers(),
         )
-
-        state_values = (
-            dict(current_state.values) if current_state else {}
-        )
-        state_values["messages"] = list(state_values.get("messages", []))
-        state_values["context"] = request.context
-        state_values["model_override"] = model_override
-        state_values["messages"].append(HumanMessage(content=request.message))
-
-        yield f'data: {json.dumps({"type": "user_message", "content": request.message})}\n\n'
-
-        system_prompt = Prompter(prompt_template="chat/system").render(
-            data=state_values  # type: ignore[arg-type]
-        )
-        payload = [SystemMessage(content=system_prompt)] + state_values["messages"]
-
-        model = await provision_langchain_model(
-            str(payload), model_override, "chat", max_tokens=8192
-        )
-
-        async for chunk in model.astream(payload):
-            content = getattr(chunk, "content", "") or ""
-            # Some providers (Anthropic, etc.) return content as a list of
-            # content-block dicts rather than a string. Normalize to string.
-            if isinstance(content, list):
-                content = "".join(
-                    c.get("text", "") if isinstance(c, dict) else str(c)
-                    for c in content
-                )
-            if content:
-                accumulated += content
-                yield f'data: {json.dumps({"type": "token", "content": content})}\n\n'
-
-        cleaned_content = clean_thinking_content(extract_text_content(accumulated))
-        await asyncio.to_thread(
-            chat_graph.update_state,
-            config=RunnableConfig(configurable={"thread_id": full_session_id}),
-            values={"messages": state_values["messages"] + [AIMessage(content=cleaned_content)]},
-        )
-        await session.save()
-        persisted = True
-
-        yield f'data: {json.dumps({"type": "complete"})}\n\n'
-
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Session not found")
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
-        logger.error(
-            f"Error streaming chat: {str(e)}\n"
-            f"  Session ID: {request.session_id}\n"
-            f"  Traceback:\n{traceback.format_exc()}"
-        )
-        # Use classify_error to map raw exceptions to a user-friendly message
-        # and avoid leaking internal details to the client.
-        _, user_message = classify_error(e)
-        yield f'data: {json.dumps({"type": "error", "message": user_message})}\n\n'
-    finally:
-        if accumulated and not persisted and full_session_id:
-            try:
-                cleaned = clean_thinking_content(extract_text_content(accumulated))
-                if cleaned:
-                    await asyncio.to_thread(
-                        chat_graph.update_state,
-                        config=RunnableConfig(configurable={"thread_id": full_session_id}),
-                        values={"messages": state_values.get("messages", []) + [AIMessage(content=cleaned)]},
-                    )
-                    if session is not None:
-                        await session.save()
-            except Exception:
-                pass
-
-
-@router.post("/chat/execute/stream")
-async def execute_chat_stream(request: ExecuteChatRequest):
-    """Execute a chat request and stream the AI response as Server-Sent Events."""
-    return StreamingResponse(
-        _stream_execute_chat(request),
-        media_type="text/event-stream",
-        headers={
-            # SSE is delivered through a dedicated Next.js route handler
-            # (frontend/src/app/api/chat/execute/stream/route.ts) rather than
-            # the rewrites() proxy, which buffers gzipped streams to
-            # completion. These headers also stop intermediate proxies from
-            # compressing or buffering, preserving per-token delivery.
-            "Cache-Control": "no-cache",
-            "X-Accel-Buffering": "no",
-        },
-    )
+        logger.error(f"Error starting chat stream: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error streaming chat: {str(e)}")
 
 
 @router.post("/chat/context", response_model=BuildContextResponse)
@@ -557,99 +630,33 @@ async def build_context(request: BuildContextRequest):
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
 
-        context_data: dict[str, list[dict[str, str]]] = {"sources": [], "notes": []}
-        total_content = ""
+        context_data = await build_notebook_context(
+            notebook.id or request.notebook_id,
+            ContextConfig(**request.context_config) if request.context_config else None,
+        )
 
-        # Process context configuration if provided
-        if request.context_config:
-            # Process sources
-            for source_id, status in request.context_config.get("sources", {}).items():
-                if "not in" in status:
-                    continue
+        text_parts = [
+            str(item.get("full_text") or item.get("short_text") or "")
+            for item in context_data.get("sources", [])
+            if isinstance(item, dict)
+        ] + [
+            str(note.get("content") or "")
+            for note in context_data.get("notes", [])
+            if isinstance(note, dict)
+        ]
+        total_content = "\n".join(text_parts)
 
-                try:
-                    # Add table prefix if not present
-                    full_source_id = (
-                        source_id
-                        if source_id.startswith("source:")
-                        else f"source:{source_id}"
-                    )
-
-                    try:
-                        source = await Source.get(full_source_id)
-                    except Exception:
-                        continue
-
-                    if "insights" in status:
-                        source_context = await source.get_context(context_size="short")
-                        context_data["sources"].append(source_context)
-                        total_content += str(source_context)
-                    elif "full content" in status:
-                        source_context = await source.get_context(context_size="long")
-                        context_data["sources"].append(source_context)
-                        total_content += str(source_context)
-                except Exception as e:
-                    logger.warning(f"Error processing source {source_id}: {str(e)}")
-                    continue
-
-            # Process notes
-            for note_id, status in request.context_config.get("notes", {}).items():
-                if "not in" in status:
-                    continue
-
-                try:
-                    # Add table prefix if not present
-                    full_note_id = (
-                        note_id if note_id.startswith("note:") else f"note:{note_id}"
-                    )
-                    note = await Note.get(full_note_id)
-                    if not note:
-                        continue
-
-                    if "full content" in status:
-                        note_context = note.get_context(context_size="long")
-                        context_data["notes"].append(note_context)
-                        total_content += str(note_context)
-                except Exception as e:
-                    logger.warning(f"Error processing note {note_id}: {str(e)}")
-                    continue
-        else:
-            # Default behavior - include all sources and notes with short context
-            sources = await notebook.get_sources()
-            for source in sources:
-                try:
-                    source_context = await source.get_context(context_size="short")
-                    context_data["sources"].append(source_context)
-                    total_content += str(source_context)
-                except Exception as e:
-                    logger.warning(f"Error processing source {source.id}: {str(e)}")
-                    continue
-
-            notes = await notebook.get_notes()
-            for note in notes:
-                try:
-                    note_context = note.get_context(context_size="short")
-                    context_data["notes"].append(note_context)
-                    total_content += str(note_context)
-                except Exception as e:
-                    logger.warning(f"Error processing note {note.id}: {str(e)}")
-                    continue
-
-        # Calculate character and token counts
         char_count = len(total_content)
-        # Use token count utility if available
-        try:
-            from open_notebook.utils import token_count
-
-            estimated_tokens = token_count(total_content) if total_content else 0
-        except ImportError:
-            # Fallback to simple estimation
-            estimated_tokens = char_count // 4
+        estimated_tokens = context_data.get("total_tokens") or (
+            token_count(total_content) if total_content else 0
+        )
 
         return BuildContextResponse(
             context=context_data, token_count=estimated_tokens, char_count=char_count
         )
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Error building context: {str(e)}")

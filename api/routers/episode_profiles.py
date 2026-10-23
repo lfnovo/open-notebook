@@ -52,9 +52,7 @@ async def list_episode_profiles():
         return [_profile_to_response(p) for p in profiles]
     except Exception as e:
         logger.error(f"Failed to fetch episode profiles: {e}")
-        raise HTTPException(
-            status_code=500, detail="Failed to fetch episode profiles"
-        )
+        raise HTTPException(status_code=500, detail="Failed to fetch episode profiles")
 
 
 @router.get("/episode-profiles/{profile_name}", response_model=EpisodeProfileResponse)
@@ -74,9 +72,7 @@ async def get_episode_profile(profile_name: str):
         raise
     except Exception as e:
         logger.error(f"Failed to fetch episode profile '{profile_name}': {e}")
-        raise HTTPException(
-            status_code=500, detail="Failed to fetch episode profile"
-        )
+        raise HTTPException(status_code=500, detail="Failed to fetch episode profile")
 
 
 class EpisodeProfileCreate(BaseModel):
@@ -121,9 +117,7 @@ async def create_episode_profile(profile_data: EpisodeProfileCreate):
 
     except Exception as e:
         logger.error(f"Failed to create episode profile: {e}")
-        raise HTTPException(
-            status_code=500, detail="Failed to create episode profile"
-        )
+        raise HTTPException(status_code=500, detail="Failed to create episode profile")
 
 
 @router.put("/episode-profiles/{profile_id}", response_model=EpisodeProfileResponse)
@@ -147,9 +141,7 @@ async def update_episode_profile(profile_id: str, profile_data: EpisodeProfileCr
         raise
     except Exception as e:
         logger.error(f"Failed to update episode profile: {e}")
-        raise HTTPException(
-            status_code=500, detail="Failed to update episode profile"
-        )
+        raise HTTPException(status_code=500, detail="Failed to update episode profile")
 
 
 @router.delete("/episode-profiles/{profile_id}")
@@ -171,9 +163,7 @@ async def delete_episode_profile(profile_id: str):
         raise
     except Exception as e:
         logger.error(f"Failed to delete episode profile: {e}")
-        raise HTTPException(
-            status_code=500, detail="Failed to delete episode profile"
-        )
+        raise HTTPException(status_code=500, detail="Failed to delete episode profile")
 
 
 @router.post(

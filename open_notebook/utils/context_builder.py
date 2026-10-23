@@ -56,6 +56,41 @@ class ContextConfig:
             self.priority_weights = {"source": 100, "note": 50, "insight": 75}
 
 
+def format_source_context(context_data: Dict[str, Any]) -> str:
+    """Render the exact source/insight Markdown supplied to Source Chat."""
+    context_parts = []
+
+    if context_data.get("sources"):
+        context_parts.append("## SOURCE CONTENT")
+        for source in context_data["sources"]:
+            if isinstance(source, dict):
+                context_parts.append(f"**Source ID:** {source.get('id', 'Unknown')}")
+                context_parts.append(f"**Title:** {source.get('title', 'No title')}")
+                full_text = source.get("full_text")
+                if isinstance(full_text, str) and full_text.strip():
+                    context_parts.append(f"**Content:**\n{full_text}")
+                else:
+                    context_parts.append(
+                        "**Content:**\n[Source text is unavailable in this context.]"
+                    )
+                context_parts.append("")
+
+    if context_data.get("insights"):
+        context_parts.append("## SOURCE INSIGHTS")
+        for insight in context_data["insights"]:
+            if isinstance(insight, dict):
+                context_parts.append(f"**Insight ID:** {insight.get('id', 'Unknown')}")
+                context_parts.append(
+                    f"**Type:** {insight.get('insight_type', 'Unknown')}"
+                )
+                context_parts.append(
+                    f"**Content:** {insight.get('content', 'No content')}"
+                )
+                context_parts.append("")
+
+    return "\n".join(context_parts)
+
+
 class ContextBuilder:
     """
     Generic ContextBuilder that can handle any parameters and build context

@@ -407,6 +407,8 @@ class TestPodcastDomain:
         with pytest.raises(ValidationError):
             SpeakerProfile(
                 name="Test",
+                description=None,
+                voice_model=None,
                 tts_provider="openai",
                 tts_model="tts-1",
                 speakers=[],
@@ -416,6 +418,8 @@ class TestPodcastDomain:
         with pytest.raises(ValidationError):
             SpeakerProfile(
                 name="Test",
+                description=None,
+                voice_model=None,
                 tts_provider="openai",
                 tts_model="tts-1",
                 speakers=[{"name": f"Speaker{i}"} for i in range(5)],
@@ -425,6 +429,8 @@ class TestPodcastDomain:
         with pytest.raises(ValidationError):
             SpeakerProfile(
                 name="Test",
+                description=None,
+                voice_model=None,
                 tts_provider="openai",
                 tts_model="tts-1",
                 speakers=[
@@ -435,6 +441,8 @@ class TestPodcastDomain:
         # Test valid - single speaker with all fields
         profile = SpeakerProfile(
             name="Test",
+            description=None,
+            voice_model=None,
             tts_provider="openai",
             tts_model="tts-1",
             speakers=[
@@ -489,7 +497,7 @@ class TestPodcastService:
         # generate_podcast_command` when the package is imported, so the fake
         # submodule must expose that name or the package import fails before the
         # patched submit_command is reached.
-        fake_commands_module.generate_podcast_command = lambda *a, **k: None
+        setattr(fake_commands_module, "generate_podcast_command", lambda *a, **k: None)
 
         with (
             patch.object(
@@ -553,13 +561,13 @@ class TestContentSettings:
 
     def test_content_settings_defaults(self):
         """Test ContentSettings has proper defaults."""
-        settings = ContentSettings()
+        settings = ContentSettings()  # type: ignore[call-arg]
 
         assert settings.record_id == "open_notebook:content_settings"
         assert settings.default_content_processing_engine_doc == "auto"
         assert settings.default_embedding_option == "ask"
         assert settings.auto_delete_files == "yes"
-        assert len(settings.youtube_preferred_languages) > 0
+        assert len(settings.youtube_preferred_languages or []) > 0
 
 
 # ============================================================================
@@ -578,6 +586,10 @@ class TestEpisodeProfile:
         ):
             EpisodeProfile(
                 name="Test",
+                description=None,
+                outline_llm=None,
+                transcript_llm=None,
+                language=None,
                 speaker_config="default",
                 outline_provider="openai",
                 outline_model="gpt-4",
@@ -593,6 +605,10 @@ class TestEpisodeProfile:
         ):
             EpisodeProfile(
                 name="Test",
+                description=None,
+                outline_llm=None,
+                transcript_llm=None,
+                language=None,
                 speaker_config="default",
                 outline_provider="openai",
                 outline_model="gpt-4",
@@ -605,6 +621,10 @@ class TestEpisodeProfile:
         # Test valid segment count
         profile = EpisodeProfile(
             name="Test",
+            description=None,
+            outline_llm=None,
+            transcript_llm=None,
+            language=None,
             speaker_config="default",
             outline_provider="openai",
             outline_model="gpt-4",

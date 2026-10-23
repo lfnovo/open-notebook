@@ -31,7 +31,7 @@ class TestGraphTools:
 
     def test_get_current_timestamp_format(self):
         """Test timestamp tool returns correct format."""
-        timestamp = get_current_timestamp.func()
+        timestamp = get_current_timestamp.func()  # type: ignore[attr-defined]
 
         assert isinstance(timestamp, str)
         assert len(timestamp) == 14  # YYYYMMDDHHmmss format
@@ -39,7 +39,7 @@ class TestGraphTools:
 
     def test_get_current_timestamp_validity(self):
         """Test timestamp represents valid datetime."""
-        timestamp = get_current_timestamp.func()
+        timestamp = get_current_timestamp.func()  # type: ignore[attr-defined]
 
         # Parse it back to datetime to verify validity
         year = int(timestamp[0:4])
@@ -144,7 +144,7 @@ class TestTransformationGraph:
         config = {"configurable": {"model_id": None}}
 
         with pytest.raises(AssertionError, match="No content to transform"):
-            await run_transformation(state, config)
+            await run_transformation(state, config)  # type: ignore[arg-type]
 
     def test_transformation_graph_compilation(self):
         """Test that transformation graph compiles correctly."""
@@ -185,7 +185,7 @@ class TestSaveSourceTitlePreservation:
             "apply_transformations": [],
         }
 
-        await save_source(state)
+        await save_source(state)  # type: ignore[arg-type]
 
         assert mock_source.title == "My Custom Research Title"
         mock_source.save.assert_awaited_once()
@@ -214,7 +214,7 @@ class TestSaveSourceTitlePreservation:
             "apply_transformations": [],
         }
 
-        await save_source(state)
+        await save_source(state)  # type: ignore[arg-type]
 
         assert mock_source.title == "Extracted Article Title"
         mock_source.save.assert_awaited_once()
@@ -243,7 +243,7 @@ class TestSaveSourceTitlePreservation:
             "apply_transformations": [],
         }
 
-        await save_source(state)
+        await save_source(state)  # type: ignore[arg-type]
 
         assert mock_source.title == "Extracted Title"
         mock_source.save.assert_awaited_once()
@@ -272,7 +272,7 @@ class TestSaveSourceTitlePreservation:
             "apply_transformations": [],
         }
 
-        await save_source(state)
+        await save_source(state)  # type: ignore[arg-type]
 
         assert mock_source.title == "Extracted Title"
         mock_source.save.assert_awaited_once()

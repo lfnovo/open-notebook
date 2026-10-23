@@ -53,7 +53,10 @@ class TestTextSearchHighlightOverflowFallback:
         )
         with (
             patch.object(
-                notebook_module, "repo_query", new_callable=AsyncMock, side_effect=overflow
+                notebook_module,
+                "repo_query",
+                new_callable=AsyncMock,
+                side_effect=overflow,
             ),
             patch.object(
                 notebook_module,
@@ -75,7 +78,10 @@ class TestTextSearchHighlightOverflowFallback:
         overflow = RuntimeError("position overflow: 1 - len: 0")
         with (
             patch.object(
-                notebook_module, "repo_query", new_callable=AsyncMock, side_effect=overflow
+                notebook_module,
+                "repo_query",
+                new_callable=AsyncMock,
+                side_effect=overflow,
             ),
             patch.object(
                 notebook_module,

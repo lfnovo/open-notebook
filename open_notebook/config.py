@@ -16,5 +16,7 @@ os.makedirs(UPLOADS_FOLDER, exist_ok=True)
 # Reads TIKTOKEN_CACHE_DIR from the environment so Docker can redirect the cache
 # to a path outside /data/ (which is typically volume-mounted and would hide the
 # pre-baked encoding baked into the image at build time).
-TIKTOKEN_CACHE_DIR = os.environ.get("TIKTOKEN_CACHE_DIR", "").strip() or f"{DATA_FOLDER}/tiktoken-cache"
+TIKTOKEN_CACHE_DIR = (
+    os.environ.get("TIKTOKEN_CACHE_DIR", "").strip() or f"{DATA_FOLDER}/tiktoken-cache"
+)
 os.makedirs(TIKTOKEN_CACHE_DIR, exist_ok=True)

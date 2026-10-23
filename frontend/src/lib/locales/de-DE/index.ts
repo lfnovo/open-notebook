@@ -437,6 +437,7 @@ export const deDE = {
     deleteSession: "Sitzung löschen",
     deleteSessionDesc: "Möchtest du diese Chat-Sitzung wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
     sendPlaceholder: "Frage etwas zu deinen Quellen...",
+    stop: "Stopp",
     sessionsTitle: "Chat-Sitzungen",
     chatWith: "Chat mit {name}",
     startConversation: "Starte eine Unterhaltung zu {type}",

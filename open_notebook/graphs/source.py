@@ -168,7 +168,7 @@ async def transform_content(state: TransformationState) -> Optional[dict]:
 
     logger.debug(f"Applying transformation {transformation.name}")
     result = await transform_graph.ainvoke(
-        dict(input_text=content, transformation=transformation)  # type: ignore[arg-type]
+        dict(input_text=content, transformation=transformation)  # type: ignore[arg-type,call-overload]
     )
     await source.add_insight(transformation.title, result["output"])
     return {

@@ -5,7 +5,7 @@ Extracted from main utils to avoid circular imports.
 
 import re
 import unicodedata
-from typing import Tuple
+from typing import Any, Tuple
 
 # Patterns for matching thinking content in AI responses
 # Standard pattern: <think>...</think>
@@ -39,7 +39,7 @@ def remove_non_printable(text: str) -> str:
     return re.sub(r"[^\w\s.,!?\-\n\t]", "", text, flags=re.UNICODE)
 
 
-def parse_thinking_content(content: str) -> Tuple[str, str]:
+def parse_thinking_content(content: Any) -> Tuple[str, str]:
     """
     Parse message content to extract thinking content from <think> tags.
 
@@ -94,6 +94,12 @@ def parse_thinking_content(content: str) -> Tuple[str, str]:
         cleaned_content = content[malformed_match.end() :].strip()
         return thinking_content, cleaned_content
 
+    # Handle truncated output:  thinkingcontent (no closing tag). The model ran
+    # out of output budget while still reasoning, so nothing is a real answer.
+    stripped = content.lstrip()
+    if stripped.startswith(" thinking"):
+        return stripped[len(" thinking") :].strip(), ""
+
     return "", content
 
 
@@ -132,6 +138,8 @@ def extract_text_content(content) -> str:
     Returns:
         The extracted text content as a string.
     """
+    if content is None:
+        return ""
     if isinstance(content, str):
         return content
     if isinstance(content, list):

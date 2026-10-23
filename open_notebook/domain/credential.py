@@ -226,7 +226,7 @@ class Credential(ObjectModel):
 
     def _prepare_save_data(self) -> Dict[str, Any]:
         """Override to encrypt api_key and sync provider extras into `config`."""
-        data = {}
+        data: Dict[str, Any] = {}
         for key, value in self.model_dump().items():
             if key in ("decryption_error", "config"):
                 # `config` is rebuilt below from the existing bag + convenience fields.

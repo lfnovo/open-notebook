@@ -66,9 +66,10 @@ class ObjectModel(BaseModel):
                             )
                         validated_clauses.append(parts[0].lower())
                     elif len(parts) == 2:
-                        if not allowed_field_pattern.match(
-                            parts[0].lower()
-                        ) or parts[1].lower() not in allowed_directions:
+                        if (
+                            not allowed_field_pattern.match(parts[0].lower())
+                            or parts[1].lower() not in allowed_directions
+                        ):
                             raise InvalidInputError(
                                 f"Invalid order_by clause: '{clause.strip()}'"
                             )

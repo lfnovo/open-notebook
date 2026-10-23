@@ -35,9 +35,7 @@ class TestCredentialCascadeDelete:
         mock_model2.name = "gpt-3.5-turbo"
 
         mock_cred = AsyncMock()
-        mock_cred.get_linked_models = AsyncMock(
-            return_value=[mock_model1, mock_model2]
-        )
+        mock_cred.get_linked_models = AsyncMock(return_value=[mock_model1, mock_model2])
         mock_cred.delete = AsyncMock()
         mock_get.return_value = mock_cred
 
@@ -87,9 +85,7 @@ class TestCredentialCascadeDelete:
         # First call returns cred to delete, second returns target
         mock_get.side_effect = [mock_cred, mock_target_cred]
 
-        response = client.delete(
-            "/api/credentials/cred:123?migrate_to=cred:456"
-        )
+        response = client.delete("/api/credentials/cred:123?migrate_to=cred:456")
 
         assert response.status_code == 200
         data = response.json()
@@ -223,9 +219,13 @@ class TestAudioProviderWiring:
         from open_notebook.ai.model_discovery import classify_model_type
 
         # Mistral Voxtral: TTS model must not be mis-detected as STT
-        assert classify_model_type("voxtral-mini-tts-2603", "mistral") == "text_to_speech"
+        assert (
+            classify_model_type("voxtral-mini-tts-2603", "mistral") == "text_to_speech"
+        )
         assert classify_model_type("voxtral-mini-latest", "mistral") == "speech_to_text"
-        assert classify_model_type("voxtral-small-latest", "mistral") == "speech_to_text"
+        assert (
+            classify_model_type("voxtral-small-latest", "mistral") == "speech_to_text"
+        )
         # Existing Mistral classification still holds
         assert classify_model_type("mistral-large-latest", "mistral") == "language"
         assert classify_model_type("mistral-embed", "mistral") == "embedding"
@@ -263,11 +263,17 @@ class TestAudioMatrixWiring:
         from open_notebook.ai.model_discovery import classify_model_type
 
         # Gemini TTS preview is classifiable; plain Gemini STT name stays language
-        assert classify_model_type("gemini-3.1-flash-tts-preview", "google") == "text_to_speech"
+        assert (
+            classify_model_type("gemini-3.1-flash-tts-preview", "google")
+            == "text_to_speech"
+        )
         assert classify_model_type("gemini-2.0-flash", "google") == "language"
         # ElevenLabs Scribe STT must not be caught by the TTS "eleven" pattern
         assert classify_model_type("scribe_v1", "elevenlabs") == "speech_to_text"
-        assert classify_model_type("eleven_multilingual_v2", "elevenlabs") == "text_to_speech"
+        assert (
+            classify_model_type("eleven_multilingual_v2", "elevenlabs")
+            == "text_to_speech"
+        )
 
 
 if __name__ == "__main__":

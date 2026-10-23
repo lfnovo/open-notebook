@@ -704,7 +704,9 @@ async def discover_openai_compatible_models() -> List[DiscoveredModel]:
                         )
                     )
     except httpx.HTTPStatusError as e:
-        logger.warning(f"Failed to discover openai_compatible models: HTTP {e.response.status_code}")
+        logger.warning(
+            f"Failed to discover openai_compatible models: HTTP {e.response.status_code}"
+        )
     except Exception as e:
         logger.warning(f"Failed to discover openai_compatible models: {e}")
 
@@ -817,7 +819,9 @@ async def sync_provider_models(
             )
             await new_model.save()
             new_count += 1
-            logger.info(f"Registered new model: {model.provider}/{model.name} ({model.model_type})")
+            logger.info(
+                f"Registered new model: {model.provider}/{model.name} ({model.model_type})"
+            )
         except Exception as e:
             logger.warning(f"Failed to register model {model.name}: {e}")
 
@@ -847,7 +851,7 @@ async def sync_all_providers() -> Dict[str, Tuple[int, int, int]]:
     task_results = await asyncio.gather(*tasks, return_exceptions=True)
 
     for provider, result in zip(providers, task_results):
-        if isinstance(result, Exception):
+        if isinstance(result, BaseException):
             logger.error(f"Error syncing {provider}: {result}")
             results[provider] = (0, 0, 0)
         else:

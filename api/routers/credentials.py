@@ -91,7 +91,9 @@ async def get_env_status():
         return await svc_get_env_status()
     except Exception as e:
         logger.error(f"Error checking env status: {e}")
-        raise HTTPException(status_code=500, detail="Failed to check environment status")
+        raise HTTPException(
+            status_code=500, detail="Failed to check environment status"
+        )
 
 
 # =============================================================================
@@ -134,7 +136,9 @@ async def list_credentials_by_provider(provider: str):
         return result
     except Exception as e:
         logger.error(f"Error listing credentials for {provider}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to list credentials for provider")
+        raise HTTPException(
+            status_code=500, detail="Failed to list credentials for provider"
+        )
 
 
 @router.post("", response_model=CredentialResponse, status_code=201)
@@ -147,8 +151,12 @@ async def create_credential(request: CreateCredentialRequest):
 
     # Validate all URL fields
     for url_field in [
-        request.base_url, request.endpoint, request.endpoint_llm,
-        request.endpoint_embedding, request.endpoint_stt, request.endpoint_tts,
+        request.base_url,
+        request.endpoint,
+        request.endpoint_llm,
+        request.endpoint_embedding,
+        request.endpoint_stt,
+        request.endpoint_tts,
     ]:
         if url_field:
             try:
@@ -204,8 +212,12 @@ async def update_credential(credential_id: str, request: UpdateCredentialRequest
 
     # Validate all URL fields being updated
     for url_field in [
-        request.base_url, request.endpoint, request.endpoint_llm,
-        request.endpoint_embedding, request.endpoint_stt, request.endpoint_tts,
+        request.base_url,
+        request.endpoint,
+        request.endpoint_llm,
+        request.endpoint_embedding,
+        request.endpoint_stt,
+        request.endpoint_tts,
     ]:
         if url_field:
             try:
@@ -301,7 +313,7 @@ async def delete_credential(
                             "UPDATE $model_id SET credential = $target_id",
                             {
                                 "model_id": ensure_record_id(model_id),
-                                "target_id": ensure_record_id(target_cred.id),
+                                "target_id": ensure_record_id(target_cred.id or ""),
                             },
                         )
             elif linked:
@@ -419,8 +431,12 @@ async def migrate_from_provider_config():
     except ValueError as e:
         raise _handle_value_error(e)
     except Exception as e:
-        logger.error(f"ProviderConfig migration FAILED: {type(e).__name__}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Migration from provider config failed")
+        logger.error(
+            f"ProviderConfig migration FAILED: {type(e).__name__}: {e}", exc_info=True
+        )
+        raise HTTPException(
+            status_code=500, detail="Migration from provider config failed"
+        )
 
 
 @router.post("/migrate-from-env")
@@ -432,4 +448,6 @@ async def migrate_from_env():
         raise _handle_value_error(e)
     except Exception as e:
         logger.error(f"Env migration FAILED: {type(e).__name__}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Migration from environment variables failed")
+        raise HTTPException(
+            status_code=500, detail="Migration from environment variables failed"
+        )

@@ -13,7 +13,7 @@ from typing_extensions import TypedDict
 from open_notebook.ai.provision import provision_langchain_model
 from open_notebook.config import LANGGRAPH_CHECKPOINT_FILE
 from open_notebook.domain.notebook import Notebook
-from open_notebook.exceptions import OpenNotebookError
+from open_notebook.exceptions import IncompleteGenerationError, OpenNotebookError
 from open_notebook.utils import clean_thinking_content
 from open_notebook.utils.error_classifier import classify_error
 from open_notebook.utils.text_utils import extract_text_content
@@ -27,10 +27,24 @@ class ThreadState(TypedDict):
     model_override: Optional[str]
 
 
+# The graph's only node. Streaming turns bypass the graph but still attribute
+# their checkpoint writes to it (`persist_state(as_node=...)`).
+NODE_NAME = "agent"
+
+
+def build_chat_payload(state: ThreadState) -> list:
+    """Render the system prompt and prepend it to the thread's messages.
+
+    Shared by the node and the streaming endpoint in `api/routers/chat.py`, so
+    a streamed answer is prompted exactly like a buffered one.
+    """
+    system_prompt = Prompter(prompt_template="chat/system").render(data=state)  # type: ignore[arg-type]
+    return [SystemMessage(content=system_prompt)] + state.get("messages", [])
+
+
 def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
     try:
-        system_prompt = Prompter(prompt_template="chat/system").render(data=state)  # type: ignore[arg-type]
-        payload = [SystemMessage(content=system_prompt)] + state.get("messages", [])
+        payload = build_chat_payload(state)
         model_id = config.get("configurable", {}).get("model_id") or state.get(
             "model_override"
         )
@@ -75,6 +89,13 @@ def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict
         # Clean thinking content from AI response (e.g., <think>...</think> tags)
         content = extract_text_content(ai_message.content)
         cleaned_content = clean_thinking_content(content)
+        if not cleaned_content.strip():
+            # Raising inside the node keeps LangGraph from checkpointing a
+            # blank AI message that would be replayed as context later.
+            raise IncompleteGenerationError(
+                "The model returned an empty response. Try again, or pick a "
+                "different model if this keeps happening."
+            )
         cleaned_message = ai_message.model_copy(update={"content": cleaned_content})
 
         return {"messages": cleaned_message}
@@ -92,7 +113,7 @@ conn = sqlite3.connect(
 memory = SqliteSaver(conn)
 
 agent_state = StateGraph(ThreadState)
-agent_state.add_node("agent", call_model_with_messages)
+agent_state.add_node(NODE_NAME, call_model_with_messages)
 agent_state.add_edge(START, "agent")
 agent_state.add_edge("agent", END)
 graph = agent_state.compile(checkpointer=memory)

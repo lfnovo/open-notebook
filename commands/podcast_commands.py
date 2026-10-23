@@ -117,15 +117,21 @@ async def generate_podcast_command(
             )
 
         # 3. Resolve model configs with credentials
-        outline_provider, outline_model_name, outline_config = (
-            await episode_profile.resolve_outline_config()
-        )
-        transcript_provider, transcript_model_name, transcript_config = (
-            await episode_profile.resolve_transcript_config()
-        )
-        tts_provider, tts_model_name, tts_config = (
-            await speaker_profile.resolve_tts_config()
-        )
+        (
+            outline_provider,
+            outline_model_name,
+            outline_config,
+        ) = await episode_profile.resolve_outline_config()
+        (
+            transcript_provider,
+            transcript_model_name,
+            transcript_config,
+        ) = await episode_profile.resolve_transcript_config()
+        (
+            tts_provider,
+            tts_model_name,
+            tts_config,
+        ) = await speaker_profile.resolve_tts_config()
 
         logger.info(
             f"Resolved models - outline: {outline_provider}/{outline_model_name}, "

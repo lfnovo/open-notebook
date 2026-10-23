@@ -434,6 +434,7 @@ export const frFR = {
     deleteSession: "Supprimer la session",
     deleteSessionDesc: "Êtes-vous sûr de vouloir supprimer cette session de chat ? Cette action est irréversible.",
     sendPlaceholder: "Posez n'importe quelle question sur vos sources...",
+    stop: "Arrêter",
     sessionsTitle: "Sessions de Chat",
     chatWith: "Discuter avec {name}",
     startConversation: "Commencer une conversation sur ce {type}",

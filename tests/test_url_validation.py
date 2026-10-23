@@ -105,9 +105,7 @@ class TestUrlValidation:
 
     def test_azure_specific_urls(self):
         """Azure OpenAI endpoints should be validated."""
-        validate_url(
-            "https://my-resource.openai.azure.com", "azure"
-        )
+        validate_url("https://my-resource.openai.azure.com", "azure")
         # Localhost is allowed for self-hosted
         validate_url("http://localhost:8000", "azure")
         # Should not raise

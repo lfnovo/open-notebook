@@ -5,6 +5,7 @@ import SearchPage from './page'
 import { useSearch } from '@/lib/hooks/use-search'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { useModelDefaults } from '@/lib/hooks/use-models'
+import { useAsk } from '@/lib/hooks/use-ask'
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
@@ -37,13 +38,7 @@ vi.mock('@/lib/hooks/use-search', () => ({
 }))
 
 vi.mock('@/lib/hooks/use-ask', () => ({
-  useAsk: () => ({
-    sendAsk: vi.fn(),
-    isStreaming: false,
-    strategy: null,
-    answers: [],
-    finalAnswer: '',
-  }),
+  useAsk: vi.fn(),
 }))
 
 vi.mock('@/lib/hooks/use-models', () => ({
@@ -59,7 +54,9 @@ const mockUseSearch = vi.mocked(useSearch)
 const mockUseModalManager = vi.mocked(useModalManager)
 const mockUseModelDefaults = vi.mocked(useModelDefaults)
 const mockUseSearchParams = vi.mocked(useSearchParams)
+const mockUseAsk = vi.mocked(useAsk)
 const openModal = vi.fn()
+const sendAsk = vi.fn()
 
 describe('SearchPage', () => {
   beforeEach(() => {
@@ -71,6 +68,15 @@ describe('SearchPage', () => {
       data: undefined,
       isLoading: false,
     } as ReturnType<typeof useModelDefaults>)
+    mockUseAsk.mockReturnValue({
+      sendAsk,
+      isStreaming: false,
+      strategy: null,
+      answers: [],
+      finalAnswer: null,
+      error: null,
+      reset: vi.fn(),
+    })
     mockUseSearch.mockReturnValue({
       data: {
         results: [{
@@ -123,4 +129,43 @@ describe('SearchPage', () => {
       }
     },
   )
+
+  describe.each([
+    { name: 'Ctrl+Enter', modifiers: { ctrlKey: true } },
+    { name: 'Cmd+Enter', modifiers: { metaKey: true } },
+  ])('$name', ({ modifiers }) => {
+    it.each([undefined, null, '', 'model:embedding'])(
+      'submits only with an embedding model (%s)',
+      (embeddingModel) => {
+        mockUseSearchParams.mockReturnValue(
+          new URLSearchParams('mode=ask') as ReturnType<typeof useSearchParams>,
+        )
+        mockUseModelDefaults.mockReturnValue({
+          data: {
+            default_chat_model: 'model:chat',
+            default_embedding_model: embeddingModel,
+          },
+          isLoading: false,
+        } as ReturnType<typeof useModelDefaults>)
+
+        render(<SearchPage />)
+
+        const question = 'What is in this notebook?'
+        const input = screen.getByRole('textbox', { name: 'common.accessibility.enterQuestion' })
+        fireEvent.change(input, { target: { value: question } })
+        fireEvent.keyDown(input, { key: 'Enter', ...modifiers })
+
+        if (embeddingModel) {
+          expect(sendAsk).toHaveBeenCalledTimes(1)
+          expect(sendAsk).toHaveBeenCalledWith(
+            question,
+            { strategy: 'model:chat', answer: 'model:chat', finalAnswer: 'model:chat' },
+            { notebookIds: [] },
+          )
+        } else {
+          expect(sendAsk).not.toHaveBeenCalled()
+        }
+      },
+    )
+  })
 })

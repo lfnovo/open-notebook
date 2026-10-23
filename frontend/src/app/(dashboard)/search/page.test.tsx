@@ -1,13 +1,15 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useSearchParams } from 'next/navigation'
 import SearchPage from './page'
 import { useSearch } from '@/lib/hooks/use-search'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
+import { useModelDefaults } from '@/lib/hooks/use-models'
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
   usePathname: () => '/search',
-  useSearchParams: () => new URLSearchParams('mode=search'),
+  useSearchParams: vi.fn(),
 }))
 
 vi.mock('@/components/layout/AppShell', () => ({
@@ -45,7 +47,7 @@ vi.mock('@/lib/hooks/use-ask', () => ({
 }))
 
 vi.mock('@/lib/hooks/use-models', () => ({
-  useModelDefaults: () => ({ data: null, isLoading: false }),
+  useModelDefaults: vi.fn(),
   useModels: () => ({ data: [], isLoading: false }),
 }))
 
@@ -55,11 +57,20 @@ vi.mock('@/lib/hooks/use-modal-manager', () => ({
 
 const mockUseSearch = vi.mocked(useSearch)
 const mockUseModalManager = vi.mocked(useModalManager)
+const mockUseModelDefaults = vi.mocked(useModelDefaults)
+const mockUseSearchParams = vi.mocked(useSearchParams)
 const openModal = vi.fn()
 
 describe('SearchPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockUseSearchParams.mockReturnValue(
+      new URLSearchParams('mode=search') as ReturnType<typeof useSearchParams>,
+    )
+    mockUseModelDefaults.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    } as ReturnType<typeof useModelDefaults>)
     mockUseSearch.mockReturnValue({
       data: {
         results: [{
@@ -86,4 +97,30 @@ describe('SearchPage', () => {
 
     expect(openModal).toHaveBeenCalledWith('insight', 'matched-insight')
   })
+
+  it.each([undefined, null, 'model:embedding'])(
+    'shows the Ask shortcut hint only with an embedding model (%s)',
+    (embeddingModel) => {
+      mockUseSearchParams.mockReturnValue(
+        new URLSearchParams('mode=ask') as ReturnType<typeof useSearchParams>,
+      )
+      mockUseModelDefaults.mockReturnValue({
+        data: {
+          default_chat_model: 'model:chat',
+          default_embedding_model: embeddingModel,
+        },
+        isLoading: false,
+      } as ReturnType<typeof useModelDefaults>)
+
+      render(<SearchPage />)
+
+      if (embeddingModel) {
+        expect(screen.getByText('searchPage.pressToSubmit')).toBeInTheDocument()
+        expect(screen.queryByText('searchPage.noEmbeddingModel')).not.toBeInTheDocument()
+      } else {
+        expect(screen.queryByText('searchPage.pressToSubmit')).not.toBeInTheDocument()
+        expect(screen.getByText('searchPage.noEmbeddingModel')).toBeInTheDocument()
+      }
+    },
+  )
 })

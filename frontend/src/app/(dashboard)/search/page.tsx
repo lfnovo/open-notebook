@@ -210,7 +210,9 @@ export default function SearchPage() {
                     rows={3}
                     aria-label={t('common.accessibility.enterQuestion')}
                   />
-                  <p className="text-xs text-muted-foreground">{t('searchPage.pressToSubmit')}</p>
+                  {hasEmbeddingModel && (
+                    <p className="text-xs text-muted-foreground">{t('searchPage.pressToSubmit')}</p>
+                  )}
                 </div>
 
                 {/* Notebook scope */}

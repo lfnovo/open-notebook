@@ -17,14 +17,21 @@ services:
     pull_policy: always
 
   open_notebook:
-    image: lfnovo/open_notebook:v1-latest
+    # Built from this checkout rather than pulled, so the UI/API under test is
+    # the working tree. `build: .` uses the Dockerfile's last stage (`runtime`,
+    # the multi-container variant with SurrealDB external).
+    build: .
+    image: open-notebook:local
     ports:
       - "8502:8502"  # Web UI
       - "5055:5055"  # REST API
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       # REQUIRED: Change this to your own secret string
       # This encrypts your API keys in the database
       - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
+      - OLLAMA_API_BASE=http://host.docker.internal:11434      
 
       # Database connection. SURREAL_USER / SURREAL_PASSWORD default to root:root
       # for local use; override them in a .env file before exposing the instance
@@ -39,4 +46,3 @@ services:
     depends_on:
       - surrealdb
     restart: always
-    pull_policy: always

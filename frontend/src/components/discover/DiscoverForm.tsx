@@ -42,7 +42,11 @@ export function DiscoverForm({
   const [dryRun, setDryRun] = useState(false)
 
   const hasNotebooks = notebooks.length > 0
-  const canSubmit = hasNotebooks && query.trim().length > 0 && !submitting
+  const canSubmit =
+    hasNotebooks &&
+    notebookId.length > 0 &&
+    query.trim().length > 0 &&
+    !submitting
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()

@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Failed source embeds resume instead of starting over.** When embedding a source fails partway (a provider quota, a timeout), the batches that already finished are kept in a new `embedding_cache` table (migration 26), keyed by the embedding model and the chunk text. The retry only sends the missing chunks to the provider, and the log shows cache hits and misses for each batch. A source is still stored all or nothing, so search never sees a half-embedded source. The oldest cache rows are removed beyond `OPEN_NOTEBOOK_EMBEDDING_CACHE_MAX_ROWS` (default `5000`; `0` turns the cache off)
+- **Failed source embeds resume instead of starting over.** When embedding a source fails partway (a provider quota, a timeout), the batches that already finished are kept in a new `embedding_cache` table (migration 26), keyed by the embedding model and the chunk text. The retry only sends the missing chunks to the provider, and the log shows cache hits and misses for each batch. A source is still stored all or nothing, so search never sees a half-embedded source. The oldest cache rows are removed beyond `OPEN_NOTEBOOK_EMBEDDING_CACHE_MAX_ROWS` (default `5000`; `0` turns the cache off) (#1526)
 
 ### Changed
 - **Documentation rewritten against the code.** Every page under `docs/` was checked against v1.15.0 and rewritten where it described an older or imagined product (#1458, #1459, #1460, #1461):

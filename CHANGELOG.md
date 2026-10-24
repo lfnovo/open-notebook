@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Failed source embeds resume instead of starting over.** When embedding a source fails partway (a provider quota, a timeout), the batches that already finished are kept in a new `embedding_cache` table (migration 26), keyed by the embedding model and the chunk text. The retry only sends the missing chunks to the provider, and the log shows cache hits and misses for each batch. A source is still stored all or nothing, so search never sees a half-embedded source. The oldest cache rows are removed beyond `OPEN_NOTEBOOK_EMBEDDING_CACHE_MAX_ROWS` (default `5000`; `0` turns the cache off) (#1526)
+
 ### Changed
 - **Documentation rewritten against the code.** Every page under `docs/` was checked against v1.15.0 and rewritten where it described an older or imagined product (#1458, #1459, #1460, #1461):
   - **Install:** one canonical path built on the shipped `docker-compose.yml`, with small override files for the Ollama and LM Studio variants. The network-exposure warning (bind ports to `127.0.0.1` or set a password) comes before the first `docker compose up -d`. Example encryption keys are generated, never copied. First-run setup lives in one place, [Connect a provider](docs/4-AI-PROVIDERS/index.md#connect-a-provider), and ends in a working chat via **Auto-assign Defaults**. The provider table is built from the provider registry: 24 providers, with the model types each one offers

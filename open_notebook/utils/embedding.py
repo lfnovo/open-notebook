@@ -202,6 +202,11 @@ async def generate_embeddings(
     Args:
         texts: List of text strings to embed
         command_id: Optional command ID for error logging context
+        use_cache: If True, reuse cached embeddings keyed by model name and
+            chunk text, and store new ones, so a retried call only sends the
+            missing chunks to the provider. Defaults to False (no cache
+            reads or writes). Has no effect when
+            OPEN_NOTEBOOK_EMBEDDING_CACHE_MAX_ROWS is 0.
 
     Returns:
         List of embedding vectors, one per input text

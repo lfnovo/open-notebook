@@ -89,8 +89,9 @@ def ensure_record_id(value: Union[str, RecordID]) -> RecordID:
         return value
     if isinstance(value, str) and ":" in value:
         table, _, rest = value.partition(":")
-        if rest.startswith(f"{table}:"):
-            value = f"{table}:{rest[len(table) + 1 :]}"
+        while rest.startswith(f"{table}:"):
+            rest = rest[len(table) + 1 :]
+        value = f"{table}:{rest}"
     return RecordID.parse(value)
 
 

@@ -36,8 +36,7 @@ apiClient.interceptors.request.use(async (config) => {
   // Set the base URL dynamically from runtime config
   if (!config.baseURL) {
     const apiUrl = await getApiUrl()
-    const trimmed = apiUrl.replace(/\/api\/?$/, '')
-    config.baseURL = `${trimmed}/api`
+    config.baseURL = `${apiUrl}/api`
   }
 
   const token = getAuthToken()

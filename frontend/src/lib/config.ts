@@ -102,7 +102,10 @@ async function fetchConfig(): Promise<AppConfig> {
 
   // Priority: Runtime config > Build-time env var > Smart default
   // Note: runtimeApiUrl must be checked against null explicitly as empty string might be valid if intended (though we treat '' as null above)
-  const baseUrl = runtimeApiUrl !== null && runtimeApiUrl !== undefined ? runtimeApiUrl : (envApiUrl || defaultApiUrl)
+  const selectedUrl = runtimeApiUrl !== null && runtimeApiUrl !== undefined ? runtimeApiUrl : (envApiUrl || defaultApiUrl)
+  // Every caller appends "/api" itself, so an API URL that already ends with it
+  // (NEXT_PUBLIC_API_URL=/api) is kept without it - otherwise requests go to /api/api/...
+  const baseUrl = selectedUrl.replace(/\/api\/?$/, '')
   if (isDev) {
     console.log('🔧 [Config] Final base URL to try:', baseUrl)
     console.log('🔧 [Config] Selection priority: runtime=' + (runtimeApiUrl ? '✅' : '❌') +
@@ -112,14 +115,8 @@ async function fetchConfig(): Promise<AppConfig> {
 
   try {
     if (isDev) console.log('🔧 [Config] Fetching backend config from:', `${baseUrl}/api/config`)
-    // Build the backend config URL. The baseUrl may already end with "/api" (in
-    // the case of NEXT_PUBLIC_API_URL=/api), so we strip a trailing "/api" to
-    // avoid producing paths like "/api/api/config".
-    const trimmedBase = baseUrl.replace(/\/api\/?$/, '')
-    const backendConfigUrl = `${trimmedBase}/api/config`
-
     // Try to fetch runtime config from backend API
-    const response = await fetch(backendConfigUrl, {
+    const response = await fetch(`${baseUrl}/api/config`, {
       cache: 'no-store',
     })
 

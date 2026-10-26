@@ -589,6 +589,66 @@ class TestAutoAssignDefaults:
         assert body["assigned"]["default_embedding_model"] == "model:embed"
 
 
+class TestGetPreferredModel:
+    """_get_preferred_model must match the real preference table as
+    case-insensitive substrings, newest family first (#1473).
+    """
+
+    def _select(self, models):
+        from api.routers.models import (
+            MODEL_PREFERENCES,
+            PROVIDER_PRIORITY,
+            _get_preferred_model,
+        )
+
+        return _get_preferred_model(models, PROVIDER_PRIORITY, MODEL_PREFERENCES)
+
+    def test_openai_prefers_gpt_5_over_gpt_4o_mini(self):
+        models = [
+            {"id": "model:4o-mini", "provider": "openai", "name": "gpt-4o-mini"},
+            {"id": "model:5", "provider": "openai", "name": "gpt-5"},
+        ]
+
+        selected = self._select(models)
+
+        assert selected is not None
+        assert selected["name"] == "gpt-5"
+
+    def test_openai_prefers_gpt_5_mini_when_registered(self):
+        models = [
+            {"id": "model:4o-mini", "provider": "openai", "name": "gpt-4o-mini"},
+            {"id": "model:5-mini", "provider": "openai", "name": "gpt-5-mini"},
+            {"id": "model:5", "provider": "openai", "name": "gpt-5"},
+        ]
+
+        selected = self._select(models)
+
+        assert selected is not None
+        assert selected["name"] == "gpt-5-mini"
+
+    @pytest.mark.parametrize("reverse", [False, True])
+    def test_anthropic_prefers_sonnet_regardless_of_registration_order(self, reverse):
+        models = [
+            {
+                "id": "model:sonnet",
+                "provider": "anthropic",
+                "name": "claude-sonnet-5-5",
+            },
+            {
+                "id": "model:haiku",
+                "provider": "anthropic",
+                "name": "claude-haiku-5-5",
+            },
+        ]
+        if reverse:
+            models.reverse()
+
+        selected = self._select(models)
+
+        assert selected is not None
+        assert selected["name"] == "claude-sonnet-5-5"
+
+
 class TestGetDefaultModelFallback:
     """get_default_model must fall back to the chat model for the three text
     optional slots (transformation, tools, large_context) when unset (#1098).

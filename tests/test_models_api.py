@@ -648,6 +648,33 @@ class TestGetPreferredModel:
         assert selected is not None
         assert selected["name"] == "claude-sonnet-5-5"
 
+    def test_mistral_prefers_medium_over_large(self):
+        models = [
+            {"id": "model:mixtral", "provider": "mistral", "name": "mixtral-8x7b"},
+            {
+                "id": "model:large",
+                "provider": "mistral",
+                "name": "mistral-large-latest",
+            },
+            {"id": "model:medium", "provider": "mistral", "name": "mistral-medium-3"},
+        ]
+
+        selected = self._select(models)
+
+        assert selected is not None
+        assert selected["name"] == "mistral-medium-3"
+
+    def test_legacy_patterns_remain_after_current_families(self):
+        models = [
+            {"id": "model:3.5", "provider": "openai", "name": "gpt-3.5-turbo"},
+            {"id": "model:4", "provider": "openai", "name": "gpt-4-turbo"},
+        ]
+
+        selected = self._select(models)
+
+        assert selected is not None
+        assert selected["name"] == "gpt-4-turbo"
+
 
 class TestGetDefaultModelFallback:
     """get_default_model must fall back to the chat model for the three text

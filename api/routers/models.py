@@ -106,12 +106,19 @@ PROVIDER_PRIORITY = [
 
 # Model preference patterns (preferred models within each provider).
 # Entries are case-insensitive substrings matched in order: the first
-# pattern that matches a registered model wins.
+# pattern that matches a registered model wins. Older families stay last
+# so providers that only expose legacy models keep a sensible default.
 MODEL_PREFERENCES = {
-    "openai": ["gpt-5-mini", "gpt-5", "gpt-4.1", "gpt-4o"],
-    "anthropic": ["claude-sonnet", "claude-haiku"],
+    "openai": ["gpt-5-mini", "gpt-5", "gpt-4.1", "gpt-4o", "gpt-4", "gpt-3.5-turbo"],
+    "anthropic": [
+        "claude-sonnet",
+        "claude-haiku",
+        "claude-3-5-sonnet",
+        "claude-3-opus",
+        "claude-3-sonnet",
+    ],
     "google": ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-2.5-pro"],
-    "mistral": ["mistral-medium", "mistral-large"],
+    "mistral": ["mistral-medium", "mistral-large", "mixtral"],
     "groq": ["llama-3.3", "llama-3.1", "mixtral"],
     "dashscope": ["qwen-max", "qwen-plus", "qwen-turbo"],
     "minimax": ["MiniMax-M3", "MiniMax-M2.5", "MiniMax-M2.5-highspeed"],

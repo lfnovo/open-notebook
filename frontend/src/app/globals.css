@@ -134,23 +134,30 @@
 
 :root {
   /* --------------------------------------------------------------
+     fontes — auto-hospedadas via @fontsource (ver src/app/layout.tsx)
+     -------------------------------------------------------------- */
+  --font-instrument-sans: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-bricolage: "Poppins", "Avenir Next", "Trebuchet MS", sans-serif;
+  --font-spline-mono: "Spline Sans Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* --------------------------------------------------------------
      core palette — the owned hues, red-free
      -------------------------------------------------------------- */
-  --fern: #2e6b4f;
-  --fern-deep: #245740;
-  --fern-tint: #dfeae2;
+  --fern: #234B74;
+  --fern-deep: #092947;
+  --fern-tint: #E2E9ED;
 
   --sage: #5e7a54;
   --sage-deep: #47603f;
   --sage-tint: #e5ebdc;
 
-  --gold: #a97b12;
-  --gold-deep: #7c5a05;
-  --gold-tint: #f3ead3;
+  --gold: #F4563B;
+  --gold-deep: #c23e28;
+  --gold-tint: #fbe1db;
 
-  --teal: #0e7268;
-  --teal-deep: #095a51;
-  --teal-tint: #ddece8;
+  --teal: #092947;
+  --teal-deep: #061c30;
+  --teal-tint: #E2E9ED;
 
   --plum: #5d4991;
   --plum-tint: #eae6f3;
@@ -190,9 +197,9 @@
   --line-soft: #e8e8e2;
   --line-strong: #23252a;
 
-  --primary: #2e6b4f;
-  --primary-hover: #245740;
-  --on-primary: #f1f8f3;
+  --primary: #234B74;
+  --primary-hover: #092947;
+  --on-primary: #ffffff;
 
   --danger: #b0432d;
   --danger-deep: #93341f;
@@ -203,9 +210,9 @@
   --warn-tint: var(--clay-tint);
 
   /* teal evidence washes — the one sanctioned tinted text bg */
-  --excerpt-wash: #ecf3f0;
-  --best-match: rgba(14, 114, 104, 0.16);
-  --best-match-ring: rgba(14, 114, 104, 0.16);
+  --excerpt-wash: #e7edf2;
+  --best-match: rgba(9, 41, 71, 0.16);
+  --best-match-ring: rgba(9, 41, 71, 0.16);
 
   /* depth */
   --shadow-soft: 0 1px 2px rgba(35, 37, 42, 0.06);
@@ -300,18 +307,18 @@
    ========================================================================== */
 .dark {
   /* core palette */
-  --fern: #55b285;
-  --fern-deep: #6cc298;
-  --fern-tint: #1b2f25;
+  --fern: #4d7ca8;
+  --fern-deep: #6a97c2;
+  --fern-tint: #16202c;
   --sage: #93b084;
   --sage-deep: #a8c299;
   --sage-tint: #232b1d;
-  --gold: #cfa13e;
-  --gold-deep: #ddb55f;
-  --gold-tint: #322b1b;
-  --teal: #3fb3a5;
-  --teal-deep: #64c5b9;
-  --teal-tint: #16302c;
+  --gold: #ff7a5c;
+  --gold-deep: #ff967d;
+  --gold-tint: #3a211b;
+  --teal: #3f6e99;
+  --teal-deep: #5c8ab3;
+  --teal-tint: #15212c;
   --plum: #a290d3;
   --plum-tint: #29253a;
   --mauve: #c892ba;
@@ -344,18 +351,18 @@
   --line-soft: #26282d;
   --line-strong: #ecedea;
 
-  --primary: #3d8e67;
-  --primary-hover: #479e74;
-  --on-primary: #ecf7f0;
+  --primary: #3f6e99;
+  --primary-hover: #5c8ab3;
+  --on-primary: #ffffff;
 
   --danger: #df7c63;
   --danger-deep: #e9937d;
   --danger-tint: #37231d;
 
   /* evidence washes */
-  --excerpt-wash: #1c2a28;
-  --best-match: rgba(63, 179, 165, 0.2);
-  --best-match-ring: rgba(63, 179, 165, 0.2);
+  --excerpt-wash: #17222c;
+  --best-match: rgba(63, 110, 153, 0.2);
+  --best-match-ring: rgba(63, 110, 153, 0.2);
 
   /* depth */
   --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.35);

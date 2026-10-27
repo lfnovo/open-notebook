@@ -25,7 +25,7 @@ export const enUS = {
     podcast: "Podcast",
     quickActions: "Quick actions",
     quickActionsDesc: "Navigation, search, ask, theme",
-    appName: "Open Notebook",
+    appName: "MXM Notebook",
     add: "Add",
     remove: "Remove",
     confirm: "Confirm",
@@ -189,7 +189,7 @@ export const enUS = {
     localDevLabel: "For local development",
   },
   auth: {
-    loginTitle: "Open Notebook",
+    loginTitle: "MXM Notebook",
     loginDesc: "Enter your password to access the application",
     passwordPlaceholder: "Password",
     signingIn: "Signing in...",

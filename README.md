@@ -15,13 +15,14 @@
     <img src="docs/assets/hero.svg" alt="Logo">
   </a>
 
-  <h3 align="center">Open Notebook</h3>
+  <h3 align="center">MXM Notebook</h3>
 
   <p align="center">
-    An open source, privacy-focused alternative to Google's Notebook LM!
-    <br /><strong>Join our <a href="https://discord.gg/37XJPXfz2w">Discord server</a> for help, to share workflow ideas, and suggest features!</strong>
+    Fork interno da MXM Sistemas do projeto open source <a href="https://github.com/lfnovo/open-notebook">Open Notebook</a> — uma alternativa de código aberto e focada em privacidade ao Google Notebook LM, com identidade visual adaptada ao Brandbook da MXM.
+    <br />Todo o crédito do projeto original é do <a href="https://github.com/lfnovo">autor e comunidade do Open Notebook</a>; este fork mantém a licença MIT original.
+    <br /><strong>Projeto original: Join their <a href="https://discord.gg/37XJPXfz2w">Discord server</a> for help, to share workflow ideas, and suggest features!</strong>
     <br />
-    <a href="https://www.open-notebook.ai"><strong>Checkout our website »</strong></a>
+    <a href="https://www.open-notebook.ai"><strong>Site do projeto original »</strong></a>
     <br />
     Follow <a href="https://x.com/lfnovo">@lfnovo on X</a> for updates
     <br />

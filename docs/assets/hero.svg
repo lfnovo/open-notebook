@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="240" height="240" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Open Notebook — tri-hue pebble mark ("Quiet Green"): fern acts, gold notes, teal speaks -->
-  <rect x="24"  y="90" width="56" height="70" rx="16" fill="#2E6B4F"/>
-  <rect x="92"  y="90" width="56" height="70" rx="16" fill="#A97B12"/>
-  <rect x="160" y="90" width="56" height="70" rx="16" fill="#0E7268"/>
+  <!-- MXM Notebook — marca adaptada a partir do Open Notebook (fork interno MXM) -->
+  <rect x="24"  y="90" width="56" height="70" rx="16" fill="#234B74"/>
+  <rect x="92"  y="90" width="56" height="70" rx="16" fill="#F4563B"/>
+  <rect x="160" y="90" width="56" height="70" rx="16" fill="#092947"/>
 </svg>

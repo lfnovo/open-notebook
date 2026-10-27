@@ -3,12 +3,12 @@
   <!-- Gradient Definitions -->
   <defs>
     <linearGradient id="nodeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#bd34fe;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#41d1ff;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#092947;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F4563B;stop-opacity:1" />
     </linearGradient>
     <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#bd34fe;stop-opacity:0.3" />
-      <stop offset="100%" style="stop-color:#41d1ff;stop-opacity:0.3" />
+      <stop offset="0%" style="stop-color:#092947;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#F4563B;stop-opacity:0.3" />
     </linearGradient>
   </defs>
 

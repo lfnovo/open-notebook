@@ -13,6 +13,9 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@fontsource/instrument-sans": "^5.3.0",
+    "@fontsource/poppins": "^5.3.0",
+    "@fontsource/spline-sans-mono": "^5.3.0",
     "@hookform/resolvers": "^5.9.1",
     "@radix-ui/react-accordion": "^1.2.20",
     "@radix-ui/react-alert-dialog": "^1.1.23",

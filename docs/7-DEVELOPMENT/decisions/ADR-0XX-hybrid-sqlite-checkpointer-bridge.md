@@ -18,7 +18,7 @@ The async/event-loop and thread boundaries stay clean: the model node runs as a 
 
 ## Alternatives considered
 
-- **Dedicated async checkpointer (`AsyncSqliteSaver` / `aio-sqlite`)** — rejected: adds a dependency, a second checkpoint format, and a second persistence path to test, for no benefit over the sync saver since the DB work is already lock-serialized and short.
+- **Dedicated async checkpointer (`AsyncSqliteSaver` / `aio-sqlite`)** — rejected: although the existing `langgraph-checkpoint-sqlite` dependency already includes `aiosqlite` and uses the same SQLite checkpoint store, it would introduce a separate async connection/lifecycle and persistence path to test alongside the shared sync connection.
 - **Run the whole graph synchronously in a thread** — the pre-existing approach — rejected: it made the model call uncancellable, which is exactly the gap #1327's follow-up needed to close.
 - **A single global `asyncio.Lock` around all checkpointer calls** — rejected as redundant: `SqliteSaver` already serializes access internally; a second lock in front would add contention without adding correctness. The per-session lock in the router is a different concern (read-modify-write atomicity across `get_state` + `aupdate_state` + `ainvoke`), and it lives there rather than in the saver.
 

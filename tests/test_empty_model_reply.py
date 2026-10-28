@@ -13,7 +13,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
-from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
@@ -23,11 +22,13 @@ from open_notebook.exceptions import IncompleteGenerationError
 EMPTY_REPLIES = ["", "   \n\t", "<think>only reasoning</think>", None]
 
 
-def _sync_model_returning(content: str) -> MagicMock:
+def _model_returning(content: str) -> MagicMock:
     model = MagicMock()
     # AIMessage won't accept content=None; some providers still return it.
     reply = MagicMock(content=None) if content is None else AIMessage(content=content)
+    # Notebook chat still uses sync invoke; source chat uses ainvoke.
     model.invoke = MagicMock(return_value=reply)
+    model.ainvoke = AsyncMock(return_value=reply)
     return model
 
 
@@ -41,7 +42,7 @@ def test_notebook_chat_node_rejects_empty_reply(reply):
     state = {"messages": [HumanMessage(content="hi")], "notebook": None}
     with patch(
         "open_notebook.graphs.chat.provision_langchain_model",
-        new=AsyncMock(return_value=_sync_model_returning(reply)),
+        new=AsyncMock(return_value=_model_returning(reply)),
     ):
         with pytest.raises(IncompleteGenerationError, match="empty response"):
             call_model_with_messages(state, {"configurable": {}})  # type: ignore[arg-type]
@@ -53,14 +54,15 @@ def test_notebook_chat_node_keeps_nonempty_reply():
     state = {"messages": [HumanMessage(content="hi")], "notebook": None}
     with patch(
         "open_notebook.graphs.chat.provision_langchain_model",
-        new=AsyncMock(return_value=_sync_model_returning("<think>x</think>hello")),
+        new=AsyncMock(return_value=_model_returning("<think>x</think>hello")),
     ):
         result = call_model_with_messages(state, {"configurable": {}})  # type: ignore[arg-type]
     assert result["messages"].content == "hello"
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("reply", EMPTY_REPLIES)
-def test_source_chat_node_rejects_empty_reply(reply):
+async def test_source_chat_node_rejects_empty_reply(reply):
     from open_notebook.graphs.source_chat import call_model_with_source_context
 
     state = {"source_id": "source:1", "messages": [HumanMessage(content="hi")]}
@@ -71,11 +73,11 @@ def test_source_chat_node_rejects_empty_reply(reply):
         ),
         patch(
             "open_notebook.graphs.source_chat.provision_langchain_model",
-            new=AsyncMock(return_value=_sync_model_returning(reply)),
+            new=AsyncMock(return_value=_model_returning(reply)),
         ),
     ):
         with pytest.raises(IncompleteGenerationError, match="empty response"):
-            call_model_with_source_context(state, {"configurable": {}})  # type: ignore[arg-type]
+            await call_model_with_source_context(state, {"configurable": {}})  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio
@@ -111,6 +113,7 @@ class _State(TypedDict, total=False):
 def _toy_graph(replies: list):
     """A checkpointed graph whose node raises like the real one on an empty
     reply, then answers on the next call."""
+    from open_notebook.graphs.source_chat import HybridSqliteSaver
 
     def node(state):
         reply = replies.pop(0)
@@ -122,12 +125,18 @@ def _toy_graph(replies: list):
     builder.add_node("agent", node)
     builder.add_edge(START, "agent")
     builder.add_edge("agent", END)
-    saver = SqliteSaver(sqlite3.connect(":memory:", check_same_thread=False))
+    # HybridSqliteSaver is required so aupdate_state/ainvoke work (plain
+    # SqliteSaver raises NotImplementedError on the async path).
+    saver = HybridSqliteSaver(sqlite3.connect(":memory:", check_same_thread=False))
     return builder.compile(checkpointer=saver)
 
 
 async def _events(gen):
-    return [json.loads(chunk[len("data: ") :]) async for chunk in gen]
+    return [
+        json.loads(chunk[len("data: ") :])
+        async for chunk in gen
+        if chunk.startswith("data: ")
+    ]
 
 
 def _history(graph, thread_id):
@@ -135,24 +144,47 @@ def _history(graph, thread_id):
     return [(m.type, m.content) for m in state.values.get("messages", [])]
 
 
+def _connected_request() -> MagicMock:
+    request = MagicMock()
+    request.is_disconnected = AsyncMock(return_value=False)
+    return request
+
+
 @pytest.mark.asyncio
-async def test_source_chat_failed_turn_is_rolled_back_and_retry_is_clean():
+async def test_source_chat_failed_turn_keeps_pending_question_for_retry():
+    """A failed generation leaves the user message pending; a retry with the
+    same message_id must not duplicate it, and must complete cleanly."""
     from api.routers.source_chat import stream_source_chat_response
 
     graph = _toy_graph(["", "the answer"])
+    request = _connected_request()
     with patch("api.routers.source_chat.source_chat_graph", graph):
         failed = await _events(
-            stream_source_chat_response("chat_session:s", "source:1", "question")
+            stream_source_chat_response(
+                request,
+                "chat_session:s",
+                "source:1",
+                "question",
+                message_id="msg-1",
+            )
         )
         assert failed[-1] == {
             "type": "error",
             "message": "The model returned an empty response.",
         }
         assert not any(e["type"] == "ai_message" for e in failed)
-        assert _history(graph, "chat_session:s") == []
+        # Pending human turn is kept so a reconnect/refetch still shows it;
+        # discard-on-failure was replaced by message_id dedup on retry.
+        assert _history(graph, "chat_session:s") == [("human", "question")]
 
         retried = await _events(
-            stream_source_chat_response("chat_session:s", "source:1", "question")
+            stream_source_chat_response(
+                request,
+                "chat_session:s",
+                "source:1",
+                "question",
+                message_id="msg-1",
+            )
         )
 
     assert [e["content"] for e in retried if e["type"] == "ai_message"] == [

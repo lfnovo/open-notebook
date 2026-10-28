@@ -341,11 +341,11 @@ async def test_stream_emits_only_the_new_ai_message():
     from api.routers import source_chat as source_chat_router
     from api.routers.source_chat import stream_source_chat_response
 
-    with patch.object(
-        source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01
-    ), patch.object(
-        source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01
-    ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
+    with (
+        patch.object(source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01),
+        patch.object(source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01),
+        patch.object(source_chat_router, "source_chat_graph") as mock_graph,
+    ):
         mock_graph.aupdate_state = AsyncMock()
         mock_graph.ainvoke = AsyncMock(
             return_value={
@@ -404,11 +404,11 @@ async def test_stream_source_chat_emits_keepalive_while_invoke_runs():
         await release.wait()
         return {"messages": []}
 
-    with patch.object(
-        source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01
-    ), patch.object(
-        source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01
-    ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
+    with (
+        patch.object(source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01),
+        patch.object(source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01),
+        patch.object(source_chat_router, "source_chat_graph") as mock_graph,
+    ):
         mock_graph.aupdate_state = AsyncMock()
         mock_graph.ainvoke.side_effect = controlled_ainvoke
 
@@ -451,11 +451,11 @@ async def test_stream_source_chat_cancels_invoke_on_disconnect():
             cancelled.set()
             raise
 
-    with patch.object(
-        source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01
-    ), patch.object(
-        source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01
-    ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
+    with (
+        patch.object(source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01),
+        patch.object(source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01),
+        patch.object(source_chat_router, "source_chat_graph") as mock_graph,
+    ):
         mock_graph.aupdate_state = AsyncMock()
         mock_graph.ainvoke.side_effect = blocking_ainvoke
 
@@ -492,11 +492,11 @@ async def test_stream_source_chat_skips_duplicate_pending_user_message():
     from api.routers import source_chat as source_chat_router
     from api.routers.source_chat import stream_source_chat_response
 
-    with patch.object(
-        source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01
-    ), patch.object(
-        source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01
-    ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
+    with (
+        patch.object(source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01),
+        patch.object(source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01),
+        patch.object(source_chat_router, "source_chat_graph") as mock_graph,
+    ):
         mock_graph.get_state.return_value = _graph_state(
             {"messages": [HumanMessage(content="hello", id="msg-1")]}
         )
@@ -525,11 +525,11 @@ async def test_stream_source_chat_appends_user_message_when_not_pending():
     from api.routers import source_chat as source_chat_router
     from api.routers.source_chat import stream_source_chat_response
 
-    with patch.object(
-        source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01
-    ), patch.object(
-        source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01
-    ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
+    with (
+        patch.object(source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01),
+        patch.object(source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01),
+        patch.object(source_chat_router, "source_chat_graph") as mock_graph,
+    ):
         mock_graph.get_state.return_value = _graph_state(
             {"messages": [_Msg("m1", "human", "hi"), _Msg("m2", "ai", "yo")]}
         )
@@ -565,11 +565,11 @@ async def test_stream_source_chat_appends_distinct_identical_messages():
     from api.routers import source_chat as source_chat_router
     from api.routers.source_chat import stream_source_chat_response
 
-    with patch.object(
-        source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01
-    ), patch.object(
-        source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01
-    ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
+    with (
+        patch.object(source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01),
+        patch.object(source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01),
+        patch.object(source_chat_router, "source_chat_graph") as mock_graph,
+    ):
         mock_graph.get_state.return_value = _graph_state(
             {"messages": [HumanMessage(content="hello", id="msg-1")]}
         )
@@ -604,11 +604,11 @@ async def test_stream_source_chat_evicts_session_lock_after_stream():
 
     session_id = "chat_session:lock-evict"
 
-    with patch.object(
-        source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01
-    ), patch.object(
-        source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01
-    ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
+    with (
+        patch.object(source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01),
+        patch.object(source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01),
+        patch.object(source_chat_router, "source_chat_graph") as mock_graph,
+    ):
         mock_graph.get_state.return_value = _graph_state({"messages": []})
         mock_graph.aupdate_state = AsyncMock()
         mock_graph.ainvoke = AsyncMock(return_value={"messages": []})
@@ -668,11 +668,11 @@ async def test_stream_source_chat_disconnect_polls_faster_than_keepalive():
             cancelled.set()
             raise
 
-    with patch.object(
-        source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 60.0
-    ), patch.object(
-        source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01
-    ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
+    with (
+        patch.object(source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 60.0),
+        patch.object(source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01),
+        patch.object(source_chat_router, "source_chat_graph") as mock_graph,
+    ):
         mock_graph.aupdate_state = AsyncMock()
         mock_graph.ainvoke.side_effect = blocking_ainvoke
 
@@ -701,11 +701,11 @@ async def test_stream_source_chat_keeps_alive_while_queued_on_the_turn_lock():
     from api.routers import source_chat as source_chat_router
     from api.routers.source_chat import stream_source_chat_response
 
-    with patch.object(
-        source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01
-    ), patch.object(
-        source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01
-    ), patch.object(source_chat_router, "source_chat_graph"):
+    with (
+        patch.object(source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01),
+        patch.object(source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01),
+        patch.object(source_chat_router, "source_chat_graph"),
+    ):
         request = MagicMock()
         request.is_disconnected = AsyncMock(return_value=False)
 
@@ -734,9 +734,10 @@ async def test_stream_source_chat_ends_when_client_disconnects_while_queued():
 
     session_id = "chat_session:queued-gone"
 
-    with patch.object(
-        source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01
-    ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
+    with (
+        patch.object(source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01),
+        patch.object(source_chat_router, "source_chat_graph") as mock_graph,
+    ):
         mock_graph.aupdate_state = AsyncMock()
         request = MagicMock()
         request.is_disconnected = AsyncMock(return_value=True)
@@ -767,20 +768,21 @@ async def test_stream_source_chat_emits_due_keepalive_before_final_response():
     # the completion poll is 100, so a due keepalive must precede the final
     # response (the done-branch runs only after the keepalive check).
     ticks = 0
+
     def fake_monotonic():
         nonlocal ticks
         value = ticks * 100.0
         ticks += 1
         return value
+
     fake_time = SimpleNamespace(monotonic=fake_monotonic)
 
-    with patch.object(
-        source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 60.0
-    ), patch.object(
-        source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01
-    ), patch.object(
-        source_chat_router, "time", fake_time
-    ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
+    with (
+        patch.object(source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 60.0),
+        patch.object(source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01),
+        patch.object(source_chat_router, "time", fake_time),
+        patch.object(source_chat_router, "source_chat_graph") as mock_graph,
+    ):
         mock_graph.get_state.return_value = _graph_state({"messages": []})
         mock_graph.aupdate_state = AsyncMock()
         mock_graph.ainvoke = AsyncMock(return_value={"messages": []})

@@ -128,8 +128,7 @@ async def _call_model_with_source_context_inner(
     # Provision the model asynchronously (cancellable)
     model = await provision_langchain_model(
         str(payload),
-        config.get("configurable", {}).get("model_id")
-        or state.get("model_override"),
+        config.get("configurable", {}).get("model_id") or state.get("model_override"),
         "chat",
         max_tokens=8192,
     )

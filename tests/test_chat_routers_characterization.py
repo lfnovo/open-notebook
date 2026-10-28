@@ -331,6 +331,60 @@ async def test_get_source_chat_session_happy_path_shapes(
     }
 
 
+# --- source_chat.py: streaming ------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_stream_emits_only_the_new_ai_message():
+    """The graph result carries the whole checkpointed history; the stream must
+    send only this turn's answer, not every previous AI message (#1393)."""
+    from api.routers import source_chat as source_chat_router
+    from api.routers.source_chat import stream_source_chat_response
+
+    with patch.object(
+        source_chat_router, "KEEPALIVE_INTERVAL_SECONDS", 0.01
+    ), patch.object(
+        source_chat_router, "DISCONNECT_POLL_INTERVAL_SECONDS", 0.01
+    ), patch.object(source_chat_router, "source_chat_graph") as mock_graph:
+        mock_graph.aupdate_state = AsyncMock()
+        mock_graph.ainvoke = AsyncMock(
+            return_value={
+                "messages": [
+                    _Msg("m1", "human", "first question"),
+                    _Msg("m2", "ai", "first answer"),
+                    _Msg("m3", "human", "second question"),
+                    _Msg("m4", "ai", "second answer"),
+                ],
+                "context_indicators": {
+                    "sources": ["source:xyz"],
+                    "insights": [],
+                    "notes": [],
+                },
+            }
+        )
+
+        request = MagicMock()
+        request.is_disconnected = AsyncMock(return_value=False)
+
+        events = []
+        async for chunk in stream_source_chat_response(
+            request, "chat_session:abc", "source:xyz", "second question"
+        ):
+            if chunk.startswith("data: "):
+                import json
+
+                events.append(json.loads(chunk[len("data: ") :]))
+
+    ai_events = [e for e in events if e["type"] == "ai_message"]
+    assert [e["content"] for e in ai_events] == ["second answer"]
+    assert [e["type"] for e in events] == [
+        "user_message",
+        "ai_message",
+        "context_indicators",
+        "complete",
+    ]
+
+
 # --- source_chat.py: SSE keepalive --------------------------------------------
 
 

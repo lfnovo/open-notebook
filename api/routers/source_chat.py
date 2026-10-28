@@ -2,7 +2,6 @@ import asyncio
 import json
 import time
 from typing import AsyncGenerator, List, Optional
-from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Path, Request
 from fastapi.responses import StreamingResponse
@@ -25,10 +24,7 @@ from open_notebook.exceptions import (
     OpenNotebookError,
 )
 from open_notebook.graphs.source_chat import source_chat_graph as source_chat_graph
-from open_notebook.utils.graph_utils import (
-    get_session_message_count,
-    invoke_chat_turn,
-)
+from open_notebook.utils.graph_utils import get_session_message_count
 
 router = APIRouter()
 
@@ -447,18 +443,19 @@ async def stream_source_chat_response(
                     # tokens.
                     return
 
-            # Stream the complete AI response
-            if "messages" in result:
-                for msg in result["messages"]:
-                    if hasattr(msg, "type") and msg.type == "ai":
-                        ai_event = {
-                            "type": "ai_message",
-                            "content": msg.content
-                            if hasattr(msg, "content")
-                            else str(msg),
-                            "timestamp": None,
-                        }
-                        yield f"data: {json.dumps(ai_event)}\n\n"
+            # Stream this turn's AI response. result["messages"] is the full
+            # checkpointed history, so only the last message is new.
+            if result.get("messages"):
+                msg = result["messages"][-1]
+                if getattr(msg, "type", None) == "ai":
+                    ai_event = {
+                        "type": "ai_message",
+                        "content": msg.content
+                        if hasattr(msg, "content")
+                        else str(msg),
+                        "timestamp": None,
+                    }
+                    yield f"data: {json.dumps(ai_event)}\n\n"
 
             # Stream context indicators
             if "context_indicators" in result:

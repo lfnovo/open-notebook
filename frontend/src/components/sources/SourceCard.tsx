@@ -135,15 +135,15 @@ function SourceCardImpl({
   // completed source — that scaled linearly with the number of cards and caused the
   // list lag reported in #503.
   //
-  // A source with a `command_id` but no resolved `status` yet is still ambiguous
-  // (it renders as a synthetic "new"), so keep polling those until a real status
-  // arrives — otherwise such a card would be stuck "processing" forever.
-  const shouldFetchStatus =
+  // A command status that is missing or "unknown" still renders as "new",
+  // so keep polling until it resolves instead of leaving the card stuck.
+  const sourceIsProcessing =
     sourceWithStatus.status === 'new' ||
     sourceWithStatus.status === 'queued' ||
     sourceWithStatus.status === 'running' ||
-    (!!sourceWithStatus.command_id && !sourceWithStatus.status) ||
-    wasProcessing // Keep polling if we were processing to catch the completion
+    sourceWithStatus.status === 'unknown' ||
+    (!!sourceWithStatus.command_id && !sourceWithStatus.status)
+  const shouldFetchStatus = sourceIsProcessing || wasProcessing
 
   const { data: statusData, isLoading: statusLoading } = useSourceStatus(
     source.id,
@@ -158,12 +158,22 @@ function SourceCardImpl({
     : (sourceWithStatus.command_id ? 'new' : 'completed')
 
 
+  // Remember pending list data even when the first polled status is terminal.
+  useEffect(() => {
+    if (sourceIsProcessing) setWasProcessing(true)
+  }, [sourceIsProcessing, sourceWithStatus.command_id])
+
   // Track processing state and detect completion
   useEffect(() => {
     const currentStatusFromData = statusData?.status || sourceWithStatus.status
 
-    // If we're currently processing, mark that we were processing
-    if (currentStatusFromData === 'new' || currentStatusFromData === 'running' || currentStatusFromData === 'queued') {
+    // Remember unresolved responses even after a stale terminal cache was read.
+    if (
+      currentStatusFromData === 'new' ||
+      currentStatusFromData === 'running' ||
+      currentStatusFromData === 'queued' ||
+      currentStatusFromData === 'unknown'
+    ) {
       setWasProcessing(true)
     }
 

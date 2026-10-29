@@ -233,7 +233,7 @@ export function SourcesColumn({
                     onRemoveFromNotebook={handleRemoveFromNotebook}
                     onRefresh={onRefresh}
                     showRemoveFromNotebook={true}
-                    contextMode={contextSelections?.[source.id]}
+                    contextMode={contextSelections?.[source.id] ?? 'off'}
                     onContextModeChange={onContextModeChange
                       ? (mode) => onContextModeChange(source.id, mode)
                       : undefined

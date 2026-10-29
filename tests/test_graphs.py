@@ -602,6 +602,53 @@ class TestContentProcessDeleteSource:
         assert config.url_engine == "firecrawl"
         assert config.document_engine == "simple"
 
+    @pytest.mark.asyncio
+    @patch("open_notebook.ai.key_provider.provision_provider_keys")
+    @patch("open_notebook.graphs.source.Model")
+    @patch("open_notebook.graphs.source.extract_content")
+    @patch("open_notebook.graphs.source.ModelManager")
+    async def test_credential_linked_stt_model_provisions_key(
+        self, mock_model_manager, mock_extract, mock_model, mock_provision
+    ):
+        """A credential-linked default STT model must provision its provider's
+        env var before content-core runs, the same fallback resolve_* /
+        get_model use for language and embedding models (see #567, which
+        fixed the same class of bug for embeddings).
+
+        Without this, content-core builds its speech-to-text client from
+        process env vars only and raises ConfigurationError when
+        OPENAI_API_KEY is unset, even though a credential is configured in
+        the UI.
+        """
+        from content_core.common import ExtractionOutput
+
+        from open_notebook.graphs.source import SourceState, content_process
+
+        mm_instance = MagicMock()
+        mm_instance.get_defaults = AsyncMock(
+            return_value=MagicMock(default_speech_to_text_model="model:stt1")
+        )
+        mock_model_manager.return_value = mm_instance
+        # `name=` can't be passed via the MagicMock constructor: it sets the
+        # mock's own repr name, not a `.name` attribute.
+        mock_stt_model = MagicMock()
+        mock_stt_model.provider = "openai"
+        mock_stt_model.name = "gpt-4o-mini-transcribe"
+        mock_model.get = AsyncMock(return_value=mock_stt_model)
+        mock_provision.return_value = True
+        mock_extract.return_value = ExtractionOutput(title="T", content="body")
+
+        state = {
+            "source_id": "source:123",
+            "content_state": {"file_path": "/tmp/audio.mp3"},
+            "embed": False,
+            "apply_transformations": [],
+        }
+
+        await content_process(cast(SourceState, state))
+
+        mock_provision.assert_awaited_once_with("openai")
+
 
 # ============================================================================
 # TEST SUITE 6: Per-transformation model_id forwarding (#1137)

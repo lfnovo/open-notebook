@@ -38,14 +38,14 @@ describe('computeSourceSelections', () => {
   it.each([undefined, null, ''])('waits for the status of an async source (%s)', (status) => {
     const source = { ...src('s:1'), status, command_id: 'command:1' }
 
-    expect(computeSourceSelections({}, [source])['s:1'] ?? 'off').toBe('off')
+    expect(computeSourceSelections({}, [source])).toEqual({})
   })
 
   it('defers the default selection until a processing source completes', () => {
     const source = { ...src('s:1'), status: 'running', command_id: 'command:1' }
     const pending = computeSourceSelections({}, [source])
 
-    expect(pending['s:1'] ?? 'off').toBe('off')
+    expect(pending).toEqual({})
     expect(computeSourceSelections(pending, [{ ...source, status: 'completed' }])).toEqual({
       's:1': 'full',
     })

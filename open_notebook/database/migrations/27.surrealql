@@ -1,0 +1,13 @@
+-- Migration 27: notebook folders.
+-- A `folder` groups notebooks on the home page. Names are NOT unique in the
+-- database (the API enforces case-insensitive uniqueness). `notebook.folder`
+-- is NONE for ungrouped notebooks; deleting a folder is handled by the API,
+-- which un-groups its notebooks (it never deletes them).
+DEFINE TABLE IF NOT EXISTS folder SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS name ON TABLE folder TYPE string
+    ASSERT string::len(string::trim($value)) > 0;
+DEFINE FIELD IF NOT EXISTS created ON folder DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON folder DEFAULT time::now() VALUE time::now();
+
+DEFINE FIELD IF NOT EXISTS folder ON TABLE notebook TYPE option<record<folder>>;
+DEFINE INDEX IF NOT EXISTS idx_notebook_folder ON TABLE notebook COLUMNS folder CONCURRENTLY;

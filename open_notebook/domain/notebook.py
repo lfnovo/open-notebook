@@ -17,12 +17,25 @@ from open_notebook.exceptions import (
 )
 
 
+class Folder(ObjectModel):
+    table_name: ClassVar[str] = "folder"
+    name: str
+
+    @field_validator("name")
+    @classmethod
+    def name_must_not_be_empty(cls, v):
+        if not v.strip():
+            raise InvalidInputError("Folder name cannot be empty")
+        return v
+
+
 class Notebook(ObjectModel):
     table_name: ClassVar[str] = "notebook"
     name: str
     description: str
     archived: Optional[bool] = False
     last_viewed_at: Optional[datetime] = None
+    folder: Optional[str] = None
 
     @field_validator("name")
     @classmethod
@@ -30,6 +43,21 @@ class Notebook(ObjectModel):
         if not v.strip():
             raise InvalidInputError("Notebook name cannot be empty")
         return v
+
+    @field_validator("folder", mode="before")
+    @classmethod
+    def folder_to_str(cls, v):
+        return str(v) if v else None
+
+    def _prepare_save_data(self) -> Dict[str, Any]:
+        data = super()._prepare_save_data()
+        # `folder` is a record link; None is dropped so MERGE leaves it alone
+        # (clearing is done explicitly by the API with UNSET/NONE).
+        if data.get("folder"):
+            data["folder"] = ensure_record_id(data["folder"])
+        else:
+            data.pop("folder", None)
+        return data
 
     async def get_sources(self, include_full_text: bool = False) -> List["Source"]:
         try:

@@ -22,6 +22,15 @@ describe('ChatPanel composer', () => {
 
   const getTextarea = () => screen.getByRole('textbox') as HTMLTextAreaElement
 
+  it('reserves room for the multi-line placeholder and caps growth', () => {
+    render(
+      <ChatPanel messages={[]} isStreaming={false} contextIndicators={null} onSendMessage={vi.fn()} />
+    )
+    const textarea = getTextarea()
+    expect(textarea.rows).toBe(3)
+    expect(textarea).toHaveClass('min-h-[84px]', 'max-h-[160px]')
+  })
+
   it('sends the typed message and clears the input on send-button click', () => {
     const onSendMessage = vi.fn()
     render(

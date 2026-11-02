@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EpisodeProgress, isEpisodeInProgress } from '@/components/podcasts/EpisodeProgress'
 import { GeneratePodcastDialog } from '@/components/podcasts/GeneratePodcastDialog'
-import { useEpisodeAudio } from '@/lib/hooks/use-episode-audio'
+import { EpisodePlayButton } from '@/components/player/EpisodePlayButton'
 import { usePodcastEpisodes } from '@/lib/hooks/use-podcasts'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { FAILED_EPISODE_STATUSES, type PodcastEpisode } from '@/lib/types/podcasts'
@@ -19,7 +19,6 @@ function NotebookEpisodeItem({ episode }: { episode: PodcastEpisode }) {
   const completed = episode.job_status === 'completed'
   const inProgress = isEpisodeInProgress(episode.job_status)
   const failed = !!episode.job_status && FAILED_EPISODE_STATUSES.includes(episode.job_status)
-  const { audioSrc, audioError } = useEpisodeAudio(episode, completed)
 
   const created = episode.created
     ? formatDistanceToNow(new Date(episode.created), {
@@ -50,10 +49,16 @@ function NotebookEpisodeItem({ episode }: { episode: PodcastEpisode }) {
 
       <EpisodeProgress status={episode.job_status} progress={episode.progress} />
 
-      {completed && audioSrc ? (
-        <audio controls preload="none" src={audioSrc} className="w-full" />
-      ) : completed && audioError ? (
-        <p className="text-xs text-destructive">{audioError}</p>
+      {completed && (episode.audio_url || episode.audio_file) ? (
+        <EpisodePlayButton
+          episode={{
+            id: episode.id,
+            name: episode.name,
+            notebookId: episode.notebook_id ?? undefined,
+            audio_url: episode.audio_url,
+            audio_file: episode.audio_file,
+          }}
+        />
       ) : null}
     </div>
   )

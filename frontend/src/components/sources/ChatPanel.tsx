@@ -294,8 +294,8 @@ function ChatComposer({
           onKeyDown={handleKeyDown}
           placeholder={`${t('chat.sendPlaceholder')} (${t('chat.pressToSend', { key: keyHint })})`}
           disabled={isStreaming}
-          className="flex-1 min-h-[40px] max-h-[100px] resize-none py-2 px-3 min-w-0"
-          rows={1}
+          className="flex-1 min-h-[84px] max-h-[160px] resize-none py-2 px-3 min-w-0"
+          rows={3}
         />
         <Button
           onClick={handleSend}

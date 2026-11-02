@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Notebook folders.** Group notebooks into folders from the notebooks page: create, rename and delete folders (deleting keeps the notebooks), move a notebook with the card menu or by dragging it onto a folder. New `/api/folders` endpoints, `folder_id` on notebooks (migration 27). Notebook lists are grids throughout; the list/tile toggle is gone
+- **Podcasts keep playing while you navigate.** One app-level player with a mini-player bar (play/pause, ±15 s, seek) replaces the per-page audio elements; media keys work through the Media Session API
 - **Podcasts live in their notebook.** Episodes now record the notebook they were generated from (migration 26) and appear in a Podcasts section of the notebook's notes column with an inline player. When the chosen sources span more than one notebook, the Generate Podcast dialog asks which notebook the episode belongs to
 - **Podcast progress.** Generating episodes show a percent-complete bar on the Podcasts page and inside the notebook (outline, script by segment, then audio clip N of M)
 - **Discover notebook.** Two buttons on the notebooks page turn a topic into a new notebook with about 10 web sources chosen for a balanced mix of viewpoints (keyless DuckDuckGo search via `ddgs`), optionally followed by a podcast with the episode profile you pick. New endpoint `POST /api/notebooks/discover`
@@ -20,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Development:** `architecture.md`, `testing.md`, `api-reference.md` and `code-standards.md` are rewritten from the code. A new playbook covers adding an AI provider. Dev setup lives on one page. The AGENTS files agree with the docs. Contributor conventions (Conventional Commits, CHANGELOG sections, pre-PR checks that match CI) are documented
 
 ### Fixed
+- The notebook chat box shows its whole two-line placeholder instead of clipping the second line
 - **Docs no longer recommend settings that do nothing.** `API_CLIENT_TIMEOUT` was never read by Open Notebook; the timeout guidance now covers what actually applies: `ESPERANTO_LLM_TIMEOUT` per model call (keep it below 600) and the web UI's 10-minute request limit (`NEXT_PUBLIC_API_TIMEOUT_MS`, build time only). Remaining `SURREAL_COMMANDS_MAX_TASKS` advice now uses `OPEN_NOTEBOOK_WORKER_MAX_TASKS`. Docker instructions no longer say to edit `.env` and `docker compose restart`: the shipped compose file doesn't load `.env` into the container and `restart` doesn't reload environment changes, so they now point to the `open_notebook` service's `environment:` block and `docker compose up -d`
 - **Timeouts no longer read as connection failures.** A model that doesn't answer within `ESPERANTO_LLM_TIMEOUT` used to report "Could not connect to the AI provider"; it now says the provider took too long and how to raise the limit. Connection failures (including connect timeouts) keep the old message
 - Error hints point to screens that exist: an authentication failure sends you to Manage → Models (not "Settings → Credentials"), and an unsupported podcast voice to Podcasts → Profiles. The empty Podcasts page points to the Generate Podcast button instead of chat screens that can't start a podcast

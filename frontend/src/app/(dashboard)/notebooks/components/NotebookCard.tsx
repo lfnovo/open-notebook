@@ -5,7 +5,7 @@ import { NotebookResponse } from '@/lib/types/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { MoreHorizontal, Archive, ArchiveRestore, Trash2, FileText, StickyNote } from 'lucide-react'
+import { MoreHorizontal, Archive, ArchiveRestore, Trash2, FileText, StickyNote, FolderInput } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import {
   DropdownMenu,
@@ -15,6 +15,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useUpdateNotebook } from '@/lib/hooks/use-notebooks'
 import { NotebookDeleteDialog } from './NotebookDeleteDialog'
+import { MoveToFolderDialog } from '@/components/notebooks/MoveToFolderDialog'
+import { NOTEBOOK_DRAG_MIME } from '@/lib/utils/folders'
 import { useState } from 'react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { getDateLocale } from '@/lib/utils/date-locale'
@@ -25,6 +27,7 @@ interface NotebookCardProps {
 export function NotebookCard({ notebook }: NotebookCardProps) {
   const { t, language } = useTranslation()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showMoveDialog, setShowMoveDialog] = useState(false)
   const router = useRouter()
   const updateNotebook = useUpdateNotebook()
 
@@ -45,6 +48,11 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
       <Card 
         className="group card-hover"
         onClick={handleCardClick}
+        draggable
+        onDragStart={(e) => {
+          e.dataTransfer.setData(NOTEBOOK_DRAG_MIME, notebook.id)
+          e.dataTransfer.effectAllowed = 'move'
+        }}
         style={{ cursor: 'pointer' }}
       >
           <CardHeader className="pb-3">
@@ -89,6 +97,15 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.stopPropagation()
+                      setShowMoveDialog(true)
+                    }}
+                  >
+                    <FolderInput className="h-4 w-4 mr-2" />
+                    {t('folders.moveToFolder')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation()
                       setShowDeleteDialog(true)
                     }}
                     className="text-destructive"
@@ -126,6 +143,14 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
             </div>
           </CardContent>
       </Card>
+
+      {showMoveDialog && (
+        <MoveToFolderDialog
+          open={showMoveDialog}
+          onOpenChange={setShowMoveDialog}
+          notebook={notebook}
+        />
+      )}
 
       <NotebookDeleteDialog
         open={showDeleteDialog}

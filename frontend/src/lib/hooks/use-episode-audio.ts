@@ -21,9 +21,10 @@ export function useEpisodeAudio(
     let revokeUrl: string | undefined
     let cancelled = false
     setAudioError(null)
+    // Never keep a (about to be revoked) previous URL while the next one loads.
+    setAudioSrc(undefined)
 
     if (!enabled) {
-      setAudioSrc(undefined)
       return
     }
 

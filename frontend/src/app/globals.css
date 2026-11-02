@@ -119,11 +119,11 @@
   --color-ctx-insights: var(--ctx-insights);
   --color-ctx-insights-tint: var(--ctx-insights-tint);
 
-  /* shape — squared: instrument, not toy; floor is 4px */
-  --radius-sm: 4px;
-  --radius-md: 5px;
-  --radius-lg: 5px;
-  --radius-xl: 6px;
+  /* shape — soft: rounded glass panels, floor is 8px */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
 
   /* depth — hairlines separate; popovers own the one real shadow */
   --shadow-soft: var(--shadow-soft);
@@ -208,10 +208,25 @@
   --best-match-ring: rgba(14, 114, 104, 0.16);
 
   /* depth */
-  --shadow-soft: 0 1px 2px rgba(35, 37, 42, 0.06);
-  --shadow-lift: 0 1px 3px rgba(35, 37, 42, 0.1);
+  --shadow-soft: 0 1px 2px rgba(35, 37, 42, 0.05), 0 6px 20px rgba(35, 37, 42, 0.07);
+  --shadow-lift: 0 2px 4px rgba(35, 37, 42, 0.06), 0 14px 32px rgba(35, 37, 42, 0.12);
   --shadow-pop: 0 1px 2px rgba(35, 37, 42, 0.08), 0 8px 26px rgba(35, 37, 42, 0.13);
   --shadow-overlay: 0 2px 6px rgba(35, 37, 42, 0.1), 0 16px 44px rgba(35, 37, 42, 0.18);
+
+  /* glass — frosted, translucent panels (Apple-style "liquid glass") */
+  --glass: rgba(255, 255, 255, 0.5);
+  --glass-strong: rgba(255, 255, 255, 0.8);
+  --glass-hover: rgba(255, 255, 255, 0.74);
+  --glass-border: rgba(255, 255, 255, 0.7);
+  --glass-edge: rgba(35, 37, 42, 0.08);
+  --glass-shine: rgba(255, 255, 255, 0.9);
+  --glass-blur: 22px;
+  --glass-sheen: rgba(255, 255, 255, 0.45);
+  --glass-rim: rgba(255, 255, 255, 0.25);
+  --ambient:
+    radial-gradient(60rem 42rem at 8% -12%, rgba(46, 107, 79, 0.3), transparent 62%),
+    radial-gradient(52rem 38rem at 96% 6%, rgba(14, 114, 104, 0.24), transparent 62%),
+    radial-gradient(50rem 42rem at 62% 112%, rgba(122, 88, 150, 0.2), transparent 62%);
 
   /* --------------------------------------------------------------
      aliases — re-resolve automatically in dark; defined once
@@ -262,12 +277,12 @@
   /* --------------------------------------------------------------
      shadcn semantic slots — the contract existing components use
      -------------------------------------------------------------- */
-  --radius: 5px;
+  --radius: 14px;
   --background: var(--bg);
   --foreground: var(--ink);
-  --card: var(--surface);
+  --card: var(--glass);
   --card-foreground: var(--ink);
-  --popover: var(--surface-raised);
+  --popover: var(--glass-strong);
   --popover-foreground: var(--ink);
   --primary-foreground: var(--on-primary);
   --secondary: var(--surface-recessed);
@@ -285,7 +300,7 @@
   --chart-3: var(--gold);
   --chart-4: var(--plum);
   --chart-5: var(--slate);
-  --sidebar: var(--bg-deep);
+  --sidebar: var(--glass);
   --sidebar-foreground: var(--ink);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--on-primary);
@@ -358,10 +373,23 @@
   --best-match-ring: rgba(63, 179, 165, 0.2);
 
   /* depth */
-  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.35);
-  --shadow-lift: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.28);
+  --shadow-lift: 0 2px 4px rgba(0, 0, 0, 0.35), 0 16px 36px rgba(0, 0, 0, 0.4);
   --shadow-pop: 0 1px 2px rgba(0, 0, 0, 0.45), 0 10px 30px rgba(0, 0, 0, 0.5);
   --shadow-overlay: 0 2px 6px rgba(0, 0, 0, 0.4), 0 20px 52px rgba(0, 0, 0, 0.55);
+
+  --glass: rgba(40, 44, 52, 0.42);
+  --glass-strong: rgba(30, 32, 37, 0.76);
+  --glass-hover: rgba(58, 63, 74, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-edge: rgba(0, 0, 0, 0.4);
+  --glass-shine: rgba(255, 255, 255, 0.16);
+  --glass-sheen: rgba(255, 255, 255, 0.09);
+  --glass-rim: rgba(255, 255, 255, 0.04);
+  --ambient:
+    radial-gradient(60rem 42rem at 8% -12%, rgba(85, 178, 133, 0.28), transparent 62%),
+    radial-gradient(52rem 38rem at 96% 6%, rgba(63, 179, 165, 0.24), transparent 62%),
+    radial-gradient(50rem 42rem at 62% 112%, rgba(150, 110, 190, 0.24), transparent 62%);
 }
 
 @layer base {
@@ -414,13 +442,13 @@
 
   /* Cards separate with hairlines, not shadows; hover raises the surface */
   .card-hover {
-    @apply transition-colors duration-150 cursor-pointer;
+    @apply transition-all duration-200 cursor-pointer;
   }
 
   .card-hover:hover {
-    background-color: var(--surface-raised) !important;
-    border-color: var(--border);
-    box-shadow: var(--shadow-lift);
+    background-color: var(--glass-hover) !important;
+    transform: translateY(-1px);
+    box-shadow: inset 0 1px 0 var(--glass-shine), var(--shadow-lift);
   }
 
   /* Ensure clickable cards show pointer cursor */
@@ -445,5 +473,86 @@
 
   .w-md-editor-preview :where(.wmde-markdown ol) {
     list-style-type: decimal;
+  }
+}
+
+
+/* ============================================================================
+   GLASS — frosted translucent panels. Colour tokens are unchanged; only the
+   surfaces go translucent and blur what sits behind them.
+   ========================================================================== */
+@layer base {
+  body {
+    background-image: var(--ambient);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+  }
+}
+
+@layer components {
+  .bg-card,
+  [data-slot="card"],
+  .app-sidebar {
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+    border-color: var(--glass-border);
+    background-image: linear-gradient(135deg, var(--glass-sheen), transparent 55%);
+    box-shadow: inset 0 1px 0 var(--glass-shine), inset 0 0 0 1px var(--glass-rim), var(--shadow-soft);
+  }
+
+  .bg-popover {
+    -webkit-backdrop-filter: blur(30px) saturate(190%);
+    backdrop-filter: blur(30px) saturate(190%);
+    border-color: var(--glass-border);
+    box-shadow: inset 0 1px 0 var(--glass-shine), var(--shadow-pop);
+  }
+
+  .app-sidebar {
+    box-shadow: inset -1px 0 0 var(--glass-edge);
+  }
+
+  /* Floating dock for the mini-player */
+  .glass-dock {
+    -webkit-backdrop-filter: blur(30px) saturate(190%);
+    backdrop-filter: blur(30px) saturate(190%);
+    background-color: var(--glass-strong);
+    border: 1px solid var(--glass-border);
+    box-shadow: inset 0 1px 0 var(--glass-shine), var(--shadow-overlay);
+  }
+}
+
+/* Accessibility / support fallbacks: opaque surfaces, no blur */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --glass: var(--surface);
+    --glass-strong: var(--surface-raised);
+    --glass-hover: var(--surface-raised);
+    --ambient: none;
+  }
+  .dark {
+    --glass: #1e2024;
+    --glass-strong: #24262b;
+    --glass-hover: #2b2d33;
+  }
+  .bg-card,
+  [data-slot="card"],
+  .app-sidebar,
+  .bg-popover,
+  .glass-dock {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root {
+    --glass: var(--surface);
+    --glass-strong: var(--surface-raised);
+    --glass-hover: var(--surface-raised);
+  }
+  .dark {
+    --glass: #1e2024;
+    --glass-strong: #24262b;
+    --glass-hover: #2b2d33;
   }
 }

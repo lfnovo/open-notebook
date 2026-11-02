@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Liquid-glass look.** Panels, cards, menus, dialogs, the sidebar and the mini-player are now frosted translucent glass (backdrop blur, soft top highlight) over a subtle ambient colour glow, with much rounder corners (8/12/16/22 px) and softer, deeper shadows. Colours and icons are unchanged. Falls back to opaque surfaces under `prefers-reduced-transparency` or without `backdrop-filter`. The notebooks page header actions wrap instead of overflowing, and the mini-player floats as a rounded dock
+
 ### Added
 - **Notebook folders.** Group notebooks into folders from the notebooks page: create, rename and delete folders (deleting keeps the notebooks), move a notebook with the card menu or by dragging it onto a folder. New `/api/folders` endpoints, `folder_id` on notebooks (migration 27). Notebook lists are grids throughout; the list/tile toggle is gone
 - **Podcasts keep playing while you navigate.** One app-level player with a mini-player bar (play/pause, ±15 s, seek) replaces the per-page audio elements; media keys work through the Media Session API

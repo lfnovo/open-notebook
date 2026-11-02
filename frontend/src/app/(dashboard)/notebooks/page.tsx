@@ -99,14 +99,14 @@ export default function NotebooksPage() {
     <AppShell>
       <div className="flex-1 overflow-y-auto">
         <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <h1 className="font-display text-2xl font-bold tracking-tight">{t('notebooks.title')}</h1>
             <Button variant="outline" size="sm" onClick={() => refetch()}>
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <div className="flex flex-wrap items-center gap-3">
             <Input
               id="notebook-search"
               name="notebook-search"

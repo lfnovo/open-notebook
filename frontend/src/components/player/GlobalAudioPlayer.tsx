@@ -75,7 +75,7 @@ export function GlobalAudioPlayer() {
   useEffect(() => {
     if (!hasTrack) return
     const root = document.documentElement
-    root.style.setProperty('--player-offset', '4rem')
+    root.style.setProperty('--player-offset', '5rem')
     return () => {
       root.style.removeProperty('--player-offset')
     }
@@ -122,7 +122,7 @@ export function GlobalAudioPlayer() {
     <div
       role="region"
       aria-label={PLAYER_LABELS.player}
-      className="fixed inset-x-0 bottom-0 z-50 flex h-16 items-center gap-2 border-t bg-card px-3 shadow-lg sm:gap-3 sm:px-4"
+      className="glass-dock fixed inset-x-3 bottom-3 z-50 mx-auto flex h-16 max-w-3xl items-center gap-2 rounded-2xl px-4 sm:gap-3"
       data-testid="mini-player"
     >
       <audio

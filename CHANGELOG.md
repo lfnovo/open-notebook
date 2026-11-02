@@ -7,9 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-- **Liquid-glass look.** Panels, cards, menus, dialogs, the sidebar and the mini-player are now frosted translucent glass (backdrop blur, soft top highlight) over a subtle ambient colour glow, with much rounder corners (8/12/16/22 px) and softer, deeper shadows. Colours and icons are unchanged. Falls back to opaque surfaces under `prefers-reduced-transparency` or without `backdrop-filter`. The notebooks page header actions wrap instead of overflowing, and the mini-player floats as a rounded dock
-
 ### Added
 - **Notebook folders.** Group notebooks into folders from the notebooks page: create, rename and delete folders (deleting keeps the notebooks), move a notebook with the card menu or by dragging it onto a folder. New `/api/folders` endpoints, `folder_id` on notebooks (migration 27). Notebook lists are grids throughout; the list/tile toggle is gone
 - **Podcasts keep playing while you navigate.** One app-level player with a mini-player bar (play/pause, ±15 s, seek) replaces the per-page audio elements; media keys work through the Media Session API
@@ -18,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Discover notebook.** Two buttons on the notebooks page turn a topic into a new notebook with about 10 web sources chosen for a balanced mix of viewpoints (keyless DuckDuckGo search via `ddgs`), optionally followed by a podcast with the episode profile you pick. New endpoint `POST /api/notebooks/discover`
 
 ### Changed
+- **Liquid-glass look.** Panels, cards, menus, dialogs, the sidebar and the mini-player are now frosted translucent glass (backdrop blur, soft top highlight) over a subtle ambient colour glow, with much rounder corners (8/12/16/22 px) and softer, deeper shadows. Colours and icons are unchanged. Falls back to opaque surfaces under `prefers-reduced-transparency` or without `backdrop-filter`. The notebooks page header actions wrap instead of overflowing, and the mini-player floats as a rounded dock
 - **Documentation rewritten against the code.** Every page under `docs/` was checked against v1.15.0 and rewritten where it described an older or imagined product (#1458, #1459, #1460, #1461):
   - **Install:** one canonical path built on the shipped `docker-compose.yml`, with small override files for the Ollama and LM Studio variants. The network-exposure warning (bind ports to `127.0.0.1` or set a password) comes before the first `docker compose up -d`. Example encryption keys are generated, never copied. First-run setup lives in one place, [Connect a provider](docs/4-AI-PROVIDERS/index.md#connect-a-provider), and ends in a working chat via **Auto-assign Defaults**. The provider table is built from the provider registry: 24 providers, with the model types each one offers
   - **User guide and concepts:** insights are a first-class concept and the context mode is *Insights only*. Ask is described as three stages. UI labels match the current app. Invented features are gone (tags, export/share, batch transformations, page-number citations and others). About 6,200 lines became about 1,450

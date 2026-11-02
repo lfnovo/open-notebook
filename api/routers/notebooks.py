@@ -15,7 +15,7 @@ from api.models import (
     RecentlyViewedResponse,
 )
 from open_notebook.database.repository import ensure_record_id, repo_query
-from open_notebook.domain.notebook import Notebook, Source
+from open_notebook.domain.notebook import Folder, Notebook, Source
 from open_notebook.exceptions import (
     InvalidInputError,
     NotFoundError,
@@ -23,6 +23,10 @@ from open_notebook.exceptions import (
 )
 
 router = APIRouter()
+
+
+def _folder_id(value) -> Optional[str]:
+    return str(value) if value else None
 
 
 def _last_viewed_sort_key(item: RecentlyViewedResponse) -> str:
@@ -65,6 +69,10 @@ def _recently_viewed_source(row: dict) -> RecentlyViewedResponse:
 async def get_notebooks(
     archived: Optional[bool] = Query(None, description="Filter by archived status"),
     order_by: str = Query("updated desc", description="Order by field and direction"),
+    folder_id: Optional[str] = Query(
+        None,
+        description="Filter by folder id, or 'none' for notebooks without a folder",
+    ),
 ):
     """Get all notebooks with optional filtering and ordering."""
     try:
@@ -104,6 +112,10 @@ async def get_notebooks(
         if archived is not None:
             result = [nb for nb in result if nb.get("archived") == archived]
 
+        if folder_id is not None:
+            wanted = None if folder_id == "none" else folder_id
+            result = [nb for nb in result if _folder_id(nb.get("folder")) == wanted]
+
         return [
             NotebookResponse(
                 id=str(nb.get("id", "")),
@@ -114,6 +126,7 @@ async def get_notebooks(
                 updated=str(nb.get("updated", "")),
                 source_count=nb.get("source_count", 0),
                 note_count=nb.get("note_count", 0),
+                folder_id=_folder_id(nb.get("folder")),
             )
             for nb in result
         ]
@@ -147,6 +160,7 @@ async def create_notebook(notebook: NotebookCreate):
             updated=str(new_notebook.updated),
             source_count=0,  # New notebook has no sources
             note_count=0,  # New notebook has no notes
+            folder_id=None,
         )
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -328,6 +342,7 @@ async def get_notebook(notebook_id: str):
             updated=str(nb.get("updated", "")),
             source_count=nb.get("source_count", 0),
             note_count=nb.get("note_count", 0),
+            folder_id=_folder_id(nb.get("folder")),
         )
     except HTTPException:
         raise
@@ -355,8 +370,31 @@ async def update_notebook(notebook_id: str, notebook_update: NotebookUpdate):
             notebook.description = notebook_update.description or ""
         if notebook_update.archived is not None:
             notebook.archived = notebook_update.archived
+        # Omitted folder_id leaves the folder untouched; an explicit null or ""
+        # removes the notebook from its folder; an id moves it (404 if unknown).
+        clear_folder = False
+        if "folder_id" in notebook_update.model_fields_set:
+            target = (notebook_update.folder_id or "").strip()
+            if target:
+                try:
+                    folder = await Folder.get(target)
+                except InvalidInputError:
+                    folder = None
+                except NotFoundError:
+                    folder = None
+                if folder is None or folder.table_name != "folder":
+                    raise HTTPException(status_code=404, detail="Folder not found")
+                notebook.folder = folder.id
+            else:
+                notebook.folder = None
+                clear_folder = True
 
         await notebook.save()
+        if clear_folder:
+            await repo_query(
+                "UPDATE $id SET folder = NONE;",
+                {"id": ensure_record_id(notebook_id)},
+            )
 
         # Query with counts after update
         query = """
@@ -378,6 +416,7 @@ async def update_notebook(notebook_id: str, notebook_update: NotebookUpdate):
                 updated=str(nb.get("updated", "")),
                 source_count=nb.get("source_count", 0),
                 note_count=nb.get("note_count", 0),
+                folder_id=_folder_id(nb.get("folder")),
             )
 
         # Fallback if query fails
@@ -390,6 +429,7 @@ async def update_notebook(notebook_id: str, notebook_update: NotebookUpdate):
             updated=str(notebook.updated),
             source_count=0,
             note_count=0,
+            folder_id=notebook.folder,
         )
     except HTTPException:
         raise

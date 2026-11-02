@@ -7,6 +7,20 @@ export interface NotebookResponse {
   updated: string
   source_count: number
   note_count: number
+  folder_id?: string | null
+}
+
+export interface FolderResponse {
+  id: string
+  name: string
+  created: string
+  updated: string
+  notebook_count: number
+}
+
+export interface FolderDeleteResponse {
+  message: string
+  notebooks_ungrouped: number
 }
 
 export interface NotebookDiscoverRequest {
@@ -94,6 +108,8 @@ export interface UpdateNotebookRequest {
   name?: string
   description?: string
   archived?: boolean
+  /** Folder record id, or null to remove from its folder. Omit to leave unchanged. */
+  folder_id?: string | null
 }
 
 export interface NotebookDeletePreview {

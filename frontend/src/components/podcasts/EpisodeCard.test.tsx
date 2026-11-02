@@ -1,8 +1,9 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 
 import { EpisodeCard } from './EpisodeCard'
 import type { PodcastEpisode } from '@/lib/types/podcasts'
+import { useAudioPlayerStore } from '@/lib/stores/audio-player-store'
 
 // useTranslation is mocked globally in setup.ts (t returns the key string)
 
@@ -133,5 +134,28 @@ describe('EpisodeCard model details', () => {
     )
 
     expect(screen.getAllByText('— / —')).toHaveLength(3)
+  })
+})
+
+describe('EpisodeCard playback', () => {
+  it('shows live state from the global player store, idle otherwise', () => {
+    useAudioPlayerStore.getState().stop()
+    render(
+      <EpisodeCard
+        episode={makeEpisode({ id: 'episode:9', audio_url: '/a/9' })}
+        onDelete={vi.fn()}
+      />
+    )
+    expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
+
+    act(() => {
+      useAudioPlayerStore.getState().play({ id: 'episode:other', name: 'Other' })
+    })
+    expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Play' }))
+    expect(useAudioPlayerStore.getState().episode?.id).toBe('episode:9')
+    expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument()
+    useAudioPlayerStore.getState().stop()
   })
 })

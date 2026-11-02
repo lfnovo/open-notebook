@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 
 import { NotebookPodcasts } from './NotebookPodcasts'
 import type { PodcastEpisode } from '@/lib/types/podcasts'
+import { useAudioPlayerStore } from '@/lib/stores/audio-player-store'
 
 let episodes: PodcastEpisode[] = []
 const usePodcastEpisodes = vi.fn()
@@ -11,12 +12,6 @@ vi.mock('@/lib/hooks/use-podcasts', () => ({
 }))
 vi.mock('@/components/podcasts/GeneratePodcastDialog', () => ({
   GeneratePodcastDialog: () => null,
-}))
-vi.mock('@/lib/hooks/use-episode-audio', () => ({
-  useEpisodeAudio: (_e: unknown, enabled: boolean) => ({
-    audioSrc: enabled ? 'blob:audio' : undefined,
-    audioError: null,
-  }),
 }))
 
 function ep(overrides: Partial<PodcastEpisode>): PodcastEpisode {
@@ -34,6 +29,7 @@ function ep(overrides: Partial<PodcastEpisode>): PodcastEpisode {
 describe('NotebookPodcasts', () => {
   beforeEach(() => {
     episodes = []
+    useAudioPlayerStore.getState().stop()
     usePodcastEpisodes.mockImplementation(() => ({ episodes, isLoading: false }))
   })
 
@@ -46,12 +42,25 @@ describe('NotebookPodcasts', () => {
   it('shows progress for running episodes and a player for completed ones', () => {
     episodes = [
       ep({ id: 'episode:1', name: 'Running ep', job_status: 'running', progress: 35 }),
-      ep({ id: 'episode:2', name: 'Done ep', job_status: 'completed', progress: 100 }),
+      ep({ id: 'episode:2', name: 'Done ep', job_status: 'completed', progress: 100, audio_url: '/api/podcasts/episodes/2/audio' }),
     ]
     const { container } = render(<NotebookPodcasts notebookId="notebook:1" />)
     expect(screen.getByText('Running ep')).toBeInTheDocument()
     expect(screen.getByText('35%')).toBeInTheDocument()
     expect(screen.getAllByTestId('episode-progress')).toHaveLength(1)
-    expect(container.querySelectorAll('audio')).toHaveLength(1)
+    expect(container.querySelectorAll('audio')).toHaveLength(0)
+    expect(screen.getAllByTestId('episode-play-button')).toHaveLength(1)
+  })
+
+  it('plays through the global store and reflects its playing state', () => {
+    episodes = [
+      ep({ id: 'episode:2', name: 'Done ep', job_status: 'completed', audio_url: '/a/2' }),
+    ]
+    render(<NotebookPodcasts notebookId="notebook:1" />)
+    fireEvent.click(screen.getByRole('button', { name: 'Play' }))
+    const state = useAudioPlayerStore.getState()
+    expect(state.episode).toMatchObject({ id: 'episode:2', notebookId: 'notebook:1' })
+    expect(state.isPlaying).toBe(true)
+    expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument()
   })
 })

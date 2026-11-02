@@ -1,0 +1,4 @@
+-- Migration 27 rollback: remove notebook folders.
+REMOVE INDEX IF EXISTS idx_notebook_folder ON TABLE notebook;
+REMOVE FIELD IF EXISTS folder ON TABLE notebook;
+REMOVE TABLE IF EXISTS folder;

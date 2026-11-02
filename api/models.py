@@ -54,6 +54,30 @@ class NotebookUpdate(BaseModel):
     archived: Optional[bool] = Field(
         None, description="Whether the notebook is archived"
     )
+    folder_id: Optional[str] = Field(
+        None,
+        description=(
+            "Folder to move the notebook into. Omit to leave unchanged; "
+            "null or '' removes it from its folder."
+        ),
+    )
+
+
+class FolderRequest(BaseModel):
+    name: str = Field(..., description="Folder name (1-80 characters after trimming)")
+
+
+class FolderResponse(BaseModel):
+    id: str
+    name: str
+    created: str
+    updated: str
+    notebook_count: int = 0
+
+
+class FolderDeleteResponse(BaseModel):
+    message: str
+    notebooks_ungrouped: int
 
 
 class NotebookResponse(BaseModel):
@@ -65,6 +89,7 @@ class NotebookResponse(BaseModel):
     updated: str
     source_count: int
     note_count: int
+    folder_id: Optional[str] = None
 
 
 class RecentlyViewedResponse(BaseModel):

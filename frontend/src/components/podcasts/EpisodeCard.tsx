@@ -5,7 +5,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { getDateLocale } from '@/lib/utils/date-locale'
 import { InfoIcon, RefreshCcw, Trash2 } from 'lucide-react'
 
-import { useEpisodeAudio } from '@/lib/hooks/use-episode-audio'
+import { EpisodePlayButton } from '@/components/player/EpisodePlayButton'
 import { EpisodeProgress } from '@/components/podcasts/EpisodeProgress'
 import { EpisodeStatus, FAILED_EPISODE_STATUSES, PodcastEpisode } from '@/lib/types/podcasts'
 import { cn } from '@/lib/utils'
@@ -156,7 +156,17 @@ function extractTranscriptEntries(transcript: unknown): TranscriptEntry[] {
 export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: EpisodeCardProps) {
   const { t, language } = useTranslation()
   const [detailsOpen, setDetailsOpen] = useState(false)
-  const { audioSrc, audioError } = useEpisodeAudio(episode)
+  const playerEpisode = useMemo(
+    () => ({
+      id: episode.id,
+      name: episode.name,
+      notebookId: episode.notebook_id ?? undefined,
+      audio_url: episode.audio_url,
+      audio_file: episode.audio_file,
+    }),
+    [episode.id, episode.name, episode.notebook_id, episode.audio_url, episode.audio_file]
+  )
+  const hasAudio = !!(episode.audio_url || episode.audio_file)
 
   const outlineSegments = useMemo(() => extractOutlineSegments(episode.outline), [episode.outline])
   const transcriptEntries = useMemo(() => extractTranscriptEntries(episode.transcript), [episode.transcript])
@@ -216,12 +226,10 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 overflow-hidden">
-                  {audioSrc ? (
+                  {hasAudio ? (
                     <div className="rounded-md border bg-card p-2">
-                      <audio controls preload="none" src={audioSrc} className="w-full" />
+                      <EpisodePlayButton episode={playerEpisode} />
                     </div>
-                  ) : audioError ? (
-                    <p className="text-sm text-destructive">{audioError}</p>
                   ) : null}
 
                   <Tabs defaultValue="summary" className="h-[60vh] flex flex-col">
@@ -392,12 +400,10 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
 
         <EpisodeProgress status={episode.job_status} progress={episode.progress} />
 
-        {audioSrc ? (
+        {hasAudio ? (
           <div className="rounded-md border bg-card p-2">
-            <audio controls preload="none" src={audioSrc} className="w-full" />
+            <EpisodePlayButton episode={playerEpisode} />
           </div>
-        ) : audioError ? (
-          <p className="text-sm text-destructive">{audioError}</p>
         ) : null}
 
         {isFailed && episode.error_message ? (

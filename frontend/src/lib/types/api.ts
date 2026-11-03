@@ -53,6 +53,14 @@ export interface NotebookDiscoverResponse {
   status: string
 }
 
+/** The original file of a note created by dropping a file on the notes pane. */
+export interface NoteAttachment {
+  name: string
+  /** MIME type of the original file */
+  type: string
+  size: number
+}
+
 export interface NoteResponse {
   id: string
   title: string | null
@@ -60,6 +68,7 @@ export interface NoteResponse {
   note_type: string | null
   created: string
   updated: string
+  attachment?: NoteAttachment | null
 }
 
 export interface SourceListResponse {

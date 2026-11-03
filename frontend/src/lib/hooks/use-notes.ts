@@ -75,6 +75,28 @@ export function useUpdateNote() {
   })
 }
 
+/** Create a note from a dropped file (PDF, HTML, DOCX, TXT, Markdown). */
+export function useUploadNoteFile() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const { t } = useTranslation()
+
+  return useMutation({
+    mutationFn: ({ notebookId, file }: { notebookId: string; file: File }) =>
+      notesApi.uploadFile(notebookId, file),
+    onSuccess: (_, { notebookId }) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notes(notebookId) })
+    },
+    onError: (error: unknown, { file }) => {
+      toast({
+        title: t('noteFiles.uploadFailed', { name: file.name }),
+        description: t(getApiErrorKey(error, t('common.error'))),
+        variant: 'destructive',
+      })
+    },
+  })
+}
+
 export function useDeleteNote() {
   const queryClient = useQueryClient()
   const { toast } = useToast()

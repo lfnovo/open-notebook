@@ -319,6 +319,12 @@ class NoteUpdate(BaseModel):
     note_type: Optional[str] = Field(None, description="Type of note (human, ai)")
 
 
+class NoteAttachment(BaseModel):
+    name: str
+    type: str = Field(..., description="MIME type of the original file")
+    size: int = 0
+
+
 class NoteResponse(BaseModel):
     id: str
     title: Optional[str]
@@ -327,6 +333,9 @@ class NoteResponse(BaseModel):
     created: str
     updated: str
     command_id: Optional[str] = None
+    attachment: Optional[NoteAttachment] = Field(
+        None, description="The original file, for notes created by dropping a file"
+    )
 
 
 # Embedding API models

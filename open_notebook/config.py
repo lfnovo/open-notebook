@@ -19,6 +19,10 @@ os.makedirs(UPLOADS_FOLDER, exist_ok=True)
 PODCASTS_FOLDER = f"{DATA_FOLDER}/podcasts"
 os.makedirs(PODCASTS_FOLDER, exist_ok=True)
 
+# NOTE FILES FOLDER (originals of files dropped onto a notebook's notes pane)
+NOTE_FILES_FOLDER = f"{DATA_FOLDER}/note_files"
+os.makedirs(NOTE_FILES_FOLDER, exist_ok=True)
+
 # TIKTOKEN CACHE FOLDER
 # Reads TIKTOKEN_CACHE_DIR from the environment so Docker can redirect the cache
 # to a path outside /data/ (which is typically volume-mounted and would hide the

@@ -749,6 +749,11 @@ class Note(ObjectModel):
     title: Optional[str] = None
     note_type: Optional[Literal["human", "ai"]] = None
     content: Optional[str] = None
+    # Set when the note was created from a dropped file (see migration 29).
+    attachment_name: Optional[str] = None
+    attachment_file: Optional[str] = None
+    attachment_mime: Optional[str] = None
+    attachment_size: Optional[int] = None
 
     @field_validator("content")
     @classmethod
@@ -756,6 +761,15 @@ class Note(ObjectModel):
         if v is not None and not v.strip():
             raise InvalidInputError("Note content cannot be empty")
         return v
+
+    async def delete(self) -> bool:
+        """Delete the note and the original file it was created from, if any."""
+        deleted = await super().delete()
+        if self.attachment_file:
+            from open_notebook.utils.note_files import remove_note_file
+
+            remove_note_file(self.attachment_file)
+        return deleted
 
     async def save(self) -> Optional[str]:
         """

@@ -1,0 +1,9 @@
+-- Migration 29: files attached to notes.
+-- A note created by dropping a file keeps the original on disk (data/note_files)
+-- and records it here; `content` holds the text extracted from it, so search,
+-- embeddings and chat context work like any other note. `attachment_file` is the
+-- stored file name only (never a path). All fields are NONE for ordinary notes.
+DEFINE FIELD IF NOT EXISTS attachment_name ON TABLE note TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS attachment_file ON TABLE note TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS attachment_mime ON TABLE note TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS attachment_size ON TABLE note TYPE option<int>;

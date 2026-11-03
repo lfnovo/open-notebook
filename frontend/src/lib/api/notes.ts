@@ -24,5 +24,20 @@ export const notesApi = {
 
   delete: async (id: string) => {
     await apiClient.delete(`/notes/${id}`)
-  }
+  },
+
+  /** Create a note from a dropped file; the original is kept on the server. */
+  uploadFile: async (notebookId: string, file: File) => {
+    const formData = new FormData()
+    formData.append('notebook_id', notebookId)
+    formData.append('file', file)
+    const response = await apiClient.post<NoteResponse>('/notes/upload', formData)
+    return response.data
+  },
+
+  /** The original file as a Blob (fetched with auth, so it can be previewed or saved). */
+  fetchFile: async (id: string) => {
+    const response = await apiClient.get<Blob>(`/notes/${id}/file`, { responseType: 'blob' })
+    return response.data
+  },
 }

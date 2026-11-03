@@ -13,6 +13,7 @@ import {
   useEnvStatus,
 } from '@/lib/hooks/use-credentials'
 import { useProviders } from '@/lib/hooks/use-providers'
+import { useDismissibleWarning } from '@/lib/hooks/use-dismissible-warning'
 import { Credential } from '@/lib/api/credentials'
 import {
   DefaultModelSelectors,
@@ -36,6 +37,10 @@ export default function ApiKeysPage() {
   } = useProviders()
 
   const encryptionReady = credentialStatus?.encryption_configured ?? true
+  const defaultKeyWarning = useDismissibleWarning(
+    'open-notebook-default-encryption-key-warning',
+    credentialStatus?.encryption_key_is_default ?? false
+  )
 
   // Group credentials by provider
   const credentialsByProvider = useMemo(() => {
@@ -107,6 +112,35 @@ export default function ApiKeysPage() {
                 <code className="text-xs bg-destructive-tint px-1 py-0.5 rounded">
                   {t('apiKeys.encryptionRequiredDescription')}
                 </code>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {credentialStatus?.encryption_key_is_default && !defaultKeyWarning.dismissed && (
+            <Alert className="border-destructive/30 bg-destructive-tint">
+              <ShieldAlert className="h-4 w-4 text-destructive" />
+              <AlertTitle className="flex items-center justify-between gap-3 text-destructive">
+                {t('securityWarnings.defaultKeyTitle')}
+                <button
+                  type="button"
+                  aria-label={t('common.close')}
+                  onClick={defaultKeyWarning.dismiss}
+                  className="rounded-sm opacity-70 hover:opacity-100"
+                >
+                  ×
+                </button>
+              </AlertTitle>
+              <AlertDescription className="text-destructive">
+                {t('securityWarnings.defaultKeyDescription')}{' '}
+                <code>openssl rand -hex 32</code>{' '}
+                <a
+                  href="https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/security.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  {t('securityWarnings.securityGuide')}
+                </a>
               </AlertDescription>
             </Alert>
           )}

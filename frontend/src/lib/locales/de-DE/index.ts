@@ -976,4 +976,11 @@ export const deDE = {
     goToSettings: "Zu den Einstellungen",
     viewDocs: "Dokumentation anzeigen",
   },
+  securityWarnings: {
+    defaultKeyTitle: "Der öffentliche Beispiel-Verschlüsselungsschlüssel wird verwendet",
+    defaultKeyDescription: "Erzeuge mit openssl rand -hex 32 einen privaten Schlüssel. Beim Ändern dieses Schlüssels werden gespeicherte Zugangsdaten unlesbar; richte die Anbieter danach erneut ein.",
+    noPasswordTitle: "Diese Instanz hat kein Passwort",
+    noPasswordDescription: "Jede Person, die Port 8502 oder 5055 erreichen kann, kann diese Instanz ohne Anmeldung verwenden. Setze OPEN_NOTEBOOK_PASSWORD oder binde die veröffentlichten Ports an 127.0.0.1.",
+    securityGuide: "Sicherheitsleitfaden lesen",
+  },
 } satisfies TranslationShape;

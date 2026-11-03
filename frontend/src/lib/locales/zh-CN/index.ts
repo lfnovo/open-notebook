@@ -973,4 +973,11 @@ export const zhCN = {
     goToSettings: "前往设置",
     viewDocs: "查看文档",
   },
+  securityWarnings: {
+    defaultKeyTitle: "当前正在使用公开的示例加密密钥",
+    defaultKeyDescription: "使用 openssl rand -hex 32 生成私有密钥。更换密钥后，已保存的服务商凭据将无法读取，因此需要重新配置这些服务商。",
+    noPasswordTitle: "此实例未设置密码",
+    noPasswordDescription: "任何能够访问 8502 或 5055 端口的人都可以无需登录使用此实例。请设置 OPEN_NOTEBOOK_PASSWORD，或将已发布端口绑定到 127.0.0.1。",
+    securityGuide: "阅读安全指南",
+  },
 } satisfies TranslationShape;

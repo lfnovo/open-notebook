@@ -973,4 +973,11 @@ export const zhTW = {
     goToSettings: "前往設定",
     viewDocs: "查看文件",
   },
+  securityWarnings: {
+    defaultKeyTitle: "目前正在使用公開的範例加密金鑰",
+    defaultKeyDescription: "使用 openssl rand -hex 32 產生私有金鑰。更換金鑰後，已儲存的供應商憑據將無法讀取，因此需要重新設定這些供應商。",
+    noPasswordTitle: "此執行個體未設定密碼",
+    noPasswordDescription: "任何可連線至 8502 或 5055 連接埠的人都能免登入使用此執行個體。請設定 OPEN_NOTEBOOK_PASSWORD，或將已公開的連接埠繫結至 127.0.0.1。",
+    securityGuide: "閱讀安全指南",
+  },
 } satisfies TranslationShape;

@@ -973,4 +973,11 @@ export const ptBR = {
     goToSettings: "Ir para Configurações",
     viewDocs: "Ver documentação",
   },
+  securityWarnings: {
+    defaultKeyTitle: "A chave de criptografia pública de exemplo está em uso",
+    defaultKeyDescription: "Gere uma chave privada com openssl rand -hex 32. Alterar essa chave torna ilegíveis as credenciais de provedores já armazenadas; configure esses provedores novamente depois.",
+    noPasswordTitle: "Esta instância não tem senha",
+    noPasswordDescription: "Qualquer pessoa que alcance as portas 8502 ou 5055 pode usar esta instância sem entrar. Defina OPEN_NOTEBOOK_PASSWORD ou vincule as portas publicadas a 127.0.0.1.",
+    securityGuide: "Leia o guia de segurança",
+  },
 } satisfies TranslationShape;

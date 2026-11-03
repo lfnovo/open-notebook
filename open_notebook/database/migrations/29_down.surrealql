@@ -1,0 +1,5 @@
+-- Migration 29 rollback: remove note attachments (files on disk are left in place).
+REMOVE FIELD IF EXISTS attachment_size ON TABLE note;
+REMOVE FIELD IF EXISTS attachment_mime ON TABLE note;
+REMOVE FIELD IF EXISTS attachment_file ON TABLE note;
+REMOVE FIELD IF EXISTS attachment_name ON TABLE note;

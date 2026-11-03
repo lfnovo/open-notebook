@@ -25,6 +25,7 @@ class TestNoteCreation:
         mock_note.note_type = "human"
         mock_note.created = "2026-01-01T00:00:00Z"
         mock_note.updated = "2026-01-01T00:00:00Z"
+        mock_note.attachment_name = None  # plain note, no dropped file
         mock_note.save.return_value = "command:embed123"
         mock_note.add_to_notebook = AsyncMock()
         mock_note_cls.return_value = mock_note
@@ -51,6 +52,7 @@ class TestNoteCreation:
         mock_note.note_type = "human"
         mock_note.created = "2026-01-01T00:00:00Z"
         mock_note.updated = "2026-01-01T00:00:00Z"
+        mock_note.attachment_name = None  # plain note, no dropped file
         mock_note.save.return_value = None
         mock_note.add_to_notebook = AsyncMock()
         mock_note_cls.return_value = mock_note
@@ -78,6 +80,7 @@ class TestNoteUpdate:
         mock_note.note_type = "human"
         mock_note.created = "2026-01-01T00:00:00Z"
         mock_note.updated = "2026-01-01T00:00:00Z"
+        mock_note.attachment_name = None  # plain note, no dropped file
         mock_note.save.return_value = "command:embed789"
         mock_note_cls.get = AsyncMock(return_value=mock_note)
 
@@ -100,6 +103,7 @@ class TestNoteUpdate:
         mock_note.note_type = "human"
         mock_note.created = "2026-01-01T00:00:00Z"
         mock_note.updated = "2026-01-01T00:00:00Z"
+        mock_note.attachment_name = None  # plain note, no dropped file
         mock_note.save.return_value = None
         mock_note_cls.get = AsyncMock(return_value=mock_note)
 

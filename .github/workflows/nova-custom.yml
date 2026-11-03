@@ -92,6 +92,16 @@ jobs:
             -X POST -d '{"prompt":"x"}' http://127.0.0.1:15055/api/notebooks/discover)
           echo "discover(short prompt) -> $code"
           test "$code" = 422
+          # Dropped-file notes need migration 29 and a working extractor in the image:
+          # upload a text file, then read the original back.
+          nb=$(curl -sS -H "$H" -H 'Content-Type: application/json' -X POST -d '{"name":"smoke"}' \
+            http://127.0.0.1:15055/api/notebooks | python3 -c 'import sys,json;print(json.load(sys.stdin)["id"])')
+          echo "smoke from file" > /tmp/smoke.txt
+          note=$(curl -sS -H "$H" -F "notebook_id=$nb" -F "file=@/tmp/smoke.txt" \
+            http://127.0.0.1:15055/api/notes/upload)
+          echo "upload -> $note"
+          nid=$(echo "$note" | python3 -c 'import sys,json;print(json.load(sys.stdin)["id"])')
+          test "$(curl -sS -H "$H" "http://127.0.0.1:15055/api/notes/$nid/file")" = "smoke from file"
           docker logs nova-open-notebook 2>&1 | grep -i "migration" | tail -5
 
       - name: Log in to GHCR

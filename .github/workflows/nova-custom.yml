@@ -5,12 +5,24 @@ name: NovaHQ custom image
 # nova-baseline.yml stays the upstream-copy gate; this one carries our patches.
 
 on:
+  # Merge to main builds, smoke-tests and publishes automatically. Deploying to
+  # CT190 is still a manual, backed-up step (see the open-notebook skill).
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/workflows/nova-baseline.yml'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Image tag to publish (e.g. v1.15.0-nova.1)'
-        required: true
+        description: 'Image tag to publish (default: v1.15.0-nova.<run number>)'
+        required: false
         type: string
+
+concurrency:
+  group: nova-custom
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -18,6 +30,7 @@ permissions:
 
 env:
   TARGET_IMAGE: ghcr.io/heli-konton/open-notebook
+  IMAGE_TAG: ${{ inputs.tag || format('v1.15.0-nova.{0}', github.run_number) }}
 
 jobs:
   build-smoke-publish:
@@ -90,11 +103,13 @@ jobs:
 
       - name: Publish
         run: |
-          docker tag nova-open-notebook:candidate "$TARGET_IMAGE:${{ inputs.tag }}"
+          docker tag nova-open-notebook:candidate "$TARGET_IMAGE:$IMAGE_TAG"
+          docker tag nova-open-notebook:candidate "$TARGET_IMAGE:sha-${GITHUB_SHA::7}"
           docker tag nova-open-notebook:candidate "$TARGET_IMAGE:nova-custom"
-          docker push "$TARGET_IMAGE:${{ inputs.tag }}"
+          docker push "$TARGET_IMAGE:$IMAGE_TAG"
+          docker push "$TARGET_IMAGE:sha-${GITHUB_SHA::7}"
           docker push "$TARGET_IMAGE:nova-custom"
-          docker buildx imagetools inspect "$TARGET_IMAGE:${{ inputs.tag }}"
+          docker buildx imagetools inspect "$TARGET_IMAGE:$IMAGE_TAG"
 
       - name: Diagnostic logs on failure
         if: failure()

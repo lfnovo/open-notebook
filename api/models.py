@@ -547,6 +547,9 @@ class ApiKeyStatusResponse(BaseModel):
         ...,
         description="Whether OPEN_NOTEBOOK_ENCRYPTION_KEY is set (required to store keys in database)",
     )
+    encryption_key_is_default: bool = Field(
+        ..., description="Whether the public example encryption key is configured"
+    )
 
 
 class TestConnectionResponse(BaseModel):

@@ -974,4 +974,11 @@ export const bnIN = {
     goToSettings: "সেটিংসে যান",
     viewDocs: "ডকুমেন্টেশন দেখুন",
   },
+  securityWarnings: {
+    defaultKeyTitle: "সর্বজনীন উদাহরণ এনক্রিপশন কী ব্যবহার করা হচ্ছে",
+    defaultKeyDescription: "openssl rand -hex 32 দিয়ে একটি ব্যক্তিগত কী তৈরি করুন। কী পরিবর্তন করলে সংরক্ষিত provider credentials পড়া যাবে না; পরে provider-গুলি আবার কনফিগার করুন।",
+    noPasswordTitle: "এই ইনস্ট্যান্সে কোনো পাসওয়ার্ড নেই",
+    noPasswordDescription: "8502 বা 5055 পোর্টে পৌঁছাতে পারে এমন যে কেউ সাইন ইন ছাড়াই এই ইনস্ট্যান্স ব্যবহার করতে পারে। OPEN_NOTEBOOK_PASSWORD সেট করুন অথবা প্রকাশিত পোর্টগুলি 127.0.0.1-এ bind করুন।",
+    securityGuide: "নিরাপত্তা নির্দেশিকা পড়ুন",
+  },
 } satisfies TranslationShape;

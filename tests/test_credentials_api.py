@@ -11,6 +11,41 @@ from pydantic import SecretStr
 from api import credentials_service
 
 
+@pytest.mark.asyncio
+async def test_status_reports_when_public_example_encryption_key_is_used(monkeypatch):
+    monkeypatch.setattr(credentials_service, "PROVIDER_ENV_CONFIG", {})
+    monkeypatch.setenv(
+        "OPEN_NOTEBOOK_ENCRYPTION_KEY", credentials_service.DEFAULT_ENCRYPTION_KEY
+    )
+    monkeypatch.delenv("OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE", raising=False)
+
+    status = await credentials_service.get_provider_status()
+
+    assert status["encryption_configured"] is True
+    assert status["encryption_key_is_default"] is True
+
+
+@pytest.mark.asyncio
+async def test_status_does_not_flag_custom_or_file_encryption_keys(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setattr(credentials_service, "PROVIDER_ENV_CONFIG", {})
+    monkeypatch.setenv("OPEN_NOTEBOOK_ENCRYPTION_KEY", "private-test-key")
+    monkeypatch.delenv("OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE", raising=False)
+
+    custom_status = await credentials_service.get_provider_status()
+    assert custom_status["encryption_key_is_default"] is False
+
+    secret_file = tmp_path / "encryption-key"
+    secret_file.write_text("private-test-key")
+    monkeypatch.delenv("OPEN_NOTEBOOK_ENCRYPTION_KEY", raising=False)
+    monkeypatch.setenv("OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE", str(secret_file))
+
+    file_status = await credentials_service.get_provider_status()
+    assert file_status["encryption_configured"] is True
+    assert file_status["encryption_key_is_default"] is False
+
+
 @pytest.fixture
 def client():
     """Create test client after environment variables have been cleared by conftest."""

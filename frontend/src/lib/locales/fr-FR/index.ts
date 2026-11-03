@@ -973,4 +973,11 @@ export const frFR = {
     goToSettings: "Aller aux paramètres",
     viewDocs: "Voir la documentation",
   },
+  securityWarnings: {
+    defaultKeyTitle: "La clé de chiffrement publique d'exemple est utilisée",
+    defaultKeyDescription: "Générez une clé privée avec openssl rand -hex 32. Modifier cette clé rend les identifiants de fournisseur enregistrés illisibles ; reconfigurez ensuite ces fournisseurs.",
+    noPasswordTitle: "Cette instance n'a pas de mot de passe",
+    noPasswordDescription: "Toute personne pouvant accéder aux ports 8502 ou 5055 peut utiliser cette instance sans se connecter. Définissez OPEN_NOTEBOOK_PASSWORD ou liez les ports publiés à 127.0.0.1.",
+    securityGuide: "Lire le guide de sécurité",
+  },
 } satisfies TranslationShape;

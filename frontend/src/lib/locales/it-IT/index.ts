@@ -973,4 +973,11 @@ export const itIT = {
     goToSettings: "Vai alle Impostazioni",
     viewDocs: "Vedi documentazione",
   },
+  securityWarnings: {
+    defaultKeyTitle: "È in uso la chiave di crittografia pubblica di esempio",
+    defaultKeyDescription: "Genera una chiave privata con openssl rand -hex 32. Cambiare questa chiave rende illeggibili le credenziali dei provider salvate; riconfigura i provider in seguito.",
+    noPasswordTitle: "Questa istanza non ha una password",
+    noPasswordDescription: "Chiunque possa raggiungere le porte 8502 o 5055 può usare questa istanza senza accedere. Imposta OPEN_NOTEBOOK_PASSWORD o associa le porte pubblicate a 127.0.0.1.",
+    securityGuide: "Leggi la guida alla sicurezza",
+  },
 } satisfies TranslationShape;

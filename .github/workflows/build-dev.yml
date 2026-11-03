@@ -3,13 +3,11 @@ name: Development Build
 on:
   pull_request:
     branches: [ main ]
-  push:
-    branches: [ main ]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'notebooks/**'
-      - '.github/workflows/claude*.yml'
+  # NovaHQ fork: no push-to-main trigger. Upstream used it to publish :v1-dev
+  # images to lfnovo's registries; here it just ran a ~25 min multi-arch build
+  # that always failed (no push credentials) on every merge. Merges are built,
+  # smoke-tested and published by nova-custom.yml instead. PRs still get the
+  # build check below.
   workflow_dispatch:
     inputs:
       platform:

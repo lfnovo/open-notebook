@@ -5,6 +5,9 @@ import { MoveToFolderDialog } from './MoveToFolderDialog'
 import type { NotebookResponse } from '@/lib/types/api'
 
 const moveAsync = vi.fn()
+vi.mock('@/lib/hooks/use-sections', () => ({
+  useSections: () => ({ data: [] }),
+}))
 vi.mock('@/lib/hooks/use-folders', () => ({
   useFolders: () => ({
     data: [

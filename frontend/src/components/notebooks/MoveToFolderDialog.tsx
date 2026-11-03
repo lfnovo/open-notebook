@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { useFolders, useMoveNotebookToFolder } from '@/lib/hooks/use-folders'
+import { useSections } from '@/lib/hooks/use-sections'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import type { NotebookResponse } from '@/lib/types/api'
 import { FolderDialog } from './FolderDialog'
@@ -25,6 +26,8 @@ interface MoveToFolderDialogProps {
 export function MoveToFolderDialog({ open, onOpenChange, notebook }: MoveToFolderDialogProps) {
   const { t } = useTranslation()
   const { data: folders = [] } = useFolders()
+  const { data: sections = [] } = useSections()
+  const sectionNames = new Map(sections.map((section) => [section.id, section.name]))
   const moveNotebook = useMoveNotebookToFolder()
   const [newFolderOpen, setNewFolderOpen] = useState(false)
   const currentFolderId = notebook.folder_id ?? null
@@ -76,7 +79,11 @@ export function MoveToFolderDialog({ open, onOpenChange, notebook }: MoveToFolde
                 onClick={() => move(folder.id)}
               >
                 <Folder className="h-4 w-4" />
-                <span className="flex-1 truncate text-left">{folder.name}</span>
+                <span className="flex-1 truncate text-left">
+                  {folder.section_id && sectionNames.has(folder.section_id)
+                    ? `${sectionNames.get(folder.section_id)} / ${folder.name}`
+                    : folder.name}
+                </span>
                 {currentFolderId === folder.id && (
                   <Check className="h-4 w-4" aria-label={t('folders.currentFolder')} />
                 )}

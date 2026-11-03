@@ -13,6 +13,10 @@ vi.mock('@/components/ui/tooltip', () => ({
   TooltipContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
 
+vi.mock('@/lib/hooks/use-sections', () => ({
+  useSections: () => ({ data: [{ id: 'section:1', name: 'Personal', folder_count: 1 }] }),
+}))
+
 describe('AppSidebar', () => {
   afterEach(() => {
     vi.mocked(usePathname).mockReturnValue('')

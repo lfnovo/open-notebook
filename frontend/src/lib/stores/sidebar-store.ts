@@ -5,6 +5,9 @@ interface SidebarState {
   isCollapsed: boolean
   toggleCollapse: () => void
   setCollapsed: (collapsed: boolean) => void
+  /** Whether the Sections group in the sidebar is hidden. */
+  sectionsHidden: boolean
+  toggleSections: () => void
 }
 
 export const useSidebarStore = create<SidebarState>()(
@@ -13,6 +16,8 @@ export const useSidebarStore = create<SidebarState>()(
       isCollapsed: false,
       toggleCollapse: () => set((state) => ({ isCollapsed: !state.isCollapsed })),
       setCollapsed: (collapsed) => set({ isCollapsed: collapsed }),
+      sectionsHidden: false,
+      toggleSections: () => set((state) => ({ sectionsHidden: !state.sectionsHidden })),
     }),
     {
       name: 'sidebar-storage',

@@ -63,8 +63,32 @@ class NotebookUpdate(BaseModel):
     )
 
 
+class SectionRequest(BaseModel):
+    name: str = Field(..., description="Section name (1-80 characters after trimming)")
+
+
+class SectionResponse(BaseModel):
+    id: str
+    name: str
+    created: str
+    updated: str
+    folder_count: int = 0
+
+
+class SectionDeleteResponse(BaseModel):
+    message: str
+    folders_ungrouped: int
+
+
 class FolderRequest(BaseModel):
     name: str = Field(..., description="Folder name (1-80 characters after trimming)")
+    section_id: Optional[str] = Field(
+        None,
+        description=(
+            "Section to place the folder in. Omit to leave unchanged; "
+            "null or '' removes it from its section."
+        ),
+    )
 
 
 class FolderResponse(BaseModel):
@@ -73,6 +97,7 @@ class FolderResponse(BaseModel):
     created: str
     updated: str
     notebook_count: int = 0
+    section_id: Optional[str] = None
 
 
 class FolderDeleteResponse(BaseModel):

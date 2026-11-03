@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -26,6 +26,7 @@ import { LanguageToggle } from '@/components/common/LanguageToggle'
 import type { TFunction } from 'i18next'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { Separator } from '@/components/ui/separator'
+import { SidebarSections } from './SidebarSections'
 import {
   Book,
   Search,
@@ -302,6 +303,15 @@ export function AppSidebar() {
                   )
                 })}
               </div>
+
+              {/* Notebook sections sit right under the Notebooks group. */}
+              {!isCollapsed && section.items.some((item) => item.href === '/notebooks') && (
+                <div className="mt-3">
+                  <Suspense fallback={null}>
+                    <SidebarSections />
+                  </Suspense>
+                </div>
+              )}
             </div>
           ))}
         </nav>

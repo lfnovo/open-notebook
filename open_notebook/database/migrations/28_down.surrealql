@@ -1,0 +1,4 @@
+-- Migration 28 rollback: remove sections.
+REMOVE INDEX IF EXISTS idx_folder_section ON TABLE folder;
+REMOVE FIELD IF EXISTS section ON TABLE folder;
+REMOVE TABLE IF EXISTS section;

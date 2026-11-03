@@ -19,6 +19,7 @@ export const queryClient = new QueryClient({
 
 export const QUERY_KEYS = {
   folders: ['folders'] as const,
+  sections: ['sections'] as const,
   notebooks: ['notebooks'] as const,
   notebook: (id: string) => ['notebooks', id] as const,
   notes: (notebookId?: string) => ['notes', notebookId] as const,

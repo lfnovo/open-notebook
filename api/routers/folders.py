@@ -7,7 +7,7 @@ from loguru import logger
 
 from api.models import FolderDeleteResponse, FolderRequest, FolderResponse
 from open_notebook.database.repository import ensure_record_id, repo_query
-from open_notebook.domain.notebook import Folder
+from open_notebook.domain.notebook import Folder, Section
 from open_notebook.exceptions import (
     InvalidInputError,
     NotFoundError,
@@ -30,16 +30,41 @@ def _clean_name(raw: str) -> str:
     return name
 
 
-async def _assert_name_free(name: str, exclude_id: Optional[str] = None) -> None:
-    rows = await repo_query("SELECT id, name FROM folder")
+def _section_id(value) -> Optional[str]:
+    return str(value) if value else None
+
+
+async def _assert_name_free(
+    name: str,
+    exclude_id: Optional[str] = None,
+    section_id: Optional[str] = None,
+) -> None:
+    """Folder names are unique (case-insensitive) within one section."""
+    rows = await repo_query("SELECT id, name, section FROM folder")
     wanted = name.casefold()
     for row in rows:
         if exclude_id and str(row.get("id")) == exclude_id:
+            continue
+        if _section_id(row.get("section")) != section_id:
             continue
         if str(row.get("name", "")).strip().casefold() == wanted:
             raise HTTPException(
                 status_code=409, detail=f"A folder named '{name}' already exists"
             )
+
+
+async def _resolve_section(raw: Optional[str]) -> Optional[str]:
+    """Blank means no section; an unknown id is a 404."""
+    target = (raw or "").strip()
+    if not target:
+        return None
+    try:
+        section = await Section.get(target)
+    except (InvalidInputError, NotFoundError):
+        section = None
+    if section is None or section.table_name != "section":
+        raise HTTPException(status_code=404, detail="Section not found")
+    return section.id
 
 
 async def _get_folder(folder_id: str) -> Folder:
@@ -60,6 +85,7 @@ def _response(folder: Folder, notebook_count: int = 0) -> FolderResponse:
         created=str(folder.created),
         updated=str(folder.updated),
         notebook_count=notebook_count,
+        section_id=folder.section,
     )
 
 
@@ -87,6 +113,7 @@ async def get_folders():
                 created=str(f.get("created", "")),
                 updated=str(f.get("updated", "")),
                 notebook_count=f.get("notebook_count", 0),
+                section_id=_section_id(f.get("section")),
             )
             for f in folders
         ]
@@ -104,8 +131,9 @@ async def create_folder(body: FolderRequest):
     """Create a folder. 409 if the name exists (case-insensitive)."""
     try:
         name = _clean_name(body.name)
-        await _assert_name_free(name)
-        folder = Folder(name=name)
+        section_id = await _resolve_section(body.section_id)
+        await _assert_name_free(name, section_id=section_id)
+        folder = Folder(name=name, section=section_id)
         await folder.save()
         return _response(folder)
     except InvalidInputError as e:
@@ -121,13 +149,26 @@ async def create_folder(body: FolderRequest):
 
 @router.put("/folders/{folder_id}", response_model=FolderResponse)
 async def rename_folder(folder_id: str, body: FolderRequest):
-    """Rename a folder. 409 if another folder has the name (case-insensitive)."""
+    """Rename and/or move a folder.
+
+    409 if another folder in the target section has the name (case-insensitive).
+    """
     try:
         folder = await _get_folder(folder_id)
         name = _clean_name(body.name)
-        await _assert_name_free(name, exclude_id=folder.id)
+        # Omitted section_id leaves the section untouched; null or "" removes
+        # the folder from its section; an id moves it (404 if unknown).
+        clear_section = False
+        if "section_id" in body.model_fields_set:
+            folder.section = await _resolve_section(body.section_id)
+            clear_section = folder.section is None
+        await _assert_name_free(name, exclude_id=folder.id, section_id=folder.section)
         folder.name = name
         await folder.save()
+        if clear_section:
+            await repo_query(
+                "UPDATE $id SET section = NONE;", {"id": ensure_record_id(folder_id)}
+            )
         return _response(folder, await _notebook_count(folder_id))
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Folder not found")

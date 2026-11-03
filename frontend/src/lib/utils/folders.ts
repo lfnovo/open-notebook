@@ -1,4 +1,4 @@
-import type { FolderResponse, NotebookResponse } from '@/lib/types/api'
+import type { FolderResponse, NotebookResponse, SectionResponse } from '@/lib/types/api'
 
 export const FOLDER_NAME_MAX_LENGTH = 80
 
@@ -57,6 +57,35 @@ export function notebooksInFolder(
   folderId: string
 ): NotebookResponse[] {
   return notebooks.filter((notebook) => notebook.folder_id === folderId)
+}
+
+/** Folders that sit directly in the given section. */
+export function foldersInSection(
+  folders: FolderResponse[],
+  sectionId: string
+): FolderResponse[] {
+  return folders.filter((folder) => folder.section_id === sectionId)
+}
+
+/**
+ * Folders outside every section. A folder pointing at a section that no longer
+ * exists counts as unsectioned so it never disappears from the page.
+ */
+export function unsectionedFolders(
+  folders: FolderResponse[],
+  sections: SectionResponse[]
+): FolderResponse[] {
+  const known = new Set(sections.map((section) => section.id))
+  return folders.filter((folder) => !folder.section_id || !known.has(folder.section_id))
+}
+
+/** URL of the notebooks page at a section or folder level (no args = top level). */
+export function notebooksHref(target: { sectionId?: string | null; folderId?: string | null } = {}) {
+  const params = new URLSearchParams()
+  if (target.folderId) params.set('folder', target.folderId)
+  else if (target.sectionId) params.set('section', target.sectionId)
+  const query = params.toString()
+  return query ? `/notebooks?${query}` : '/notebooks'
 }
 
 export const NOTEBOOK_DRAG_MIME = 'application/x-open-notebook-id'

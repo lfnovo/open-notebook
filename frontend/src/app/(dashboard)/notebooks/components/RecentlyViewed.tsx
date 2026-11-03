@@ -45,7 +45,7 @@ function formatViewedAt(value: string, locale: Locale) {
 
 export function RecentlyViewed({ limit = 12 }: RecentlyViewedProps) {
   const { t, language } = useTranslation()
-  const [isOpen, setIsOpen] = useState(true)
+  const [isOpen, setIsOpen] = useState(false)
   const locale = getDateLocale(language)
   const { data: items, isLoading, isError } = useQuery({
     queryKey: ['recently-viewed', limit],

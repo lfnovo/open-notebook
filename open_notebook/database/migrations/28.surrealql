@@ -1,0 +1,14 @@
+-- Migration 28: sections.
+-- A `section` is a top-level group of folders (section > folder > notebook).
+-- `folder.section` is NONE for folders that sit outside any section. Names are
+-- NOT unique in the database (the API enforces case-insensitive uniqueness);
+-- deleting a section is handled by the API, which un-groups its folders (it
+-- never deletes them).
+DEFINE TABLE IF NOT EXISTS section SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS name ON TABLE section TYPE string
+    ASSERT string::len(string::trim($value)) > 0;
+DEFINE FIELD IF NOT EXISTS created ON section DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON section DEFAULT time::now() VALUE time::now();
+
+DEFINE FIELD IF NOT EXISTS section ON TABLE folder TYPE option<record<section>>;
+DEFINE INDEX IF NOT EXISTS idx_folder_section ON TABLE folder COLUMNS section CONCURRENTLY;

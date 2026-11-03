@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import type { FolderResponse, NotebookResponse } from '@/lib/types/api'
+import type { FolderResponse, NotebookResponse, SectionResponse } from '@/lib/types/api'
 import {
+  foldersInSection,
   groupNotebooksByFolder,
+  notebooksHref,
   notebooksInFolder,
+  unsectionedFolders,
   validateFolderName,
 } from './folders'
 
@@ -79,5 +82,46 @@ describe('validateFolderName', () => {
   })
   it('rejects more than 80 characters', () => {
     expect(validateFolderName('a'.repeat(81))).toBe('tooLong')
+  })
+})
+
+describe('sections', () => {
+  const section = (id: string): SectionResponse => ({
+    id,
+    name: id,
+    created: '',
+    updated: '',
+    folder_count: 0,
+  })
+  const inSection = (id: string, section_id?: string | null): FolderResponse => ({
+    ...folder(id, id),
+    section_id,
+  })
+  const folders = [
+    inSection('folder:a', 'section:1'),
+    inSection('folder:b'),
+    inSection('folder:c', null),
+    inSection('folder:d', 'section:gone'),
+  ]
+
+  it('foldersInSection returns only that section\'s folders', () => {
+    expect(foldersInSection(folders, 'section:1').map((f) => f.id)).toEqual(['folder:a'])
+  })
+
+  it('unsectionedFolders keeps folders with no or a deleted section', () => {
+    expect(unsectionedFolders(folders, [section('section:1')]).map((f) => f.id)).toEqual([
+      'folder:b',
+      'folder:c',
+      'folder:d',
+    ])
+  })
+
+  it('notebooksHref builds top-level, section and folder URLs', () => {
+    expect(notebooksHref()).toBe('/notebooks')
+    expect(notebooksHref({ sectionId: 'section:1' })).toBe('/notebooks?section=section%3A1')
+    expect(notebooksHref({ sectionId: 'section:1', folderId: 'folder:a' })).toBe(
+      '/notebooks?folder=folder%3Aa'
+    )
+    expect(notebooksHref({ folderId: null, sectionId: null })).toBe('/notebooks')
   })
 })

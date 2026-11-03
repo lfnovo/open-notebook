@@ -26,6 +26,7 @@ function useFolderMutationHelpers() {
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders })
     queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notebooks })
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.sections })
   }
 
   // Duplicate-name (409) errors are shown inline by the folder dialog.
@@ -44,7 +45,8 @@ function useFolderMutationHelpers() {
 export function useCreateFolder() {
   const { refresh, onError, toast, t } = useFolderMutationHelpers()
   return useMutation({
-    mutationFn: (name: string) => foldersApi.create(name),
+    mutationFn: ({ name, sectionId }: { name: string; sectionId?: string | null }) =>
+      foldersApi.create(name, sectionId),
     onSuccess: () => {
       refresh()
       toast({ title: t('common.success'), description: t('folders.createSuccess') })
@@ -56,7 +58,8 @@ export function useCreateFolder() {
 export function useRenameFolder() {
   const { refresh, onError, toast, t } = useFolderMutationHelpers()
   return useMutation({
-    mutationFn: ({ id, name }: { id: string; name: string }) => foldersApi.rename(id, name),
+    mutationFn: ({ id, name, sectionId }: { id: string; name: string; sectionId?: string | null }) =>
+      foldersApi.rename(id, name, sectionId),
     onSuccess: () => {
       refresh()
       toast({ title: t('common.success'), description: t('folders.renameSuccess') })

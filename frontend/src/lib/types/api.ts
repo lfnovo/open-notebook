@@ -16,6 +16,20 @@ export interface FolderResponse {
   created: string
   updated: string
   notebook_count: number
+  section_id?: string | null
+}
+
+export interface SectionResponse {
+  id: string
+  name: string
+  created: string
+  updated: string
+  folder_count: number
+}
+
+export interface SectionDeleteResponse {
+  message: string
+  folders_ungrouped: number
 }
 
 export interface FolderDeleteResponse {

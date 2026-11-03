@@ -7,13 +7,20 @@ export const foldersApi = {
     return response.data
   },
 
-  create: async (name: string) => {
-    const response = await apiClient.post<FolderResponse>('/folders', { name })
+  /** `sectionId`: omit/undefined = none (create) or unchanged (rename); null = no section. */
+  create: async (name: string, sectionId?: string | null) => {
+    const response = await apiClient.post<FolderResponse>('/folders', {
+      name,
+      ...(sectionId ? { section_id: sectionId } : {}),
+    })
     return response.data
   },
 
-  rename: async (id: string, name: string) => {
-    const response = await apiClient.put<FolderResponse>(`/folders/${id}`, { name })
+  rename: async (id: string, name: string, sectionId?: string | null) => {
+    const response = await apiClient.put<FolderResponse>(`/folders/${id}`, {
+      name,
+      ...(sectionId !== undefined ? { section_id: sectionId } : {}),
+    })
     return response.data
   },
 

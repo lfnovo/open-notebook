@@ -18,6 +18,7 @@ import {
   useCreateFolder,
   useRenameFolder,
 } from '@/lib/hooks/use-folders'
+import { useSections } from '@/lib/hooks/use-sections'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import type { FolderResponse } from '@/lib/types/api'
 import { FOLDER_NAME_MAX_LENGTH, validateFolderName } from '@/lib/utils/folders'
@@ -27,14 +28,18 @@ interface FolderDialogProps {
   onOpenChange: (open: boolean) => void
   /** When set, the dialog renames this folder instead of creating one. */
   folder?: FolderResponse
+  /** Section preselected when creating a folder (e.g. from inside a section). */
+  defaultSectionId?: string | null
   onSaved?: (folder: FolderResponse) => void
 }
 
-export function FolderDialog({ open, onOpenChange, folder, onSaved }: FolderDialogProps) {
+export function FolderDialog({ open, onOpenChange, folder, defaultSectionId, onSaved }: FolderDialogProps) {
   const { t } = useTranslation()
   const createFolder = useCreateFolder()
   const renameFolder = useRenameFolder()
+  const { data: sections = [] } = useSections()
   const [name, setName] = useState('')
+  const [sectionId, setSectionId] = useState('')
   const [touched, setTouched] = useState(false)
   const [duplicate, setDuplicate] = useState(false)
 
@@ -44,10 +49,11 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved }: FolderDial
   useEffect(() => {
     if (open) {
       setName(folder?.name ?? '')
+      setSectionId(folder ? (folder.section_id ?? '') : (defaultSectionId ?? ''))
       setTouched(false)
       setDuplicate(false)
     }
-  }, [open, folder])
+  }, [open, folder, defaultSectionId])
 
   const validation = validateFolderName(name)
   const errorMessage = duplicate
@@ -66,8 +72,8 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved }: FolderDial
     const trimmed = name.trim()
     try {
       const saved = folder
-        ? await renameFolder.mutateAsync({ id: folder.id, name: trimmed })
-        : await createFolder.mutateAsync(trimmed)
+        ? await renameFolder.mutateAsync({ id: folder.id, name: trimmed, sectionId: sectionId || null })
+        : await createFolder.mutateAsync({ name: trimmed, sectionId: sectionId || null })
       onOpenChange(false)
       onSaved?.(saved)
     } catch (error) {
@@ -110,6 +116,28 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved }: FolderDial
               </p>
             )}
           </div>
+
+          {sections.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="folder-section">{t('sections.sectionLabel')}</Label>
+              <select
+                id="folder-section"
+                value={sectionId}
+                onChange={(event) => {
+                  setSectionId(event.target.value)
+                  setDuplicate(false)
+                }}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="">{t('sections.noSection')}</option>
+                {sections.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <DialogFooter className="gap-2 sm:gap-0">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

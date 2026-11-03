@@ -17,9 +17,22 @@ from open_notebook.exceptions import (
 )
 
 
+class Section(ObjectModel):
+    table_name: ClassVar[str] = "section"
+    name: str
+
+    @field_validator("name")
+    @classmethod
+    def name_must_not_be_empty(cls, v):
+        if not v.strip():
+            raise InvalidInputError("Section name cannot be empty")
+        return v
+
+
 class Folder(ObjectModel):
     table_name: ClassVar[str] = "folder"
     name: str
+    section: Optional[str] = None
 
     @field_validator("name")
     @classmethod
@@ -27,6 +40,21 @@ class Folder(ObjectModel):
         if not v.strip():
             raise InvalidInputError("Folder name cannot be empty")
         return v
+
+    @field_validator("section", mode="before")
+    @classmethod
+    def section_to_str(cls, v):
+        return str(v) if v else None
+
+    def _prepare_save_data(self) -> Dict[str, Any]:
+        data = super()._prepare_save_data()
+        # `section` is a record link; None is dropped so MERGE leaves it alone
+        # (clearing is done explicitly by the API with NONE).
+        if data.get("section"):
+            data["section"] = ensure_record_id(data["section"])
+        else:
+            data.pop("section", None)
+        return data
 
 
 class Notebook(ObjectModel):

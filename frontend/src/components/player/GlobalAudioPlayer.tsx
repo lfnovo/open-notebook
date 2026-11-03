@@ -87,7 +87,7 @@ export function GlobalAudioPlayer() {
     const ms = navigator.mediaSession
     try {
       if (typeof MediaMetadata !== 'undefined') {
-        ms.metadata = new MediaMetadata({ title: episode.name, artist: 'Open Notebook' })
+        ms.metadata = new MediaMetadata({ title: episode.name, artist: 'Nova-Notes' })
       }
       ms.setActionHandler('play', () => play())
       ms.setActionHandler('pause', () => pause())

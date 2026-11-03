@@ -43,6 +43,7 @@ def test_list_folders_sorted_by_name_with_counts(client):
         "created": "c",
         "updated": "u",
         "notebook_count": 2,
+        "section_id": None,
     }
 
 

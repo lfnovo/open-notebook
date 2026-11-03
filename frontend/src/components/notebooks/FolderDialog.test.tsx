@@ -15,6 +15,15 @@ vi.mock('@/lib/hooks/use-folders', async () => {
   }
 })
 
+vi.mock('@/lib/hooks/use-sections', () => ({
+  useSections: () => ({
+    data: [
+      { id: 'section:1', name: 'Personal', folder_count: 0 },
+      { id: 'section:2', name: 'Work', folder_count: 0 },
+    ],
+  }),
+}))
+
 const input = () => screen.getByLabelText(/folders.nameLabel/)
 const submit = () => screen.getByRole('button', { name: 'folders.create' })
 
@@ -49,7 +58,7 @@ describe('FolderDialog', () => {
     fireEvent.change(input(), { target: { value: '  Research  ' } })
     fireEvent.click(submit())
 
-    await waitFor(() => expect(createMutateAsync).toHaveBeenCalledWith('Research'))
+    await waitFor(() => expect(createMutateAsync).toHaveBeenCalledWith({ name: 'Research', sectionId: null }))
     await waitFor(() => expect(onSaved).toHaveBeenCalledWith(saved))
     expect(onOpenChange).toHaveBeenCalledWith(false)
   })
@@ -85,8 +94,47 @@ describe('FolderDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'folders.rename' }))
 
     await waitFor(() =>
-      expect(renameMutateAsync).toHaveBeenCalledWith({ id: 'folder:1', name: 'New' })
+      expect(renameMutateAsync).toHaveBeenCalledWith({ id: 'folder:1', name: 'New', sectionId: null })
     )
     expect(createMutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('creates a folder inside the chosen section', async () => {
+    createMutateAsync.mockResolvedValue({ id: 'folder:1', name: 'True crime' })
+    render(<FolderDialog open onOpenChange={vi.fn()} defaultSectionId="section:1" />)
+
+    expect(screen.getByLabelText('sections.sectionLabel')).toHaveValue('section:1')
+    fireEvent.change(input(), { target: { value: 'True crime' } })
+    fireEvent.click(submit())
+
+    await waitFor(() =>
+      expect(createMutateAsync).toHaveBeenCalledWith({ name: 'True crime', sectionId: 'section:1' })
+    )
+  })
+
+  it('moves a folder to another section when renaming', async () => {
+    renameMutateAsync.mockResolvedValue({ id: 'folder:1', name: 'Same' })
+    const folder = {
+      id: 'folder:1',
+      name: 'Same',
+      created: '',
+      updated: '',
+      notebook_count: 0,
+      section_id: 'section:1',
+    }
+    render(<FolderDialog open onOpenChange={vi.fn()} folder={folder} />)
+
+    fireEvent.change(screen.getByLabelText('sections.sectionLabel'), {
+      target: { value: 'section:2' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'folders.rename' }))
+
+    await waitFor(() =>
+      expect(renameMutateAsync).toHaveBeenCalledWith({
+        id: 'folder:1',
+        name: 'Same',
+        sectionId: 'section:2',
+      })
+    )
   })
 })

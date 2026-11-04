@@ -434,6 +434,7 @@ export const jaJP = {
     deleteSession: "セッションを削除",
     deleteSessionDesc: "このチャットセッションを削除しますか？この操作は元に戻せません。",
     sendPlaceholder: "ソースについて何でも質問してください...",
+    stop: "停止",
     sessionsTitle: "チャットセッション",
     chatWith: "{{name}}とチャット",
     startConversation: "この{{type}}について会話を始めましょう",

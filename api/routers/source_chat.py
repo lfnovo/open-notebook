@@ -1,11 +1,10 @@
 import asyncio
-import json
-from typing import AsyncGenerator, List, Optional
+from typing import Any, AsyncGenerator, List, Optional
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Path
+from fastapi import APIRouter, HTTPException, Path, Request
 from fastapi.responses import StreamingResponse
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -17,16 +16,34 @@ from api.routers._chat_shared import (
     get_source_or_404,
     get_verified_source_session,
 )
+from api.routers._sse import (
+    EMPTY_REPLY_MESSAGE,
+    MAX_STREAM_SECONDS,
+    StreamOutcome,
+    finalize_stream,
+    format_error_event,
+    run_generation,
+    sse,
+    stream_events,
+    stream_headers,
+)
+from open_notebook.ai.provision import provision_langchain_model
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import ChatSession
 from open_notebook.exceptions import (
+    IncompleteGenerationError,
     NotFoundError,
     OpenNotebookError,
 )
+from open_notebook.graphs.source_chat import NODE_NAME as SOURCE_CHAT_NODE
+from open_notebook.graphs.source_chat import prepare_source_chat_turn
 from open_notebook.graphs.source_chat import source_chat_graph as source_chat_graph
+from open_notebook.utils import clean_thinking_content
 from open_notebook.utils.graph_utils import (
+    discard_message,
     get_session_message_count,
-    invoke_chat_turn,
+    persist_pending_human_turn,
+    persist_state,
 )
 
 router = APIRouter()
@@ -348,90 +365,169 @@ async def delete_source_chat_session(
         )
 
 
-async def stream_source_chat_response(
-    session_id: str, source_id: str, message: str, model_override: Optional[str] = None
-) -> AsyncGenerator[str, None]:
-    """Stream the source chat response as Server-Sent Events."""
+async def _settle_source_turn(
+    thread_id: str, content: str, question: HumanMessage
+) -> None:
+    """Persist what a streamed turn produced, or drop the question if nothing."""
+    if content.strip():
+        await persist_state(
+            source_chat_graph,
+            thread_id,
+            {"messages": [AIMessage(content=content)]},
+            as_node=SOURCE_CHAT_NODE,
+        )
+    else:
+        await discard_message(source_chat_graph, thread_id, question)
+
+
+async def _settle_source_safely(
+    thread_id: str, content: str, question: Optional[HumanMessage]
+) -> None:
+    if not question:
+        return
     try:
-        # Get current state
-        # Use sync get_state() in a thread since SqliteSaver doesn't support async
+        await _settle_source_turn(thread_id, content, question)
+    except Exception:
+        logger.exception(f"Could not settle streamed source turn in {thread_id}")
+
+
+async def stream_source_chat_response(
+    session_id: str,
+    source_id: str,
+    message: str,
+    model_override: Optional[str] = None,
+    *,
+    http_request: Optional[Request] = None,
+    session: Any = None,
+) -> AsyncGenerator[str, None]:
+    """Stream the source chat response as Server-Sent Events.
+
+    Same contract as notebook chat: `user_message` -> `token`… ->
+    (`context_indicators`) -> `complete`, with keepalives while the model is in
+    prefill and cancellation of the provider request when the client goes away.
+    """
+    queue: "asyncio.Queue[Any]" = asyncio.Queue()
+    outcome = StreamOutcome()
+    parts: list[str] = []
+    task: Optional["asyncio.Task[Any]"] = None
+    question: Optional[HumanMessage] = None
+    persisted = False
+    settled = False
+
+    try:
+        # Snapshot the thread; SqliteSaver has no async API, so off the loop.
         current_state = await asyncio.to_thread(
             source_chat_graph.get_state,
             config=RunnableConfig(configurable={"thread_id": session_id}),
         )
 
-        # Prepare state for execution
         state_values = current_state.values if current_state else {}
         state_values["messages"] = state_values.get("messages", [])
         state_values["source_id"] = source_id
         state_values["model_override"] = model_override
 
-        # Add user message to state
         # Explicit id so a failed turn can remove it from the checkpoint.
-        user_message = HumanMessage(content=message, id=str(uuid4()))
-        state_values["messages"].append(user_message)
+        question = HumanMessage(content=message, id=str(uuid4()))
+        state_values["messages"].append(question)
 
-        # Send user message event
-        user_event = {"type": "user_message", "content": message, "timestamp": None}
-        yield f"data: {json.dumps(user_event)}\n\n"
+        yield sse({"type": "user_message", "content": message, "timestamp": None})
 
-        # Run the synchronous LangGraph invoke in a thread so it doesn't block the
-        # event loop. While blocked, even the already-yielded SSE events can't
-        # flush and every other request stalls until the LLM finishes. Mirrors the
-        # get_state() calls above.
-        # invoke_chat_turn also drops the question from the checkpoint when the
-        # turn fails, so a retry doesn't add it twice.
-        result = await asyncio.to_thread(
-            invoke_chat_turn,
-            source_chat_graph,
-            state_values,
-            RunnableConfig(
-                configurable={"thread_id": session_id, "model_id": model_override}
-            ),
-            user_message,
+        await persist_pending_human_turn(
+            source_chat_graph, session_id, question, as_node=SOURCE_CHAT_NODE
+        )
+        persisted = True
+
+        # Context building is I/O heavy (and sync) — keep it off the loop. It
+        # also produces the state delta the node would have returned.
+        turn = await asyncio.to_thread(prepare_source_chat_turn, state_values)  # type: ignore[arg-type]
+
+        model = await provision_langchain_model(
+            str(turn.payload),
+            model_override,
+            "chat",
+            max_tokens=8192,
+            streaming=True,
         )
 
-        # Stream this turn's AI response. result["messages"] is the full
-        # checkpointed history, so only the last message is new.
-        if result.get("messages"):
-            msg = result["messages"][-1]
-            if getattr(msg, "type", None) == "ai":
-                ai_event = {
-                    "type": "ai_message",
-                    "content": msg.content if hasattr(msg, "content") else str(msg),
-                    "timestamp": None,
-                }
-                yield f"data: {json.dumps(ai_event)}\n\n"
+        task = asyncio.create_task(run_generation(queue, model, turn.payload, parts))
+        async for frame in stream_events(
+            queue,
+            outcome,
+            is_disconnected=(
+                http_request.is_disconnected if http_request is not None else None
+            ),
+        ):
+            yield frame
 
-        # Stream context indicators
-        if "context_indicators" in result:
-            context_event = {
-                "type": "context_indicators",
-                "data": result["context_indicators"],
-            }
-            yield f"data: {json.dumps(context_event)}\n\n"
+        content = clean_thinking_content("".join(parts))
 
-        # Send completion signal
-        completion_event = {"type": "complete"}
-        yield f"data: {json.dumps(completion_event)}\n\n"
+        if outcome.kind == "done":
+            if not content.strip():
+                raise IncompleteGenerationError(EMPTY_REPLY_MESSAGE)
+            await persist_state(
+                source_chat_graph,
+                session_id,
+                {"messages": [AIMessage(content=content)], **turn.updates},
+                as_node=SOURCE_CHAT_NODE,
+            )
+            settled = True
+            if session is not None:
+                await session.save()
+            if "context_indicators" in turn.updates:
+                yield sse(
+                    {
+                        "type": "context_indicators",
+                        "data": turn.updates["context_indicators"],
+                    }
+                )
+            yield sse({"type": "complete", "content": content})
+            return
 
+        if outcome.kind == "timeout":
+            await _settle_source_safely(session_id, content, question)
+            settled = True
+            yield format_error_event(
+                IncompleteGenerationError(
+                    "The model did not finish within "
+                    f"{int(MAX_STREAM_SECONDS)}s. Partial answer kept."
+                )
+            )
+            return
+
+        if outcome.kind == "error":
+            await _settle_source_safely(session_id, content, question)
+            settled = True
+            yield format_error_event(outcome.payload)
+            return
+
+        await _settle_source_safely(session_id, content, question)
+        settled = True
+
+    except asyncio.CancelledError:
+        raise
     except Exception as e:
-        from open_notebook.utils.error_classifier import classify_error
-
-        # Typed errors already carry a user-facing message; only raw provider
-        # exceptions need classifying.
-        if isinstance(e, OpenNotebookError):
-            error_message = str(e)
-        else:
-            _, error_message = classify_error(e)
         logger.error(f"Error in source chat streaming: {str(e)}")
-        error_event = {"type": "error", "message": error_message}
-        yield f"data: {json.dumps(error_event)}\n\n"
+        if persisted and question and not settled:
+            await _settle_source_safely(
+                session_id, clean_thinking_content("".join(parts)), question
+            )
+            settled = True
+        yield format_error_event(e)
+    finally:
+
+        async def _settle_if_needed() -> None:
+            if persisted and question and not settled:
+                await _settle_source_safely(
+                    session_id, clean_thinking_content("".join(parts)), question
+                )
+
+        await finalize_stream(task, _settle_if_needed)
 
 
 @router.post("/sources/{source_id}/chat/sessions/{session_id}/messages")
 async def send_message_to_source_chat(
     request: SendMessageRequest,
+    http_request: Request,
     source_id: str = Path(..., description="Source ID"),
     session_id: str = Path(..., description="Session ID"),
 ):
@@ -463,13 +559,11 @@ async def send_message_to_source_chat(
                 source_id=full_source_id,
                 message=request.message,
                 model_override=model_override,
+                http_request=http_request,
+                session=session,
             ),
             media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "X-Accel-Buffering": "no",
-            },
+            headers=stream_headers(),
         )
 
     except HTTPException:

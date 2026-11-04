@@ -41,6 +41,56 @@ def discard_unanswered_message(graph, thread_id: str, message: BaseMessage) -> N
         logger.exception(f"Could not discard unanswered message in {thread_id}")
 
 
+async def persist_state(
+    graph,
+    thread_id: str,
+    values: dict,
+    *,
+    as_node: str,
+) -> None:
+    """Write a checkpoint update off the event loop.
+
+    Used by the streaming chat endpoints, which generate outside the graph:
+    SqliteSaver has no async API (`aupdate_state` raises NotImplementedError),
+    so the write goes through a worker thread exactly like `get_state` does.
+    `as_node` names the node the update is attributed to — LangGraph cannot
+    infer it for a single-node graph once a pending turn is scheduled.
+    """
+    config = RunnableConfig(configurable={"thread_id": thread_id})
+    await asyncio.to_thread(lambda: graph.update_state(config, values, as_node=as_node))
+
+
+async def persist_pending_human_turn(
+    graph,
+    thread_id: str,
+    message: BaseMessage,
+    *,
+    as_node: str,
+) -> bool:
+    """Append the user's question to the checkpoint before generation starts.
+
+    The streaming endpoints return tokens before the graph would ever
+    checkpoint its input, so the question has to be written up front: it must
+    survive a mid-generation disconnect (the frontend refetches the checkpoint
+    on stop/complete) and be visible to a concurrent read. The guard keys on the
+    message id, so a retry that reuses the id is deduplicated.
+
+    Returns whether the message was written.
+    """
+    config = RunnableConfig(configurable={"thread_id": thread_id})
+    state = await asyncio.to_thread(graph.get_state, config=config)
+    existing = (state.values or {}).get("messages", []) if state else []
+    if message.id and any(getattr(m, "id", None) == message.id for m in existing):
+        return False
+    await persist_state(graph, thread_id, {"messages": [message]}, as_node=as_node)
+    return True
+
+
+async def discard_message(graph, thread_id: str, message: BaseMessage) -> None:
+    """Async wrapper for `discard_unanswered_message` (streaming endpoints)."""
+    await asyncio.to_thread(discard_unanswered_message, graph, thread_id, message)
+
+
 def invoke_chat_turn(
     graph, state: dict, config: RunnableConfig, user_message: BaseMessage
 ) -> Any:

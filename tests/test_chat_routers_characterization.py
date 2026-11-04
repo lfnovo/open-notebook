@@ -346,8 +346,8 @@ async def _collect_events(gen):
 @pytest.mark.asyncio
 @patch("api.routers.source_chat.source_chat_graph")
 async def test_stream_emits_only_the_new_ai_message(mock_graph):
-    """The graph result carries the whole checkpointed history; the stream must
-    send only this turn's answer, not every previous AI message (#1393)."""
+    """The checkpoint carries the whole history; the stream must send only this
+    turn's answer, not every previous AI message (#1393)."""
     from api.routers.source_chat import stream_source_chat_response
 
     mock_graph.get_state.return_value = _graph_state(
@@ -358,25 +358,45 @@ async def test_stream_emits_only_the_new_ai_message(mock_graph):
             ]
         }
     )
-    mock_graph.invoke.return_value = {
-        "messages": [
-            _Msg("m1", "human", "first question"),
-            _Msg("m2", "ai", "first answer"),
-            _Msg("m3", "human", "second question"),
-            _Msg("m4", "ai", "second answer"),
-        ],
-        "context_indicators": {"sources": ["source:xyz"], "insights": [], "notes": []},
-    }
 
-    events = await _collect_events(
-        stream_source_chat_response("chat_session:abc", "source:xyz", "second question")
-    )
+    class _StreamingModel:
+        async def astream(self, _payload):
+            for text in ("second ", "answer"):
+                yield SimpleNamespace(content=text)
 
-    ai_events = [e for e in events if e["type"] == "ai_message"]
-    assert [e["content"] for e in ai_events] == ["second answer"]
+    with (
+        patch(
+            "api.routers.source_chat.prepare_source_chat_turn",
+            return_value=SimpleNamespace(
+                payload=[],
+                updates={
+                    "context_indicators": {
+                        "sources": ["source:xyz"],
+                        "insights": [],
+                        "notes": [],
+                    }
+                },
+            ),
+        ),
+        patch(
+            "api.routers.source_chat.provision_langchain_model",
+            new_callable=AsyncMock,
+            return_value=_StreamingModel(),
+        ),
+    ):
+        events = await _collect_events(
+            stream_source_chat_response(
+                "chat_session:abc", "source:xyz", "second question"
+            )
+        )
+
+    tokens = [e["content"] for e in events if e["type"] == "token"]
+    assert "".join(tokens) == "second answer"
+    assert "first answer" not in "".join(tokens)
     assert [e["type"] for e in events] == [
         "user_message",
-        "ai_message",
+        "token",
+        "token",
         "context_indicators",
         "complete",
     ]

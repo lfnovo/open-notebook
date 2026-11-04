@@ -102,9 +102,30 @@ describe('ChatPanel composer', () => {
     )
 
     const textarea = getTextarea()
-    // Textarea is disabled while streaming, but the guard must also hold.
+    // The input stays editable for type-ahead, but sending waits for the turn.
+    expect(textarea.disabled).toBe(false)
+    fireEvent.change(textarea, { target: { value: 'next question' } })
     fireEvent.keyDown(textarea, { key: 'Enter', ctrlKey: true })
 
+    expect(onSendMessage).not.toHaveBeenCalled()
+  })
+
+  it('shows a Stop button while streaming and calls onStop', () => {
+    const onSendMessage = vi.fn()
+    const onStop = vi.fn()
+    render(
+      <ChatPanel
+        messages={[]}
+        isStreaming={true}
+        contextIndicators={null}
+        onSendMessage={onSendMessage}
+        onStop={onStop}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'chat.stop' }))
+
+    expect(onStop).toHaveBeenCalledTimes(1)
     expect(onSendMessage).not.toHaveBeenCalled()
   })
 })

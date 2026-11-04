@@ -300,7 +300,7 @@ export const zhTW = {
     deleteSourceConfirm: "確定要刪除此來源嗎？",
     deleteConfirm: "確定要刪除嗎？",
     deleteConfirmWithTitle: "確定要刪除 \"{{title}}\" 嗎？",
-    deleteSuccess: "來源刪除成功。注意：要從儲存中刪除檔案，必須在設定頁面中啟用「刪除檔案」選項。",
+    deleteSuccess: "來源刪除成功。",
     failedToDelete: "刪除來源失敗",
     sourceQueued: "來源已加入隊列",
     sourceQueuedDesc: "來源已提交進行後台處理。您可以在來源列表中監控進度。",

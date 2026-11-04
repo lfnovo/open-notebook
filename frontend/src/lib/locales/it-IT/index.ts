@@ -300,7 +300,7 @@ export const itIT = {
     deleteSourceConfirm: "Sei sicuro di voler eliminare questa fonte?",
     deleteConfirm: "Sei sicuro di voler eliminare questo elemento?",
     deleteConfirmWithTitle: "Sei sicuro di voler eliminare \"{{title}}\"?",
-    deleteSuccess: "Fonte eliminata con successo. Nota: Per eliminare il file dallo storage, devi abilitare l'opzione \"elimina file\" nella pagina impostazioni.",
+    deleteSuccess: "Fonte eliminata con successo.",
     failedToDelete: "Impossibile eliminare la fonte",
     sourceQueued: "Fonte in coda",
     sourceQueuedDesc: "Fonte inviata per l'elaborazione in background. Puoi monitorare il progresso nella lista fonti.",

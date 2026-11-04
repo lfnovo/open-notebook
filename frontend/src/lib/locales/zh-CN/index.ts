@@ -300,7 +300,7 @@ export const zhCN = {
     deleteSourceConfirm: "确定要删除此来源吗？",
     deleteConfirm: "确定要删除吗？",
     deleteConfirmWithTitle: "确定要删除 \"{{title}}\" 吗？",
-    deleteSuccess: "来源删除成功。注意：要从存储中删除文件，必须在设置页面中启用“删除文件”选项。",
+    deleteSuccess: "来源删除成功。",
     failedToDelete: "删除来源失败",
     sourceQueued: "来源已加入队列",
     sourceQueuedDesc: "来源已提交进行后台处理。您可以在来源列表中监控进度。",

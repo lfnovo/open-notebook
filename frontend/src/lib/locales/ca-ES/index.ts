@@ -300,7 +300,7 @@ export const caES = {
     deleteSourceConfirm: "Segur que vols suprimir aquesta font?",
     deleteConfirm: "Segur que vols suprimir aquest element?",
     deleteConfirmWithTitle: "Segur que vols suprimir «{{title}}»?",
-    deleteSuccess: "S'ha suprimit la font correctament. Nota: per suprimir el fitxer de l'emmagatzematge, cal activar l'opció «suprimeix el fitxer» a la pàgina de configuració.",
+    deleteSuccess: "S'ha suprimit la font correctament.",
     failedToDelete: "Ha fallat la supressió de la font",
     sourceQueued: "Font afegida a la cua",
     sourceQueuedDesc: "La font s'ha enviat per al processament en segon pla. Pots controlar el progrés a la llista de fonts.",

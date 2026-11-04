@@ -298,7 +298,7 @@ export const enUS = {
     deleteSourceConfirm: "Are you sure you want to delete this source?",
     deleteConfirm: "Are you sure you want to delete this?",
     deleteConfirmWithTitle: "Are you sure you want to delete \"{{title}}\"?",
-    deleteSuccess: "Source deleted successfully. Note: To delete the file from storage, you must enable checking the \"delete file\" option in the settings page.",
+    deleteSuccess: "Source deleted successfully.",
     failedToDelete: "Failed to delete source",
     sourceQueued: "Source Queued",
     sourceQueuedDesc: "Source submitted for background processing. You can monitor progress in the sources list.",

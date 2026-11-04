@@ -300,7 +300,7 @@ export const trTR = {
     deleteSourceConfirm: "Bu kaynağı silmek istediğinizden emin misiniz?",
     deleteConfirm: "Bunu silmek istediğinizden emin misiniz?",
     deleteConfirmWithTitle: "\"{{title}}\" öğesini silmek istediğinizden emin misiniz?",
-    deleteSuccess: "Kaynak başarıyla silindi. Not: Dosyayı depolamadan silmek için ayarlar sayfasında \"dosyayı sil\" seçeneğini etkinleştirmeniz gerekir.",
+    deleteSuccess: "Kaynak başarıyla silindi.",
     failedToDelete: "Kaynak silinemedi",
     sourceQueued: "Kaynak Kuyruğa Eklendi",
     sourceQueuedDesc: "Kaynak arka planda işlenmek üzere gönderildi. İlerlemeyi kaynaklar listesinden takip edebilirsiniz.",

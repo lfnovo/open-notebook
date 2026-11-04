@@ -311,6 +311,11 @@ class TestSaveSourceTitlePreservation:
 class TestContentProcessDeleteSource:
     """content-core 2.x no longer deletes the uploaded file; the graph must."""
 
+    @pytest.fixture(autouse=True)
+    def _uploads_in_tmp_path(self, tmp_path, monkeypatch):
+        # content_process only reads (and deletes) files inside the uploads folder.
+        monkeypatch.setattr("open_notebook.graphs.source.UPLOADS_FOLDER", str(tmp_path))
+
     @pytest.mark.asyncio
     @patch("open_notebook.graphs.source.extract_content")
     @patch("open_notebook.graphs.source.ModelManager")

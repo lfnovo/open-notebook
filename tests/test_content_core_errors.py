@@ -16,6 +16,12 @@ YOUTUBE = "https://www.youtube.com/watch?v=abc123"
 PAGE = "https://example.com/article"
 
 
+@pytest.fixture(autouse=True)
+def _uploads_in_tmp(monkeypatch):
+    # content_process only reads files inside the uploads folder.
+    monkeypatch.setattr(source_graph, "UPLOADS_FOLDER", "/tmp")
+
+
 async def _run(state, extract):
     settings = SimpleNamespace(
         youtube_preferred_languages=None,
@@ -62,7 +68,7 @@ async def _run(state, extract):
         ),
         ({"url": PAGE}, cc.NotFoundError("HTTP 404"), "page was not found"),
         ({"url": PAGE}, cc.NetworkError("DNS failure"), "Could not reach"),
-        ({"url": "nota url"}, cc.InvalidInputError("malformed"), "not valid"),
+        ({"url": PAGE}, cc.InvalidInputError("malformed"), "not valid"),
         (
             {"file_path": "/tmp/x.bin"},
             cc.UnsupportedTypeException("application/x-foo"),

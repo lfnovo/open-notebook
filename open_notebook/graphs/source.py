@@ -1,5 +1,6 @@
 import operator
 import os
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
@@ -13,11 +14,13 @@ from loguru import logger
 from typing_extensions import Annotated, TypedDict
 
 from open_notebook.ai.models import Model, ModelManager
+from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.domain.content_settings import ContentSettings
 from open_notebook.domain.notebook import Asset, Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.graphs.transformation import graph as transform_graph
 from open_notebook.utils.runtime_capabilities import engine_runtime_missing
+from open_notebook.utils.url_validation import validate_url
 
 # content-core >= 2.1 disables its own Loguru logging for library consumers.
 # Both the API and the worker import this module before extracting anything,
@@ -157,8 +160,30 @@ def _extraction_error(error: "cc.ContentCoreError", url: str) -> ValueError:
     return ValueError("Could not extract content from this source.")
 
 
+async def validate_content_state(content_state: Dict[str, Any]) -> None:
+    """Apply the source-input guards at the point of extraction.
+
+    The API validates input when a source is created, but this graph is also
+    reached from other entry points (retries, sync processing), so the
+    file-path containment and SSRF checks are enforced here too, where the
+    file is actually read (and possibly deleted) and the URL fetched. Raises
+    ValueError, which process_source treats as a permanent failure.
+    """
+    file_path = content_state.get("file_path")
+    if file_path:
+        uploads_resolved = Path(UPLOADS_FOLDER).resolve()
+        if not str(Path(file_path).resolve()).startswith(
+            str(uploads_resolved) + os.sep
+        ):
+            raise ValueError("Invalid file path: must be within the uploads directory")
+    url = content_state.get("url")
+    if url:
+        await validate_url(url, "source")
+
+
 async def content_process(state: SourceState) -> dict:
     content_state: Dict[str, Any] = state["content_state"]
+    await validate_content_state(content_state)
 
     # content-core 2.x takes engine/model overrides via ContentCoreConfig
     # (keyword-only), not inside the input dict.

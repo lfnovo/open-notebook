@@ -23,6 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The legacy `SURREAL_ADDRESS` / `SURREAL_PORT` fallback builds a valid database URL (`ws://host:port/rpc`, was `ws://host/rpc:port`); an address that already includes the port is kept as is
 - `.env.example` names the chunking variables Open Notebook actually reads (`OPEN_NOTEBOOK_CHUNK_SIZE` / `OPEN_NOTEBOOK_CHUNK_OVERLAP`)
 
+### Removed
+- `POST /api/commands/jobs`, the generic "submit any background command" endpoint. Nothing in Open Notebook used it; every operation has its own endpoint. Job status (`GET /api/commands/jobs/{job_id}`) is unchanged.
+
+### Security
+- Source processing now enforces the uploads-directory and URL checks in the background worker itself, so they apply on every path that processes a source, not only when a source is created.
+- Requires `content-core` 2.2.1 or later, which refuses link-local and cloud-metadata addresses on every redirect hop when fetching URLs.
+
 ## [1.15.0] - 2026-10-04
 
 ### Added

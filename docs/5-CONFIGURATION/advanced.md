@@ -37,7 +37,7 @@ Speech has its own timeouts: `ESPERANTO_TTS_TIMEOUT` (300 s, podcast audio) and 
 
 ### Embeddings
 
-For CPU-only or strict OpenAI-compatible embedding servers, lower `OPEN_NOTEBOOK_EMBEDDING_BATCH_SIZE` (default `50`). Chunking is controlled by `OPEN_NOTEBOOK_CHUNK_SIZE` (400 tokens) and `OPEN_NOTEBOOK_CHUNK_OVERLAP` (15%). After changing chunking or the embedding model, rebuild embeddings from the **Advanced** page.
+For CPU-only or strict OpenAI-compatible embedding servers, lower `OPEN_NOTEBOOK_EMBEDDING_BATCH_SIZE` (default `50`). Chunking is controlled by `OPEN_NOTEBOOK_CHUNK_SIZE` (400 tokens) and `OPEN_NOTEBOOK_CHUNK_OVERLAP` (15%). After changing chunking or the embedding model, rebuild embeddings from the **Advanced** page. If a source embed fails partway, the finished batches are cached, so the retry only embeds the rest; see `OPEN_NOTEBOOK_EMBEDDING_CACHE_MAX_ROWS` in the [environment reference](environment-reference.md).
 
 ---
 

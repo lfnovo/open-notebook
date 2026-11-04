@@ -1,0 +1,8 @@
+-- Migration 26: add embedding_cache table keyed by hash of model + chunk text.
+DEFINE TABLE IF NOT EXISTS embedding_cache SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS hash ON TABLE embedding_cache TYPE string;
+DEFINE FIELD IF NOT EXISTS model ON TABLE embedding_cache TYPE string;
+DEFINE FIELD IF NOT EXISTS embedding ON TABLE embedding_cache TYPE array<float>;
+DEFINE FIELD IF NOT EXISTS created ON TABLE embedding_cache DEFAULT time::now() VALUE $before OR time::now();
+DEFINE INDEX IF NOT EXISTS idx_embedding_cache_created ON TABLE embedding_cache COLUMNS created;
+DEFINE INDEX IF NOT EXISTS idx_embedding_cache_hash ON TABLE embedding_cache COLUMNS hash UNIQUE;

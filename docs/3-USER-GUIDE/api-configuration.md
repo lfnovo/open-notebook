@@ -68,12 +68,12 @@ This section decides which model each feature uses. Fields marked with an asteri
 | **Transformation Model** | Transformations (insights), titles for AI-generated notes | Uses the Chat Model |
 | **Tools Model** | Ask, when called through the API without explicit models | Uses the Chat Model |
 | **Large Context Model** | Any prompt over about 105,000 tokens | Uses the Chat Model |
-| **Text-to-Speech Model** | Nothing at the moment: podcasts take their voice model from the speaker profile | — |
+| **Text-to-Speech Model** | Podcasts: the voice model for speaker profiles that don't select their own | Speaker profiles without a voice model can't generate podcasts |
 | **Speech-to-Text Model** | Transcribing uploaded audio and video files, and YouTube videos without a transcript | Those sources can't be transcribed (YouTube videos with a transcript still work) |
 
 While the Chat Model or Embedding Model is missing, a notice offers **Auto-assign Defaults**, which fills those two from the models you have added (the other slots stay as they are). If it says *No models available to assign*, add some models first.
 
-Podcasts use the models set in their episode and speaker profiles, not these defaults (see [Creating Podcasts](creating-podcasts.md)).
+Podcasts take their outline and transcript models from the episode profile and their voice model from the speaker profile; the Text-to-Speech Model here is only the fallback for speaker profiles without their own voice model (see [Creating Podcasts](creating-podcasts.md)).
 
 **Changing the Embedding Model** opens a confirmation: existing embeddings were made by the old model and won't match new queries. Choose **Change & Go to Rebuild** to go to **Advanced → Rebuild Embeddings**, or **Change Model Only** to rebuild later.
 

@@ -128,6 +128,8 @@ NO_PROXY=localhost,127.0.0.1,host.docker.internal,surrealdb,.local
 |----------|---------|---------|-------------|
 | `OPEN_NOTEBOOK_WORKER_MAX_TASKS` | `5` | Container / `make worker-start` | Jobs the worker runs at once. Set `1` for a local model on a single GPU. Passed to the worker as `--max-tasks` at launch |
 | `TTS_BATCH_SIZE` | `5` | Worker | Text-to-speech requests sent in parallel per podcast. Lower it (for example `1` or `2`) for rate-limited or single-threaded TTS servers |
+| `PODCAST_REFUSAL_RETRIES` | `2` | Worker | Extra attempts when the provider refuses a podcast outline or transcript request (Anthropic `stop_reason: refusal`, which can be an intermittent false positive on long sources). `0` disables retrying |
+| `PODCAST_REFUSAL_FALLBACK_MODEL` | none | Worker | Model name on the same provider and credentials to try once after the retries are refused (for example `claude-haiku-5-5`). Unset = no fallback; the episode then fails with a clear refusal message |
 | `SURREAL_COMMANDS_RETRY_ENABLED` | `false` | Worker | Turns on the job queue's global retry policy. See the note below |
 | `SURREAL_COMMANDS_RETRY_MAX_ATTEMPTS` | `3` | Worker | Global policy: attempts, including the first |
 | `SURREAL_COMMANDS_RETRY_WAIT_STRATEGY` | `exponential` | Worker | Global policy: `exponential`, `exponential_jitter`, `fixed` or `random` |

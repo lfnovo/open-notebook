@@ -17,6 +17,7 @@ from open_notebook.podcasts.models import (
     _resolve_model_config,
 )
 from open_notebook.podcasts.progress import PodcastProgressTracker
+from open_notebook.podcasts.refusal_guard import install_refusal_guard
 from open_notebook.utils.model_utils import full_model_dump
 
 try:
@@ -24,6 +25,8 @@ try:
 except ImportError as e:
     logger.error(f"Failed to import podcast_creator: {e}")
     raise ValueError("podcast_creator library not available")
+
+install_refusal_guard()
 
 
 def build_episode_output_dir(
@@ -80,6 +83,16 @@ def explain_generation_failure(error_msg: str) -> Optional[str]:
             "episode profile that doesn't exist for its provider. If the "
             "transcript finished and the failure came during audio, it is the "
             "voice."
+        )
+
+    if "refused the request" in error_msg:
+        return (
+            "The provider's safety system refused this request on every "
+            "attempt. This is often a false positive on long source text and "
+            "is intermittent, so retrying the episode can work. To make it "
+            "automatic, set PODCAST_REFUSAL_FALLBACK_MODEL to another model "
+            "from the same provider (for example claude-haiku-5-5). Using "
+            "fewer or shorter sources also lowers the chance."
         )
 
     if "Invalid json output" in error_msg or "Expecting value" in error_msg:

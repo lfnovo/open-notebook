@@ -1,3 +1,4 @@
+import asyncio
 import os
 from datetime import datetime
 from pathlib import Path
@@ -649,7 +650,28 @@ class Source(ObjectModel):
 
     async def delete(self) -> bool:
         """Delete source and clean up associated file, embeddings, and insights."""
-        # Clean up uploaded file if it exists
+        # Delete associated embeddings and insights first (issue #1510): when a
+        # retriable SurrealDB transaction conflict makes that fail, the old
+        # code logged a warning, deleted the uploaded file anyway and then
+        # still answered 200 OK while the source was untouched, leaving a
+        # source record that pointed at a missing asset. Fail loudly instead,
+        # so the API returns an error and the file outlives the failed call.
+        # repo_delete in repository.py retries the source-record delete.
+        try:
+            deleted = await self._delete_derived_records(0)
+            if not deleted:
+                raise DatabaseOperationError(
+                    f"Failed to delete embeddings/insights for source {self.id}"
+                )
+        except DatabaseOperationError:
+            raise
+
+        # Call parent delete to remove database record
+        result = await super().delete()
+
+        # The uploaded file is only removed once the database records are gone,
+        # so a client that retries no longer has a source pointing at a
+        # missing asset.
         if self.asset and self.asset.file_path:
             file_path = Path(self.asset.file_path)
             if file_path.exists():
@@ -659,16 +681,20 @@ class Source(ObjectModel):
                 except Exception as e:
                     logger.warning(
                         f"Failed to delete file {file_path} for source {self.id}: {e}. "
-                        "Continuing with database deletion."
+                        "Continuing with source deletion."
                     )
             else:
                 logger.debug(
                     f"File {file_path} not found for source {self.id}, skipping cleanup"
                 )
 
-        # Delete associated embeddings and insights to prevent orphaned records
+        return result
+
+    async def _delete_derived_records(self, attempt: int) -> bool:
+        """Delete the source's embeddings and insights, retrying until a
+        SurrealDB transaction conflict stops being retriable."""
+        source_id = ensure_record_id(self.id)
         try:
-            source_id = ensure_record_id(self.id)
             await repo_query(
                 "DELETE source_embedding WHERE source = $source_id",
                 {"source_id": source_id},
@@ -677,15 +703,21 @@ class Source(ObjectModel):
                 "DELETE source_insight WHERE source = $source_id",
                 {"source_id": source_id},
             )
-            logger.debug(f"Deleted embeddings and insights for source {self.id}")
         except Exception as e:
             logger.warning(
-                f"Failed to delete embeddings/insights for source {self.id}: {e}. "
-                "Continuing with source deletion."
+                f"Failed to delete embeddings/insights for source {self.id}: {e} "
+                f"(attempt {attempt})."
             )
-
-        # Call parent delete to remove database record
-        return await super().delete()
+            if "can be retried" in str(e).lower() and attempt < 5:
+                await asyncio.sleep(0.5 * (attempt + 1))
+                return await self._delete_derived_records(attempt + 1)
+            logger.error(
+                f"Failed to delete embeddings/insights for source {self.id}: {e}. "
+                "Aborting source deletion; the uploaded file was left untouched."
+            )
+            return False
+        logger.debug(f"Deleted embeddings and insights for source {self.id}")
+        return True
 
 
 class Note(ObjectModel):

@@ -1,3 +1,4 @@
+import asyncio
 import os
 import re
 from contextlib import asynccontextmanager
@@ -207,15 +208,28 @@ async def repo_update(
         raise RuntimeError(f"Failed to update record: {str(e)}")
 
 
-async def repo_delete(record_id: Union[str, RecordID]):
-    """Delete a record by record id"""
+async def repo_delete(record_id: Union[str, RecordID], max_attempts: int = 4):
+    """Delete a record by record id.
 
-    try:
-        async with db_connection() as connection:
-            return await connection.delete(ensure_record_id(record_id))
-    except Exception as e:
-        logger.exception(e)
-        raise RuntimeError(f"Failed to delete record: {str(e)}")
+    SurrealDB transaction conflicts are retriable (the error says so); a short
+    retry loop keeps a delete from failing while another session is writing.
+    """
+
+    for attempt in range(max_attempts):
+        try:
+            async with db_connection() as connection:
+                return await connection.delete(ensure_record_id(record_id))
+        except RuntimeError as e:
+            # RuntimeError is raised for retriable transaction conflicts -
+            # log at debug to avoid noise (same convention as repo_query).
+            logger.debug(str(e))
+            if "can be retried" not in str(e).lower() or attempt == max_attempts - 1:
+                raise RuntimeError(f"Failed to delete record: {str(e)}") from e
+            await asyncio.sleep(0.5 * (attempt + 1))
+        except Exception as e:
+            logger.exception(e)
+            raise RuntimeError(f"Failed to delete record: {str(e)}") from e
+    raise RuntimeError(f"Failed to delete record {record_id}")  # pragma: no cover
 
 
 async def repo_insert(

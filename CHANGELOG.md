@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Deleting a source can no longer silently report success while its embeddings remain (#1510).** When a retriable SurrealDB transaction conflict (e.g. the worker writing embeddings at the same time) made the embeddings/insights cleanup fail, `DELETE /api/sources/{id}` logged a warning, removed the uploaded file and still returned 200 OK with the source record and all its chunks intact. The cleanup is now retried a few times and a persistent failure is returned as an error (500) without touching the uploaded file; the file is only deleted after the database records are gone. `repo_delete` also retries retriable conflicts instead of failing immediately.
+
 ## [1.15.1] - 2026-11-03
 
 ### Changed

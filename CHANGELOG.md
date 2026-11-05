@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Podcast episode and speaker profile action menus now have localized names for screen readers (#1403).
+
 ## [1.15.1] - 2026-11-03
 
 ### Changed

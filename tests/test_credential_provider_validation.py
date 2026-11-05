@@ -159,6 +159,11 @@ class TestProvidersEndpoint:
         assert "language" in openai["modalities"]
         assert openai["docs_url"].startswith("https://")
         assert isinstance(openai["env_configured"], bool)
+        assert openai["default_api_version"] is None
+
+        # The credential form prefills Azure's API version from here (#1470)
+        azure = next(p for p in data if p["name"] == "azure")
+        assert azure["default_api_version"] == "2024-10-21"
 
 
 class TestCreateCredentialRequestValidation:

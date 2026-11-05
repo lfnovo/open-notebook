@@ -24,6 +24,9 @@ import { useCreateSource } from '@/lib/hooks/use-sources'
 import { useSettings } from '@/lib/hooks/use-settings'
 import { CreateSourceRequest } from '@/lib/types/api'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { getApiUrl } from '@/lib/config'
+import { filesTooLargeForProxy, PROXY_UPLOAD_DOCS_URL, uploadsUseFrontendProxy } from '@/lib/upload-proxy'
+import { PROXY_MAX_UPLOAD_MB } from '../../lib/upload-limits'
 
 const MAX_BATCH_SIZE = 50
 
@@ -382,8 +385,45 @@ export function AddSourceDialog({
     return results
   }
 
+  // Files over the proxy limit are cut off by the Next.js rewrite and come back as a bare 500.
+  // Only checked when uploads go through the rewrite; the API's own 413 covers direct calls.
+  const findFilesTooLargeForProxy = async (data: CreateSourceFormData): Promise<File[]> => {
+    if (data.type !== 'upload') return []
+    const files = isBatchMode
+      ? parsedFiles
+      : [data.file instanceof FileList ? data.file[0] : data.file].filter((f): f is File => f instanceof File)
+    const tooLarge = filesTooLargeForProxy(files)
+    if (tooLarge.length === 0) return []
+    let apiUrl: string
+    try {
+      apiUrl = await getApiUrl()
+    } catch {
+      return []
+    }
+    return (await uploadsUseFrontendProxy(apiUrl, window.location.origin)) ? tooLarge : []
+  }
+
   // Form submission
   const onSubmit = async (data: CreateSourceFormData) => {
+    const tooLarge = await findFilesTooLargeForProxy(data)
+    if (tooLarge.length > 0) {
+      toast.error(
+        t('sources.fileTooLargeForProxy', {
+          names: tooLarge.map((f) => f.name).join(', '),
+          limit: PROXY_MAX_UPLOAD_MB,
+        }),
+        {
+          description: t('sources.fileTooLargeForProxyHint'),
+          duration: 15000,
+          action: {
+            label: t('sources.fileTooLargeForProxyDocs'),
+            onClick: () => window.open(PROXY_UPLOAD_DOCS_URL, '_blank', 'noopener,noreferrer'),
+          },
+        },
+      )
+      return
+    }
+
     try {
       setProcessing(true)
 

@@ -104,6 +104,14 @@ export interface PodcastGenerationRequest {
   briefing_suffix?: string | null
 }
 
+export interface ScriptPodcastRequest {
+  /** speaker_profile record ID (the API also accepts a profile name) */
+  speaker_profile: string
+  episode_name: string
+  script: string
+  notebook_id?: string
+}
+
 export interface PodcastGenerationResponse {
   job_id: string
   status: string

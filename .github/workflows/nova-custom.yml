@@ -102,6 +102,13 @@ jobs:
           echo "upload -> $note"
           nid=$(echo "$note" | python3 -c 'import sys,json;print(json.load(sys.stdin)["id"])')
           test "$(curl -sS -H "$H" "http://127.0.0.1:15055/api/notes/$nid/file")" = "smoke from file"
+          # Read-a-script must exist and reject an unknown voice profile with our 404
+          # ("... not found"), not the router's missing-route 404 ("Not Found").
+          code=$(curl -sS -o /tmp/rs.json -w '%{http_code}' -H "$H" -H 'Content-Type: application/json' \
+            -X POST -d '{"speaker_profile":"nope","episode_name":"s","script":"Hi."}' \
+            http://127.0.0.1:15055/api/podcasts/read-script)
+          echo "read-script(unknown profile) -> $code"; cat /tmp/rs.json; echo
+          test "$code" = 404 && grep -q "not found" /tmp/rs.json
           docker logs nova-open-notebook 2>&1 | grep -i "migration" | tail -5
 
       - name: Log in to GHCR

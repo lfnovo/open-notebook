@@ -561,3 +561,150 @@ async def generate_podcast_command(
             error_msg += f"\n\nNOTE: {hint}"
 
         raise RuntimeError(error_msg) from e
+
+
+# Marker stored in a script episode's episode_profile snapshot: there is no
+# episode profile, so the UI and the retry endpoint key off this instead.
+SCRIPT_EPISODE_PROFILE = {"name": "script", "mode": "script"}
+
+
+class ScriptPodcastInput(CommandInput):
+    speaker_profile: str
+    episode_name: str
+    script: str
+    notebook_id: Optional[str] = None
+
+
+async def build_tts_speaker_profile(speaker_profile: SpeakerProfile):
+    """Resolve a stored speaker profile into podcast_creator's TTS profile."""
+    from podcast_creator.speakers import Speaker as PCSpeaker
+    from podcast_creator.speakers import SpeakerProfile as PCSpeakerProfile
+
+    if not speaker_profile.voice_model:
+        raise ValueError(
+            f"Speaker profile '{speaker_profile.name}' has no voice model "
+            "configured. Please update the profile to select a voice model."
+        )
+    provider, model, config = await speaker_profile.resolve_tts_config()
+    speakers = []
+    for sp in speaker_profile.speakers:
+        override: dict = {}
+        if sp.get("voice_model"):
+            prov, mod, conf = await _resolve_model_config(str(sp["voice_model"]))
+            override = {"tts_provider": prov, "tts_model": mod, "tts_config": conf}
+        speakers.append(
+            PCSpeaker(
+                name=sp["name"],
+                voice_id=sp["voice_id"],
+                backstory=sp.get("backstory") or "",
+                personality=sp.get("personality") or "",
+                **override,
+            )
+        )
+    return PCSpeakerProfile(
+        tts_provider=provider, tts_model=model, tts_config=config, speakers=speakers
+    )
+
+
+@command("read_script_podcast", app="open_notebook", retry={"max_attempts": 1})
+async def read_script_podcast_command(
+    input_data: ScriptPodcastInput,
+) -> PodcastGenerationOutput:
+    """Read a user-written script aloud with a speaker profile's voices.
+
+    No outline or transcript model is involved: the script is split into
+    clips by open_notebook.podcasts.script and sent straight to TTS through
+    podcast_creator's own audio nodes.
+    """
+    from podcast_creator.core import Dialogue
+    from podcast_creator.nodes import (
+        combine_audio_node,
+        generate_all_audio_node,
+        route_audio_generation,
+    )
+
+    from open_notebook.podcasts.script import parse_script
+
+    start_time = time.time()
+    try:
+        speaker_profile = await SpeakerProfile.resolve(input_data.speaker_profile)
+        if not speaker_profile:
+            raise ValueError(
+                f"Speaker profile '{input_data.speaker_profile}' not found"
+            )
+        tts_profile = await build_tts_speaker_profile(speaker_profile)
+        turns = parse_script(input_data.script, tts_profile.get_speaker_names())
+
+        episode = PodcastEpisode(
+            name=input_data.episode_name,
+            episode_profile=dict(SCRIPT_EPISODE_PROFILE),
+            speaker_profile=full_model_dump(speaker_profile.model_dump()),
+            command=ensure_record_id(input_data.execution_context.command_id)
+            if input_data.execution_context
+            else None,
+            briefing="Script read as written.",
+            content=input_data.script,
+            audio_file=None,
+            transcript={"transcript": turns},
+            outline=None,
+            notebook=input_data.notebook_id or None,
+        )
+        await episode.save()
+        episode.progress = 1
+        await write_episode_progress(episode.id, 1)
+
+        episode_dir_name, output_dir = build_episode_output_dir()
+        output_dir.mkdir(parents=True, exist_ok=True)
+        state: dict = {
+            "transcript": [Dialogue(**t) for t in turns],
+            "output_dir": output_dir,
+            "episode_name": episode_dir_name,
+            "speaker_profile": tts_profile,
+            "audio_clips": [],
+        }
+        config: dict = {"configurable": {}}
+
+        reporter = _ProgressReporter(episode, asyncio.get_running_loop())
+        reporter.attach()
+        try:
+            route_audio_generation(state, config)  # type: ignore[arg-type]
+            state.update(await generate_all_audio_node(state, config))  # type: ignore[arg-type]
+            state.update(await combine_audio_node(state, config))  # type: ignore[arg-type]
+        finally:
+            reporter.detach()
+            try:
+                await reporter.flush()
+            except Exception as e:
+                logger.warning(f"Failed to flush podcast progress: {e}")
+
+        raw_audio_path = state.get("final_output_file_path")
+        if raw_audio_path is None or str(raw_audio_path).startswith("ERROR:"):
+            raise RuntimeError(f"Podcast audio generation failed: {raw_audio_path}")
+        episode.audio_file = to_relative_audio_path(raw_audio_path)
+        await episode.save()
+        episode.progress = 100
+        await write_episode_progress(episode.id, 100)
+
+        processing_time = time.time() - start_time
+        logger.info(
+            f"Read script into episode {episode.id} ({len(turns)} clips) "
+            f"in {processing_time:.2f}s"
+        )
+        return PodcastGenerationOutput(
+            success=True,
+            episode_id=str(episode.id),
+            audio_file_path=episode.audio_file,
+            transcript={"transcript": turns},
+            processing_time=processing_time,
+        )
+
+    except ValueError:
+        raise
+    except Exception as e:
+        logger.error(f"Script podcast failed: {e}")
+        logger.exception(e)
+        error_msg = str(e)
+        hint = explain_generation_failure(error_msg)
+        if hint:
+            error_msg += f"\n\nNOTE: {hint}"
+        raise RuntimeError(error_msg) from e

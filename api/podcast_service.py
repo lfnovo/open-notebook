@@ -2,7 +2,7 @@ from typing import Any, Dict, Optional
 
 from fastapi import HTTPException
 from loguru import logger
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from surreal_commands import get_command_status, submit_command
 
 from open_notebook.database.repository import ensure_record_id, repo_query
@@ -19,6 +19,15 @@ class PodcastGenerationRequest(BaseModel):
     content: Optional[str] = None
     notebook_id: Optional[str] = None
     briefing_suffix: Optional[str] = None
+
+
+class ScriptPodcastRequest(BaseModel):
+    """Request model for reading a user-written script aloud"""
+
+    speaker_profile: str
+    episode_name: str
+    script: str = Field(..., max_length=500_000)
+    notebook_id: Optional[str] = None
 
 
 class PodcastGenerationResponse(BaseModel):
@@ -113,6 +122,50 @@ class PodcastService:
                 status_code=500,
                 detail="Failed to submit podcast generation job",
             )
+
+    @staticmethod
+    async def submit_script_job(
+        speaker_profile_name: str,
+        episode_name: str,
+        script: str,
+        notebook_id: Optional[str] = None,
+    ) -> str:
+        """Submit a job that reads a script aloud with a speaker profile.
+
+        The script is parsed here first so an empty script or a missing
+        profile fails the request (400/404) instead of a background job.
+        """
+        from open_notebook.exceptions import InvalidInputError, NotFoundError
+        from open_notebook.podcasts.script import parse_script
+
+        speaker_profile = await SpeakerProfile.resolve(speaker_profile_name)
+        if not speaker_profile:
+            raise NotFoundError(f"Speaker profile '{speaker_profile_name}' not found")
+        if not speaker_profile.voice_model:
+            raise InvalidInputError(
+                f"Speaker profile '{speaker_profile.name}' has no voice model"
+            )
+        try:
+            parse_script(script, [s["name"] for s in speaker_profile.speakers])
+        except ValueError as e:
+            raise InvalidInputError(str(e)) from e
+
+        import commands.podcast_commands  # noqa: F401  (registers the command)
+
+        job_id = submit_command(
+            "open_notebook",
+            "read_script_podcast",
+            {
+                "speaker_profile": str(speaker_profile.id),
+                "episode_name": episode_name,
+                "script": script,
+                "notebook_id": notebook_id or None,
+            },
+        )
+        if not job_id:
+            raise ValueError("Failed to get job_id from submit_command")
+        logger.info(f"Submitted script podcast job {job_id} for '{episode_name}'")
+        return str(job_id)
 
     @staticmethod
     async def get_job_status(job_id: str) -> Dict[str, Any]:

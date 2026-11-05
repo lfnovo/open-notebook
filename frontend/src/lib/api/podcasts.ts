@@ -7,6 +7,7 @@ import {
   Language,
   PodcastGenerationRequest,
   PodcastGenerationResponse,
+  ScriptPodcastRequest,
 } from '@/lib/types/podcasts'
 
 export type EpisodeProfileInput = Omit<EpisodeProfile, 'id'>
@@ -116,6 +117,14 @@ export const podcastsApi = {
   generatePodcast: async (payload: PodcastGenerationRequest) => {
     const response = await apiClient.post<PodcastGenerationResponse>(
       '/podcasts/generate',
+      payload
+    )
+    return response.data
+  },
+
+  readScriptPodcast: async (payload: ScriptPodcastRequest) => {
+    const response = await apiClient.post<PodcastGenerationResponse>(
+      '/podcasts/read-script',
       payload
     )
     return response.data

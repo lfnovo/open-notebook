@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { AlertCircle, Loader2, RefreshCcw } from 'lucide-react'
+import { AlertCircle, FileText, Loader2, RefreshCcw } from 'lucide-react'
 
 import { useDeletePodcastEpisode, usePodcastEpisodes, useRetryPodcastEpisode } from '@/lib/hooks/use-podcasts'
 import { EpisodeCard } from '@/components/podcasts/EpisodeCard'
@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { GeneratePodcastDialog } from '@/components/podcasts/GeneratePodcastDialog'
+import { ReadScriptDialog } from '@/components/podcasts/ReadScriptDialog'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import type { TFunction } from 'i18next'
 
@@ -52,6 +53,7 @@ function SummaryBadge({ label, value }: { label: string; value: number }) {
 export function EpisodesTab() {
   const { t } = useTranslation()
   const [showGenerateDialog, setShowGenerateDialog] = useState(false)
+  const [showScriptDialog, setShowScriptDialog] = useState(false)
   const {
     episodes,
     statusGroups,
@@ -92,6 +94,10 @@ export function EpisodesTab() {
         <div className="flex items-center gap-2">
           <Button onClick={() => setShowGenerateDialog(true)}>
             {t('podcasts.generateBtn')}
+          </Button>
+          <Button variant="outline" onClick={() => setShowScriptDialog(true)}>
+            <FileText className="mr-2 h-4 w-4" />
+            {t('podcasts.readScriptBtn')}
           </Button>
           <Button
             variant="outline"
@@ -177,6 +183,7 @@ export function EpisodesTab() {
         open={showGenerateDialog}
         onOpenChange={setShowGenerateDialog}
       />
+      <ReadScriptDialog open={showScriptDialog} onOpenChange={setShowScriptDialog} />
     </div>
   )
 }

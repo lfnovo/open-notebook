@@ -15,7 +15,7 @@ from .embedding_commands import (
     embed_source_command,
     rebuild_embeddings_command,
 )
-from .podcast_commands import generate_podcast_command
+from .podcast_commands import generate_podcast_command, read_script_podcast_command
 from .source_commands import process_source_command
 
 __all__ = [
@@ -28,4 +28,5 @@ __all__ = [
     "discover_notebook_command",
     "generate_podcast_command",
     "process_source_command",
+    "read_script_podcast_command",
 ]

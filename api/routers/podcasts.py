@@ -9,6 +9,7 @@ from api.podcast_service import (
     PodcastGenerationRequest,
     PodcastGenerationResponse,
     PodcastService,
+    ScriptPodcastRequest,
 )
 from open_notebook.ai.models import Model
 from open_notebook.exceptions import OpenNotebookError
@@ -165,6 +166,35 @@ async def generate_podcast(request: PodcastGenerationRequest):
     except Exception as e:
         logger.error(f"Error generating podcast: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to generate podcast")
+
+
+@router.post("/podcasts/read-script", response_model=PodcastGenerationResponse)
+async def read_script_podcast(request: ScriptPodcastRequest):
+    """Read a user-written script aloud with a speaker profile's voices.
+
+    No outline or transcript model runs; returns immediately with a job ID.
+    """
+    try:
+        job_id = await PodcastService.submit_script_job(
+            speaker_profile_name=request.speaker_profile,
+            episode_name=request.episode_name,
+            script=request.script,
+            notebook_id=request.notebook_id,
+        )
+        return PodcastGenerationResponse(
+            job_id=job_id,
+            status="submitted",
+            message=f"Reading script for episode '{request.episode_name}'",
+            episode_profile="script",
+            episode_name=request.episode_name,
+        )
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
+    except Exception as e:
+        logger.error(f"Error submitting script podcast: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to read script")
 
 
 @router.get("/podcasts/jobs/{job_id}")
@@ -379,6 +409,23 @@ async def retry_podcast_episode(episode_id: str):
                 status_code=400,
                 detail=f"Episode is not in a failed state (current: {detail['status']})",
             )
+
+        if (episode.episode_profile or {}).get("mode") == "script":
+            sp_name = (episode.speaker_profile or {}).get("name")
+            if not sp_name:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Cannot retry: speaker profile name missing from stored data",
+                )
+            _delete_episode_audio(episode, episode_id)
+            await episode.delete()
+            job_id = await PodcastService.submit_script_job(
+                speaker_profile_name=sp_name,
+                episode_name=episode.name,
+                script=episode.content,
+                notebook_id=str(episode.notebook) if episode.notebook else None,
+            )
+            return {"job_id": job_id, "message": "Retry submitted successfully"}
 
         # Extract params for re-submission
         ep_profile_name = episode.episode_profile.get("name")

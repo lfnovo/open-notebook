@@ -193,6 +193,10 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
   }
 
   const isFailed = FAILED_EPISODE_STATUSES.includes(episode.job_status as EpisodeStatus)
+  const isScript = (episode.episode_profile as { mode?: string } | undefined)?.mode === 'script'
+  const profileLabel = isScript
+    ? t('podcasts.scriptReading')
+    : episode.episode_profile?.name || t('common.unknown')
 
   return (
     <Card>
@@ -206,7 +210,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
               <StatusBadge status={episode.job_status} />
             </div>
             <p className="text-xs text-muted-foreground">
-              {t('podcasts.profile')}: {episode.episode_profile?.name || t('common.unknown')}
+              {t('podcasts.profile')}: {profileLabel}
               {createdLabel ? ` • ${createdLabel}` : ''}
             </p>
           </div>
@@ -221,7 +225,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                 <DialogHeader>
                   <DialogTitle>{episode.name}</DialogTitle>
                   <DialogDescription>
-                    {episode.episode_profile?.name || t('common.unknown')}
+                    {profileLabel}
                     {createdLabel ? ` • ${createdLabel}` : ''}
                   </DialogDescription>
                 </DialogHeader>
@@ -242,7 +246,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                     <TabsContent value="summary" className="flex-1 overflow-hidden">
                       <ScrollArea className="h-full pr-4">
                         <div className="space-y-6">
-                          <section className="space-y-2">
+                          {!isScript && <section className="space-y-2">
                             <h4 className="text-sm font-semibold text-foreground">{t('podcasts.episodeProfile')}</h4>
                             <div className="grid gap-2 text-sm md:grid-cols-2">
                               <div>
@@ -281,7 +285,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                                 {episode.episode_profile.default_briefing}
                               </div>
                             ) : null}
-                          </section>
+                          </section>}
 
                           <section className="space-y-2">
                             <h4 className="text-sm font-semibold text-foreground">{t('podcasts.speakerProfile')}</h4>

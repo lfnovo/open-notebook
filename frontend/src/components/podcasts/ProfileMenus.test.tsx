@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import i18n from '@/lib/i18n'
 import { EpisodeProfile, SpeakerProfile } from '@/lib/types/podcasts'
 import { EpisodeProfilesPanel } from './EpisodeProfilesPanel'
@@ -29,14 +29,26 @@ const episode: EpisodeProfile = {
   id: 'episode:one', name: 'Episode', description: '', speaker_config: speaker.id,
   outline_llm: 'model:text', transcript_llm: 'model:text', default_briefing: '', num_segments: 2,
 }
+const secondSpeaker: SpeakerProfile = { ...speaker, id: 'speaker:two', name: 'Zebra speaker' }
+const secondEpisode: EpisodeProfile = { ...episode, id: 'episode:two', name: 'Zebra episode' }
 const panels = [
   {
-    name: 'episode', id: episode.id, duplicate: duplicateEpisode,
-    render: () => <EpisodeProfilesPanel episodeProfiles={[episode]} speakerProfiles={[speaker]} />,
+    name: 'episode', second: secondEpisode, duplicate: duplicateEpisode,
+    render: (multiple = false) => (
+      <EpisodeProfilesPanel
+        episodeProfiles={multiple ? [secondEpisode, episode] : [episode]}
+        speakerProfiles={[speaker]}
+      />
+    ),
   },
   {
-    name: 'speaker', id: speaker.id, duplicate: duplicateSpeaker,
-    render: () => <SpeakerProfilesPanel speakerProfiles={[speaker]} usage={{}} />,
+    name: 'speaker', second: secondSpeaker, duplicate: duplicateSpeaker,
+    render: (multiple = false) => (
+      <SpeakerProfilesPanel
+        speakerProfiles={multiple ? [secondSpeaker, speaker] : [speaker]}
+        usage={{}}
+      />
+    ),
   },
 ]
 
@@ -61,13 +73,24 @@ describe.each(panels)('$name profile menu', (panel) => {
     expect(screen.getByRole('button', { name: i18n.t('podcasts.edit') })).toBeEnabled()
   })
 
-  it('opens with Enter and duplicates the selected profile', () => {
-    const { container } = render(panel.render())
-    const trigger = container.querySelector('button[aria-haspopup="menu"]')!
-    fireEvent.keyDown(trigger, { key: 'Enter' })
+  it.each(['pointer', 'Enter'])('duplicates the second profile using %s', (input) => {
+    // Input order differs from display order: both panels sort profiles by name.
+    render(panel.render(true))
+    const card = screen.getByText(panel.second.name).closest<HTMLElement>('[data-slot="card"]')!
+    const trigger = within(card).getByRole('button', { name: i18n.t('common.actions') })
+    const triggers = screen.getAllByRole('button', { name: i18n.t('common.actions') })
+    expect(triggers).toHaveLength(2)
+    expect(triggers[1]).toBe(trigger)
+
+    if (input === 'Enter') {
+      fireEvent.keyDown(trigger, { key: 'Enter' })
+    } else {
+      // Radix opens on pointerdown; jsdom has no native PointerEvent.
+      fireEvent(trigger, new MouseEvent('pointerdown', { bubbles: true, button: 0, ctrlKey: false }))
+    }
     expect(screen.getByRole('menu')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('menuitem', { name: i18n.t('podcasts.duplicate') }))
-    expect(panel.duplicate).toHaveBeenCalledExactlyOnceWith(panel.id)
+    expect(panel.duplicate).toHaveBeenCalledExactlyOnceWith(panel.second.id)
   })
 })

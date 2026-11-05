@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ChatPanel } from './ChatPanel'
 
@@ -23,7 +23,7 @@ describe('ChatPanel composer', () => {
   const getTextarea = () => screen.getByRole('textbox') as HTMLTextAreaElement
 
   it('sends the typed message and clears the input on send-button click', () => {
-    const onSendMessage = vi.fn()
+    const onSendMessage = vi.fn().mockResolvedValue(true)
     render(
       <ChatPanel
         messages={[]}
@@ -44,11 +44,55 @@ describe('ChatPanel composer', () => {
     expect(textarea.value).toBe('')
   })
 
+  // The input used to be cleared before the send finished, so a failed send
+  // lost the typed text (#1391).
+  it('puts the message back in the input when sending fails', async () => {
+    const onSendMessage = vi.fn().mockResolvedValue(false)
+    render(
+      <ChatPanel
+        messages={[]}
+        isStreaming={false}
+        contextIndicators={null}
+        onSendMessage={onSendMessage}
+      />
+    )
+
+    const textarea = getTextarea()
+    fireEvent.change(textarea, { target: { value: 'hello world' } })
+    fireEvent.click(screen.getByRole('button'))
+
+    expect(textarea.value).toBe('')
+    await waitFor(() => expect(textarea.value).toBe('hello world'))
+  })
+
+  // The first send of a new chat leaves the input enabled while the session is
+  // created, and a failure used to overwrite anything typed meanwhile (#1391).
+  it('keeps text typed while a failed send was pending', async () => {
+    let finishSend!: (sent: boolean) => void
+    const onSendMessage = vi.fn(() => new Promise<boolean>(resolve => { finishSend = resolve }))
+    render(
+      <ChatPanel
+        messages={[]}
+        isStreaming={false}
+        contextIndicators={null}
+        onSendMessage={onSendMessage}
+      />
+    )
+
+    const textarea = getTextarea()
+    fireEvent.change(textarea, { target: { value: 'first message' } })
+    fireEvent.click(screen.getByRole('button'))
+    fireEvent.change(textarea, { target: { value: 'typed while pending' } })
+    await act(async () => finishSend(false))
+
+    expect(textarea.value).toBe('typed while pending')
+  })
+
   it('sends on Cmd+Enter on macOS', () => {
     const uaSpy = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
       'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'
     )
-    const onSendMessage = vi.fn()
+    const onSendMessage = vi.fn().mockResolvedValue(true)
     render(
       <ChatPanel
         messages={[]}
@@ -71,7 +115,7 @@ describe('ChatPanel composer', () => {
     const uaSpy = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
     )
-    const onSendMessage = vi.fn()
+    const onSendMessage = vi.fn().mockResolvedValue(true)
     render(
       <ChatPanel
         messages={[]}
@@ -106,5 +150,31 @@ describe('ChatPanel composer', () => {
     fireEvent.keyDown(textarea, { key: 'Enter', ctrlKey: true })
 
     expect(onSendMessage).not.toHaveBeenCalled()
+  })
+})
+
+describe('ChatPanel sessions button', () => {
+  beforeEach(() => {
+    window.HTMLElement.prototype.scrollIntoView = vi.fn()
+  })
+
+  // Switching sessions mid-reply showed the old session's messages under the
+  // new one (#1391), so the button waits until the reply is done.
+  it('is disabled while a reply is streaming', () => {
+    const props = {
+      messages: [],
+      contextIndicators: null,
+      onSendMessage: vi.fn(),
+      sessions: [],
+      onSelectSession: vi.fn(),
+      onCreateSession: vi.fn(),
+      onDeleteSession: vi.fn(),
+    }
+    const { rerender } = render(<ChatPanel {...props} isStreaming={false} />)
+    const sessionsButton = screen.getByRole('button', { name: /chat.sessions/ })
+    expect(sessionsButton).toBeEnabled()
+
+    rerender(<ChatPanel {...props} isStreaming={true} />)
+    expect(sessionsButton).toBeDisabled()
   })
 })

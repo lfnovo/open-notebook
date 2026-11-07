@@ -486,7 +486,11 @@ export const enUS = {
     scopeClear: "Clear",
     scopeHint: "Leave all unchecked to search your whole knowledge base.",
     scopeNoNotebooks: "No notebooks yet.",
-    resultsFound: "{{count}} results found",
+    // Keep the same plural keys in every locale, including Russian and Polish forms.
+    resultsFound_one: "{{count}} result found",
+    resultsFound_few: "{{count}} results found",
+    resultsFound_many: "{{count}} results found",
+    resultsFound_other: "{{count}} results found",
     matches: "Matches ({{count}})",
     noResultsFor: "No results found for “{{query}}”",
     notSet: "Not set",

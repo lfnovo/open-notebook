@@ -21,8 +21,10 @@ def transformation_call():
     chain = AsyncMock()
     with (
         patch(
-            "open_notebook.graphs.transformation.DefaultPrompts",
-            return_value=SimpleNamespace(transformation_instructions=None),
+            "open_notebook.graphs.transformation.DefaultPrompts.get_instance",
+            new=AsyncMock(
+                return_value=SimpleNamespace(transformation_instructions=None)
+            ),
         ),
         patch(
             "open_notebook.graphs.transformation.provision_langchain_model",

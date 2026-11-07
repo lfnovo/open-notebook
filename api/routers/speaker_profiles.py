@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException
 from loguru import logger
 from pydantic import BaseModel, Field
 
+from open_notebook.ai.models import ModelManager
 from open_notebook.exceptions import OpenNotebookError
 from open_notebook.podcasts.models import SpeakerProfile
 
@@ -78,6 +79,14 @@ class SpeakerProfileCreate(BaseModel):
 async def create_speaker_profile(profile_data: SpeakerProfileCreate):
     """Create a new speaker profile"""
     try:
+        if profile_data.voice_model is not None:
+            model = await ModelManager().get_model(profile_data.voice_model)  # type: ignore[arg-type]
+            if model is not None and model.type != "text_to_speech":  # type: ignore
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"voice_model must be a text-to-speech model, got type={model.type}",
+                )
+
         profile = SpeakerProfile(
             name=profile_data.name,
             description=profile_data.description,
@@ -110,6 +119,14 @@ async def update_speaker_profile(profile_id: str, profile_data: SpeakerProfileCr
 
         for field, value in profile_data.model_dump(exclude_unset=True).items():
             setattr(profile, field, value)
+
+        if profile_data.voice_model is not None:
+            model = await ModelManager().get_model(profile_data.voice_model)  # type: ignore[arg-type]
+            if model is not None and model.type != "text_to_speech":  # type: ignore
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"voice_model must be a text-to-speech model, got type={model.type}",  # type: ignore
+                )
 
         await profile.save()
         return _profile_to_response(profile)

@@ -234,6 +234,35 @@ async def repo_insert(
     if batch_size <= 0:
         raise ValueError("batch_size must be greater than zero")
     async with db_connection() as connection:
+
+        async def retry_chunk_individually(
+            chunk_records: List[Dict[str, Any]],
+        ) -> None:
+            """Insert one record at a time after a duplicate batch failure (#1532)."""
+            for record in chunk_records:
+                try:
+                    result = parse_record_ids(await connection.insert(table, [record]))
+                    if isinstance(result, str):
+                        raise RuntimeError(result)
+                    if isinstance(result, list):
+                        results.extend(result)
+                    elif result is not None:
+                        results.append(result)
+                except RuntimeError as retry_error:
+                    if "already contains" in str(retry_error):
+                        continue
+                    error_str = str(retry_error).lower()
+                    if "transaction" in error_str or "conflict" in error_str:
+                        logger.debug(str(retry_error))
+                    else:
+                        logger.error(str(retry_error))
+                    raise
+                except Exception as retry_error:
+                    if "already contains" in str(retry_error):
+                        continue
+                    logger.exception(retry_error)
+                    raise RuntimeError("Failed to create record")
+
         for i in range(0, len(data), batch_size):
             chunk = data[i : i + batch_size]
             try:
@@ -247,6 +276,8 @@ async def repo_insert(
                     results.append(result)
             except RuntimeError as e:
                 if ignore_duplicates and "already contains" in str(e):
+                    if len(chunk) > 1:
+                        await retry_chunk_individually(chunk)
                     continue
                 # Log transaction conflicts at debug level (they are expected during concurrent operations)
                 error_str = str(e).lower()
@@ -257,6 +288,8 @@ async def repo_insert(
                 raise
             except Exception as e:
                 if ignore_duplicates and "already contains" in str(e):
+                    if len(chunk) > 1:
+                        await retry_chunk_individually(chunk)
                     continue
                 logger.exception(e)
                 raise RuntimeError("Failed to create record")

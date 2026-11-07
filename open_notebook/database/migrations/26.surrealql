@@ -1,0 +1,5 @@
+-- Migration 26: view stamps must not move notebook/source updated (#1398).
+-- VALUE time::now() is recomputed on every write. Edits already set updated
+-- in repo_create / repo_update. OVERWRITE is required; IF NOT EXISTS is a no-op.
+DEFINE FIELD OVERWRITE updated ON TABLE notebook DEFAULT time::now();
+DEFINE FIELD OVERWRITE updated ON TABLE source DEFAULT time::now();

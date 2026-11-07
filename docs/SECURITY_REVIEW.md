@@ -56,7 +56,7 @@ API key management: database-first credential storage with environment-variable 
 | Password protection | PASS | Bearer token authentication |
 | Default password | PASS | No hardcoded default; auth is fully disabled when `OPEN_NOTEBOOK_PASSWORD` is unset |
 | Docker secrets support | PASS | `_FILE` suffix for password |
-| Security warnings | **PARTIAL** (corrected) | The original note, "Logged when using defaults", was wrong. The API warns only when the encryption key is missing and when `CORS_ORIGINS` is the default wildcard. Nothing is logged when `OPEN_NOTEBOOK_PASSWORD` is unset or when the placeholder encryption key is used |
+| Security warnings | **PARTIAL** (corrected) | The original note, "Logged when using defaults", was wrong. The API warns when the encryption key is missing, when `OPEN_NOTEBOOK_PASSWORD` is unset and when `CORS_ORIGINS` is the default wildcard. Nothing is logged when the placeholder encryption key is used |
 
 ---
 

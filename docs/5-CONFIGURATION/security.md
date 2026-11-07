@@ -4,7 +4,7 @@ Password protection, credential encryption and production hardening.
 
 Open Notebook's built-in protection is basic: one shared password, no user accounts, CORS open to every origin by default. Treat it as a lock on the door, not as enterprise security. For anything reachable from the internet, put it behind HTTPS and a firewall (see [Production hardening](#production-hardening)).
 
-All variables on this page go in the `open_notebook` service's `environment:` block (apply with `docker compose up -d`) or in `.env` when running from source. Full list: [Environment Reference](environment-reference.md#security-and-access).
+With the shipped compose file, put `OPEN_NOTEBOOK_ENCRYPTION_KEY` and `OPEN_NOTEBOOK_PASSWORD` in a `.env` file next to `docker-compose.yml`. That file also reads `SURREAL_USER` and `SURREAL_PASSWORD`. Everything else goes in the `open_notebook` service's `environment:` block. Editing the compose file is a valid alternative for the key and password. Apply changes with `docker compose up -d`. From source, put them in `.env`. Full list: [Environment Reference](environment-reference.md#security-and-access).
 
 ---
 
@@ -12,7 +12,7 @@ All variables on this page go in the `open_notebook` service's `environment:` bl
 
 AI provider keys saved in **Manage → Models** are encrypted before they are stored in SurrealDB, using Fernet (AES-128-CBC with HMAC-SHA256). The Fernet key is derived from `OPEN_NOTEBOOK_ENCRYPTION_KEY` with PBKDF2-HMAC-SHA256 (600,000 iterations).
 
-Generate a unique value for each installation, then put it in place of `<generated-key>`:
+Generate a unique value for each installation. With Docker Compose, put it in `.env` in place of `<generated-key>`:
 
 ```bash
 openssl rand -hex 32                                   # macOS, Linux
@@ -22,12 +22,11 @@ openssl rand -hex 32                                   # macOS, Linux
 [guid]::NewGuid().ToString("N") + [guid]::NewGuid().ToString("N")   # Windows PowerShell
 ```
 
-```yaml
-services:
-  open_notebook:
-    environment:
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=<generated-key>
+```text
+OPEN_NOTEBOOK_ENCRYPTION_KEY=<generated-key>
 ```
+
+Editing the same line in `docker-compose.yml` is a valid alternative.
 
 Don't copy an example value from any guide, including this one.
 
@@ -79,12 +78,10 @@ Values that are not encrypted at all (from versions before credential encryption
 
 Set a password for any deployment reachable from something other than your own machine: a cloud host, a shared LAN, a reverse proxy on the internet. Without `OPEN_NOTEBOOK_PASSWORD`, authentication is off and anyone who can reach ports 8502 or 5055 can use the app and its stored provider keys. Open Notebook does not log a warning when the password is unset.
 
-```yaml
-services:
-  open_notebook:
-    environment:
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=<generated-key>
-      - OPEN_NOTEBOOK_PASSWORD=<generated-password>
+With Docker Compose, set it in the same `.env` file, using a different value from the key. Editing `docker-compose.yml` is a valid alternative.
+
+```text
+OPEN_NOTEBOOK_PASSWORD=<generated-password>
 ```
 
 Generate the password the same way as the key (`openssl rand -hex 32`, or the PowerShell command above), and use a different value for each. Non-ASCII passwords work; API clients must send them UTF-8 encoded.
@@ -230,7 +227,7 @@ curl -i -H "Authorization: Bearer your_password" http://localhost:5055/api/noteb
 
 A `_FILE` path that doesn't exist or points to an empty file is ignored (the API log shows `OPEN_NOTEBOOK_PASSWORD_FILE path does not exist` or `points to empty file`), and the API falls back to `OPEN_NOTEBOOK_PASSWORD`.
 
-If you changed the password in `docker-compose.yml`, apply it with `docker compose up -d` (`restart` keeps the old value), then sign out and log in again.
+If you changed the password in `.env` or `docker-compose.yml`, apply it with `docker compose up -d` (`restart` keeps the old value), then sign out and log in again.
 
 ### "Unable to connect to server. Please check if the API is running."
 

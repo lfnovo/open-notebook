@@ -67,6 +67,15 @@ class TestNoPasswordConfigured:
 
         assert status == 200
 
+    @pytest.mark.asyncio
+    async def test_empty_password_disables_auth(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Compose interpolates an unset OPEN_NOTEBOOK_PASSWORD as "".
+        status = await _request(monkeypatch, password="")
+
+        assert status == 200
+
 
 class TestNonAsciiPassword:
     @pytest.mark.asyncio

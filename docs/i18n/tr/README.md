@@ -220,7 +220,7 @@ Hepsi bu! Bir not defteri oluşturun, bir kaynak ekleyin ve sohbete başlayın. 
 - **⚡ Akıl Yürütme Modeli Desteği**: DeepSeek-R1 ve Qwen3 gibi düşünen modeller için tam destek
 - **🔧 İçerik Dönüşümleri**: Özetlemek ve içgörü çıkarmak için güçlü, özelleştirilebilir eylemler
 - **🌐 Kapsamlı REST API**: Özel entegrasyonlar için tam programatik erişim [![API Docs](https://img.shields.io/badge/API-Documentation-blue?style=flat-square)](http://localhost:5055/docs)
-- **🔐 İsteğe Bağlı Parola Koruması**: Herkese açık dağıtımları kimlik doğrulamayla güvenceye alın
+- **🔐 İsteğe Bağlı Parola Koruması**: Temel bir kimlik doğrulama katmanı ekler; herkese açık dağıtımları güvenceye almak için yalnızca buna güvenmeyin
 - **📊 Ayrıntılı Bağlam Kontrolü**: Yapay zekâ modelleriyle tam olarak neyin paylaşılacağını seçin
 - **📎 Kaynak Gösterme**: Kaynakları doğru şekilde gösterilmiş yanıtlar alın
 

@@ -133,7 +133,7 @@ Yaklaşık 30 saniye bekleyin, ardından şu adresi açın: **http://localhost:8
 2. Sağlayıcınızı (OpenAI, Anthropic, Google vb.) bulun ve **Add Configuration** düğmesine tıklayın.
 3. Bir ad ve API anahtarınızı girin (Ollama gibi yerel sağlayıcılar bunun yerine bir **Base URL** ister), ardından **Add Configuration** düğmesine tıklayın.
 4. Bağlantıyı kontrol etmek için yeni yapılandırmada **Test** düğmesine tıklayın.
-5. **Models** düğmesine tıklayın, bir **Model Type** seçin, eklemek istediğiniz modelleri işaretleyin ve **Add** düğmesine tıklayın. En az bir **Language** modeli ve bir **Embedding** modeli ekleyin.
+5. Aynı yapılandırmada **Models** düğmesine tıklayın; açılan **Discover Models** penceresinde bir **Model Type** seçin, eklemek istediğiniz modelleri işaretleyin ve **Add** düğmesine tıklayın. En az bir **Language** modeli ve bir **Embedding** modeli ekleyin.
 6. **Default Model Assignments** altında **Auto-assign Defaults** düğmesine tıklayın (veya modelleri kendiniz seçin).
 
 Hepsi bu! Bir not defteri oluşturun, bir kaynak ekleyin ve sohbete başlayın. Ayrıntılı anlatım: [Sağlayıcı bağlama](../../4-AI-PROVIDERS/index.md#connect-a-provider).

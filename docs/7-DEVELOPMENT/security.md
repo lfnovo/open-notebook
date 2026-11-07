@@ -150,7 +150,7 @@ Open Notebook currently uses simple password-based middleware (`PasswordAuthMidd
 
 ### CORS
 
-The default CORS configuration allows all origins (`allow_origins=["*"]`). `allow_credentials` is tied to that: `False` for the default wildcard (avoids Starlette reflecting any Origin alongside credentials), automatically `True` once `CORS_ORIGINS` is explicitly scoped to specific origins. For production deployments, still restrict `CORS_ORIGINS` to only the frontend URL.
+With `CORS_ORIGINS` unset, the default depends on `OPEN_NOTEBOOK_PASSWORD`. Without a password (auth disabled) only localhost origins are allowed (`allow_origin_regex`, `LOCALHOST_ORIGIN_REGEX` in `api/main.py`), so other web pages can't drive an unauthenticated API through the user's browser ([ADR-014](decisions/ADR-014-localhost-cors-without-password.md)). With a password, the default allows all origins (`allow_origins=["*"]`). `allow_credentials` is `False` for both defaults (avoids Starlette reflecting any Origin alongside credentials) and becomes `True` only once `CORS_ORIGINS` is explicitly scoped to specific origins. An explicit `CORS_ORIGINS`, including `*`, always wins. For production deployments, still restrict `CORS_ORIGINS` to only the frontend URL.
 
 ---
 

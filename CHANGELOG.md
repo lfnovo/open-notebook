@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **Without a password, the API only accepts browser requests from localhost.** When `OPEN_NOTEBOOK_PASSWORD` and `CORS_ORIGINS` are both unset, the API used to accept cross-origin requests from any web page, so a page you visited could call an unauthenticated Open Notebook through your browser and read the answers. The default now admits only `localhost`, `127.0.0.1` and `[::1]` origins in that case. The shipped UI is not affected (it reaches the API through its own origin). If you open the UI from another machine and `API_URL` points straight at port 5055, set a password or list that origin in `CORS_ORIGINS`.
+
 ### Fixed
 - The provider credential dialog (Manage → Models → Add configuration) fits on short screens. It is capped at 90% of the window height and the form scrolls inside it, so the title, the close button and the Save/Cancel buttons stay reachable (#1507)
 - Transformation deletion confirmations no longer show a source-deletion title (#1402)

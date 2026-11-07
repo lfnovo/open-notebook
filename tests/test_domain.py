@@ -286,7 +286,8 @@ class TestSourceDomain:
 
     @pytest.mark.asyncio
     async def test_source_delete_cleans_up_file(self):
-        """Test that deleting a source removes the associated file."""
+        """Test that deleting a source removes the associated file, and only
+        after the database records are gone (#1510)."""
         # Create a temporary file
         with tempfile.NamedTemporaryFile(delete=False, suffix=".txt") as tmp_file:
             tmp_file.write(b"Test content")
@@ -309,12 +310,17 @@ class TestSourceDomain:
             ) as mock_delete:
                 mock_delete.return_value = True
 
-                # Delete the source
-                result = await source.delete()
+                with patch(
+                    "open_notebook.domain.notebook.repo_query",
+                    new=AsyncMock(return_value=[]),
+                ):
+                    # Delete the source
+                    result = await source.delete()
 
-                # Verify parent delete was called
-                mock_delete.assert_called_once()
-                assert result is True
+                    # Verify parent delete was called
+                    mock_delete.assert_called_once()
+                    assert result is True
+                    assert not tmp_path.exists()
 
             # Verify file was deleted
             assert not tmp_path.exists()
@@ -336,10 +342,14 @@ class TestSourceDomain:
         ) as mock_delete:
             mock_delete.return_value = True
 
-            # Delete should complete without error
-            result = await source.delete()
-            assert result is True
-            mock_delete.assert_called_once()
+            with patch(
+                "open_notebook.domain.notebook.repo_query",
+                new=AsyncMock(return_value=[]),
+            ):
+                # Delete should complete without error
+                result = await source.delete()
+                assert result is True
+                mock_delete.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_source_delete_continues_on_file_error(self):
@@ -357,10 +367,14 @@ class TestSourceDomain:
         ) as mock_delete:
             mock_delete.return_value = True
 
-            # Delete should complete even though file doesn't exist
-            result = await source.delete()
-            assert result is True
-            mock_delete.assert_called_once()
+            with patch(
+                "open_notebook.domain.notebook.repo_query",
+                new=AsyncMock(return_value=[]),
+            ):
+                # Delete should complete even though file doesn't exist
+                result = await source.delete()
+                assert result is True
+                mock_delete.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_vectorize_raises_valueerror_when_no_text(self):

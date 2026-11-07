@@ -1,0 +1,39 @@
+docs/5-CONFIGURATION/security.md
+  s_d4a5a51e8b3997::t_63022db7302037 174-179,189
+docs/7-DEVELOPMENT/security.md
+  s_d4a5a51e8b3997::t_63022db7302037 153
+open_notebook/AGENTS.md
+  s_d4a5a51e8b3997::t_63022db7302037 20
+AGENTS.md
+  s_d4a5a51e8b3997::t_63022db7302037 32
+docs/5-CONFIGURATION/environment-reference.md
+  s_d4a5a51e8b3997::t_63022db7302037 48
+docs/7-DEVELOPMENT/decisions/ADR-014-localhost-cors-without-password.md
+  s_d4a5a51e8b3997::t_3ddc4ad310689a 1-27
+api/main.py
+  s_d4a5a51e8b3997::t_76bfb1aeb9b241 15,73-90,92-99,103-106,141-148,258-265,314
+tests/test_cors_credentials.py
+  s_d4a5a51e8b3997::t_96f9dbe4dc9133 18,26-29,31-35,38,42-44,46-56,58,60,64-67,69-110,113-115,182-206
+  s_d4a5a51e8b3997::t_3ddc4ad310689a 11-13
+  s_d4a5a51e8b3997::t_2198fdfd1b7d8d 207
+CHANGELOG.md
+  s_d4a5a51e8b3997::t_63022db7302037 10-12
+docs/7-DEVELOPMENT/decisions/README.md
+  s_d4a5a51e8b3997::t_3ddc4ad310689a 57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9d34cf423b8e698fe35086e5ce4524bf112dbc77",
+  "prompts": {},
+  "sessions": {
+    "s_d4a5a51e8b3997": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2786b090-17aa-45c2-9018-dfd1ee0ae7c0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

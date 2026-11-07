@@ -78,9 +78,20 @@ def parse_record_ids(obj: Any) -> Any:
 
 
 def ensure_record_id(value: Union[str, RecordID]) -> RecordID:
-    """Ensure a value is a RecordID."""
+    """Ensure a value is a RecordID.
+
+    Normalises double-prefixed IDs like ``source:source:xyz`` down to
+    ``source:xyz`` because LLM outputs occasionally emit citations that
+    re-prepend the type prefix (e.g. `[source:source:abc]`). Without this,
+    the fetch endpoint would receive a malformed ID and 404.
+    """
     if isinstance(value, RecordID):
         return value
+    if isinstance(value, str) and ":" in value:
+        table, _, rest = value.partition(":")
+        while rest.startswith(f"{table}:"):
+            rest = rest[len(table) + 1 :]
+        value = f"{table}:{rest}"
     return RecordID.parse(value)
 
 

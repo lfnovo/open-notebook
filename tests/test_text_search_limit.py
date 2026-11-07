@@ -11,6 +11,7 @@ definition must reproduce the defect, and migration 26 must remove it.
 """
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 from surrealdb import AsyncSurreal
@@ -23,17 +24,17 @@ NOTE_COUNT = 5
 QUERY = "RETURN fn::text_search('quasar', $limit, true, true, NONE);"
 
 
-def records(value: object) -> list[dict[str, object]]:
+def records(value: object) -> list[dict[str, Any]]:
     assert isinstance(value, list), value
     assert all(isinstance(row, dict) for row in value)
     return value
 
 
-def kinds(rows: list[dict[str, object]]) -> list[str]:
+def kinds(rows: list[dict[str, Any]]) -> list[str]:
     return [str(row["id"]).split(":")[0] for row in rows]
 
 
-async def _fixture(db: AsyncSurreal) -> None:
+async def _fixture(db: Any) -> None:
     """One source that matches on title AND full text (the best match), crowded
     by more notes than the limit allows. `note` sorts before `source`, which is
     why id-ordered truncation drops the source."""
@@ -56,7 +57,7 @@ async def _fixture(db: AsyncSurreal) -> None:
     # The fixture must actually make the source the best match, or the tests
     # below pass or fail for reasons unrelated to the ordering.
     rows = records(await db.query(QUERY, {"limit": 50}))
-    best = max(rows, key=lambda row: float(row["relevance"]))  # type: ignore[arg-type]
+    best = max(rows, key=lambda row: float(row["relevance"]))
     assert str(best["id"]) == "source:best", rows
     assert kinds(rows).count("note") == NOTE_COUNT, rows
 
@@ -64,6 +65,7 @@ async def _fixture(db: AsyncSurreal) -> None:
 @pytest.mark.asyncio
 @pytest.mark.parametrize("limit", [MATCH_COUNT, NOTE_COUNT + 1, 50])
 async def test_text_search_returns_best_match_first(limit: int) -> None:
+    db: Any
     async with AsyncSurreal("mem://") as db:
         await db.use("search_regression", f"text_limit_{limit}")
         await _fixture(db)
@@ -73,7 +75,7 @@ async def test_text_search_returns_best_match_first(limit: int) -> None:
         assert len(rows) == min(limit, NOTE_COUNT + 1)
         assert str(rows[0]["id"]) == "source:best", kinds(rows)
         relevances = [row["relevance"] for row in rows]
-        assert relevances == sorted(relevances, reverse=True), relevances  # type: ignore[type-var]
+        assert relevances == sorted(relevances, reverse=True), relevances
 
 
 @pytest.mark.asyncio
@@ -82,10 +84,11 @@ async def test_the_rolled_back_text_search_REPRODUCES_the_defect() -> None:
 
     manager = AsyncMigrationManager()
 
+    db: Any
     async with AsyncSurreal("mem://") as db:
         await db.use("search_regression", "text_limit_cycle")
         await _fixture(db)
-        args = {"limit": MATCH_COUNT}
+        args: dict[str, Any] = {"limit": MATCH_COUNT}
 
         # Migration 26 is index 25. Rolling it back restores 25's
         # single-statement fn::text_search, which is the broken one.

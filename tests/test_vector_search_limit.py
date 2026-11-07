@@ -13,6 +13,7 @@ fixture that never had the problem.
 """
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 from surrealdb import AsyncSurreal, RecordID
@@ -24,17 +25,17 @@ MATCH_COUNT = 3
 NOTE_COUNT = 5
 
 
-def records(value: object) -> list[dict[str, object]]:
+def records(value: object) -> list[dict[str, Any]]:
     assert isinstance(value, list)
     assert all(isinstance(row, dict) for row in value)
     return value
 
 
-def kinds(rows: list[dict[str, object]]) -> list[str]:
+def kinds(rows: list[dict[str, Any]]) -> list[str]:
     return [str(row["id"]).split(":")[0] for row in rows]
 
 
-async def _fixture(db: AsyncSurreal) -> None:
+async def _fixture(db: Any) -> None:
     """One source chunk that is the BEST match, crowded by more notes than the
     limit allows.
 
@@ -97,6 +98,7 @@ async def test_a_source_outscoring_every_note_survives_the_limit(
     fix is asserted for global AND notebook-scoped search rather than only the
     path the reproduction happened to use.
     """
+    db: Any
     async with AsyncSurreal("mem://") as db:
         await db.use("search_regression", "vector_limit")
         await _fixture(db)
@@ -134,12 +136,13 @@ async def test_the_rolled_back_definition_REPRODUCES_the_defect() -> None:
     manager = AsyncMigrationManager()
     assert len(manager.up_migrations) == len(manager.down_migrations)
 
+    db: Any
     async with AsyncSurreal("mem://") as db:
         await db.use("search_regression", "vector_limit_cycle")
         await _fixture(db)
 
         query = "RETURN fn::vector_search([1.0, 0.0], $limit, true, true, 0.5, NONE);"
-        args = {"limit": MATCH_COUNT}
+        args: dict[str, Any] = {"limit": MATCH_COUNT}
 
         # Migration 26 is index 25. Roll it back to restore 24's single-statement
         # form, which is the broken one.
@@ -166,6 +169,7 @@ async def test_raising_the_limit_above_the_note_count_also_surfaced_the_source()
     It is the workaround, not the fix -- but if this ever stops holding, the
     mechanism in #1431 was not what we thought it was.
     """
+    db: Any
     async with AsyncSurreal("mem://") as db:
         await db.use("search_regression", "vector_limit_high")
         await _fixture(db)

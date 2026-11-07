@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`NEXT_PUBLIC_API_URL=/api` no longer requests `/api/api/...`.** A trailing `/api` on the API URL is dropped once, when the URL is resolved, so every request that adds its own `/api` (config check, API client, sign-in) gets a single one (#1522)
 - **Vector search returns sources again.** `fn::vector_search` grouped, ordered and limited in a single `SELECT`; SurrealDB returns grouped rows in group-key order, so the `ORDER BY similarity DESC` was inert and the `LIMIT` truncated a list ordered by record id. Because `note:` sorts before `source:` and `source_insight:`, any `match_count` below the number of embedded notes returned notes **only**, silently discarding sources that scored higher than every note in the result — an instance that accumulates notes gradually stopped being able to return any source at all through vector search, with no error and no indication that anything had been filtered. Migration 26 splits the final statement so the grouped set is ordered and limited after grouping, with `id` as a tie-break for determinism. The signature is unchanged, including the optional `notebook_ids` from migration 24 (#1431)
 - **Text search ranks the best match first.** `fn::text_search` had the same single-`SELECT` group/order/limit as vector search, so results came back in record-id order (notes before sources) and the `LIMIT` could drop the best match. Nothing re-sorted them afterwards, so the wrong order reached the search page and Ask as-is. Migration 26 now fixes both functions the same way (#1505)
+- Search result counts use the correct singular and plural forms in every supported language (#1402)
+- Adding a source that is already in a notebook no longer links it a second time. The duplicate check looked the link up in the wrong direction, so each call added another link: the notebook's source count went up and the source was listed twice (#1533)
 
 ## [1.15.1] - 2026-11-03
 
@@ -31,7 +33,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Development:** `architecture.md`, `testing.md`, `api-reference.md` and `code-standards.md` are rewritten from the code. A new playbook covers adding an AI provider. Dev setup lives on one page. The AGENTS files agree with the docs. Contributor conventions (Conventional Commits, CHANGELOG sections, pre-PR checks that match CI) are documented
 
 ### Fixed
-- Search result counts use the correct singular and plural forms in every supported language (#1402).
 - **Docs no longer recommend settings that do nothing.** `API_CLIENT_TIMEOUT` was never read by Open Notebook; the timeout guidance now covers what actually applies: `ESPERANTO_LLM_TIMEOUT` per model call (keep it below 600) and the web UI's 10-minute request limit (`NEXT_PUBLIC_API_TIMEOUT_MS`, build time only). Remaining `SURREAL_COMMANDS_MAX_TASKS` advice now uses `OPEN_NOTEBOOK_WORKER_MAX_TASKS`. Docker instructions no longer say to edit `.env` and `docker compose restart`: the shipped compose file doesn't load `.env` into the container and `restart` doesn't reload environment changes, so they now point to the `open_notebook` service's `environment:` block and `docker compose up -d`
 - **Timeouts no longer read as connection failures.** A model that doesn't answer within `ESPERANTO_LLM_TIMEOUT` used to report "Could not connect to the AI provider"; it now says the provider took too long and how to raise the limit. Connection failures (including connect timeouts) keep the old message
 - Error hints point to screens that exist: an authentication failure sends you to Manage → Models (not "Settings → Credentials"), and an unsupported podcast voice to Podcasts → Profiles. The empty Podcasts page points to the Generate Podcast button instead of chat screens that can't start a podcast
@@ -39,7 +40,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `make start-all` starts SurrealDB again (it pointed to a compose file removed long ago)
 - The legacy `SURREAL_ADDRESS` / `SURREAL_PORT` fallback builds a valid database URL (`ws://host:port/rpc`, was `ws://host/rpc:port`); an address that already includes the port is kept as is
 - `.env.example` names the chunking variables Open Notebook actually reads (`OPEN_NOTEBOOK_CHUNK_SIZE` / `OPEN_NOTEBOOK_CHUNK_OVERLAP`)
-- Adding a source that is already in a notebook no longer links it a second time. The duplicate check looked the link up in the wrong direction, so each call added another link: the notebook's source count went up and the source was listed twice (#1533)
 
 ### Removed
 - `POST /api/commands/jobs`, the generic "submit any background command" endpoint. Nothing in Open Notebook used it; every operation has its own endpoint. Job status (`GET /api/commands/jobs/{job_id}`) is unchanged.

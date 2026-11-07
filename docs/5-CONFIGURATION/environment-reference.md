@@ -45,7 +45,7 @@ Variables read by the frontend (`API_URL`, `INTERNAL_API_URL`, `NEXT_PUBLIC_*`, 
 | `OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE` | none | API + Worker | Path to a file holding the encryption key (Docker secrets). Checked before `OPEN_NOTEBOOK_ENCRYPTION_KEY` |
 | `OPEN_NOTEBOOK_PASSWORD` | none | API | Password for the UI and the REST API. Unset means authentication is off. See [Security](security.md) |
 | `OPEN_NOTEBOOK_PASSWORD_FILE` | none | API | Path to a file holding the password (Docker secrets). Checked before `OPEN_NOTEBOOK_PASSWORD` |
-| `CORS_ORIGINS` | `*` (localhost only without a password) | API | Comma-separated origins allowed to call the API, e.g. `https://notebook.example.com`. While it is unset, the API allows any origin when `OPEN_NOTEBOOK_PASSWORD` is set and only localhost origins when it is not, and logs which default applies. Restart the API after changing it. See [Security](security.md#cors-origins) |
+| `CORS_ORIGINS` | `*` (same host only without a password) | API | Comma-separated origins allowed to call the API, e.g. `https://notebook.example.com`. While it is unset or blank, the API allows any origin when a password is set (`OPEN_NOTEBOOK_PASSWORD` or `OPEN_NOTEBOOK_PASSWORD_FILE`), and otherwise only localhost origins and pages on the same host name as the API. It logs which default applies. Restart the API after changing it. See [Security](security.md#cors-origins) |
 
 ---
 

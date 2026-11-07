@@ -173,7 +173,7 @@ Docker publishes ports by editing iptables directly, which can bypass UFW rules.
 
 While `CORS_ORIGINS` is unset, the default depends on the password:
 
-- **No `OPEN_NOTEBOOK_PASSWORD`:** the API accepts browser cross-origin requests only from `localhost`, `127.0.0.1` and `[::1]` (any port). Without a password the API has no authentication, so this stops other web pages you visit from calling it through your browser.
+- **No password** (neither `OPEN_NOTEBOOK_PASSWORD` nor `OPEN_NOTEBOOK_PASSWORD_FILE`): the API accepts browser cross-origin requests only from `localhost`, `127.0.0.1` and `[::1]`, and from pages on the same host name the browser used to reach the API (any port). The default UI on port 8502 calls the API on port 5055 of that same host, so it keeps working from this machine, the LAN or a VPS. This stops other web pages you visit from reading an unauthenticated API's answers through your browser. It is not authentication: simple cross-site requests (a form POST, for example) still reach the API, so set a password for anything reachable from another machine.
 - **Password set:** the API accepts cross-origin requests from any origin (`*`).
 
 The API logs which default is in effect at startup. For internet-facing deployments, list the exact origins that load the UI:
@@ -186,7 +186,7 @@ CORS_ORIGINS=https://notebook.example.com,http://192.168.1.10:8502
 
 Include the scheme and any non-default port. Restart the API after changing it (`docker compose up -d`). With the default wildcard, the API does not allow credentialed cross-origin requests; once you list origins, it does, for those origins only. Error responses carry CORS headers only for allowed origins.
 
-Most installs never hit CORS at all: by default the UI reaches the API through its own origin (port 8502). CORS matters only when `API_URL` points the browser straight at port 5055 on a different origin. If the UI starts failing with CORS errors, the origin you are browsing from is not allowed: add it to `CORS_ORIGINS`, or set a password if you rely on the no-password localhost default.
+By default the UI calls the API on port 5055 of the host you opened it from, which is a different origin from port 8502, so CORS applies to every install. The defaults above allow that case. If the UI starts failing with CORS errors, the origin you are browsing from is not allowed. That happens without a password when the UI and the API are served from different host names (for example `notebook.example.com` and `api.example.com` behind a reverse proxy): add the UI origin to `CORS_ORIGINS`, or set a password.
 
 ### Other measures
 

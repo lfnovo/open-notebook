@@ -12,16 +12,19 @@ ensure_internal_no_proxy()
 
 import asyncio
 import os
-import re
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from loguru import logger
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from api.auth import PasswordAuthMiddleware
+from api.cors import (
+    LOCALHOST_ORIGIN_REGEX,
+    SameHostCORSMiddleware,
+    is_allowed_by_default_policy,
+)
 from api.middleware import MaxBodySizeMiddleware, get_max_upload_size_bytes
 from api.routers import (
     auth,
@@ -70,40 +73,38 @@ def _parse_cors_origins(raw: str) -> list[str]:
     return [origin.strip() for origin in value.split(",") if origin.strip()]
 
 
-# Browser origins on this machine: localhost, 127.0.0.1 or [::1], any port.
-LOCALHOST_ORIGIN_REGEX = r"^https?://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$"
-
-
-def _uses_localhost_only_cors(cors_origins_raw: str | None, password_set: bool) -> bool:
-    """Whether the default CORS policy is limited to localhost origins.
+def _uses_same_host_cors(cors_origins_raw: str | None, password_set: bool) -> bool:
+    """Whether the default CORS policy is limited to localhost and same-host origins.
 
     Without a password the API has no authentication, so the default wildcard
     would let any web page the user visits call it through their browser and
-    read the answers. In that case, and only while CORS_ORIGINS is unset, the
-    default admits browser origins on this machine only. An explicit
-    CORS_ORIGINS (including "*") is the operator's choice and is kept.
+    read the answers. In that case, and only while CORS_ORIGINS is unset (or
+    blank), the default admits browser origins on this machine and origins on
+    the same host the browser used to reach the API, which is where the UI
+    lives. An explicit CORS_ORIGINS (including "*") is the operator's choice
+    and is kept.
     """
-    return cors_origins_raw is None and not password_set
+    return not (cors_origins_raw or "").strip() and not password_set
 
 
 # Parsed once at module load; CORS_ORIGINS and OPEN_NOTEBOOK_PASSWORD changes
-# require a restart.
-_cors_origins_raw = os.getenv("CORS_ORIGINS")
-CORS_LOCALHOST_ONLY = _uses_localhost_only_cors(
+# require a restart. A blank CORS_ORIGINS counts as unset.
+_cors_origins_raw = (os.getenv("CORS_ORIGINS") or "").strip() or None
+CORS_SAME_HOST_ONLY = _uses_same_host_cors(
     _cors_origins_raw, bool(get_secret_from_env("OPEN_NOTEBOOK_PASSWORD"))
 )
 CORS_ALLOWED_ORIGINS = (
-    [] if CORS_LOCALHOST_ONLY else _parse_cors_origins(_cors_origins_raw or "*")
+    [] if CORS_SAME_HOST_ONLY else _parse_cors_origins(_cors_origins_raw or "*")
 )
-CORS_ALLOWED_ORIGIN_REGEX = LOCALHOST_ORIGIN_REGEX if CORS_LOCALHOST_ONLY else None
-CORS_IS_DEFAULT_WILDCARD = _cors_origins_raw is None and not CORS_LOCALHOST_ONLY
+CORS_ALLOWED_ORIGIN_REGEX = LOCALHOST_ORIGIN_REGEX if CORS_SAME_HOST_ONLY else None
+CORS_IS_DEFAULT_WILDCARD = _cors_origins_raw is None and not CORS_SAME_HOST_ONLY
 # Keyed on the parsed list, not on whether the env var was set: an operator
 # who explicitly sets CORS_ORIGINS=* must get the same wildcard treatment as
 # the default, or credentials would combine with a wildcard origin - the
 # exact reflect-any-Origin behavior this flag exists to prevent. The
-# localhost-only default doesn't grant credentials either: the frontend never
+# same-host default doesn't grant credentials either: the frontend never
 # sends credentialed requests, so there is nothing to allow.
-CORS_ALLOW_CREDENTIALS = "*" not in CORS_ALLOWED_ORIGINS and not CORS_LOCALHOST_ONLY
+CORS_ALLOW_CREDENTIALS = "*" not in CORS_ALLOWED_ORIGINS and not CORS_SAME_HOST_ONLY
 
 # Parsed once at module load; OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB changes require a restart.
 MAX_UPLOAD_SIZE_BYTES = get_max_upload_size_bytes()
@@ -142,8 +143,8 @@ def _cors_headers(request: Request) -> dict[str, str]:
         "*" in CORS_ALLOWED_ORIGINS
         or origin in CORS_ALLOWED_ORIGINS
         or (
-            CORS_ALLOWED_ORIGIN_REGEX is not None
-            and re.fullmatch(CORS_ALLOWED_ORIGIN_REGEX, origin) is not None
+            CORS_SAME_HOST_ONLY
+            and is_allowed_by_default_policy(origin, request.headers.get("host"))
         )
     ):
         headers["Access-Control-Allow-Origin"] = origin
@@ -266,12 +267,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-if CORS_LOCALHOST_ONLY:
+if CORS_SAME_HOST_ONLY:
     logger.warning(
         "OPEN_NOTEBOOK_PASSWORD and CORS_ORIGINS are not set — the API accepts "
-        "browser cross-origin requests only from localhost. If you open the UI "
-        "from another machine and API_URL points straight at port 5055, set "
-        "OPEN_NOTEBOOK_PASSWORD or list that origin in CORS_ORIGINS."
+        "browser cross-origin requests only from localhost and from pages on "
+        "the same host the API is reached at. If the UI and the API are served "
+        "from different host names (for example behind a reverse proxy), set "
+        "OPEN_NOTEBOOK_PASSWORD or list the UI origin in CORS_ORIGINS."
     )
 elif CORS_IS_DEFAULT_WILDCARD:
     logger.warning(
@@ -320,7 +322,8 @@ app.add_middleware(MaxBodySizeMiddleware, max_body_size=MAX_UPLOAD_SIZE_BYTES)
 # case. Once an operator explicitly scopes CORS_ORIGINS to real origins,
 # credentialed cross-origin requests to those origins are safe to allow.
 app.add_middleware(
-    CORSMiddleware,
+    SameHostCORSMiddleware,
+    allow_same_host=CORS_SAME_HOST_ONLY,
     allow_origins=CORS_ALLOWED_ORIGINS,
     allow_origin_regex=CORS_ALLOWED_ORIGIN_REGEX,
     allow_credentials=CORS_ALLOW_CREDENTIALS,

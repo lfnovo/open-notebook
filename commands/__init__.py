@@ -8,6 +8,12 @@ from open_notebook.utils.proxy import ensure_internal_no_proxy
 
 ensure_internal_no_proxy()
 
+# The worker's surreal-commands connection must use the same namespace and
+# database as Open Notebook, defaults included (#1466).
+from open_notebook.database.repository import apply_database_defaults
+
+apply_database_defaults()
+
 from .embedding_commands import (
     embed_insight_command,
     embed_note_command,

@@ -1,0 +1,27 @@
+CHANGELOG.md
+  s_d4a5a51e8b3997::t_03143859e28779 10-12
+docs/SECURITY_REVIEW.md
+  s_d4a5a51e8b3997::t_03143859e28779 59
+tests/test_startup_migration_retry.py
+  s_d4a5a51e8b3997::t_37dafaf86876e6 113-147
+docs/5-CONFIGURATION/security.md
+  s_d4a5a51e8b3997::t_03143859e28779 80
+api/main.py
+  s_d4a5a51e8b3997::t_03143859e28779 200-210
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ba25c1101ec08ed6077a14d0c9df5af4383baf33",
+  "prompts": {},
+  "sessions": {
+    "s_d4a5a51e8b3997": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2786b090-17aa-45c2-9018-dfd1ee0ae7c0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

@@ -41,14 +41,14 @@
 </p>
 
 <div align="center">
-  <a href="../../../README.md">English</a> | 
-  <a href="https://zdoc.app/de/lfnovo/open-notebook">Deutsch</a> | 
-  <a href="https://zdoc.app/es/lfnovo/open-notebook">Español</a> | 
-  <a href="https://zdoc.app/fr/lfnovo/open-notebook">français</a> | 
-  <a href="https://zdoc.app/ja/lfnovo/open-notebook">日本語</a> | 
-  <a href="https://zdoc.app/ko/lfnovo/open-notebook">한국어</a> | 
-  <a href="https://zdoc.app/pt/lfnovo/open-notebook">Português</a> | 
-  <a href="https://zdoc.app/ru/lfnovo/open-notebook">Русский</a> | 
+  <a href="../../../README.md">English</a> |
+  <a href="https://zdoc.app/de/lfnovo/open-notebook">Deutsch</a> |
+  <a href="https://zdoc.app/es/lfnovo/open-notebook">Español</a> |
+  <a href="https://zdoc.app/fr/lfnovo/open-notebook">français</a> |
+  <a href="https://zdoc.app/ja/lfnovo/open-notebook">日本語</a> |
+  <a href="https://zdoc.app/ko/lfnovo/open-notebook">한국어</a> |
+  <a href="https://zdoc.app/pt/lfnovo/open-notebook">Português</a> |
+  <a href="https://zdoc.app/ru/lfnovo/open-notebook">Русский</a> |
   <a href="https://zdoc.app/zh/lfnovo/open-notebook">中文</a>
 </div>
 
@@ -129,7 +129,7 @@ docker compose up -d
 Yaklaşık 30 saniye bekleyin, ardından şu adresi açın: **http://localhost:8502**
 
 ### Adım 4: Bir yapay zekâ sağlayıcısı bağlayın
-1. Kenar çubuğunda **Models** sayfasını açın (Manage altında).
+1. Kenar çubuğunda **Manage** altında **Models** seçeneğini açın.
 2. Sağlayıcınızı (OpenAI, Anthropic, Google vb.) bulun ve **Add Configuration** düğmesine tıklayın.
 3. Bir ad ve API anahtarınızı girin (Ollama gibi yerel sağlayıcılar bunun yerine bir **Base URL** ister), ardından **Add Configuration** düğmesine tıklayın.
 4. Bağlantıyı kontrol etmek için yeni yapılandırmada **Test** düğmesine tıklayın.

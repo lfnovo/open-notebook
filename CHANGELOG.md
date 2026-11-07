@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Turkish README.** A Turkish translation of the README is at [docs/i18n/tr/README.md](docs/i18n/tr/README.md), linked from the README's language bar (#1549)
+
 ## [1.15.1] - 2026-11-03
 
 ### Changed

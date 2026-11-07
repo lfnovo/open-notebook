@@ -54,7 +54,7 @@
 
 > 🇹🇷 Bu belge, İngilizce [README](../../../README.md) dosyasının `5e285b7` sürümünden çevrilmiştir. Güncel bilgi için İngilizce sürüme bakın.
 
-## Notebook LM'e özel, çoklu model destekli, %100 yerel ve tam özellikli bir alternatif
+## Gizlilik odaklı, çoklu model destekli, %100 yerel ve tam özellikli Notebook LM alternatifi
 
 ![Yeni Not Defteri](../../assets/asset_list.png)
 

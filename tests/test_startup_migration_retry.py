@@ -140,7 +140,20 @@ async def test_lifespan_warns_when_password_unset(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_lifespan_does_not_warn_when_password_set(monkeypatch):
+    monkeypatch.delenv("OPEN_NOTEBOOK_PASSWORD_FILE", raising=False)
     monkeypatch.setenv("OPEN_NOTEBOOK_PASSWORD", "s3cret")
+
+    warnings = await _run_lifespan_capturing_warnings(monkeypatch)
+
+    assert not any("OPEN_NOTEBOOK_PASSWORD" in w for w in warnings)
+
+
+@pytest.mark.asyncio
+async def test_lifespan_does_not_warn_when_password_file_set(monkeypatch, tmp_path):
+    password_file = tmp_path / "password"
+    password_file.write_text("s3cret\n")
+    monkeypatch.delenv("OPEN_NOTEBOOK_PASSWORD", raising=False)
+    monkeypatch.setenv("OPEN_NOTEBOOK_PASSWORD_FILE", str(password_file))
 
     warnings = await _run_lifespan_capturing_warnings(monkeypatch)
 

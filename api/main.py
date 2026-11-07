@@ -202,9 +202,9 @@ async def lifespan(app: FastAPI):
     if not get_secret_from_env("OPEN_NOTEBOOK_PASSWORD"):
         logger.warning(
             "OPEN_NOTEBOOK_PASSWORD not set. Authentication is disabled: anyone "
-            "who can reach the API (port 5055) or the UI (port 8502) can use the "
-            "app and its stored provider keys. Set OPEN_NOTEBOOK_PASSWORD for any "
-            "deployment reachable from another machine, or bind the ports to "
+            "who can reach the API or the UI can use the app and its stored "
+            "provider keys. Set OPEN_NOTEBOOK_PASSWORD for any deployment "
+            "reachable from another machine, or bind the published ports to "
             "127.0.0.1."
         )
 

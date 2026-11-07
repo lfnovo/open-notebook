@@ -1,0 +1,19 @@
+-- Migration 26: generated artifacts table (native artifacts tab, #203).
+-- The table is called `generated_artifact` on purpose: `artifact` already
+-- holds the note -> notebook edge (migration 1) and reusing it would corrupt
+-- every Note.add_to_notebook() relation.
+DEFINE TABLE IF NOT EXISTS generated_artifact SCHEMAFULL;
+
+DEFINE FIELD IF NOT EXISTS notebook ON TABLE generated_artifact TYPE record<notebook>;
+DEFINE FIELD IF NOT EXISTS title ON TABLE generated_artifact TYPE string;
+DEFINE FIELD IF NOT EXISTS kind ON TABLE generated_artifact TYPE string ASSERT $value IN ['report', 'deck'];
+DEFINE FIELD IF NOT EXISTS formats ON TABLE generated_artifact TYPE array<string>;
+DEFINE FIELD IF NOT EXISTS language ON TABLE generated_artifact TYPE string;
+DEFINE FIELD IF NOT EXISTS sections ON TABLE generated_artifact TYPE int DEFAULT 0;
+DEFINE FIELD IF NOT EXISTS output_path ON TABLE generated_artifact TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS note_id ON TABLE generated_artifact TYPE option<record<note>>;
+DEFINE FIELD IF NOT EXISTS command ON TABLE generated_artifact TYPE option<record<command>>;
+DEFINE FIELD IF NOT EXISTS created ON generated_artifact DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON generated_artifact DEFAULT time::now() VALUE time::now();
+
+DEFINE INDEX IF NOT EXISTS idx_generated_artifact_notebook ON TABLE generated_artifact COLUMNS notebook CONCURRENTLY;

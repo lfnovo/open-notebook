@@ -158,3 +158,6 @@ history.txt
 # oss-maintainer local state
 .maintainer/profile.local.toml
 .maintainer/state/
+
+# local operator memory (never shipped)
+.agent/

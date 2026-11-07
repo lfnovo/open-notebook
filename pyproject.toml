@@ -46,13 +46,21 @@ dependencies = [
     "numpy>=2.4.1",
     "pycountry>=26.2.16",
     "babel>=2.18.0",
+    # Artifacts tab (#203): markdown -> pptx/docx/html via pandoc, and
+    # ```mermaid``` fences -> PNG without Node or a browser. Both are heavy
+    # (pypandoc-binary ships the pandoc binary, mermaidx ships quickjs/resvg)
+    # and are isolated behind open_notebook/artifacts/render.py and
+    # open_notebook/artifacts/diagrams.py, so either can be replaced by
+    # swapping one module instead of refactoring the pipeline.
+    "pypandoc-binary>=1.13",
+    "mermaidx>=0.9",
 ]
 
 [tool.setuptools]
 package-dir = {"open_notebook" = "open_notebook"}
 
 [tool.setuptools.package-data]
-open_notebook = ["ai/assets/*"]
+open_notebook = ["ai/assets/*", "artifacts/assets/*"]
 
 
 [build-system]

@@ -368,7 +368,7 @@ export const bnIN = {
     invalidUrlsDetected: "অবৈধ URL সনাক্ত করা হয়েছে:",
     lineLabel: "লাইন {{line}}",
     fixInvalidUrls: "অবৈধ URL ঠিক করুন বা সরান",
-    selectMultipleFilesHint: "ব্যাচ ইমপোর্টের জন্য একাধিক ফাইল নির্বাচন করুন। সমর্থিত: ডকুমেন্ট (PDF, DOC, DOCX, PPT, XLS, EPUB, ODT, ODS, ODP, HTML, HTM, TXT, MD), মিডিয়া (MP4, MP3, WAV, M4A), ছবি (JPG, PNG), আর্কাইভ (ZIP)",
+    selectMultipleFilesHint: "ব্যাচ ইমপোর্টের জন্য একাধিক ফাইল নির্বাচন করুন। সমর্থিত: ডকুমেন্ট (PDF, DOC, DOCX, PPT, XLS, EPUB, ODT, ODS, ODP, HTML, HTM, TXT, MD), মিডিয়া (MP4, MP3, WAV, M4A), ছবি (JPG, PNG)",
     selectedFiles: "নির্বাচিত ফাইল:",
     textPlaceholder: "এখানে আপনার কন্টেন্ট পেস্ট বা টাইপ করুন...",
     htmlDetected: "HTML কন্টেন্ট সনাক্ত করা হয়েছে। প্রক্রিয়াকরণের পর এটি Markdown এ রূপান্তরিত হবে।",

@@ -368,7 +368,7 @@ export const ptBR = {
     invalidUrlsDetected: "URLs inválidas detectadas:",
     lineLabel: "Linha {{line}}",
     fixInvalidUrls: "Por favor, corrija ou remova as URLs inválidas para continuar",
-    selectMultipleFilesHint: "Selecione múltiplos arquivos para importação em lote. Suportados: Documentos (PDF, DOC, DOCX, PPT, XLS, EPUB, ODT, ODS, ODP, HTML, HTM, TXT, MD), Mídia (MP4, MP3, WAV, M4A), Imagens (JPG, PNG), Arquivos (ZIP)",
+    selectMultipleFilesHint: "Selecione múltiplos arquivos para importação em lote. Suportados: Documentos (PDF, DOC, DOCX, PPT, XLS, EPUB, ODT, ODS, ODP, HTML, HTM, TXT, MD), Mídia (MP4, MP3, WAV, M4A), Imagens (JPG, PNG)",
     selectedFiles: "Arquivos selecionados:",
     textPlaceholder: "Cole ou digite seu conteúdo aqui...",
     htmlDetected: "Conteúdo HTML detectado. Será convertido para Markdown após o processamento.",

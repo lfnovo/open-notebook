@@ -371,7 +371,7 @@ export const deDE = {
     invalidUrlsDetected: "Ungültige URLs gefunden:",
     lineLabel: "Zeile {{line}}",
     fixInvalidUrls: "Bitte korrigiere oder entferne ungültige URLs, um fortzufahren",
-    selectMultipleFilesHint: "Wähle mehrere Dateien für den Sammelimport aus. Unterstützt werden: Dokumente (PDF, DOC, DOCX, PPT, XLS, EPUB, ODT, ODS, ODP, HTML, HTM, TXT, MD), Medien (MP4, MP3, WAV, M4A), Bilder (JPG, PNG), Archive (ZIP)",
+    selectMultipleFilesHint: "Wähle mehrere Dateien für den Sammelimport aus. Unterstützt werden: Dokumente (PDF, DOC, DOCX, PPT, XLS, EPUB, ODT, ODS, ODP, HTML, HTM, TXT, MD), Medien (MP4, MP3, WAV, M4A), Bilder (JPG, PNG)",
     selectedFiles: "Ausgewählte Dateien:",
     textPlaceholder: "Füge deinen Inhalt hier ein oder schreibe ihn direkt hinein...",
     htmlDetected: "HTML-Inhalt erkannt. Er wird nach der Verarbeitung in Markdown umgewandelt.",

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Failed write requests are no longer automatically sent a second time by the frontend. Retries must be requested explicitly by the caller (#1395).
+
 ## [1.15.1] - 2026-11-03
 
 ### Changed

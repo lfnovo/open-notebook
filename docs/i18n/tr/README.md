@@ -88,7 +88,7 @@ Projemiz hakkında daha fazla bilgi için: [https://www.open-notebook.ai](https:
 | **Maliyet** | Yalnızca yapay zekâ kullanımı için ödeme | Ücretsiz katman + Aylık abonelik | Şeffaf ve kontrol edilebilir |
 
 **Neden Open Notebook?**
-- 🔒 **Önce Gizlilik**: Hassas araştırmalarınız tamamen gizli kalır
+- 🔒 **Önce Gizlilik**: Kendi sunucunuzda çalışır; yerel modellerle hassas araştırmalarınız makinenizden çıkmaz
 - 💰 **Maliyet Kontrolü**: Daha ucuz yapay zekâ sağlayıcıları seçin veya Ollama ile yerelde çalıştırın
 - 🎙️ **Daha İyi Podcast'ler**: Sınırlı 2 konuşmacılı "deep-dive" biçimi yerine tam senaryo kontrolü ve çok konuşmacı esnekliği
 - 🔧 **Sınırsız Özelleştirme**: İhtiyacınıza göre değiştirin, genişletin ve entegre edin
@@ -207,7 +207,7 @@ Hepsi bu! Bir not defteri oluşturun, bir kaynak ekleyin ve sohbete başlayın. 
 ## ✨ Temel Özellikler
 
 ### Ana Yetenekler
-- **🔒 Önce Gizlilik**: Kendi sunucunuzda çalışır; yerel modellerle hiçbir veri makinenizden çıkmaz
+- **🔒 Önce Gizlilik**: Kendi sunucunuzda çalışır; model sunucusunu da (ör. Ollama) kendi donanımınızda çalıştırırsanız hiçbir veri makinenizden çıkmaz. Uzakta barındırılan OpenAI uyumlu uç noktalar birer bulut sağlayıcısıdır
 - **🎯 Çoklu Not Defteri Düzeni**: Birden fazla araştırma projesini sorunsuzca yönetin
 - **📚 Evrensel İçerik Desteği**: PDF'ler, videolar, ses dosyaları, web sayfaları, Office belgeleri ve daha fazlası
 - **🤖 Çoklu Model Yapay Zekâ Desteği**: OpenAI, Anthropic, Ollama, Google, LM Studio ve daha fazlası dahil 20'den fazla sağlayıcı
@@ -271,7 +271,7 @@ Hepsi bu! Bir not defteri oluşturun, bir kaynak ekleyin ve sohbete başlayın. 
 - **🤖 Yapay Zekâ Kurulum Asistanı**: [Open Notebook kurulumuna yardımcı olmak için hazırlanmış bir CustomGPT](https://chatgpt.com/g/g-68776e2765b48191bd1bae3f30212631-open-notebook-installation-assistant) var; sizi her adımda yönlendirecek!
 - **Open Notebook'ta yeni misiniz?** [Başlangıç Kılavuzu](../../0-START-HERE/index.md) ile başlayın
 - **Kurulum yardımı mı lazım?** [Kurulum Kılavuzu](../../1-INSTALLATION/index.md)'na göz atın
-- **Nasıl çalıştığını görmek mi istiyorsunuz?** [Hızlı Başlangıç Eğitimi](../../0-START-HERE/index.md)'ni deneyin
+- **Nasıl çalıştığını görmek mi istiyorsunuz?** [Hızlı Başlangıç Eğitimi](../../0-START-HERE/quick-start-cloud.md)'ni deneyin
 
 ## 🤝 Topluluk ve Katkı
 

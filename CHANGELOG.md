@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - The provider credential dialog (Manage → Models → Add configuration) fits on short screens. It is capped at 90% of the window height and the form scrolls inside it, so the title, the close button and the Save/Cancel buttons stay reachable (#1507)
 - Transformation deletion confirmations no longer show a source-deletion title (#1402)
+- **Vector search returns sources again.** `fn::vector_search` grouped, ordered and limited in a single `SELECT`; SurrealDB returns grouped rows in group-key order, so the `ORDER BY similarity DESC` was inert and the `LIMIT` truncated a list ordered by record id. Because `note:` sorts before `source:` and `source_insight:`, any `match_count` below the number of embedded notes returned notes **only**, silently discarding sources that scored higher than every note in the result — an instance that accumulates notes gradually stopped being able to return any source at all through vector search, with no error and no indication that anything had been filtered. Migration 26 splits the final statement so the grouped set is ordered and limited after grouping, with `id` as a tie-break for determinism. The signature is unchanged, including the optional `notebook_ids` from migration 24 (#1431)
+- **Text search ranks the best match first.** `fn::text_search` had the same single-`SELECT` group/order/limit as vector search, so results came back in record-id order (notes before sources) and the `LIMIT` could drop the best match. Nothing re-sorted them afterwards, so the wrong order reached the search page and Ask as-is. Migration 26 now fixes both functions the same way (#1505)
 
 ## [1.15.1] - 2026-11-03
 

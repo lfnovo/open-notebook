@@ -1,65 +1,52 @@
 # Open Notebook - Start Here
 
-**Open Notebook** is a privacy-focused AI research assistant. Upload documents, chat with AI, generate notes, and create podcasts—all with complete control over your data.
+**Open Notebook** is a self-hosted, privacy-focused AI research assistant. Add documents, web pages, audio and video, chat with an AI about them with citations, take notes, and turn your research into podcasts, using the AI providers you choose.
 
-## Choose Your Path
+## Choose your path
 
-### 🚀 I want to use OpenAI (Fastest)
-**5 minutes to running.** GPT, simple setup, powerful results.
+Each quick start installs Open Notebook with Docker Compose and ends with a working chat.
 
-→ [OpenAI Quick Start](quick-start-openai.md)
+### I have an API key for a cloud AI provider
+OpenAI, Anthropic, Google, Mistral, Groq, OpenRouter and more.
 
----
+→ [Cloud Providers Quick Start](quick-start-cloud.md) (about 5 minutes)
 
-### ☁️ I want to use other cloud AI (Anthropic, Google, OpenRouter, etc.)
-**5 minutes to running.** Choose from 17+ AI providers.
+### I want to run everything locally
+Ollama in Docker next to Open Notebook. No API keys; nothing leaves your machine.
 
-→ [Cloud Providers Quick Start](quick-start-cloud.md)
+→ [Local Quick Start](quick-start-local.md) (about 10 minutes, plus model downloads)
 
----
+**Already have Ollama installed on your computer?** → [External Ollama Quick Start](quick-start-external-ollama.md)
 
-### 🏠 I want to run locally (Ollama or LMStudio, completely private)
-**5 minutes to running.** Keep everything private, on your machine. No costs.
-
-→ [Local Quick Start](quick-start-local.md)
-
-**Already have Ollama installed?** → [External Ollama Guide](quick-start-external-ollama.md)
+### Something else
+Running from source, Windows without Docker, or a hosting platform → [Installation Guide](../1-INSTALLATION/index.md)
 
 ---
 
-## What Can You Do?
+## What you can do
 
-- 📄 **Upload Content**: PDFs, web links, audio, video, text
-- 🤖 **Chat with AI**: Ask questions about your documents with citations
-- 📝 **Generate Notes**: AI creates summaries and insights
-- 🎙️ **Create Podcasts**: Turn research into professional audio content
-- 🔍 **Search**: Full-text and semantic search across all content
-- ⚙️ **Transform**: Extract insights, analyze themes, create summaries
+- **Add content**: PDFs, Office and OpenDocument files, web pages, YouTube, audio, video, plain text
+- **Chat**: ask questions about the sources in a notebook, with citations, and choose what each source shares with the AI
+- **Ask and search**: full-text and semantic search across everything
+- **Transform**: run summaries and extraction prompts on sources to produce insights
+- **Take notes**: write your own or save AI answers as notes
+- **Create podcasts**: 1 to 4 speakers with configurable profiles
 
-## Why Open Notebook?
+## Open Notebook and Google Notebook LM
 
-| Feature | Open Notebook | Notebook LM |
-|---------|---|---|
-| **Privacy** | Self-hosted, your control | Cloud, Google's servers |
-| **AI Choice** | 17+ providers | Google's models only |
-| **Podcast Speakers** | 1-4 customizable | 2 only |
-| **Cost** | Completely free | Free (but your data) |
-| **Offline** | Yes  | No |
+| | Open Notebook | Google Notebook LM |
+|---|---|---|
+| **Where it runs** | Your machine or server | Google's cloud |
+| **AI models** | 20+ providers, cloud or local | Google's models |
+| **Podcast speakers** | 1–4, configurable profiles | Google's formats |
+| **Cost** | Free software; you pay your AI provider (nothing with local models) | Free tier and subscriptions |
+| **Offline** | Yes, with local models | No |
 
 ## Prerequisites
 
-- **Docker**: All paths use Docker (free)
-- **AI Provider**: Either a cloud API key OR use free local models (Ollama)
+- **Docker** for the quick starts. [From source](../1-INSTALLATION/from-source.md) and [Windows native](../1-INSTALLATION/windows-native.md) installs don't need Docker for the app itself.
+- **An AI provider**: a cloud API key, or a local model server such as Ollama.
 
 ---
 
-## Next Steps
-
-1. Pick your path above ⬆️
-2. Follow the 5-minute quick start
-3. Create your first notebook
-4. Start uploading documents!
-
----
-
-**Need Help?** Join our [Discord community](https://discord.gg/37XJPXfz2w) or see [Full Documentation](../index.md).
+**Need help?** Join our [Discord community](https://discord.gg/37XJPXfz2w) or see the [full documentation](../index.md).

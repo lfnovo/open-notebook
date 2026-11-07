@@ -1,441 +1,106 @@
 # Adding Sources - Getting Content Into Your Notebook
 
-Sources are the raw materials of your research. This guide covers how to add different types of content.
+Sources are the material the AI works with: files, web pages and pasted text. Every source goes through the same three-step **Add Source** wizard and is processed in the background.
 
 ---
 
-## Quick-Start: Add Your First Source
+## The Add Source Wizard
 
-### Option 1: Upload a File (PDF, Word, etc.)
+Open it from a notebook (**Add Source → Add Source**), from the **Sources** page (**New Source**), or from the sidebar (**New → Source**).
 
-```
-1. In your notebook, click "Add Source"
-2. Select "Upload File"
-3. Choose a file from your computer
-4. Click "Upload"
-5. Wait 30-60 seconds for processing
-6. Done! Source appears in your notebook
-```
+### Step 1: Add Source
 
-### Option 2: Add a Web Link
+Choose a tab:
 
-```
-1. Click "Add Source"
-2. Select "Web Link"
-3. Paste URL: https://example.com/article
-4. Click "Add"
-5. Wait for processing (usually faster than files)
-6. Done!
-```
+- **Add URL**: paste a link. Paste several links, one per line, to import them in one go.
+- **Upload File**: pick one file, or several to import them in one go.
+- **Enter Text**: paste or type text. A **Title** is required for text.
 
-### Option 3: Paste Text
+For a single URL or file, the **Title** is optional; if you leave it empty, one is generated from the content. In batch mode (more than one URL or file) titles are always generated, and the same notebooks and transformations apply to every item. A batch can hold up to **50** URLs or files.
 
-```
-1. Click "Add Source"
-2. Select "Text"
-3. Paste or type your content
-4. Click "Save"
-5. Done! Immediately available
-```
+### Step 2: Notebooks
+
+Pick the notebooks to link the source to (optional). Opened from a notebook, that notebook is already selected. A source can be linked to more notebooks later.
+
+### Step 3: Process
+
+- **Transformations (optional)**: transformations to run on the source after extraction. Each one produces an [insight](../2-CORE-CONCEPTS/notebooks-sources-notes.md#insights). Transformations marked *Suggest by default on new sources* are pre-selected (on a new install, that's **Dense Summary**). See [Transformations](transformations.md).
+- **Enable embedding for search**: embeds the source so vector search and Ask can find it. Its default comes from **Settings → Embedding and Search → Default Embedding Option**: *Ask* shows this checkbox (checked), *Always* embeds without asking, *Never* skips embedding.
+
+Click **Done**. You can click **Done** on any step to submit with the current choices.
 
 ---
 
-## Supported File Types
+## Supported Content
 
-### Documents
-- **PDF** (.pdf) — Best support, including scanned PDFs with OCR
-- **Word** (.docx, .doc) — Full support
-- **PowerPoint** (.pptx) — Slides converted to text
-- **Excel** (.xlsx, .xls) — Spreadsheet data
-- **EPUB** (.epub) — eBook files
-- **OpenDocument** (.odt, .ods, .odp) — LibreOffice / OpenOffice text documents, spreadsheets (one table per sheet) and presentations (one block per slide)
-- **Markdown** (.md, .txt) — Plain text formats
-- **HTML** (.html, .htm) — Web page files
-- **Images** (.png, .jpg, .jpeg, .tiff, .bmp) — Text read via OCR (**requires Docling enabled** — see below)
+### Files
 
-**File size limits:** Up to ~100MB (varies by system)
+| Kind | Extensions |
+|------|------------|
+| Documents | PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, ODT, ODS, ODP, EPUB, TXT, MD, HTML, HTM |
+| Audio | MP3, WAV, M4A, AAC |
+| Video | MP4, AVI, MOV, WMV |
+| Images | JPG, JPEG, PNG, TIFF (only when Docling is enabled; see [Content Processing Engines](content-processing-engines.md)) |
 
-**Processing time:** 10 seconds - 2 minutes (depending on length and file type)
+- **Audio and video are transcribed** with your **Speech-to-Text Model** (set in **Manage → Models → Default Model Assignments**). Without one, they can't be processed. For a local option, see [Local Speech-to-Text](../5-CONFIGURATION/local-stt.md).
+- **Upload size** is limited to 100 MB by default; `OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB` changes the API's limit. By default the browser sends uploads straight to the API (port 5055), so that is the only limit in the app. If your setup routes API calls through the frontend's `/api` path instead (for example `API_URL` set to the frontend's own address), the frontend also caps request bodies at 100 MB. A reverse proxy in front may add its own limit.
+- **Scanned PDFs** need Docling with OCR to give usable text.
 
-**OCR (scanned PDFs & images):** Text is read off scanned PDFs and image files using OCR. OCR runs through the **Docling** engine, which is **optional** and installed on first startup when you set `OPEN_NOTEBOOK_ENABLE_DOCLING=true`. Once enabled, OCR is on by default; you can turn it off (or force a more accurate extraction engine) in **Settings → Content Processing** — see [Content Processing Engines](content-processing-engines.md).
+### Web links
 
-### Audio & Video
-- **Audio**: MP3, WAV, M4A, OGG, FLAC (~30 seconds - 3 minutes per hour)
-- **Video**: MP4, AVI, MOV, MKV, WebM (~3-10 minutes per hour)
-- **YouTube**: Direct URL support
-- **Podcasts**: RSS feed URL
+- **Articles and web pages**: fetched with the URL engine chosen in **Settings → Content Processing**. Pages that render with JavaScript may need Firecrawl, Jina or Crawl4AI; see [Content Processing Engines](content-processing-engines.md).
+- **YouTube videos**: the transcript is imported. The preferred transcript languages are a setting reachable through the API (`youtube_preferred_languages` in `GET`/`PUT /api/settings`). If YouTube blocks your server, set `CCORE_YOUTUBE_PROXY` or `CCORE_YOUTUBE_COOKIES_FILE` for the worker ([Environment Reference](../5-CONFIGURATION/environment-reference.md)).
+- **Pages behind a login or paywall** generally can't be fetched. Copy the text and use **Enter Text** instead.
 
-**Automatic transcription**: Audio/video is transcribed to text automatically. This requires enabling speech-to-text in settings.
+### Text
 
-### Web Content
-- **Articles**: Blog posts, news articles, Medium
-- **YouTube**: Full videos, playlists, plus `/live/` and `/shorts/` URLs
-- **Reddit**: Public post URLs (fetched via Reddit's public JSON)
-- **PDFs online**: Direct PDF links
-- **News**: News site articles
-
-**Just paste the URL** in "Web Link" section.
-
-**JavaScript-heavy sites:** How well a URL extracts depends on the URL processing engine. The default (`auto`) tries several engines; enabling Crawl4AI lets it render JavaScript pages locally. If a link comes back empty, see [Content Processing Engines](content-processing-engines.md).
-
-### What Doesn't Work
-- Paywalled content (WSJ, FT, etc.) — Can't extract
-- Password-protected PDFs — Can't open
-- Unsupported formats — Rejected immediately with a clear "unsupported file type" message (no long wait)
-- Very large files (>100MB) — Timeout
+Pasted text is processed like any other source (also in the background). Pasted HTML is converted to Markdown.
 
 ---
 
-## What Happens When You Add a Source
+## Processing Status
 
-The system automatically does four things:
+A background job extracts the text, embeds it (if enabled) and runs the selected transformations. The source card shows:
 
-```
-1. EXTRACT TEXT
-   File/URL → Readable text
-   (PDFs get OCR if scanned)
-   (Videos get transcribed if enabled)
+| Status | Meaning |
+|--------|---------|
+| **Queued** | Waiting for the worker |
+| **Processing** | Being processed (a progress bar may show) |
+| **Completed** | Done; the status badge disappears and the card shows the number of insights, if any |
+| **Failed** | Processing stopped; the card shows **Retry Processing** |
 
-2. BREAK INTO CHUNKS
-   Long text → ~500-word pieces
-   (So search finds specific parts, not whole document)
+Sources are processed by the background worker. If sources stay **Queued** forever, the worker isn't running (`make worker-start` for source installs; it runs inside the Docker image automatically).
 
-3. CREATE EMBEDDINGS
-   Each chunk → Vector representation
-   (Enables semantic/concept search)
-
-4. INDEX & STORE
-   Everything → Database
-   (Ready to search and retrieve)
-```
-
-**Time to use:** After the progress bar completes, the source is ready immediately. Embeddings are created in the background.
+Transformations and embedding finish after the text is saved, so insights can appear a little after the source shows **Completed**.
 
 ---
 
-## Step-by-Step for Different Types
+## When a Source Fails
 
-### PDFs
+A failed source fails once: it is not retried automatically. The card shows *Source processing failed* and a **Retry Processing** button (also in the card's ⋮ menu).
 
-**Best practices:**
-```
-Clean PDFs:
-  1. Upload → Done
-  2. Processing time: ~30-60 seconds
+The specific reason is stored with the job. You can read it in the worker log (which also has the underlying error) or from the API at `GET /api/sources/{source_id}/status` (the `processing_info.error` field). The UI does not show it yet. The reasons are:
 
-Scanned/Image PDFs:
-  1. Upload same way
-  2. System auto-detects and uses OCR
-  3. Processing time: ~2-3 minutes
-  4. (Higher, due to OCR overhead)
-
-Large PDFs (50+ pages):
-  1. Consider splitting into smaller files
-  2. Or upload as-is (system handles it)
-  3. Processing time scales with size
-```
-
-**Common issues:**
-- "Can't extract text" → PDF is corrupted or has copy protection
-- Solution: Try opening in Adobe. If it won't, the PDF is likely protected.
-
-### Web Links / Articles
-
-**Best practices:**
-```
-1. Copy full URL from browser: https://example.com/article-title
-2. Paste in "Web Link"
-3. Click Add
-4. Wait for extraction
-
-Processing time: Usually 5-15 seconds
-```
-
-**What works:**
-- Standard web articles
-- Blog posts
-- News articles
-- Wikipedia pages
-- Medium posts
-- Substack articles
-
-**What doesn't work:**
-- Twitter threads (unreliable)
-- Paywalled articles (can't access)
-- JavaScript-heavy sites (content not extracted)
-
-**Pro tip:** If it doesn't work, copy the article text and paste as "Text" instead.
-
-### Audio Files
-
-**Best practices:**
-```
-1. Ensure speech-to-text is enabled in Settings
-2. Upload MP3, WAV, or M4A file
-3. System automatically transcribes to text
-4. Processing time: ~1 minute per 5 minutes of audio
-
-Example:
-  - 1-hour podcast → 12 minutes processing
-  - 10-minute recording → 2 minutes processing
-```
-
-**Quality matters:**
-- Clear audio: Fast transcription
-- Muffled/noisy audio: Slower, less accurate transcription
-- Background noise: Try to minimize before uploading
-
-**Tip:** If audio quality is poor, the AI might misinterpret content. You can manually correct transcription if needed.
-
-### YouTube Videos
-
-**Best practices:**
-```
-Two ways to add:
-
-Method 1: Direct URL
-  1. Copy YouTube URL: https://www.youtube.com/watch?v=...
-     (regular watch, /live/, and /shorts/ URLs all work)
-  2. Paste in "Web Link"
-  3. Click Add
-  4. System extracts captions (if available) + transcript
-
-Method 2: Playlist
-  1. Paste playlist URL
-  2. System adds all videos as separate sources
-  3. Each video processed separately
-  4. Takes longer (multiple videos)
-```
-
-**What's extracted:**
-- Captions/subtitles (if available)
-- Transcription (if captions aren't available)
-- Basic metadata (title, channel, length)
-
-**"YouTube blocked or failed the transcript request":** YouTube blocks transcript requests from many server and cloud IPs. Give the worker a residential proxy (`CCORE_YOUTUBE_PROXY`) or a browser cookies file (`CCORE_YOUTUBE_COOKIES_FILE`) — see [Content Extraction variables](../5-CONFIGURATION/environment-reference.md#content-extraction). Datacenter proxies are usually blocked too.
-
-**Processing:**
-- 10-minute video: ~2-3 minutes
-- 1-hour video: ~10-15 minutes
-
-### Text / Paste Content
-
-**Best practices:**
-```
-1. Select "Text" when adding source
-2. Paste or type content
-3. System processes immediately
-4. No wait time needed
-
-Good for:
-  - Notes you want to reference
-  - Quotes from books
-  - Transcripts you have handy
-  - Quick research snippets
-```
+| Message | What to do |
+|---------|-----------|
+| *The page was not found (it may have been removed or moved). Check the URL.* | Fix the link |
+| *Could not reach this address (connection, timeout or DNS error). Check the URL and try again.* | Check the URL and your server's network access, then retry |
+| *This URL or input is not valid.* | Fix the URL |
+| *This file type is not supported.* | Convert the file to a supported format |
+| *The file could not be read. It may be corrupted or in an unsupported format.* | Re-export or re-download the file |
+| *Could not extract content from this YouTube video. No transcript or subtitles are available. ...* | The video has no transcript |
+| *YouTube blocked or failed the transcript request. ...* | Set `CCORE_YOUTUBE_PROXY` or `CCORE_YOUTUBE_COOKIES_FILE` |
+| *Content extraction is not configured correctly. ...* | Check the engine in **Settings → Content Processing** and your Speech-to-Text Model; the worker log has details |
+| *The content extraction service failed.* / *Could not extract content from this source.* | Try another engine, or paste the text with **Enter Text** |
 
 ---
 
-## Managing Your Sources
+## Managing Sources
 
-### Viewing Source Details
-
-```
-Click on source → See:
-  - Original file name/title
-  - When it was added
-  - Size and format
-  - Processing status
-  - Number of chunks
-```
-
-### Organizing with Metadata
-
-You can add to each source:
-- **Title**: Better name than original filename
-- **Tags**: Category labels ("primary research", "background", "competitor analysis")
-- **Description**: A few notes about what it contains
-
-**Why this matters:**
-- Makes sources easier to find
-- Helps when contextualizing for Chat
-- Useful for organizing large notebooks
-
-### Searching Within Sources
-
-```
-After sources are added, you can:
-
-Text search: "Find exact phrase"
-Vector search: "Find conceptually similar"
-
-Both search across all sources in notebook.
-Results show:
-  - Which source
-  - Which section
-  - Relevance score
-```
-
----
-
-## Context Management: How Sources Get Used
-
-You control how AI accesses sources:
-
-### Three Levels (for Chat)
-
-**Full Content:**
-```
-AI sees: Complete source text
-Cost: 100% of tokens
-Use when: Analyzing in detail, need precise citations
-Example: "Analyze this methodology paper closely"
-```
-
-**Summary Only:**
-```
-AI sees: AI-generated summary (not full text)
-Cost: ~10-20% of tokens
-Use when: Background material, reference context
-Example: "Use this as context but focus on the main source"
-```
-
-**Not in Context:**
-```
-AI sees: Nothing (excluded)
-Cost: 0 tokens
-Use when: Confidential, not relevant, or archived
-Example: "Keep this in notebook but don't use in this conversation"
-```
-
-### How to Set Context (in Chat)
-
-```
-1. Go to Chat
-2. Click "Select Context Sources"
-3. For each source:
-   - Toggle ON/OFF (include/exclude)
-   - Choose level (Full/Summary/Excluded)
-4. Click "Save"
-5. Now chat uses these settings
-```
-
----
-
-## Common Mistakes
-
-| Mistake | What Happens | How to Fix |
-|---------|--------------|-----------|
-| Upload 200 sources at once | System gets slow, processing stalls | Add 10-20 at a time, wait for processing |
-| Use full content for all sources | Token usage skyrockets, expensive | Use "Summary" or "Excluded" for background material |
-| Add huge PDFs without splitting | Processing is slow, search results less precise | Consider splitting large PDFs into chapters |
-| Forget source titles | Can't distinguish between similar sources | Rename sources with descriptive titles right after uploading |
-| Don't tag sources | Hard to find and organize later | Add tags immediately: "primary", "background", etc. |
-| Mix languages in one source | Transcription/embedding quality drops | Keep each language in separate sources |
-| Use same source multiple times | Takes up space, creates confusion | Add once; reuse in multiple chats/notebooks |
-
----
-
-## Processing Status & Troubleshooting
-
-### What the Status Indicators Mean
-
-```
-🟡 Processing
-  → Source is being extracted and embedded
-  → Wait 30 seconds - 3 minutes depending on size
-  → Don't use in Chat yet
-
-🟢 Ready
-  → Source is processed and searchable
-  → Can use immediately in Chat
-  → Can apply transformations
-
-🔴 Error
-  → Something went wrong
-  → Common reasons:
-    - Unsupported file format
-    - File too large or corrupted
-    - Network timeout
-
-⚪ Not in Context
-  → Source added but excluded from Chat
-  → Still searchable, not sent to AI
-```
-
-### Common Errors & Solutions
-
-**"Unsupported file type"**
-- You tried to upload a format not in the list (e.g., `.webp` image)
-- The upload is rejected **immediately** with a message naming the detected type — no long wait or stuck "Processing" state
-- Note: image formats (PNG/JPEG/TIFF/BMP) are only supported when **Docling is enabled** (`OPEN_NOTEBOOK_ENABLE_DOCLING=true`)
-- Solution: Convert to a supported format (PDF for documents, MP3 for audio), or enable Docling for images
-
-**"Processing timeout"**
-- Very large file (>100MB) or very long audio
-- Solution: Split into smaller pieces or try uploading again
-
-**"Transcription failed"**
-- Audio quality too poor or language not detected
-- Solution: Re-record with better quality, or paste text transcript manually
-
-**"Web link won't extract"**
-- Website blocks automated access or uses JavaScript for content
-- Solution: Try a different URL processing engine (see [Content Processing Engines](content-processing-engines.md)) — enabling Crawl4AI renders JavaScript pages — or copy the article text and paste as "Text" instead
-
----
-
-## Tips for Best Results
-
-### For PDFs
-- Clean, digital PDFs work best
-- Remove copy protection if present (legally)
-- Scanned PDFs work but take longer
-
-### For Web Articles
-- Use full URL including domain
-- Avoid cookie/popup-laden sites
-- If extraction fails, copy-paste text instead
-
-### For Audio
-- Clear, well-recorded audio transcribes better
-- Remove background noise if possible
-- YouTube videos usually have good transcriptions built-in
-
-### For Large Documents
-- Consider splitting into smaller sources
-- Gives more precise search results
-- Processing is faster for smaller pieces
-
-### For Organization
-- Name sources clearly (not "document_2.pdf")
-- Add tags immediately after uploading
-- Use descriptions for complex documents
-
----
-
-## What Comes After: Using Your Sources
-
-Once you've added sources, you can:
-
-- **Chat** → Ask questions (see [Chat Effectively](chat-effectively.md))
-- **Search** → Find specific content (see [Search Effectively](search.md))
-- **Transformations** → Extract structured insights (see [Working with Notes](working-with-notes.md))
-- **Ask** → Get comprehensive answers (see [Search Effectively](search.md))
-- **Podcasts** → Turn into audio (see [Creating Podcasts](creating-podcasts.md))
-
----
-
-## Summary Checklist
-
-Before adding sources, confirm:
-
-- [ ] File is in supported format
-- [ ] File is under 100MB (or splitting large ones)
-- [ ] Web links are full URLs (not shortened)
-- [ ] Audio files have clear speech (if transcription-dependent)
-- [ ] You've named source clearly
-- [ ] You've added tags for organization
-- [ ] You understand context levels (Full/Summary/Excluded)
-
-Done! Sources are now ready for Chat, Search, Transformations, and more.
+- **Open a source**: click its card for the Content, Insights and Details tabs. See [Interface Overview](interface-overview.md#the-source-view).
+- **Add it to another notebook**: in that notebook, **Add Source → Add Existing Sources**, or from the source's Details tab, **Manage Notebooks**.
+- **Remove from Notebook** (⋮ menu): unlinks the source from this notebook only.
+- **Delete Source** (⋮ menu): deletes the source everywhere, with its insights, embeddings and uploaded file. This can't be undone.
+- **Refresh content** (⋮ menu, completed links): fetches the page again and reprocesses it.
+- **Embed Content** (source view ⋮ menu): embeds a source that was added without embedding.
+- **Control what Chat sees**: the context icon on each card. See [Chat Effectively](chat-effectively.md#choosing-what-the-ai-sees).

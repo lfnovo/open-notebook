@@ -14,7 +14,7 @@ The **current rules** distilled from these records live in [VISION.md](../../../
 1. **Records are immutable.** Reversing a decision means writing a *new* record and marking the old one `Superseded by ADR-NNN` in its Status line — never editing history.
 2. **Write it in the same PR.** A design that resolves an open structural question ships with its record. Half a page, written while the context is loaded — not a documentation session later.
 3. **Keep it to half a page.** Four sections: Context, Decision, Alternatives considered, Consequences. If it needs more, link an issue or doc for the depth.
-4. **Number sequentially** within each prefix (ADR-005 comes after ADR-004, independent of PDRs).
+4. **Number sequentially** within each prefix (ADR-005 comes after ADR-004, independent of PDRs). The maintainer assigns the number at merge: in a PR, name the file `ADR-0XX-<slug>.md`, and the next free number and the index row below are added when it lands. This avoids several open PRs claiming the same number. ADR-010 is currently unassigned: it was once set aside for the unmerged PR #1332, so the index jumps from 009 to 011.
 
 ## Template
 

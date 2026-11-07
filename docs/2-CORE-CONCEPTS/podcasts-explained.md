@@ -1,427 +1,83 @@
 # Podcasts Explained - Research as Audio Dialogue
 
-Podcasts are Open Notebook's highest-level transformation: converting your research into audio dialogue for a different consumption pattern.
+Open Notebook can turn sources and notes into a podcast episode: a scripted conversation (or monologue) between one to four speakers, voiced with text-to-speech. This page explains how generation works and what the settings mean. For the step-by-step, see [Creating Podcasts](../3-USER-GUIDE/creating-podcasts.md).
 
 ---
 
-## Why Podcasts Matter
+## The Building Blocks
 
-### The Problem
-Research naturally accumulates as text: PDFs, articles, web pages, notes. This creates a friction point:
+**Speaker profile**: who talks and how they sound.
+- A **voice model** (a text-to-speech model, selected in the speaker profile), required.
+- One to four **speakers**, each with a name, a **Voice ID** (a voice name of that TTS model), a backstory and a personality.
+- Optionally, a different voice model per speaker (*Per-speaker TTS override*), so speakers can come from different TTS providers.
 
-**To consume research, you must:**
-- Sit down at a desk
-- Focus intently
-- Read actively
-- Take notes
-- Set aside dedicated time
+**Episode profile**: how the episode is written.
+- The **speaker profile** to use.
+- An **outline model** and a **transcript model** (language models).
+- The number of **segments** (3 to 20).
+- A **default briefing**: free-text instructions for structure, tone and audience.
+- An optional **language** (a locale such as `en-US` or `pt-BR`) for the outline and transcript.
+- Optional **max output tokens** per generation step (default 8192).
 
-**But much of life is passive time:**
-- Commuting
-- Exercising
-- Doing dishes
-- Driving
-- Walking
-- Idle moments
+**Episode**: one generation run. You pick the content, an episode profile, a name and optional additional instructions.
 
-### The Solution
-Convert your research into audio dialogue so you can consume it passively.
-
-```
-Before (Text-based):
-  Research pile → Must schedule reading time → Requires focus
-
-After (Podcast):
-  Research pile → Podcast → Can listen while commuting
-                         → Absorb while exercising
-                         → Understand while walking
-                         → Engage without screen time
-```
+Open Notebook ships with three episode profiles (`tech_discussion`, `solo_expert`, `business_analysis`) and three speaker profiles (`tech_experts`, `solo_expert`, `business_panel`). On a new install **they have no models assigned**, so they show a *Setup required* badge until you edit them and pick an outline model, a transcript model and a voice model. (Installations upgraded from older versions may already have models on them, if matching models were registered.) Their Voice IDs are OpenAI voice names (`nova`, `alloy`, ...); change them if you use another TTS provider.
 
 ---
 
-## What Makes It Special: Open Notebook vs. Competitors
+## How Generation Works
 
-### Google Notebook LM Podcasts
-- **Fixed format**: 2 hosts, always conversational
-- **Limited customization**: You can't choose who the "hosts" are
-- **One TTS voice per speaker**: Can't customize voices
-- **Only uses cloud services**: No local options
+```
+Selected content (sources at Summary or Full content, notes)
+        │
+        ▼
+1. OUTLINE      outline model + briefing → a plan with N segments
+        │
+        ▼
+2. TRANSCRIPT   transcript model writes the dialogue, segment by segment,
+        │       using the speakers' names, backstories and personalities
+        ▼
+3. AUDIO        each line is voiced with its speaker's voice model and Voice ID,
+                then the clips are joined into one audio file
+```
 
-### Open Notebook Podcasts
-- **Customizable format**: 1-4 speakers, you design them
-- **Rich speaker profiles**: Create personas with backstories and expertise
-- **Multiple TTS options**:
-  - OpenAI (natural, fast)
-  - Google TTS (high quality)
-  - ElevenLabs (beautiful voices, accents)
-  - Local TTS (privacy-first, no API calls)
-- **Async generation**: Doesn't block your work
-- **Full control**: Choose outline structure, tone, depth
+- **Briefing**: the episode profile's default briefing, plus the episode's *Additional instructions* appended at the end.
+- **Language**: when set on the episode profile, the outline and transcript are written in that language. The TTS voice must support it too.
+- **Content**: for each source you choose *Summary* (its title and [insights](notebooks-sources-notes.md#insights)) or *Full content* (title, insights and full text). Notes are included in full. A source with no insights contributes almost nothing at *Summary*.
+- **Background job**: generation runs in the worker, so you can close the browser. If the worker isn't running, episodes stay pending.
 
 ---
 
-## How Podcast Generation Works
+## Privacy: What Each Model Sees
 
-### Stage 1: Content Selection
+| Step | Model | What it receives |
+|------|-------|------------------|
+| Outline | Outline model | All selected content, the briefing, speaker descriptions |
+| Transcript | Transcript model | The outline, the selected content, the briefing, speaker descriptions |
+| Audio | Voice model(s) | The transcript text, line by line |
 
-You choose what goes into the podcast:
-```
-Notebook content → Which sources? → Which notes?
-                → Which topics to focus on?
-                → Depth of coverage?
-```
+Local text-to-speech alone does not keep your content local: the outline and transcript models see the full selected content. For a fully local podcast, use local language models **and** a local TTS server (see [Local TTS](../5-CONFIGURATION/local-tts.md)).
 
-### Stage 2: Episode Profile
+---
 
-You define how you want the podcast structured:
-```
-Episode Profile
-├─ Topic: "AI Safety Approaches"
-├─ Length: 20 minutes
-├─ Tone: Academic but accessible
-├─ Format: Debate (2 speakers with opposing views)
-├─ Audience: Researchers new to the field
-└─ Focus areas: Main approaches, pros/cons, open questions
-```
+## Cost
 
-### Stage 3: Speaker Configuration
-
-You create speaker personas (1-4 speakers):
-
-```
-Speaker 1: "Expert Alex"
-├─ Expertise: "Deep knowledge of alignment research"
-├─ Personality: "Rigorous, academic, patient with explanation"
-├─ Accent: (Optional) "British English"
-└─ Voice Model: Selected from model registry (e.g., OpenAI TTS)
-   └─ Optional per-speaker override of the episode's default voice model
-
-Speaker 2: "Researcher Sam"
-├─ Expertise: "Field observer, pragmatic perspective"
-├─ Personality: "Curious, asks clarifying questions"
-├─ Accent: "American English"
-└─ Voice Model: Selected from model registry (e.g., ElevenLabs TTS)
-```
-
-### Stage 4: Outline Generation
-
-System generates episode outline:
-```
-EPISODE: "AI Safety Approaches"
-
-1. Introduction (2 min)
-   Alex: Introduces topic and speakers
-   Sam: What will we cover today?
-
-2. Main Approaches (8 min)
-   Alex: Explains top 3 approaches
-   Sam: Asks about tradeoffs
-
-3. Debate: Best approach? (6 min)
-   Alex: Advocates for approach A
-   Sam: Argues for approach B
-
-4. Open Questions (3 min)
-   Both: What's unsolved?
-
-5. Conclusion (1 min)
-   Recap and where to learn more
-```
-
-### Stage 5: Dialogue Generation
-
-System generates dialogue based on outline:
-```
-Alex: "Today we're exploring three major approaches to AI alignment..."
-
-Sam: "That's a great start. Can you break down what we mean by alignment?"
-
-Alex: "Good question. Alignment means ensuring AI systems pursue the goals
-       we actually want them to pursue, not just what we literally asked for.
-       There's a classic example of a paperclip maximizer..."
-
-Sam: "Interesting. So it's about solving the intention problem?"
-
-Alex: "Exactly. And that's where the three approaches come in..."
-```
-
-### Stage 6: Text-to-Speech
-
-System converts dialogue to audio using the voice models configured in the model registry. Credentials are automatically resolved from each model's configuration.
-```
-Alex's text → Voice model (from registry) → Alex's voice (audio file)
-Sam's text → Voice model (from registry) → Sam's voice (audio file)
-Audio files → Mix together → Final podcast MP3
-```
+An episode costs the outline and transcript language-model calls (which include all selected content) plus text-to-speech for the whole script. More content, more segments and longer briefings all increase it. Check your providers' current pricing; local models cost nothing per call.
 
 ---
 
 ## When Things Go Wrong: Failures & Retry
 
-Podcast generation involves multiple steps (outline, transcript, TTS) and depends on external AI providers. Sometimes things fail.
+When generation fails, the episode moves to **Failed Episodes** and its card shows the error message. For common failures the message ends with a **NOTE** explaining the likely cause. Failed jobs are not retried automatically.
 
-### What Happens on Failure
+To try again, click **Retry** on the failed episode. The failed episode is deleted and a new job is submitted with the same settings.
 
-When podcast generation fails (e.g., wrong model configured, API key expired, provider outage):
-
-- The episode is marked as **Failed** with a red badge
-- The **error message** from the AI provider is displayed so you can understand what went wrong
-- No duplicate episodes are created — automatic retries are disabled to prevent confusion
-
-### How to Retry a Failed Episode
-
-1. Go to the podcast's **Episodes** tab
-2. Find the failed episode — it shows a red "FAILED" badge and an error details box
-3. Click the **Retry** button
-4. The failed episode is deleted and a new generation job is submitted
-5. The new episode appears with "pending" status
-
-### Common Failure Causes
-
-| Error | What to Do |
+| Error | What to do |
 |-------|-----------|
-| Invalid API key | Check Settings -> Credentials for the TTS and language model providers |
-| Model not found | Verify the model exists in the model registry and has valid credentials configured |
-| Rate limit exceeded | Wait a few minutes and retry |
-| Output limit / `max_tokens` too large | Set the episode profile's Max output tokens below the model's limit (the default is 8192) |
-| Provider unavailable | Check provider status page; retry later |
+| `... has no outline model configured` / `no transcript model configured` / `no voice model configured` | Edit the episode or speaker profile and pick the model. The seeded profiles ship without models. |
+| `Invalid speaker name` | The transcript model used a name that isn't in the speaker profile. Retrying usually works. |
+| `Voice name ... not supported` or `Requested entity was not found` (Google) | The Voice ID doesn't exist for that voice model. Use a voice name your TTS model provides. |
+| `Invalid json output` / `Expecting value` | The model's output was cut off or empty. Lower **Max output tokens** to the model's real limit, use fewer segments, or avoid models that put all output in thinking blocks. |
+| Invalid API key, model not found, rate limit | Check the credential and models under **Manage → Models**, then retry. |
 
----
-
-## Key Architecture Decisions
-
-### 1. Asynchronous Processing
-Podcasts are generated in the background. You upload → system processes → you download when ready.
-
-**Why?** Podcast generation takes time (10+ minutes for a 30-minute episode). Blocking would lock up your interface.
-
-### 2. Multi-Speaker Support
-Unlike Google Notebook LM (always 2 hosts), you choose 1-4 speakers.
-
-**Why?** Different discussions work better with different formats:
-- Expert monologue (1 speaker)
-- Interview (2 speakers: host + expert)
-- Debate (2 speakers: opposing views)
-- Panel discussion (3-4 speakers: different expertise)
-
-### 3. Speaker Customization
-You create rich speaker profiles, not just "Host A" and "Host B".
-
-**Why?** Makes podcasts more engaging and authentic. Different speakers bring different perspectives.
-
-### 4. Multiple TTS Providers
-You're not locked into one voice provider.
-
-**Why?**
-- Cost optimization (some providers cheaper)
-- Quality preferences (some voices more natural)
-- Privacy options (local TTS for sensitive content)
-- Accessibility (different accents, genders, styles)
-
-### 5. Local TTS Option
-Can generate podcasts entirely offline with local text-to-speech.
-
-**Why?** For sensitive research, never send audio to external APIs.
-
----
-
-## Use Cases Show Why This Matters
-
-### Academic Publishing
-```
-Traditional: Academic paper → PDF
-Problem: Hard to consume, linear reading required
-
-Open Notebook:
-Research materials → Podcast (expert explaining methodology)
-                  → Podcast (debate format: different interpretations)
-                  → Different consumption for different audiences
-```
-
-### Content Creation
-```
-Blog creator: Has research pile on a topic
-Problem: Doesn't have time to write the article
-
-Solution:
-Add research → Create podcast → Transcribe → Becomes article
-OR: Podcast BECOMES the content (upload to podcast platforms)
-```
-
-### Educational Content
-```
-Educator: Has reading materials for a course
-Problem: Students don't read the papers
-
-Solution:
-Create podcast with expert explaining papers
-Students listen → Better engagement → Discussions can reference podcast
-```
-
-### Market Research
-```
-Product manager: Has interviews with customers
-Problem: Too many hours of audio to review
-
-Solution:
-Create podcast with debate format (customer perspective vs. team perspective)
-Much more engaging than raw transcripts
-```
-
-### Knowledge Transfer
-```
-Domain expert: Leaving the organization
-Problem: How to preserve expertise?
-
-Solution:
-Create expert-mode podcast explaining frameworks, decision-making, context
-New team member listens, gets context faster than reading 100 documents
-```
-
----
-
-## The Difference: Active vs. Passive Learning
-
-### Text-Based Research (Active)
-- **Effort**: High (must focus, read, synthesize)
-- **When**: Dedicated study time
-- **Cost**: Time is expensive (can't multitask)
-- **Best for**: Deep dives, precise information
-- **Format**: Whatever you write (notes, articles, books)
-
-### Audio Podcast (Passive)
-- **Effort**: Low (just listen)
-- **When**: Anywhere, anytime
-- **Cost**: Low (can multitask)
-- **Best for**: Overview, context, exploration
-- **Format**: Dialogue (more engaging than narration)
-
-**They complement each other:**
-1. **First encounter**: Listen to podcast (passive, get context)
-2. **Deep dive**: Read source materials (active, precise)
-3. **Mastery**: Both together (understand big picture + details)
-
----
-
-## How Podcasts Fit Into Your Workflow
-
-```
-1. Build notebook (add sources)
-   ↓
-2. Apply transformations (extract insights)
-   ↓
-3. Chat/Ask (explore content)
-   ↓
-4. Decide on podcast
-   ├─→ Create speaker profiles
-   ├─→ Define episode profile
-   ├─→ Configure voice models (from model registry)
-   └─→ Generate podcast
-   ↓
-5. Listen while commuting/exercising
-   ↓
-6. Reference sources for deep dive
-   ↓
-7. Repeat for different formats/speakers/focus
-```
-
----
-
-## Advanced: Multiple Podcasts from Same Research
-
-You can create different podcasts from the same sources:
-
-### Example: AI Safety Research
-```
-Podcast 1: "Expert Monologue"
-  Speaker: Researcher explaining field
-  Format: Educational, comprehensive
-  Audience: Students new to field
-
-Podcast 2: "Debate Format"
-  Speakers: Optimist vs. skeptic
-  Format: Discussion of tradeoffs
-  Audience: Advanced researchers
-
-Podcast 3: "Interview Format"
-  Speakers: Journalist + expert
-  Format: Q&A about practical applications
-  Audience: Industry practitioners
-```
-
-Each tells the same story from different angles.
-
----
-
-## Privacy & Data Considerations
-
-### Where Your Data Goes
-
-**Option 1: Cloud TTS (Faster, Higher Quality)**
-```
-Your outline → API call to TTS provider
-            → Audio returned
-            → Stored in your notebook
-
-Provider sees: Your outlined script (not raw sources)
-Privacy level: Medium (outline is shared, sources aren't)
-```
-
-**Option 2: Local TTS (Slower, Maximum Privacy)**
-```
-Your outline → Local TTS engine (runs on your machine)
-            → Audio generated locally
-            → Stored in your notebook
-
-Provider sees: Nothing
-Privacy level: Maximum (everything local)
-```
-
-### Recommendation
-- **Sensitive research**: Use local TTS, no API calls
-- **Less sensitive**: Use ElevenLabs or Google (both handle audio data professionally)
-- **Mixed**: Use local TTS for speakers reading sensitive content
-
----
-
-## Cost Considerations
-
-### Cloud TTS Costs
-| Provider | Cost | Quality | Speed |
-|----------|------|---------|-------|
-| OpenAI | ~$0.015 per minute | Good | Fast |
-| Google | ~$0.004 per minute | Excellent | Fast |
-| ElevenLabs | ~$0.10 per minute | Exceptional | Medium |
-| Local TTS | Free | Basic | Slow |
-
-A 30-minute podcast costs:
-- OpenAI: ~$0.45
-- Google: ~$0.12
-- ElevenLabs: ~$3.00
-- Local: Free (but slow)
-
----
-
-## Summary: Why Podcasts Are Special
-
-**Podcasts transform your research consumption:**
-
-| Aspect | Text | Podcast |
-|--------|------|---------|
-| **How consumed?** | Active reading | Passive listening |
-| **Where consumed?** | Desk | Anywhere |
-| **Multitasking** | Hard | Easy |
-| **Time commitment** | Scheduled | Flexible |
-| **Format** | Whatever | Natural dialogue |
-| **Engagement** | Academic | Conversational |
-| **Accessibility** | Text-based | Audio-based |
-
-**In Open Notebook specifically:**
-- **Full customization** — you create speakers and format
-- **Privacy options** — local TTS for sensitive content
-- **Cost control** — choose TTS provider based on budget
-- **Non-blocking** — generates in background
-- **Multiple versions** — create different podcasts from same research
-
-This is why podcasts matter: they change *when* and *how* you can consume your research.
+Unconfigured profiles you are *not* using don't block generation; they are skipped.

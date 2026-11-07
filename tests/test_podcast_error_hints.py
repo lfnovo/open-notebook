@@ -50,7 +50,7 @@ class TestExplainGenerationFailure:
         )
         assert hint is not None
         assert "voice_id" in hint
-        assert "Speaker Profiles" in hint
+        assert "Podcasts -> Profiles" in hint
 
     @pytest.mark.parametrize(
         "message",

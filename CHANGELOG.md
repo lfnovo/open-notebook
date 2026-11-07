@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- The provider credential dialog (Manage → Models → Add configuration) fits on short screens. It is capped at 90% of the window height and the form scrolls inside it, so the title, the close button and the Save/Cancel buttons stay reachable (#1507)
+- Transformation deletion confirmations no longer show a source-deletion title (#1402)
+
+## [1.15.1] - 2026-11-03
+
+### Changed
+- **Documentation rewritten against the code.** Every page under `docs/` was checked against v1.15.0 and rewritten where it described an older or imagined product (#1458, #1459, #1460, #1461):
+  - **Install:** one canonical path built on the shipped `docker-compose.yml`, with small override files for the Ollama and LM Studio variants. The network-exposure warning (bind ports to `127.0.0.1` or set a password) comes before the first `docker compose up -d`. Example encryption keys are generated, never copied. First-run setup lives in one place, [Connect a provider](docs/4-AI-PROVIDERS/index.md#connect-a-provider), and ends in a working chat via **Auto-assign Defaults**. The provider table is built from the provider registry: 24 providers, with the model types each one offers
+  - **User guide and concepts:** insights are a first-class concept and the context mode is *Insights only*. Ask is described as three stages. UI labels match the current app. Invented features are gone (tags, export/share, batch transformations, page-number citations and others). About 6,200 lines became about 1,450
+  - **Configuration and troubleshooting:** `environment-reference.md` is the one complete list of variables, each marked with which process reads it. Troubleshooting entries start from the exact error message the app shows; a new page covers source processing and podcast failures. Security docs cover PBKDF2 credential encryption and the back-up-before-migrating warning
+  - **Development:** `architecture.md`, `testing.md`, `api-reference.md` and `code-standards.md` are rewritten from the code. A new playbook covers adding an AI provider. Dev setup lives on one page. The AGENTS files agree with the docs. Contributor conventions (Conventional Commits, CHANGELOG sections, pre-PR checks that match CI) are documented
+
+### Fixed
+- **Docs no longer recommend settings that do nothing.** `API_CLIENT_TIMEOUT` was never read by Open Notebook; the timeout guidance now covers what actually applies: `ESPERANTO_LLM_TIMEOUT` per model call (keep it below 600) and the web UI's 10-minute request limit (`NEXT_PUBLIC_API_TIMEOUT_MS`, build time only). Remaining `SURREAL_COMMANDS_MAX_TASKS` advice now uses `OPEN_NOTEBOOK_WORKER_MAX_TASKS`. Docker instructions no longer say to edit `.env` and `docker compose restart`: the shipped compose file doesn't load `.env` into the container and `restart` doesn't reload environment changes, so they now point to the `open_notebook` service's `environment:` block and `docker compose up -d`
+- **Timeouts no longer read as connection failures.** A model that doesn't answer within `ESPERANTO_LLM_TIMEOUT` used to report "Could not connect to the AI provider"; it now says the provider took too long and how to raise the limit. Connection failures (including connect timeouts) keep the old message
+- Error hints point to screens that exist: an authentication failure sends you to Manage → Models (not "Settings → Credentials"), and an unsupported podcast voice to Podcasts → Profiles. The empty Podcasts page points to the Generate Podcast button instead of chat screens that can't start a podcast
+- **Italian is selectable in the language menu**, and dates are formatted in Italian. The menu now lists every registered language, so a new translation can't be left out again
+- `make start-all` starts SurrealDB again (it pointed to a compose file removed long ago)
+- The legacy `SURREAL_ADDRESS` / `SURREAL_PORT` fallback builds a valid database URL (`ws://host:port/rpc`, was `ws://host/rpc:port`); an address that already includes the port is kept as is
+- `.env.example` names the chunking variables Open Notebook actually reads (`OPEN_NOTEBOOK_CHUNK_SIZE` / `OPEN_NOTEBOOK_CHUNK_OVERLAP`)
+
+### Removed
+- `POST /api/commands/jobs`, the generic "submit any background command" endpoint. Nothing in Open Notebook used it; every operation has its own endpoint. Job status (`GET /api/commands/jobs/{job_id}`) is unchanged.
+
+### Security
+- Source processing now enforces the uploads-directory and URL checks in the background worker itself, so they apply on every path that processes a source, not only when a source is created.
+- Requires `content-core` 2.2.1 or later, which refuses link-local and cloud-metadata addresses on every redirect hop when fetching URLs.
+
+## [1.15.0] - 2026-10-04
+
 ### Added
 - **OpenDocument uploads and YouTube unblocking options.** `.odt`, `.ods` and `.odp` files (and `.htm`) can be uploaded as sources (content-core 2.2). New content-core settings are documented: `CCORE_YOUTUBE_PROXY` and `CCORE_YOUTUBE_COOKIES_FILE` get YouTube transcripts through when YouTube blocks the server's IP, and `CCORE_AUDIO_SEGMENT_MINUTES` controls how long audio is split for transcription (#1439)
 - **SiliconFlow and Z.ai providers.** Both are available in Manage → Models with credential setup, connection test and model discovery (language models). SiliconFlow serves hosted DeepSeek, Qwen, GLM and Kimi models; mainland China accounts set the credential's Base URL to `https://api.siliconflow.cn/v1`. Z.ai serves the GLM family. Model discovery honors their Base URL override (from the credential or `SILICONFLOW_BASE_URL` / `ZAI_BASE_URL`), as it already did for OpenAI (#1409, #1437)
@@ -25,8 +56,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Credential encryption now uses PBKDF2-HMAC-SHA256 (600k iterations) with versioned `pbkdf2v1:` ciphertext.** New keys are written in the new format; legacy values keep decrypting, and a one-shot `POST /api/credentials/migrate-encryption` pass upgrades stored keys (idempotent, fail-closed per record). Downgrade warning: versions predating this change cannot read the new format — back up the database before migrating (#1317)
 
 ### Fixed
+- **Podcasts generate on a fresh install again.** Generation hands every speaker profile to podcast-creator, which requires a voice model on each; the seeded profiles ship without one, so any unconfigured profile failed every podcast with `validation errors for SpeakerConfig`, even when generating with a complete profile. Speaker profiles without a voice model are now left out of the config (with a warning), like unresolvable episode profiles already were; the selected profile still fails early with a clear error if it has no voice model (#1450)
 - **The worker no longer stalls when a source is deleted before it is processed.** `Source.get()` raises `NotFoundError` for a missing record, so the job was retried as a transient failure (up to 15 attempts with backoff) and every job behind it waited; a missing source or transformation now fails the job immediately. Relatedly, loading a record no longer reports a database failure (e.g. a SurrealDB transaction conflict) as "not found": it raises a database error, so it stays retryable in jobs and returns 500 instead of 404 in the API (#1363)
-- **Model calls default to a 180-second timeout.** esperanto 2.28 now enforces `ESPERANTO_LLM_TIMEOUT` on every provider (60 s by default); before, most providers used their SDK default and Ollama waited indefinitely. Open Notebook now sets 180 s when the variable is unset, so long answers and slower models aren't cut off at 60 s. **Ollama and other slow local setups** that relied on unlimited waits should set `ESPERANTO_LLM_TIMEOUT` (and `API_CLIENT_TIMEOUT` above it) explicitly (#1434)
+- **Model calls default to a 180-second timeout.** esperanto 2.28 now enforces `ESPERANTO_LLM_TIMEOUT` on every provider (60 s by default); before, most providers used their SDK default and Ollama waited indefinitely. Open Notebook now sets 180 s when the variable is unset, so long answers and slower models aren't cut off at 60 s. **Ollama and other slow local setups** that relied on unlimited waits should set `ESPERANTO_LLM_TIMEOUT` explicitly, below 600 s (the web UI's request timeout) (#1434)
 - Batch large embedding inserts into groups of 50 records and reuse one database connection across batches to reduce oversized WebSocket payloads and repeated sign-ins.
 - `GET /api/notebooks` now normalizes `order_by` through the shared `_validate_order_by()` guard, keeping its stricter `name`/`created`/`updated` allowlist on top, so the two ORDER BY validators can no longer drift (#1416)
 - **Source chat no longer repeats earlier answers in the streamed reply.** The stream sent every AI message in the checkpointed history, so the second and later answers arrived concatenated with all previous ones; it now sends only the new answer. The context badge ("1 Sources") is also restored from the saved session after a page refresh (#1393)

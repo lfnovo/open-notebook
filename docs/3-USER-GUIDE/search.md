@@ -1,507 +1,86 @@
-# Search Effectively - Finding What You Need
+# Search and Ask - Finding What You Need
 
-Search is your gateway into your research. This guide covers two search modes and when to use each.
+Search and Ask live on the **Ask and Search** page (sidebar, under **Process**). Both work across your whole knowledge base, or only the notebooks you pick. There is no separate search box inside a notebook.
 
----
+You can also start either from **Quick actions** (**Ctrl+K** / **⌘K**): type a query and choose *Search results for "..."* or *Ask about "..."*.
 
-## Quick-Start: Find Something
+| | Search | Ask (beta) |
+|---|---|---|
+| **Gives you** | A list of matching sources, insights and notes | One written answer with citations |
+| **Uses an AI model** | Vector search uses the embedding model; text search uses none | Embedding model plus a language model for each stage |
+| **Best for** | Finding a passage, term or document | Questions whose answer is spread across sources |
 
-### Simple Search
-
-```
-1. Go to your notebook
-2. Type in search box
-3. See results (both sources and notes)
-4. Click result to view source/note
-5. Done!
-
-That works for basic searches.
-But you can do much better...
-```
+How both work under the hood is explained in [AI Context & RAG](../2-CORE-CONCEPTS/ai-context-rag.md#search-text-vs-vector).
 
 ---
 
-## Two Search Modes Explained
+## Search
 
-Open Notebook has two fundamentally different search approaches.
+1. Open **Ask and Search** and choose the **Search** tab.
+2. Type your query and press **Enter**.
+3. Adjust if needed:
+   - **Search Type**: **Text Search** or **Vector Search**.
+   - **Search In**: **Search Sources** and/or **Search Notes**.
+   - **Notebooks**: pick notebooks to limit the search, or leave all unchecked to search everything.
 
-### Search Type 1: TEXT SEARCH (Keyword Matching)
+Results show how many were found; click a result to open the source, note or insight. Where available, a result also lists its **Matches** (the matching passages).
 
-**How it works:**
-- You search for words: "transformer"
-- System finds chunks containing "transformer"
-- Ranked by relevance: frequency, position, context
+### Text Search vs. Vector Search
 
-**Speed:** Very fast (instant)
+| | Text Search | Vector Search |
+|---|---|---|
+| **Matches** | Exact words (with English stemming) | Meaning, by similarity |
+| **Covers** | Source titles and content, insights, note titles and content | Source content, insights, note content (not titles) |
+| **Needs** | Nothing | An Embedding Model, and only finds embedded content |
+| **Use when** | You know the term, name or phrase | You know the idea but not the wording |
 
-**When to use:**
-- You remember exact words or phrases
-- You're looking for specific terms
-- You want precise keyword matches
-- You need exact quotes
+If no Embedding Model is set, the page says *Vector search requires an embedding model. Only text search is available.*
 
-**Example:**
-```
-Search: "attention mechanism"
-Results:
-  1. "The attention mechanism allows..." (perfect match)
-  2. "Attention and other mechanisms..." (partial match)
-  3. "How mechanisms work in attention..." (includes words separately)
-
-All contain "attention" AND "mechanism"
-Ranked by how close together they are
-```
-
-**What it finds:**
-- Exact phrases: "transformer model"
-- Individual words: transformer OR model (too broad)
-- Names: "Vaswani et al."
-- Numbers: "1994", "GPT-4"
-- Technical terms: "LSTM", "convolution"
-
-**What it doesn't find:**
-- Similar words: searching "attention" won't find "focus"
-- Synonyms: searching "large" won't find "big"
-- Concepts: searching "similarity" won't find "likeness"
-
-**Content searched:**
-Text search looks through:
-- **Source titles** — matching keywords in source names
-- **Source content** — the full text and its chunks
-- **Insights** — content generated from sources (e.g., dense summaries)
-- **Note titles** — matching keywords in note names
-- **Note content** — the body of your notes
+**Tips:**
+- Text search works best with distinctive words: names, acronyms, technical terms.
+- Vector search works best with a descriptive phrase ("risks of relying on a single supplier") rather than one word.
+- A source you can find with text search but not vector search probably isn't embedded. Open it and use **Embed Content**.
 
 ---
 
-### Search Type 2: VECTOR SEARCH (Semantic/Concept Matching)
+## Ask
 
-**How it works:**
-- Your search converted to embedding (vector)
-- All chunks converted to embeddings
-- System finds most similar embeddings
-- Ranked by semantic similarity
+1. Open **Ask and Search** and stay on the **Ask (beta)** tab.
+2. Type your question.
+3. Optionally limit it to some **Notebooks** (leave all unchecked for your whole knowledge base).
+4. Press **Cmd/Ctrl+Enter** or click **Ask**.
 
-**Speed:** A bit slower (1-2 seconds)
+While it runs, you'll see the stages as they finish:
 
-**When to use:**
-- You're exploring a concept
-- You don't know exact words
-- You want semantically similar content
-- You're discovering, not searching
+- **Strategy**: the model's reasoning and the **Search Terms** it chose (up to five searches).
+- **Individual Answers**: one partial answer per search, based on the top matches.
+- **Final Answer**: the combined answer, with links to the cited items.
 
-**Example:**
-```
-Search: "What's the mechanism for understanding in models?"
-(Notice: No chunk likely says exactly that)
+Click **Save to Notebooks** to keep the answer as a note (titled with your question) in one or more notebooks.
 
-Results:
-  1. "Mechanistic interpretability allows understanding..." (semantic match)
-  2. "Feature attribution reveals how models work..." (conceptually similar)
-  3. "Attention visualization shows model decisions..." (same topic)
+### Requirements
 
-None contain your exact words
-But all are semantically related
-```
+- **An Embedding Model** must be set. Without one, the Ask tab says *You can't use this feature because you have no embedding model selected.*
+- **A Chat Model** must be set; it is used for all three stages by default.
+- Ask only sees **embedded** content (sources added with embedding enabled, notes and insights).
 
-**What it finds:**
-- Similar concepts: "understanding" + "interpretation" + "explainability" (all related)
-- Paraphrases: "big" and "large" (same meaning)
-- Related ideas: "safety" relates to "alignment" (connected concepts)
-- Analogies: content about biological learning when searching "learning"
+### Choosing models
 
-**What it doesn't find:**
-- Exact keywords: if you search a rare word, vector search might miss it
-- Specific numbers: "1994" vs "1993" are semantically different
-- Technical jargon: "LSTM" and "RNN" are different even if related
+The tab shows **Using Default Models** or **Using Custom Models**. Click **Advanced** to open **Advanced Model Selection** and choose a **Strategy Model**, **Answer Model** and **Final Answer Model**, then **Save Changes**. The strategy step needs a model that reliably returns structured output; if it fails with *The strategy model returned no search terms for this question...*, pick a different Strategy Model or rephrase.
 
-**Content searched:**
-Vector search compares your query against embeddings of:
-- **Source content** — source chunks (embeddings)
-- **Insights** — content generated from sources (embeddings)
-- **Note content** — the body of your notes (embeddings)
+### When to use Ask
 
-Vector search works on embedded content only, so source and note *titles* are not matched semantically.
+- Use Ask when you don't know which sources contain the answer.
+- Ask is single-turn. To follow up, open a notebook and use [Chat](chat-effectively.md) with the sources Ask cited.
+- Answers come only from matched chunks, so they can miss context that is spread thinly across a document. For close reading, use Chat with *Full content*.
 
 ---
 
-## Decision: Text Search vs. Vector Search?
-
-```
-Question: "Do I remember the exact words?"
-
-→ YES: Use TEXT SEARCH
-   Example: "I remember the paper said 'attention is all you need'"
-
-→ NO: Use VECTOR SEARCH
-   Example: "I'm looking for content about how models process information"
-
-→ UNSURE: Try TEXT SEARCH first (faster)
-         If no results, try VECTOR SEARCH
-
-Text search: "I know what I'm looking for"
-Vector search: "I'm exploring an idea"
-```
-
----
-
-## Step-by-Step: Using Each Search
-
-### Text Search
-
-```
-1. Go to search box
-2. Type your keywords: "transformer", "attention", "2017"
-3. Press Enter
-4. Results appear (usually instant)
-5. Click result to see context
-
-Results show:
-  - Which source contains it
-  - How many times it appears
-  - Relevance score
-  - Preview of surrounding text
-```
-
-### Vector Search
-
-```
-1. Go to search box
-2. Type your concept: "How do models understand language?"
-3. Choose "Vector Search" from dropdown
-4. Press Enter
-5. Results appear (1-2 seconds)
-6. Click result to see context
-
-Results show:
-  - Semantically related chunks
-  - Similarity score (higher = more related)
-  - Preview of surrounding text
-  - Different sources mixed together
-```
-
-### Scoping to Notebooks
-
-By default Search and Ask look at your **whole knowledge base** — every source and note in every notebook. To narrow the scope, open the **Notebooks** selector above the search options and check one or more notebooks:
-
-```
-1. Open the Notebooks selector (it reads "All notebooks" until you pick one)
-2. Check the notebook(s) you want to search
-3. Run your Search or Ask as usual
-4. Click "Clear" to go back to the whole knowledge base
-```
-
-The scope is shared by the Search and Ask tabs, so a question asked right after a scoped search uses the same notebooks. Only sources and notes linked to the selected notebooks are considered; a source that lives in several notebooks matches when any of them is selected.
-
-For API clients, pass `notebook_ids` (a list) or `notebook_id` (a single id) to `POST /api/search` and `POST /api/search/ask`. Omitting both keeps the global behavior. An id that does not name an existing notebook returns `404`.
-
----
-
-## The Ask Feature (Automated Search)
-
-Ask is different from simple search. It automatically searches, synthesizes, and answers.
-
-### How Ask Works
-
-```
-Stage 1: QUESTION UNDERSTANDING
-  "Compare the approaches in my papers"
-  → System: "This asks for comparison"
-
-Stage 2: SEARCH STRATEGY
-  → System: "I should search for each approach separately"
-
-Stage 3: PARALLEL SEARCHES
-  → Search 1: "Approach in paper A"
-  → Search 2: "Approach in paper B"
-  (Multiple searches happen at once)
-
-Stage 4: ANALYSIS & SYNTHESIS
-  → Per-result analysis: "Based on paper A, the approach is..."
-  → Per-result analysis: "Based on paper B, the approach is..."
-  → Final synthesis: "Comparing A and B: A differs from B in..."
-
-Result: Comprehensive answer, not just search results
-```
-
-### When to Use Ask vs. Simple Search
-
-| Task | Use | Why |
-|------|-----|-----|
-| "Find the quote about X" | **TEXT SEARCH** | Need exact words |
-| "What does source A say about X?" | **TEXT SEARCH** | Direct, fast answer |
-| "Find content about X" | **VECTOR SEARCH** | Semantic discovery |
-| "Compare A and B" | **ASK** | Comprehensive synthesis |
-| "What's the big picture?" | **ASK** | Full analysis needed |
-| "How do these sources relate?" | **ASK** | Cross-source synthesis |
-| "I remember something about X" | **TEXT SEARCH** | Recall memory |
-| "I'm exploring the topic of X" | **VECTOR SEARCH** | Discovery mode |
-
----
-
-## Advanced Search Strategies
-
-### Strategy 1: Simple Search with Follow-Up
-
-```
-1. Text search: "attention mechanism"
-   Results: 50 matches
-
-2. Too many. Follow up with vector search:
-   "Why is attention useful?" (concept search)
-   Results: Most relevant papers/notes
-
-3. Better results with less noise
-```
-
-### Strategy 2: Ask for Comprehensive, Then Search for Details
-
-```
-1. Ask: "What are the main approaches to X?"
-   Result: Comprehensive answer about A, B, C
-
-2. Use that to identify specific sources
-
-3. Text search in those specific sources:
-   "Why did they choose method X?"
-   Result: Detailed information
-```
-
-### Strategy 3: Vector Search for Discovery, Text for Verification
-
-```
-1. Vector search: "How do transformers generalize?"
-   Results: Related conceptual papers
-
-2. Skim to understand landscape
-
-3. Text search in promising sources:
-   "generalization", "extrapolation", "transfer"
-   Results: Specific passages to read carefully
-```
-
-### Strategy 4: Combine Search with Chat
-
-```
-1. Vector search: "What's new in AI 2026?"
-   Results: Latest papers
-
-2. Go to Chat
-3. Add those papers to context
-4. Ask detailed follow-up questions
-5. Get deep analysis of results
-```
-
----
-
-## Search Quality Issues & Fixes
-
-### Getting No Results
-
-| Problem | Cause | Solution |
-|---------|-------|----------|
-| Text search: no results | Word doesn't appear | Try vector search instead |
-| Vector search: no results | Concept not in content | Try broader search term |
-| Both empty | Content not in notebook | Add sources to notebook |
-| | Sources not processed | Wait for processing to complete |
-
-### Getting Too Many Results
-
-| Problem | Cause | Solution |
-|---------|-------|----------|
-| 1000+ results | Search too broad | Be more specific |
-| | All notebooks | Scope the search to one or a few notebooks |
-| | All sources | Filter by source |
-| | Keyword matches rare words | Use vector search instead |
-
-### Getting Wrong Results
-
-| Problem | Cause | Solution |
-|---------|-------|----------|
-| Results irrelevant | Search term has multiple meanings | Provide more context |
-| | Using text search for concepts | Try vector search |
-| Different meaning | Homonym (word means multiple things) | Add context (e.g., "attention mechanism") |
-
-### Getting Low Quality Results
-
-| Problem | Cause | Solution |
-|---------|-------|----------|
-| Results don't match intent | Vague search term | Be specific ("Who invented X?" vs "X") |
-| | Concept not well-represented | Add more sources on that topic |
-| | Vector embedding not trained on domain | Use text search as fallback |
-
----
-
-## Tips for Better Searches
-
-### For Text Search
-1. **Be specific** — "attention mechanism" not just "attention"
-2. **Use exact phrases** — Put quotes around: "attention is all you need"
-3. **Include context** — "LSTM vs attention" not just "attention"
-4. **Use technical terms** — These are usually more precise
-5. **Try synonyms** — If first search fails, try related terms
-
-### For Vector Search
-1. **Ask a question** — "What's the best way to X?" is better than "best way"
-2. **Use natural language** — Explain what you're looking for
-3. **Be specific about intent** — "Compare X and Y" not "X and Y"
-4. **Include context** — "In machine learning, how..." vs just "how..."
-5. **Think conceptually** — What idea are you exploring?
-
-### General Tips
-1. **Start broad, then narrow** — "AI papers" → "transformers" → "attention mechanism"
-2. **Try both search types** — Each finds different things
-3. **Use Ask for complex questions** — Don't just search
-4. **Save good results as notes** — Create knowledge base
-5. **Filter by source if needed** — "Search in Paper A only"
-
----
-
-## Search Examples
-
-### Example 1: Finding a Specific Fact
-
-**Goal:** "Find the date the transformer was introduced"
-
-```
-Step 1: Text search
-  "transformer 2017" (or year you remember)
-
-If that works: Done!
-
-If no results: Try
-  "attention is all you need" (famous paper title)
-
-Check result for exact date
-```
-
-### Example 2: Exploring a Concept
-
-**Goal:** "Find content about alignment interpretability"
-
-```
-Step 1: Vector search
-  "How do we make AI interpretable?"
-
-Results: Papers on interpretability, transparency, alignment
-
-Step 2: Review results
-  See which papers are most relevant
-
-Step 3: Deep dive
-  Go to Chat, add top 2-3 papers
-  Ask detailed questions about alignment
-```
-
-### Example 3: Comprehensive Answer
-
-**Goal:** "How do different approaches to AI safety compare?"
-
-```
-Step 1: Ask
-  "Compare the main approaches to AI safety in my sources"
-
-Result: Comprehensive analysis comparing approaches
-
-Step 2: Identify sources
-  From answer, see which papers were most relevant
-
-Step 3: Deep dive
-  Text search in those papers:
-  "limitations", "critiques", "open problems"
-
-Step 4: Save as notes
-  Create comparison note from Ask result
-```
-
-### Example 4: Finding Pattern
-
-**Goal:** "Find all papers mentioning transformers"
-
-```
-Step 1: Text search
-  "transformer"
-
-Results: All papers mentioning "transformer"
-
-Step 2: Vector search
-  "neural network architecture for sequence processing"
-
-Results: Papers that don't say "transformer" but discuss similar concept
-
-Step 3: Combine
-  Union of text + vector results shows full landscape
-
-Step 4: Analyze
-  Go to Chat with all results
-  Ask: "What's common across all these?"
-```
-
----
-
-## Search in the Workflow
-
-How search fits with other features:
-
-```
-SOURCES
-  ↓
-SEARCH (find what matters)
-  ├─ Text search (precise)
-  ├─ Vector search (exploration)
-  └─ Ask (comprehensive)
-  ↓
-CHAT (explore with follow-ups)
-  ↓
-TRANSFORMATIONS (batch extract)
-  ↓
-NOTES (save insights)
-```
-
-### Workflow Example
-
-```
-1. Add 10 papers to notebook
-
-2. Search: "What's the state of the art?"
-   (Vector search explores landscape)
-
-3. Ask: "Compare these 3 approaches"
-   (Comprehensive synthesis)
-
-4. Chat: Deep questions about winner
-   (Follow-up exploration)
-
-5. Save best insights as notes
-   (Knowledge capture)
-
-6. Transform remaining papers
-   (Batch extraction for later)
-
-7. Create podcast from notes + sources
-   (Share findings)
-```
-
----
-
-## Summary: Know Your Search
-
-**TEXT SEARCH** — "I know what I'm looking for"
-- Fast, precise, keyword-based
-- Use when you remember exact words/phrases
-- Best for: Finding specific facts, quotes, technical terms
-- Speed: Instant
-
-**VECTOR SEARCH** — "I'm exploring an idea"
-- Slow-ish, concept-based, semantic
-- Use when you're discovering connections
-- Best for: Concept exploration, related ideas, synonyms
-- Speed: 1-2 seconds
-
-**ASK** — "I want a comprehensive answer"
-- Auto-searches, auto-analyzes, synthesizes
-- Use for complex questions needing multiple sources
-- Best for: Comparisons, big-picture questions, synthesis
-- Speed: 10-30 seconds
-
-Pick the right tool for your search goal, and you'll find what you need faster.
+## Troubleshooting
+
+| Problem | Try |
+|---------|-----|
+| No results in vector search or Ask | Check that an Embedding Model is set and the sources are embedded; rebuild from **Advanced → Rebuild Embeddings** if you changed the embedding model |
+| Text search misses a word | Try another form of the word or a synonym; stemming is English-only |
+| Too many results | Limit to specific notebooks, or turn off **Search Sources** or **Search Notes** |
+| Ask answer is empty or fails | Pick other models under **Advanced**; reasoning models with small output limits can return nothing |

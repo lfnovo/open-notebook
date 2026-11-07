@@ -7,7 +7,7 @@ How Open Notebook stores, encrypts and provisions AI provider credentials — fr
 Users can configure provider credentials through the UI instead of environment variables. Keys are stored as individual `Credential` records in SurrealDB, encrypted with Fernet, and resolved at model-provisioning time with a database-first, environment-variable-fallback strategy.
 
 ```
-Settings UI ──► /credentials API ──► Credential record (encrypted, SurrealDB)
+Manage → Models ──► /api/credentials ──► Credential record (encrypted, SurrealDB)
                                           │
                 Model record ──credential─┘        (preferred: direct link)
                      │
@@ -36,7 +36,7 @@ Settings UI ──► /credentials API ──► Credential record (encrypted, S
 
 CRUD plus lifecycle operations: `POST /credentials/{id}/test` (connection check), `/discover` (list available models), `/register-models` (create Model records from discovery), and three migration endpoints (`/migrate-from-env`, `/migrate-from-provider-config`, `/migrate-encryption`). Swagger at `/docs` documents the shapes.
 
-**Supported providers (24)** are defined once in the provider registry (`open_notebook/ai/provider_registry.py` `PROVIDERS`) — env vars, modalities, test models, discovery URLs and docs links all live there, and `connection_tester.TEST_MODELS`, `credentials_service.PROVIDER_ENV_CONFIG`/`PROVIDER_MODALITIES` and `model_discovery.OPENAI_COMPAT_PROVIDERS` are derived from it. `GET /api/providers` exposes the registry to clients — the frontend fetches it at runtime (`useProviders()` in `frontend/src/lib/hooks/use-providers.ts`) and renders providers in response order (the registry declaration order). Manual copies remain: the `SupportedProvider` Literal in `api/models.py` (typing can't be derived at runtime; enforced by `tests/test_credential_provider_validation.py`), plus a simple provider's entry in `PROVIDER_CONFIG` (`open_notebook/ai/key_provider.py`) and in the `env_var_map` of `get_provider_availability()` (`api/routers/models.py`). Add all three when adding a provider:
+**Supported providers (24)** are defined once in the provider registry (`open_notebook/ai/provider_registry.py` `PROVIDERS`) — env vars, modalities, test models, discovery URLs and docs links all live there, and `connection_tester.TEST_MODELS`, `credentials_service.PROVIDER_ENV_CONFIG`/`PROVIDER_MODALITIES` and `model_discovery.OPENAI_COMPAT_PROVIDERS` are derived from it. `GET /api/providers` exposes the registry to clients — the frontend fetches it at runtime (`useProviders()` in `frontend/src/lib/hooks/use-providers.ts`) and renders providers in response order (the registry declaration order). Some copies are still hand-maintained (the `SupportedProvider` Literal in `api/models.py`, `PROVIDER_CONFIG` in `open_notebook/ai/key_provider.py`, the `env_var_map` in `api/routers/models.py`, and the discovery functions in `open_notebook/ai/model_discovery.py`). Tests catch a missing Literal entry or discovery entry; nothing catches a missing `PROVIDER_CONFIG` or `env_var_map` entry. The full list of edits is in the [Add an AI provider](change-playbooks.md#playbook-add-an-ai-provider) playbook. Providers by setup shape:
 
 - Simple API key: openai, anthropic, google, groq, mistral, deepseek, xai, openrouter, dashscope, minimax, novita, siliconflow, zai, ppq, cohere, voyage, elevenlabs, deepgram (siliconflow and zai also accept an optional `*_BASE_URL` endpoint override)
 - URL-based: ollama, omlx
@@ -59,7 +59,7 @@ CRUD plus lifecycle operations: `POST /credentials/{id}/test` (connection check)
 
 ## Migration paths
 
-Both migration endpoints are idempotent summaries (`migrated` / `skipped` / `errors`):
+The three migration endpoints are idempotent and return summaries (`migrated` / `skipped` / `errors`):
 
 - **From env vars**: creates Credential records for providers whose env vars are set.
 - **From legacy ProviderConfig**: converts old singleton records into individual Credentials.

@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Arabic README.** An Arabic translation of the README is at [docs/i18n/ar/README.md](docs/i18n/ar/README.md), linked from the README's language bar (#1551)
+- **Turkish README.** A Turkish translation of the README is at [docs/i18n/tr/README.md](docs/i18n/tr/README.md), linked from the README's language bar (#1549)
+
+### Fixed
+- The provider credential dialog (Manage → Models → Add configuration) fits on short screens. It is capped at 90% of the window height and the form scrolls inside it, so the title, the close button and the Save/Cancel buttons stay reachable (#1507)
+- Transformation deletion confirmations no longer show a source-deletion title (#1402)
 
 ## [1.15.1] - 2026-11-03
 

@@ -13,7 +13,7 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from api.command_service import CommandService
-from api.models import SourceCreate
+from api.models import SourceCreate, SourceUpdate
 from open_notebook.domain.notebook import Source
 from open_notebook.exceptions import InvalidInputError
 
@@ -52,6 +52,27 @@ def test_source_create_accepts_text_without_nul_byte():
     assert SourceCreate(type="text", content="page one\npage two").content
 
 
+@pytest.mark.parametrize("data", [{"title": NUL_TEXT}, {"topics": ["ok", NUL_TEXT]}])
+def test_source_update_rejects_nul_byte(data):
+    with pytest.raises(ValidationError, match="NUL byte"):
+        SourceUpdate(**data)
+
+
+def test_source_update_with_nul_byte_is_not_saved(client):
+    with (
+        patch(
+            "api.routers.sources.Source.get", AsyncMock(return_value=Source(title="a"))
+        ),
+        patch.object(Source, "save", AsyncMock()) as save,
+        patch.object(Source, "get_embedded_chunks", AsyncMock(return_value=0)),
+    ):
+        response = client.put("/api/sources/source:abc", json={"title": NUL_TEXT})
+
+    assert response.status_code == 422
+    assert "NUL byte" in response.text
+    save.assert_not_awaited()
+
+
 @pytest.mark.parametrize("async_processing", [True, False])
 def test_json_request_with_nul_byte_leaves_no_command_row(
     client, db_writes, async_processing
@@ -84,9 +105,17 @@ def test_form_request_with_nul_byte_leaves_no_command_row(client, db_writes):
 
 
 @pytest.mark.asyncio
-async def test_submit_command_job_refuses_nested_nul_byte():
+@pytest.mark.parametrize(
+    "args",
+    [
+        {"source_id": "source:x", "content_state": {"content": NUL_TEXT}},
+        {"source_id": "source:x", "content_state": {NUL_TEXT: "clean"}},
+        {"source_id": "source:x", "transformations": ["ok", NUL_TEXT]},
+    ],
+    ids=["nested-value", "dict-key", "list-item"],
+)
+async def test_submit_command_job_refuses_nul_byte(args):
     submit = MagicMock(return_value="command:abc")
-    args = {"source_id": "source:x", "content_state": {"content": NUL_TEXT}}
 
     with (
         patch("api.command_service.submit_command", submit),
@@ -109,3 +138,29 @@ async def test_submit_command_job_submits_clean_args():
 
     assert command_id == "command:abc"
     submit.assert_called_once_with("open_notebook", "process_source", args)
+
+
+def test_async_embed_with_nul_byte_returns_400_and_submits_nothing(client):
+    # Other callers of submit_command_job get the same guard; the typed error
+    # must reach the global handler, not the router's catch-all 500.
+    submit = MagicMock(return_value="command:abc")
+
+    with (
+        patch("api.command_service.submit_command", submit),
+        patch(
+            "open_notebook.ai.models.model_manager.get_embedding_model",
+            new=AsyncMock(return_value=object()),
+        ),
+    ):
+        response = client.post(
+            "/api/embed",
+            json={
+                "item_id": f"source:{NUL_TEXT}",
+                "item_type": "source",
+                "async_processing": True,
+            },
+        )
+
+    assert response.status_code == 400
+    assert "NUL byte" in response.json()["detail"]
+    submit.assert_not_called()

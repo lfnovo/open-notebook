@@ -10,7 +10,9 @@ def _contains_nul_byte(value: Any) -> bool:
     if isinstance(value, str):
         return "\x00" in value
     if isinstance(value, dict):
-        return any(_contains_nul_byte(v) for v in value.values())
+        return any(
+            _contains_nul_byte(k) or _contains_nul_byte(v) for k, v in value.items()
+        )
     if isinstance(value, (list, tuple)):
         return any(_contains_nul_byte(v) for v in value)
     return False

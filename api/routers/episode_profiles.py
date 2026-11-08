@@ -151,6 +151,9 @@ class EpisodeProfileCreate(BaseModel):
             "Milliseconds of silence between dialogue turns (0 = none, "
             "null = default 400 ms)"
         ),
+        # Schema-only: advertises the bound to clients; _check_audio_gap_ms
+        # enforces it so a negative value is a 400, not FastAPI's 422.
+        json_schema_extra={"minimum": 0},
     )
 
 

@@ -669,7 +669,7 @@ export const trTR = {
     maxTokens: "Maksimum çıktı token sayısı",
     maxTokensPlaceholder: "Varsayılanlar için boş bırakın",
     maxTokensHelp: "İsteğe bağlı. Her üretim adımının — taslak ve tam transkript — üretebileceği token sayısını sınırlar; konuşma sırası veya sohbet başına bir sınır değildir. Varsayılanı kullanmak için boş bırakın (ikisi için de 8192). Çıktı sınırı 8192'nin altında olan modeller için düşürün; çok düşük bir değer transkripti kesebilir.",
-    audioGapMs: "Konuşmalar arası duraklama (ms)",
+    audioGapMs: "Konuşma turları arasındaki duraklama (ms)",
     audioGapMsPlaceholder: "400",
     audioGapMsHelp: "İsteğe bağlı. Son seste konuşmacılar arasındaki sessizlik. Varsayılan (400 ms) için boş bırakın; 0 duraklama yok demektir.",
     defaultBriefingTitle: "Varsayılan brifing",

@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Text search ranks the best match first.** `fn::text_search` had the same single-`SELECT` group/order/limit as vector search, so results came back in record-id order (notes before sources) and the `LIMIT` could drop the best match. Nothing re-sorted them afterwards, so the wrong order reached the search page and Ask as-is. Migration 26 now fixes both functions the same way (#1505)
 - Search result counts use the correct singular and plural forms in every supported language (#1402)
 - Adding a source that is already in a notebook no longer links it a second time. The duplicate check looked the link up in the wrong direction, so each call added another link: the notebook's source count went up and the source was listed twice (#1533)
+- **A NUL byte in a text source no longer stops the worker.** Text with a NUL byte (`\x00`, which some PDF text extraction produces) failed with `Failed to queue processing`, but still left a queued job that SurrealDB could not read back. The worker's queue query then failed on every poll, so all background processing stopped until the row was deleted by hand. Source text, titles and URLs with a NUL byte are now rejected with a 422 that names the problem, and no job is submitted with one. To remove a job left by an older version, see [Processing Issues](docs/6-TROUBLESHOOTING/processing-issues.md#sources-stay-queued-waiting-to-be-processed) (#1558)
 
 ## [1.15.1] - 2026-11-03
 

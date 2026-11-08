@@ -3,6 +3,18 @@ from typing import Any, Dict, List, Optional
 from loguru import logger
 from surreal_commands import get_command_status, submit_command
 
+from open_notebook.exceptions import InvalidInputError
+
+
+def _contains_nul_byte(value: Any) -> bool:
+    if isinstance(value, str):
+        return "\x00" in value
+    if isinstance(value, dict):
+        return any(_contains_nul_byte(v) for v in value.values())
+    if isinstance(value, (list, tuple)):
+        return any(_contains_nul_byte(v) for v in value)
+    return False
+
 
 class CommandService:
     """Generic service layer for command operations"""
@@ -23,6 +35,15 @@ class CommandService:
             except ImportError as import_err:
                 logger.error(f"Failed to import command modules: {import_err}")
                 raise ValueError("Command modules not available")
+
+            # submit_command writes the row before SurrealDB rejects a NUL
+            # byte, and never returns its id; the row then breaks the
+            # worker's queue query (#1558).
+            if _contains_nul_byte(command_args):
+                raise InvalidInputError(
+                    "Command input contains a NUL byte (\\x00), "
+                    "which the database can't store"
+                )
 
             # surreal-commands expects: submit_command(app_name, command_name, args)
             cmd_id = submit_command(

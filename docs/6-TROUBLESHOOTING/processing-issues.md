@@ -25,6 +25,7 @@ docker compose logs open_notebook | grep -E "spawned: 'worker'|worker entered|ex
 
 - `success: worker entered RUNNING state` → it's running; see the next check.
 - `exited: worker` repeating, or `gave up: worker entered FATAL state` → it crashes on start. The lines just before show why; a wrong `SURREAL_*` setting is a common cause.
+- The lines before it say `to be serialized string contained a null byte` → a text source with a NUL byte, added on an older version, left a broken job behind. Delete it in `surreal sql` (namespace/database `open_notebook`), then restart the container: `DELETE command WHERE status = 'new' AND name = 'process_source' AND !record::exists(type::thing(args.source_id));`
 
 **Running but still nothing happens:** the API and the worker must use the same database. Make sure all five `SURREAL_*` variables are set explicitly (the shipped compose file does): the job queue falls back to namespace and database `test` when they're missing, while the API uses `open_notebook`. See [Database](../5-CONFIGURATION/database.md).
 

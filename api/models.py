@@ -359,6 +359,18 @@ class SourceCreate(BaseModel):
         False, description="Whether to process source asynchronously"
     )
 
+    @field_validator("content", "title", "url")
+    @classmethod
+    def reject_nul_bytes(cls, value: Optional[str]) -> Optional[str]:
+        # SurrealDB stores a NUL byte but then can't read the record back, so
+        # a queued command holding one stops the worker (#1558).
+        if value is not None and "\x00" in value:
+            raise ValueError(
+                "contains a NUL byte (\\x00), which the database can't store. "
+                "Remove it and try again."
+            )
+        return value
+
     @model_validator(mode="after")
     def validate_notebook_fields(self):
         # Ensure only one of notebook_id or notebooks is provided

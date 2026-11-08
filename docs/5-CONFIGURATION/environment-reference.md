@@ -45,7 +45,7 @@ Variables read by the frontend (`API_URL`, `INTERNAL_API_URL`, `NEXT_PUBLIC_*`, 
 | `OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE` | none | API + Worker | Path to a file holding the encryption key (Docker secrets). Checked before `OPEN_NOTEBOOK_ENCRYPTION_KEY` |
 | `OPEN_NOTEBOOK_PASSWORD` | none | API | Password for the UI and the REST API. Unset means authentication is off. See [Security](security.md) |
 | `OPEN_NOTEBOOK_PASSWORD_FILE` | none | API | Path to a file holding the password (Docker secrets). Checked before `OPEN_NOTEBOOK_PASSWORD` |
-| `CORS_ORIGINS` | `*` | API | Comma-separated origins allowed to call the API, e.g. `https://notebook.example.com`. The API logs a warning at startup while it is unset. Restart the API after changing it. See [Security](security.md#cors-origins) |
+| `CORS_ORIGINS` | `*` (localhost and same host only without a password) | API | Comma-separated origins allowed to call the API, e.g. `https://notebook.example.com`. An explicit value, including `*`, replaces the default. While it is unset or blank, the API allows any origin when a password is set (`OPEN_NOTEBOOK_PASSWORD` or `OPEN_NOTEBOOK_PASSWORD_FILE`), and otherwise only localhost origins and pages on the same host name as the API. It logs which default applies. Restart the API after changing it. See [Security](security.md#cors-origins) |
 
 ---
 
@@ -171,6 +171,13 @@ Open Notebook passes these to the content-core library, which runs extraction in
 | `CCORE_YOUTUBE_COOKIES_FILE` | none | Worker | Path inside the container to a Netscape-format `cookies.txt` exported from a browser signed in to YouTube. A missing or unreadable file fails YouTube sources with a configuration error |
 | `CCORE_AUDIO_SEGMENT_MINUTES` | `10` | Worker | Long audio and video is split into segments of this many minutes before transcription. `0` sends the file whole (for self-hosted speech-to-text without an upload limit) |
 | `CCORE_AUDIO_CONCURRENCY` | `3` | Worker | Segments transcribed in parallel (1 to 10) |
+| `CCORE_DOCLING_VISION_URL` | none | Worker | OpenAI-compatible chat completions URL (vLLM, Ollama, LM Studio, a hosted API) used for image descriptions when **Describe images and charts** is on, e.g. `http://host.docker.internal:11434/v1/chat/completions` (reaching a server on the host from Docker on Linux needs `extra_hosts`; see [OpenAI-compatible endpoints](openai-compatible.md) and [Ollama](ollama.md)). Unset, Docling's small built-in model is used and nothing leaves the machine |
+| `CCORE_DOCLING_VISION_MODEL` | none | Worker | Model name sent to that endpoint |
+| `CCORE_DOCLING_VISION_API_KEY` | none | Worker | Bearer token for that endpoint |
+| `CCORE_DOCLING_VISION_PROMPT` | Docling's | Worker | Prompt for each image description, e.g. to ask for descriptions in your corpus's language |
+| `CCORE_DOCLING_VISION_MAX_TOKENS` | `400` | Worker | Token limit per image description |
+| `CCORE_DOCLING_VISION_TIMEOUT` | `20` | Worker | Seconds per image description request |
+| `CCORE_DOCLING_VISION_TOKEN_PARAM` | `max_completion_tokens` | Worker | Name of the token-limit field the endpoint expects: `max_completion_tokens` or `max_tokens` |
 
 The speech-to-text model, the URL and document engines and the preferred YouTube transcript languages come from Open Notebook's settings, so the matching `CCORE_*` variables (`CCORE_AUDIO_MODEL`, `CCORE_URL_ENGINE`, `CCORE_YOUTUBE_LANGUAGES` and so on) are overridden and have no effect.
 

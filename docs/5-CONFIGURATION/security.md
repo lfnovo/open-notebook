@@ -77,7 +77,7 @@ Values that are not encrypted at all (from versions before credential encryption
 
 ### When to use it
 
-Set a password for any deployment reachable from something other than your own machine: a cloud host, a shared LAN, a reverse proxy on the internet. Without `OPEN_NOTEBOOK_PASSWORD`, authentication is off and anyone who can reach ports 8502 or 5055 can use the app and its stored provider keys. Open Notebook does not log a warning when the password is unset.
+Set a password for any deployment reachable from something other than your own machine: a cloud host, a shared LAN, a reverse proxy on the internet. Without `OPEN_NOTEBOOK_PASSWORD`, authentication is off and anyone who can reach ports 8502 or 5055 can use the app and its stored provider keys. The API logs a warning at startup while the password is unset.
 
 ```yaml
 services:
@@ -171,7 +171,12 @@ Docker publishes ports by editing iptables directly, which can bypass UFW rules.
 
 ### CORS Origins
 
-The API accepts cross-origin requests from any origin by default (`*`) and logs a warning at startup while `CORS_ORIGINS` is unset. For internet-facing deployments, list the exact origins that load the UI:
+While `CORS_ORIGINS` is unset, the default depends on the password:
+
+- **No password** (neither `OPEN_NOTEBOOK_PASSWORD` nor `OPEN_NOTEBOOK_PASSWORD_FILE`): the API accepts browser cross-origin requests only from `localhost`, `127.0.0.1` and `[::1]`, and from pages on the same host name the browser used to reach the API (any port). The default UI on port 8502 calls the API on port 5055 of that same host, so it keeps working from this machine, the LAN or a VPS. This stops pages from other sites you visit from reading an unauthenticated API's answers through your browser. Other pages served from the same host name are allowed, and it does not protect against DNS rebinding. It is not authentication: simple cross-site requests (a form POST, for example) still reach the API, so set a password for anything reachable from another machine.
+- **Password set:** the API accepts cross-origin requests from any origin (`*`).
+
+The API logs which default is in effect at startup. For internet-facing deployments, list the exact origins that load the UI:
 
 ```bash
 CORS_ORIGINS=https://notebook.example.com
@@ -181,7 +186,7 @@ CORS_ORIGINS=https://notebook.example.com,http://192.168.1.10:8502
 
 Include the scheme and any non-default port. Restart the API after changing it (`docker compose up -d`). With the default wildcard, the API does not allow credentialed cross-origin requests; once you list origins, it does, for those origins only. Error responses carry CORS headers only for allowed origins.
 
-Most installs never hit CORS at all: the browser loads the UI and the API from origins it is told about through `API_URL`. If you set `CORS_ORIGINS` and the UI starts failing with CORS errors, the origin you are browsing from is missing from the list.
+By default the UI calls the API on port 5055 of the host you opened it from, which is a different origin from port 8502, so CORS applies to every install. The defaults above allow that case. If the UI starts failing with CORS errors, the origin you are browsing from is not allowed. That happens without a password when the UI and the API are served from different host names (for example `notebook.example.com` and `api.example.com` behind a reverse proxy): add the UI origin to `CORS_ORIGINS`, or set a password.
 
 ### Other measures
 

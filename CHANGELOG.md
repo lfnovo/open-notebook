@@ -7,8 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Image descriptions through your own vision model.** With **Describe images and charts** on, Docling can now send images to any OpenAI-compatible endpoint (vLLM, Ollama, LM Studio, a hosted API) instead of its small built-in model: set `CCORE_DOCLING_VISION_URL` and `CCORE_DOCLING_VISION_MODEL` for the worker, plus optional `_API_KEY`, `_PROMPT`, `_MAX_TOKENS`, `_TIMEOUT` and `_TOKEN_PARAM`. Requires content-core 2.3. Without the URL nothing changes and nothing leaves the machine (#1478)
+- **Arabic README.** An Arabic translation of the README is at [docs/i18n/ar/README.md](docs/i18n/ar/README.md), linked from the README's language bar (#1551)
+- **Turkish README.** A Turkish translation of the README is at [docs/i18n/tr/README.md](docs/i18n/tr/README.md), linked from the README's language bar (#1549)
+
+### Security
+- **Without a password, the API only answers browser pages on its own host.** When `OPEN_NOTEBOOK_PASSWORD` and `CORS_ORIGINS` are both unset, the API used to accept cross-origin requests from any web page, so a page you visited could call an unauthenticated Open Notebook through your browser and read the answers. The default now admits only `localhost` origins and pages on the same host name the browser used to reach the API, which is where the UI lives. The default UI keeps working from this machine, the LAN or a VPS. If the UI and the API are served from different host names (for example behind a reverse proxy), set a password or list the UI origin in `CORS_ORIGINS`. CORS only stops other pages from reading the answers; it is not authentication
+- The API logs a warning at startup when `OPEN_NOTEBOOK_PASSWORD` is not set, saying that authentication is disabled and how to fix it.
+
 ### Fixed
 - Podcast episode and speaker profile action menus now have localized names for screen readers (#1403).
+- The provider credential dialog (Manage → Models → Add configuration) fits on short screens. It is capped at 90% of the window height and the form scrolls inside it, so the title, the close button and the Save/Cancel buttons stay reachable (#1507)
+- Transformation deletion confirmations no longer show a source-deletion title (#1402)
+- **`NEXT_PUBLIC_API_URL=/api` no longer requests `/api/api/...`.** A trailing `/api` on the API URL is dropped once, when the URL is resolved, so every request that adds its own `/api` (config check, API client, sign-in) gets a single one (#1522)
+- **Vector search returns sources again.** `fn::vector_search` grouped, ordered and limited in a single `SELECT`; SurrealDB returns grouped rows in group-key order, so the `ORDER BY similarity DESC` was inert and the `LIMIT` truncated a list ordered by record id. Because `note:` sorts before `source:` and `source_insight:`, any `match_count` below the number of embedded notes returned notes **only**, silently discarding sources that scored higher than every note in the result — an instance that accumulates notes gradually stopped being able to return any source at all through vector search, with no error and no indication that anything had been filtered. Migration 26 splits the final statement so the grouped set is ordered and limited after grouping, with `id` as a tie-break for determinism. The signature is unchanged, including the optional `notebook_ids` from migration 24 (#1431)
+- **Text search ranks the best match first.** `fn::text_search` had the same single-`SELECT` group/order/limit as vector search, so results came back in record-id order (notes before sources) and the `LIMIT` could drop the best match. Nothing re-sorted them afterwards, so the wrong order reached the search page and Ask as-is. Migration 26 now fixes both functions the same way (#1505)
+- Search result counts use the correct singular and plural forms in every supported language (#1402)
+- Adding a source that is already in a notebook no longer links it a second time. The duplicate check looked the link up in the wrong direction, so each call added another link: the notebook's source count went up and the source was listed twice (#1533)
 
 ## [1.15.1] - 2026-11-03
 

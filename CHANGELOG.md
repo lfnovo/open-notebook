@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Set the Docling vision endpoint in Settings.** While **Describe images and charts** is on, Settings → Content Processing shows **Vision endpoint URL**, **Vision model** and an optional **Image description prompt**, so pointing image descriptions at your own vision model no longer means editing the compose file. An empty field keeps the matching `CCORE_DOCLING_VISION_*` worker variable in effect. The API key stays in `CCORE_DOCLING_VISION_API_KEY`, since settings are stored unencrypted. The URL is checked like every other user-supplied URL when it is saved and again before each extraction; migration 28 adds the fields (#1561)
 - **Image descriptions through your own vision model.** With **Describe images and charts** on, Docling can now send images to any OpenAI-compatible endpoint (vLLM, Ollama, LM Studio, a hosted API) instead of its small built-in model: set `CCORE_DOCLING_VISION_URL` and `CCORE_DOCLING_VISION_MODEL` for the worker, plus optional `_API_KEY`, `_PROMPT`, `_MAX_TOKENS`, `_TIMEOUT` and `_TOKEN_PARAM`. Requires content-core 2.3. Without the URL nothing changes and nothing leaves the machine (#1478)
 - **Arabic README.** An Arabic translation of the README is at [docs/i18n/ar/README.md](docs/i18n/ar/README.md), linked from the README's language bar (#1551)
 - **Turkish README.** A Turkish translation of the README is at [docs/i18n/tr/README.md](docs/i18n/tr/README.md), linked from the README's language bar (#1549)

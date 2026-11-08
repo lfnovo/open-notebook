@@ -45,6 +45,14 @@ YOUTUBE_PREFERRED_LANGUAGES = [
     "zh-TW",
 ]
 
+# ContentSettings fields that share their name with a ContentCoreConfig field.
+# The API key is not among them: it stays in CCORE_DOCLING_VISION_API_KEY.
+_DOCLING_VISION_SETTINGS = (
+    "docling_vision_url",
+    "docling_vision_model",
+    "docling_vision_prompt",
+)
+
 
 class SourceState(TypedDict):
     # Input describing what to extract: url / file_path / content / delete_source.
@@ -213,12 +221,34 @@ async def content_process(state: SourceState) -> dict:
             config_kwargs["docling_formulas"] = settings.docling_formulas
         if settings.docling_vision is not None:
             config_kwargs["docling_vision"] = settings.docling_vision
+        # Pass the vision endpoint fields only when filled in: an empty field
+        # must leave the CCORE_DOCLING_VISION_* worker variables in effect,
+        # since ContentCoreConfig prefers explicit kwargs over its env vars.
+        for field in _DOCLING_VISION_SETTINGS:
+            value = (getattr(settings, field) or "").strip()
+            if value:
+                config_kwargs[field] = value
     except Exception as e:
         # Keep the server-side traceback for diagnosing DB/deserialization
         # failures while still falling back to defaults (non-fatal).
         logger.opt(exception=True).warning(
             f"Failed to load content settings, using defaults: {e}"
         )
+
+    # PUT /api/settings already validated the URL, but DNS can change since
+    # then, and Docling resolves it again for every image request. Re-check
+    # right before use, like _revalidate_config_urls() does for credentials.
+    # On failure, drop all three settings so the worker variables (or
+    # Docling's local model) apply as a whole, instead of sending this model
+    # name and prompt to a different endpoint.
+    vision_url = config_kwargs.get("docling_vision_url")
+    if vision_url:
+        try:
+            await validate_url(vision_url, "docling_vision")
+        except ValueError as e:
+            for field in _DOCLING_VISION_SETTINGS:
+                config_kwargs.pop(field, None)
+            logger.warning(f"Ignoring the Docling vision settings: {e}")
 
     try:
         model_manager = ModelManager()

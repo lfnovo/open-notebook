@@ -43,6 +43,9 @@ async def test_docling_selection_falls_back_to_auto_when_runtime_missing():
         docling_ocr=None,
         docling_formulas=None,
         docling_vision=None,
+        docling_vision_url=None,
+        docling_vision_model=None,
+        docling_vision_prompt=None,
     )
     extracted = SimpleNamespace(title="Doc", content="some text")
 

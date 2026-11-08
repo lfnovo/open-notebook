@@ -443,6 +443,9 @@ class TestContentProcessDeleteSource:
                 docling_ocr=False,
                 docling_formulas=True,
                 docling_vision=True,
+                docling_vision_url=None,
+                docling_vision_model=None,
+                docling_vision_prompt=None,
             )
         )
         mock_extract.return_value = ExtractionOutput(title="T", content="body")
@@ -501,6 +504,9 @@ class TestContentProcessDeleteSource:
                 docling_ocr=None,
                 docling_formulas=None,
                 docling_vision=True,
+                docling_vision_url=None,
+                docling_vision_model=None,
+                docling_vision_prompt=None,
             )
         )
         mock_extract.return_value = ExtractionOutput(title="T", content="body")
@@ -519,6 +525,129 @@ class TestContentProcessDeleteSource:
         assert config.docling_vision_url == "http://vlm.local:8000/v1/chat/completions"
         assert config.docling_vision_model == "qwen2.5-vl-7b"
         assert config.docling_vision_api_key == "test-key"
+
+    @staticmethod
+    async def _config_with_vision_settings(**vision_settings):
+        """Run content_process with Docling vision on and the given vision
+        endpoint settings, and return the ContentCoreConfig it builds."""
+        from content_core.common import ExtractionOutput
+
+        from open_notebook.graphs.source import SourceState, content_process
+
+        settings = MagicMock(
+            youtube_preferred_languages=None,
+            default_content_processing_engine_url=None,
+            default_content_processing_engine_doc="docling",
+            docling_ocr=None,
+            docling_formulas=None,
+            docling_vision=True,
+            docling_vision_url=None,
+            docling_vision_model=None,
+            docling_vision_prompt=None,
+        )
+        for name, value in vision_settings.items():
+            setattr(settings, name, value)
+
+        mm_instance = MagicMock()
+        mm_instance.get_defaults = AsyncMock(
+            return_value=MagicMock(default_speech_to_text_model=None)
+        )
+        state = {
+            "source_id": "source:123",
+            "content_state": {"url": "https://example.com"},
+            "embed": False,
+            "apply_transformations": [],
+        }
+        with (
+            patch("open_notebook.graphs.source.ContentSettings") as mock_settings,
+            patch(
+                "open_notebook.graphs.source.engine_runtime_missing",
+                return_value=None,
+            ),
+            patch("open_notebook.graphs.source.extract_content") as mock_extract,
+            patch("open_notebook.graphs.source.ModelManager", return_value=mm_instance),
+        ):
+            mock_settings.get_instance = AsyncMock(return_value=settings)
+            mock_extract.return_value = ExtractionOutput(title="T", content="body")
+            await content_process(cast(SourceState, state))
+
+        assert mock_extract.await_args is not None
+        return mock_extract.await_args.kwargs["config"]
+
+    @pytest.mark.asyncio
+    async def test_docling_vision_settings_override_env(self, monkeypatch):
+        """Vision endpoint fields saved in Settings (#1561) reach
+        ContentCoreConfig and win over the CCORE_DOCLING_VISION_* variables,
+        while the API key still comes from its env var."""
+        monkeypatch.setenv("CCORE_DOCLING_VISION_URL", "http://env.local/v1")
+        monkeypatch.setenv("CCORE_DOCLING_VISION_MODEL", "env-model")
+        monkeypatch.setenv("CCORE_DOCLING_VISION_API_KEY", "test-key")
+
+        config = await self._config_with_vision_settings(
+            docling_vision_url=" http://192.168.1.20:1234/v1/chat/completions ",
+            docling_vision_model="qwen2.5-vl-7b",
+            docling_vision_prompt="Describe the chart.",
+        )
+
+        assert (
+            config.docling_vision_url == "http://192.168.1.20:1234/v1/chat/completions"
+        )
+        assert config.docling_vision_model == "qwen2.5-vl-7b"
+        assert config.docling_vision_prompt == "Describe the chart."
+        assert config.docling_vision_api_key == "test-key"
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("blank", [None, "", "   "])
+    async def test_blank_docling_vision_settings_keep_env(self, blank, monkeypatch):
+        """Empty vision endpoint fields are not passed to content-core, so the
+        CCORE_DOCLING_VISION_* worker variables keep applying (#1561)."""
+        monkeypatch.setenv("CCORE_DOCLING_VISION_URL", "http://env.local/v1")
+        monkeypatch.setenv("CCORE_DOCLING_VISION_MODEL", "env-model")
+        monkeypatch.setenv("CCORE_DOCLING_VISION_PROMPT", "env prompt")
+
+        config = await self._config_with_vision_settings(
+            docling_vision_url=blank,
+            docling_vision_model=blank,
+            docling_vision_prompt=blank,
+        )
+
+        assert config.docling_vision_url == "http://env.local/v1"
+        assert config.docling_vision_model == "env-model"
+        assert config.docling_vision_prompt == "env prompt"
+
+    @pytest.mark.asyncio
+    async def test_unsafe_docling_vision_url_is_not_used(self, monkeypatch):
+        """A stored vision URL that fails validate_url() at extraction time
+        (e.g. it now points at a cloud metadata address) is dropped instead of
+        receiving document images."""
+        monkeypatch.delenv("CCORE_DOCLING_VISION_URL", raising=False)
+
+        config = await self._config_with_vision_settings(
+            docling_vision_url="http://169.254.169.254/latest/meta-data/",
+        )
+
+        assert config.docling_vision_url is None
+        assert config.docling_vision is True
+
+    @pytest.mark.asyncio
+    async def test_unsafe_docling_vision_url_falls_back_to_env_as_a_whole(
+        self, monkeypatch
+    ):
+        """When the stored URL is dropped, the stored model and prompt go with
+        it, so the worker's endpoint gets its own model name, not ours."""
+        monkeypatch.setenv("CCORE_DOCLING_VISION_URL", "http://env.local/v1")
+        monkeypatch.setenv("CCORE_DOCLING_VISION_MODEL", "env-model")
+        monkeypatch.delenv("CCORE_DOCLING_VISION_PROMPT", raising=False)
+
+        config = await self._config_with_vision_settings(
+            docling_vision_url="http://169.254.169.254/latest/meta-data/",
+            docling_vision_model="qwen2.5-vl-7b",
+            docling_vision_prompt="Describe the chart.",
+        )
+
+        assert config.docling_vision_url == "http://env.local/v1"
+        assert config.docling_vision_model == "env-model"
+        assert config.docling_vision_prompt is None
 
     @pytest.mark.asyncio
     @patch("open_notebook.graphs.source.ContentSettings")
@@ -548,6 +677,9 @@ class TestContentProcessDeleteSource:
                 docling_ocr=None,
                 docling_formulas=None,
                 docling_vision=None,
+                docling_vision_url=None,
+                docling_vision_model=None,
+                docling_vision_prompt=None,
             )
         )
         mock_extract.return_value = ExtractionOutput(title="T", content="body")
@@ -598,6 +730,9 @@ class TestContentProcessDeleteSource:
                 docling_ocr=True,
                 docling_formulas=False,
                 docling_vision=False,
+                docling_vision_url=None,
+                docling_vision_model=None,
+                docling_vision_prompt=None,
             )
         )
         mock_extract.return_value = ExtractionOutput(title="T", content="body")
@@ -647,6 +782,9 @@ class TestContentProcessDeleteSource:
                 docling_ocr=True,
                 docling_formulas=False,
                 docling_vision=False,
+                docling_vision_url=None,
+                docling_vision_model=None,
+                docling_vision_prompt=None,
             )
         )
         mock_extract.return_value = ExtractionOutput(title="T", content="body")

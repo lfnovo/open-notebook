@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import APIRouter, HTTPException
 from loguru import logger
 
@@ -7,8 +9,14 @@ from open_notebook.exceptions import (
     InvalidInputError,
     OpenNotebookError,
 )
+from open_notebook.utils.url_validation import validate_url
 
 router = APIRouter()
+
+
+def _blank_to_none(value: str) -> Optional[str]:
+    """Strip a free-text setting; an empty value means "unset"."""
+    return value.strip() or None
 
 
 @router.get("/settings", response_model=SettingsResponse)
@@ -25,6 +33,9 @@ async def get_settings():
             docling_ocr=settings.docling_ocr,
             docling_formulas=settings.docling_formulas,
             docling_vision=settings.docling_vision,
+            docling_vision_url=settings.docling_vision_url,
+            docling_vision_model=settings.docling_vision_model,
+            docling_vision_prompt=settings.docling_vision_prompt,
             youtube_preferred_languages=settings.youtube_preferred_languages,
         )
     except HTTPException:
@@ -40,6 +51,19 @@ async def get_settings():
 async def update_settings(settings_update: SettingsUpdate):
     """Update application settings."""
     try:
+        # Validate before touching the settings singleton: a rejected request
+        # must not leave other fields of the same PUT applied in memory.
+        vision_url: Optional[str] = None
+        if settings_update.docling_vision_url is not None:
+            vision_url = _blank_to_none(settings_update.docling_vision_url)
+            if vision_url:
+                # The worker sends document images to this URL, so it gets the
+                # same SSRF check as every other user-supplied URL.
+                try:
+                    await validate_url(vision_url, "docling_vision")
+                except ValueError as e:
+                    raise InvalidInputError(str(e)) from e
+
         settings: ContentSettings = await ContentSettings.get_instance()  # type: ignore[assignment]
 
         # Update only provided fields
@@ -77,6 +101,16 @@ async def update_settings(settings_update: SettingsUpdate):
             settings.docling_formulas = settings_update.docling_formulas
         if settings_update.docling_vision is not None:
             settings.docling_vision = settings_update.docling_vision
+        if settings_update.docling_vision_url is not None:
+            settings.docling_vision_url = vision_url
+        if settings_update.docling_vision_model is not None:
+            settings.docling_vision_model = _blank_to_none(
+                settings_update.docling_vision_model
+            )
+        if settings_update.docling_vision_prompt is not None:
+            settings.docling_vision_prompt = _blank_to_none(
+                settings_update.docling_vision_prompt
+            )
         if settings_update.youtube_preferred_languages is not None:
             settings.youtube_preferred_languages = (
                 settings_update.youtube_preferred_languages
@@ -92,6 +126,9 @@ async def update_settings(settings_update: SettingsUpdate):
             docling_ocr=settings.docling_ocr,
             docling_formulas=settings.docling_formulas,
             docling_vision=settings.docling_vision,
+            docling_vision_url=settings.docling_vision_url,
+            docling_vision_model=settings.docling_vision_model,
+            docling_vision_prompt=settings.docling_vision_prompt,
             youtube_preferred_languages=settings.youtube_preferred_languages,
         )
     except HTTPException:

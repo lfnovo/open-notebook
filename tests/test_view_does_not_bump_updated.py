@@ -21,29 +21,29 @@ def record(value: object) -> dict[str, object]:
     return row
 
 
-def test_manager_registers_migration_26() -> None:
+def test_manager_registers_migration_27() -> None:
     """Migrations are hard-coded in AsyncMigrationManager, not discovered."""
-    assert (MIGRATIONS / "26.surrealql").is_file()
-    assert (MIGRATIONS / "26_down.surrealql").is_file()
+    assert (MIGRATIONS / "27.surrealql").is_file()
+    assert (MIGRATIONS / "27_down.surrealql").is_file()
 
     manager = AsyncMigrationManager()
-    assert len(manager.up_migrations) >= 26
+    assert len(manager.up_migrations) >= 27
     assert len(manager.up_migrations) == len(manager.down_migrations)
     for table, _ in TABLES:
         assert (
             f"DEFINE FIELD OVERWRITE updated ON TABLE {table} DEFAULT time::now();"
-            in manager.up_migrations[25].sql
+            in manager.up_migrations[26].sql
         )
         assert (
             f"DEFINE FIELD OVERWRITE updated ON TABLE {table} "
-            "DEFAULT time::now() VALUE time::now();" in manager.down_migrations[25].sql
+            "DEFAULT time::now() VALUE time::now();" in manager.down_migrations[26].sql
         )
 
 
 @pytest.mark.asyncio
 async def test_view_stamp_does_not_bump_updated() -> None:
     """UPDATE last_viewed_at leaves a pinned updated instant in place, and
-    rolling migration 26 back restores the bump on every write."""
+    rolling migration 27 back restores the bump on every write."""
     manager = AsyncMigrationManager()
     async with AsyncSurreal("mem://") as db:
         await db.use("view_regression", "updated")
@@ -65,13 +65,13 @@ async def test_view_stamp_does_not_bump_updated() -> None:
         await db.query("CREATE notebook:n SET name = 'Notebook';")
         await db.query("CREATE source:s SET title = 'Source';")
 
-        await db.query(manager.up_migrations[25].sql)
+        await db.query(manager.up_migrations[26].sql)
         for table, key in TABLES:
             row = await stamp_view(table, key)
             assert row["updated"] == PINNED
             assert row["last_viewed_at"] is not None
 
-        await db.query(manager.down_migrations[25].sql)
+        await db.query(manager.down_migrations[26].sql)
         for table, key in TABLES:
             row = await stamp_view(table, key)
             assert row["updated"] != PINNED

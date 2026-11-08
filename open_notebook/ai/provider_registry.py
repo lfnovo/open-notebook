@@ -11,11 +11,13 @@ frontend table). Now the backend surfaces are all derived from the
 - `open_notebook/ai/model_discovery.py` `OPENAI_COMPAT_PROVIDERS`
 - `GET /api/providers` (api/routers/providers.py)
 
-One place still needs a manual edit when adding a provider — enforced by
-tests (tests/test_credential_provider_validation.py): the
-`SupportedProvider` Literal in `api/models.py` (typing can't be built at
-runtime from this dict). The frontend consumes `GET /api/providers` at
-runtime, so it needs no edit.
+Adding a provider also needs edits outside this file (the `SupportedProvider`
+Literal in `api/models.py`, `PROVIDER_CONFIG` in `open_notebook/ai/key_provider.py`,
+`env_var_map` in `get_provider_availability()` in `api/routers/models.py`, and a
+discovery entry in `open_notebook/ai/model_discovery.py`) — see
+docs/7-DEVELOPMENT/change-playbooks.md ("Playbook: Add an AI Provider") for the
+full checklist. The frontend consumes `GET /api/providers` at runtime, so it
+needs no edit.
 
 The declaration order below is the display order the frontend renders —
 `GET /api/providers` returns `PROVIDERS.values()` as declared.
@@ -52,6 +54,15 @@ class ProviderSpec:
     # For providers exposing an OpenAI-compatible GET /models endpoint,
     # the discovery URL. Drives OPENAI_COMPAT_PROVIDERS in model_discovery.
     openai_compat_discovery_url: Optional[str] = None
+
+    @property
+    def base_url_env(self) -> Optional[str]:
+        """Optional env var overriding the provider's endpoint (`*_BASE_URL`).
+
+        Declared through `optional_env`; providers that have one accept a
+        user-supplied base URL for discovery (e.g. regional endpoints).
+        """
+        return next((v for v in self.optional_env if v.endswith("_BASE_URL")), None)
 
     def env_config(self) -> Dict[str, List[str]]:
         """Env var config in the legacy PROVIDER_ENV_CONFIG dict shape."""
@@ -152,9 +163,12 @@ _PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
     ProviderSpec(
         name="minimax",
         display_name="MiniMax",
-        modalities=_LANGUAGE_ONLY,
+        modalities=("language", "text_to_speech"),
         required_env=("MINIMAX_API_KEY",),
-        test_model="MiniMax-M2.5",
+        # Keys are region-specific; mainland China uses https://api.minimax.cn/v1
+        # (esperanto reads MINIMAX_BASE_URL for both chat and TTS).
+        optional_env=("MINIMAX_BASE_URL",),
+        test_model="MiniMax-M3",
         docs_url="https://platform.minimaxi.com/document/Guides",
         openai_compat_discovery_url="https://api.minimax.io/v1/models",
     ),
@@ -166,6 +180,28 @@ _PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
         test_model="moonshotai/kimi-k2.5",
         docs_url="https://novita.ai/settings/key-management",
         openai_compat_discovery_url="https://api.novita.ai/openai/models",
+    ),
+    ProviderSpec(
+        name="siliconflow",
+        display_name="SiliconFlow",
+        modalities=_LANGUAGE_ONLY,
+        required_env=("SILICONFLOW_API_KEY",),
+        optional_env=("SILICONFLOW_BASE_URL",),
+        # esperanto's default for the profile; mainland China accounts set
+        # the credential's base URL to https://api.siliconflow.cn/v1.
+        test_model="deepseek-ai/DeepSeek-V3.1-Terminus",
+        docs_url="https://cloud.siliconflow.com/account/ak",
+        openai_compat_discovery_url="https://api.siliconflow.com/v1/models",
+    ),
+    ProviderSpec(
+        name="zai",
+        display_name="Z.ai",
+        modalities=_LANGUAGE_ONLY,
+        required_env=("ZAI_API_KEY",),
+        optional_env=("ZAI_BASE_URL",),
+        test_model="glm-5.2",
+        docs_url="https://z.ai/manage-apikey/apikey-list",
+        openai_compat_discovery_url="https://api.z.ai/api/paas/v4/models",
     ),
     ProviderSpec(
         name="ppq",

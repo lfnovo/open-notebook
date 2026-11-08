@@ -42,9 +42,9 @@ The single implementation behind both context consumers:
 - Every call re-fetches — there is no cache layer.
 - Token counting uses `o200k_base` via tiktoken and is an estimate (±5-10% vs. the actual model); `token_count()` falls back to a coarse estimate if tiktoken is unavailable.
 
-## Encryption (`utils/encryption.py`) {#encryption}
+## Encryption
 
-Field-level encryption for sensitive values (API keys) stored in the database, using Fernet (AES-128-CBC + HMAC-SHA256).
+`utils/encryption.py` provides field-level encryption for sensitive values (API keys) stored in the database, using Fernet (AES-128-CBC + HMAC-SHA256).
 
 - Key source: `OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE` (Docker secrets) → `OPEN_NOTEBOOK_ENCRYPTION_KEY`. **No default** — credential storage is unavailable until the key is set.
 - Any string works as key: it's derived to a Fernet key via PBKDF2-HMAC-SHA256 (600k iterations, fixed app salt), lazily on first use; the derived instance is cached per process.

@@ -1,58 +1,76 @@
 # Change Playbooks
 
-Step-by-step guides for common types of changes in the Open Notebook codebase. Each playbook lists the files to touch **in order**, what to do at each step, and what to test.
+Step-by-step guides for common changes. Each playbook lists the files to touch in order and what to test. The rules behind them are in the AGENTS files ([root](../../AGENTS.md), [backend](../../open_notebook/AGENTS.md), [frontend](../../frontend/AGENTS.md)).
 
-> **For AI agents:** Read the relevant playbook BEFORE implementing. Follow the sequence — skipping steps causes incomplete changes that break other layers.
+> **For AI agents:** read the matching playbook before implementing. If a change spans several types (a new field and a new endpoint), combine them. When in doubt, find the most recent similar change with `git log` and copy its shape.
 
----
-
-## How to Use This Document
-
-1. Identify what type of change your issue requires
-2. Follow the playbook step by step
-3. If a change spans multiple types (e.g., new field + new endpoint), combine the relevant playbooks
-4. When in doubt, read existing examples in the codebase — look at the most recent similar change via `git log`
+Every playbook ends the same way: tests, a CHANGELOG entry under `[Unreleased]`, and the checks CI runs (see [contributing.md](contributing.md#before-you-open-a-pr)).
 
 ---
 
 ## Playbook: Add a Field to an Existing Model
 
-**Example:** "Add `language` field to Source"
+**Example:** "Add `language` to episode profiles"
 
-| Step | File(s) | What to Do |
+| Step | File(s) | What to do |
 |------|---------|------------|
-| 1 | `open_notebook/domain/<model>.py` | Add field with type hint and default value. Follow existing patterns in the class. |
-| 2 | `open_notebook/database/migrations/N.surrealql` | Create migration. Use next number in sequence. `DEFINE FIELD` for new fields, `UPDATE` for backfilling existing records. Register it in `AsyncMigrationManager` (`async_migrate.py`) — migrations are not auto-discovered. |
-| 3 | `api/models.py` | Add field to `*Create`, `*Update` (Optional), and `*Response` schemas. |
-| 4 | `frontend/src/lib/types/api.ts` | Add field to the corresponding TypeScript interface (`*Response`, `Create*Request`, `Update*Request`). |
-| 5 | Frontend component (if user-facing) | Display or edit the field in the relevant component. |
-| 6 | `frontend/src/lib/locales/*/` | Add i18n strings if the field has a user-visible label. All 7 locales. |
-| 7 | Tests | Add/update tests covering the new field — at minimum, API test for create/read. |
-
-**Verify:** Restart API (migration auto-runs), check logs for migration success, test via `/docs`.
+| 1 | `open_notebook/domain/<model>.py` (or `open_notebook/podcasts/models.py`, `open_notebook/ai/models.py`) | Add the field with a type hint and default. |
+| 2 | `open_notebook/database/migrations/N.surrealql` + `N_down.surrealql` | Only for `SCHEMAFULL` tables: `DEFINE FIELD`, plus an `UPDATE` to backfill if needed. Follow the [Database Migration](#playbook-database-migration) playbook. |
+| 3 | `api/models.py` | Add the field to the request (`*Create`, `*Update` as `Optional`) and `*Response` schemas. |
+| 4 | `api/routers/<resource>.py` | Pass the field through where the router builds the domain object or the response. |
+| 5 | `frontend/src/lib/types/*.ts` | Add it to the matching TypeScript interface (`api.ts`, `podcasts.ts`, `models.ts`, …). |
+| 6 | Frontend component | Display or edit it. Every new label goes through `t()` and into **every** locale (see [i18n](#playbook-i18n--translation-update)). |
+| 7 | `tests/` | At least an API test for create and read. |
 
 ---
 
 ## Playbook: New API Endpoint
 
-**Example:** "Add endpoint to export notebook as PDF"
+**Example:** "Add an endpoint to export a notebook"
 
-| Step | File(s) | What to Do |
+| Step | File(s) | What to do |
 |------|---------|------------|
-| 1 | `api/models.py` | Define request/response Pydantic schemas. Naming: `<Feature>Request`, `<Feature>Response`. |
-| 2 | `api/routers/<resource>.py` | Add endpoint to existing router, OR create new router file if it's a new resource. Follow the pattern: validate → call service → return response. |
-| 3 | `api/<resource>_service.py` | Business logic goes here, not in the router. Create new service file if needed. |
-| 4 | `api/main.py` | If new router file: register with `app.include_router()`. |
-| 5 | `frontend/src/lib/types/api.ts` | Add TypeScript types matching the Pydantic schemas. |
-| 6 | `frontend/src/lib/api/<resource>.ts` | Add method to the API module. Follow existing pattern (axios call, return `response.data`). |
-| 7 | `frontend/src/lib/hooks/use-<resource>.ts` | Add React Query hook. `useQuery` for GET, `useMutation` for POST/PUT/DELETE. Include cache invalidation and toast. |
-| 8 | Frontend component/page | Wire up the hook in the UI. |
-| 9 | Tests | API test (status codes, validation, error cases). |
+| 1 | `api/models.py` | Request/response Pydantic schemas (`<Feature>Request`, `<Feature>Response`). |
+| 2 | `api/routers/<resource>.py` | Add the endpoint to the existing router, or create a router for a new resource. Most routers call domain models (`open_notebook/domain/`) and `repo_*` functions directly. Put logic in an `api/*_service.py` module only when several routers share it or it orchestrates jobs (as `command_service.py`, `credentials_service.py` and `podcast_service.py` do). |
+| 3 | `api/main.py` | New router only: `app.include_router(<module>.router, prefix="/api", tags=[...])`. |
+| 4 | `frontend/src/lib/types/` and `frontend/src/lib/api/<resource>.ts` | Types and a method on the API module (calls `apiClient`, returns `response.data`). |
+| 5 | `frontend/src/lib/hooks/use-<resource>.ts` | TanStack Query hook: `useQuery` for reads, `useMutation` with cache invalidation and a toast for writes. |
+| 6 | Frontend component/page | Wire up the hook. |
+| 7 | `tests/` | Status codes, validation and error cases with `TestClient` (see [testing.md](testing.md)). |
 
-**Naming conventions:**
-- Routers: `@router.get("/resources/{id}")` (plural, lowercase, kebab for multi-word)
-- Services: functions are `async`, named descriptively (`process_source`, `generate_podcast`)
-- Hooks: `useResources()` for list, `useResource(id)` for single, `useCreateResource()` for mutation
+**Errors:** raise typed exceptions from `open_notebook.exceptions` and let the global handlers in `api/main.py` map them to status codes. A router's catch-all `except Exception` must come after `except OpenNotebookError: raise` (and `except HTTPException: raise`) so typed errors still reach those handlers. See [code-standards.md](code-standards.md#errors-in-the-api).
+
+**Naming:** paths are plural and lowercase, kebab-case for several words (`/episode-profiles`, `/sources/{source_id}/status`). Hooks are `useResources()`, `useResource(id)`, `useCreateResource()`.
+
+---
+
+## Playbook: Add an AI Provider
+
+**Example:** SiliconFlow and Z.ai (PR #1443), MiniMax text-to-speech (PR #1444)
+
+Open Notebook never calls provider SDKs directly; every model is created through [Esperanto](https://github.com/lfnovo/esperanto). So step 0 is: **Esperanto must already support the provider**, under the same provider name. If support arrived in a newer Esperanto release, bump `esperanto` in `pyproject.toml` and run `uv lock`.
+
+The provider registry is the source of truth. Most backend tables and the frontend read from it, but a few copies are still maintained by hand. This is the full list for a provider with a single API key (the common case):
+
+| Step | File | What to do |
+|------|------|------------|
+| 1 | `open_notebook/ai/provider_registry.py` | Add a `ProviderSpec` to `_PROVIDER_SPECS`. Its position is the display order in the UI. Set `name` (Esperanto's provider name), `display_name`, `modalities`, `required_env=("X_API_KEY",)`, `test_model` (the cheapest model, used by the connection test), `docs_url` (where users get a key), and `openai_compat_discovery_url` if the provider has an OpenAI-style `GET /models`. If the provider has regional endpoints, also declare `optional_env=("X_BASE_URL",)` ([ADR-012](decisions/ADR-012-provider-endpoint-overrides.md)): env migration and model discovery then honor the override. |
+| 2 | `api/models.py` | Add the name to the `SupportedProvider` Literal. (Python typing can't build it from the registry at runtime.) |
+| 3 | `open_notebook/ai/key_provider.py` | Add `"<name>": {"env_var": "X_API_KEY"}` to `PROVIDER_CONFIG`. Without it, models that fall back to environment keys (no linked credential) can't be provisioned. |
+| 4 | `api/routers/models.py` | Add `"<name>": "X_API_KEY"` to `env_var_map` in `get_provider_availability()`. Without it, `GET /api/models/providers` reports an env-only setup as unavailable. |
+| 5 | `open_notebook/ai/model_discovery.py` | For an OpenAI-compatible listing: `discover_<name>_models = _make_openai_compat_discoverer("<name>")` and an entry in `PROVIDER_DISCOVERY_FUNCTIONS`. A provider with no env-based discovery maps to `None` (as `azure` and `vertex` do). If the `/models` listing mixes in embedding or audio models, add a `<NAME>_MODEL_TYPES` table and register it in `classify_model_type()` (SiliconFlow). If the listing leaves out audio models, seed them in `PROVIDER_AUDIO_SEEDS` (MiniMax TTS). |
+| 6 | `api/routers/models.py` (optional) | Add the provider to `PROVIDER_PRIORITY` and `MODEL_PREFERENCES` if **Auto-assign Defaults** should pick its models. |
+| 7 | `tests/test_credential_provider_validation.py`, `tests/test_model_discovery.py` | Add the name to `KNOWN_GOOD_PROVIDERS`, to the expected discovery-URL dict and to the expected `PROVIDER_DISCOVERY_FUNCTIONS` set. These tests fail until steps 1, 2 and 5 agree. For a `*_BASE_URL` override, add migration and discovery cases to `tests/test_credentials_api.py`. |
+| 8 | Docs | A section in `docs/5-CONFIGURATION/ai-providers.md`, the env vars in `docs/5-CONFIGURATION/environment-reference.md`, the provider tables in `docs/4-AI-PROVIDERS/index.md`, the provider list in `README.md`, and an `### Added` CHANGELOG entry. |
+
+You don't need to touch:
+
+- `connection_tester.TEST_MODELS`, `credentials_service.PROVIDER_ENV_CONFIG` / `PROVIDER_MODALITIES` and `model_discovery.OPENAI_COMPAT_PROVIDERS`. They are derived from the registry.
+- The frontend. It loads providers from `GET /api/providers` at runtime (`useProviders()`), and the credential form shows the API key and Base URL fields for any simple provider.
+
+Providers that need several config fields (like `azure`, `vertex`, `openai_compatible`) also need a `_provision_<name>()` function in `key_provider.py`, a bespoke check in `get_provider_availability()`, credential-based discovery in `api/credentials_service.py`, and form fields in `frontend/src/components/settings/CredentialFormDialog.tsx`. Read how the closest existing provider does it before starting.
+
+**Verify:** `uv run pytest tests/test_credential_provider_validation.py tests/test_model_discovery.py tests/test_credentials_api.py`. Then, in the app: **Manage → Models**, add a configuration for the provider, run **Test Connection**, then **Sync Models**.
 
 ---
 
@@ -60,150 +78,105 @@ Step-by-step guides for common types of changes in the Open Notebook codebase. E
 
 **Example:** "Add a summarization workflow"
 
-| Step | File(s) | What to Do |
+| Step | File(s) | What to do |
 |------|---------|------------|
-| 1 | `prompts/<workflow_name>/*.jinja` | Create Jinja2 prompt templates. Use `Prompter` from ai-prompter. |
-| 2 | `open_notebook/graphs/<workflow_name>.py` | Define `StateDict` (TypedDict), node functions, build graph with `StateGraph`. Use `provision_langchain_model()` for model selection. Wrap LLM calls with `classify_error()`. |
-| 3 | `api/<resource>_service.py` | Invoke graph: `await graph.ainvoke(state, config)`. |
-| 4 | `api/routers/<resource>.py` | Expose endpoint to trigger the workflow. |
-| 5 | `commands/<workflow>_commands.py` | If the workflow should run async: create command with `CommandInput`/`CommandOutput`. Register in command service. |
-| 6 | Frontend integration | API module → hook → component. |
-| 7 | Tests | Test graph nodes individually with mocked LLM responses. |
+| 1 | `prompts/<workflow>/*.jinja` | Prompt templates, rendered with `Prompter` (see [prompts.md](prompts.md)). |
+| 2 | `open_notebook/graphs/<workflow>.py` | A `TypedDict` state, node functions and a `StateGraph`. Get models with `provision_langchain_model()`, wrap LLM calls with `classify_error()`, and strip thinking output with `clean_thinking_content()`. |
+| 3 | Caller | Short, interactive work: call `await graph.ainvoke(state, config=...)` from a router (as `search.py` does for Ask). Long-running work: invoke it from a background command (as `process_source` does for the source graph). |
+| 4 | Frontend | API module → hook → component. |
+| 5 | `tests/` | Test nodes with a mocked model (`patch` `provision_langchain_model`). |
 
-**Key patterns:**
-- Nodes are sync functions (LangGraph requirement) but can call async code via ThreadPoolExecutor
-- Use `classify_error()` to convert raw exceptions to typed `OpenNotebookError` subclasses
-- Use `provision_langchain_model()` for model selection — never hardcode a provider
-- State is a TypedDict, NOT a Pydantic model
-
----
-
-## Playbook: Bug Fix (Single Layer)
-
-**Example:** "order_by parameter not working on sources endpoint"
-
-| Step | What to Do |
-|------|------------|
-| 1 | **Identify the layer.** Read the issue and determine: frontend, API router, service, domain model, database, or graph. |
-| 2 | **Read the relevant AGENTS.md** (root, `open_notebook/`, or `frontend/`) and the matching page in `docs/7-DEVELOPMENT/`. They document the rules and gotchas. |
-| 3 | **Reproduce.** Use the API docs (`/docs`), browser, or a test to confirm the bug. |
-| 4 | **Fix.** Make the minimal change needed. Don't refactor surrounding code. |
-| 5 | **Add a test** that reproduces the bug and verifies the fix. |
-| 6 | **Run existing tests** to verify no regression: `uv run pytest tests/` |
-
----
-
-## Playbook: Bug Fix (Cross-Layer)
-
-**Example:** "Creating a source via URL doesn't show in notebook"
-
-| Step | What to Do |
-|------|------------|
-| 1 | **Trace the data flow.** Start from where the user sees the problem (frontend) and trace backward: component → hook → API call → router → service → domain → database. |
-| 2 | **Identify where the chain breaks.** Use API docs to test the backend independently of the frontend. Use SurrealDB queries to check if data was persisted. |
-| 3 | **Fix at the right layer.** Don't patch the symptom in the frontend if the bug is in the service. |
-| 4 | **Verify the full chain** after fixing. |
-| 5 | **Add tests** at the layer where the bug was. |
-
----
-
-## Playbook: Database Migration
-
-**Example:** "Add index on source.notebook_id for query performance"
-
-| Step | File(s) | What to Do |
-|------|---------|------------|
-| 1 | `open_notebook/database/migrations/N.surrealql` (+ `N_down.surrealql`) | Write SurrealQL. Use next number in sequence. Check existing migrations for patterns. |
-| 2 | `open_notebook/database/async_migrate.py` | Register the new files in `AsyncMigrationManager.__init__` — migrations are hard-coded, not auto-discovered. |
-| 3 | Domain model (if schema change) | Update field definitions to match. |
-| 4 | API schemas (if new/changed fields) | Update Pydantic models. |
-| 5 | **Verify:** Restart API and check logs | Migrations auto-run on startup. Look for errors in Loguru output. |
-
-**Important:**
-- Migrations are numbered and run in order
-- They're tracked in the `_sbl_migrations` table — won't re-run
-- One migration per PR that needs one, numbered in merge order; never consolidate after a migration lands on main (dev images apply it immediately) — see [ADR-006](decisions/ADR-006-migration-granularity.md)
-- For destructive changes (DROP FIELD), consider data preservation
-- Test with existing data, not just empty database
-
----
-
-## Playbook: Frontend-Only Change
-
-**Example:** "Improve notebook list loading state"
-
-| Step | File(s) | What to Do |
-|------|---------|------------|
-| 1 | Identify component | Components are in `frontend/src/app/` (pages) or `frontend/src/components/` (shared). |
-| 2 | Make changes | Follow existing patterns: functional components, hooks for state, Tailwind for styling. |
-| 3 | i18n strings | If adding user-visible text, add to ALL locale files under `frontend/src/lib/locales/`. |
-| 4 | Test in browser | Check responsive layout, dark mode (if applicable), loading states, empty states, error states. |
-
-**Key patterns:**
-- `'use client'` directive at top of components using hooks
-- State: `useState` for local, Zustand for global, TanStack Query for server
-- Styling: Tailwind utility classes, Shadcn/ui components from `components/ui/`
-- Types: Define in `lib/types/api.ts`, import everywhere
+**Nodes are `async def`** (`ask.py`, `source.py`, `transformation.py`, `prompt.py`). Only the two checkpointed chat graphs (`chat.py`, `source_chat.py`) use sync nodes with an `asyncio.new_event_loop()` workaround, because their `SqliteSaver` checkpointer is synchronous. Don't copy that pattern into a graph without a checkpointer.
 
 ---
 
 ## Playbook: New Background Command
 
-**Example:** "Add command to rebuild all embeddings for a notebook"
+**Example:** "Rebuild all embeddings"
 
-| Step | File(s) | What to Do |
+| Step | File(s) | What to do |
 |------|---------|------------|
-| 1 | `commands/<name>_commands.py` | Define `CommandInput` and `CommandOutput` Pydantic classes. Write the command function. |
-| 2 | Register command | Add to the command service so it can be submitted via `CommandService.submit_command_job()`. |
-| 3 | API endpoint | Add endpoint that submits the command and returns the command ID. |
-| 4 | Frontend (polling) | Use `/commands/{command_id}` endpoint to poll for status. Show progress to user. |
+| 1 | `commands/<area>_commands.py` | Define `CommandInput` / `CommandOutput` subclasses and an `async` function decorated with `@command("<name>", app="open_notebook", retry={...})`. |
+| 2 | `commands/__init__.py` | Import the command. The worker starts with `--import-modules commands`, so a command that isn't imported there is never registered. |
+| 3 | API | Submit it: `await CommandService.submit_command_job("open_notebook", "<name>", input.model_dump())`. This returns a job id immediately. |
+| 4 | Frontend | Poll `GET /api/commands/jobs/{job_id}` for status. Sources also have `GET /api/sources/{source_id}/status`. |
+| 5 | `tests/` | Call the command function directly with mocked dependencies. |
 
-**Pattern:**
-- Commands are fire-and-forget: submit returns immediately with a command ID
-- Retry config: `max_attempts`, `stop_on` exceptions (ValueError = no retry)
-- Exponential backoff with jitter for transient failures
+**Retry:** `retry` takes `max_attempts`, `wait_strategy` (`exponential_jitter`), `wait_min`, `wait_max` and `stop_on`, a list of exception types that fail the job immediately. Retries happen for any exception not in `stop_on`. Existing commands put `ValueError`, `ConfigurationError`, `NotFoundError` and similar permanent errors in `stop_on`. Make the command safe to run twice. Restart the worker after changing a command.
+
+---
+
+## Playbook: Database Migration
+
+| Step | File(s) | What to do |
+|------|---------|------------|
+| 1 | `open_notebook/database/migrations/N.surrealql` + `N_down.surrealql` | SurrealQL for the change and its rollback. `N` is the next number. Copy patterns from recent migrations. |
+| 2 | `open_notebook/database/async_migrate.py` | Add both files to the lists in `AsyncMigrationManager.__init__`. Migrations are listed by hand, not discovered. |
+| 3 | Domain model and `api/models.py` | Match the new fields. |
+| 4 | Verify | Restart the API. Migrations run on startup; the log shows `Running migration N` and `Migrations completed successfully. Database is now at version N`. |
+
+- Applied versions are recorded in the `_sbl_migrations` table and never re-run.
+- One migration per PR that needs one, numbered in merge order. Never consolidate migrations after one lands on `main`: dev images apply it immediately ([ADR-006](decisions/ADR-006-migration-granularity.md)).
+- Test against a database with existing data, not only an empty one.
+
+---
+
+## Playbook: Bug Fix
+
+| Step | What to do |
+|------|------------|
+| 1 | **Find the layer.** Trace from where the user sees the problem: component → hook → API module → router → domain/graph/command → database. Use `/docs` (Swagger) to call the backend without the frontend. |
+| 2 | **Read the rules** for that layer: the matching AGENTS file and page in `docs/7-DEVELOPMENT/`. |
+| 3 | **Reproduce it with a test** that fails. |
+| 4 | **Fix it at the layer where it breaks**, with the smallest change. Don't patch a backend bug in the frontend, and don't refactor surrounding code. |
+| 5 | **Run the whole suite**: `uv run pytest tests/` (and the frontend checks if you touched it). |
+
+---
+
+## Playbook: Frontend-Only Change
+
+| Step | What to do |
+|------|------------|
+| 1 | Pages are in `frontend/src/app/`, feature components in `frontend/src/components/<feature>/`, primitives in `frontend/src/components/ui/`. |
+| 2 | Follow existing patterns: TanStack Query for server state, Zustand stores (`src/lib/stores/`) for client state, design tokens for styling ([ADR-011](decisions/ADR-011-design-token-system.md); no raw Tailwind palette classes). |
+| 3 | New user-visible text goes into every locale (next playbook). |
+| 4 | Check loading, empty and error states, both themes, and a narrow viewport. Add a colocated `*.test.tsx` for logic worth testing. |
 
 ---
 
 ## Playbook: i18n / Translation Update
 
-**Example:** "Add translations for new settings page"
-
-| Step | File(s) | What to Do |
+| Step | File(s) | What to do |
 |------|---------|------------|
-| 1 | `frontend/src/lib/locales/en-US/index.ts` | Add English strings first. Group by feature. |
-| 2 | All other locale files | Add the same keys to: `pt-BR`, `zh-CN`, `zh-TW`, `ja-JP`, `ru-RU`, `bn-IN`. Use English as placeholder if translation unavailable. |
-| 3 | Component | Use `const { t } = useTranslation()` and access via `t('section.key')`. |
+| 1 | `frontend/src/lib/locales/en-US/index.ts` | Add the English strings. en-US is the reference shape. |
+| 2 | Every other directory under `frontend/src/lib/locales/` | Add the same keys. Use the English text as a placeholder if you can't translate it. |
+| 3 | Component | `const { t } = useTranslation()`, then `t('section.key')`. |
 
-**7 locales total.** Don't forget any.
+You can't forget a locale silently: each non-en-US locale ends with `satisfies TranslationShape`, so a missing or extra key fails `npm run build` (type check), and `src/lib/locales/index.test.ts` checks parity at runtime.
 
-### Adding a whole new language
+### Adding a new language
 
-| Step | File(s) | What to Do |
+| Step | File(s) | What to do |
 |------|---------|------------|
-| 1 | `frontend/src/lib/locales/<code>/index.ts` | Copy the structure from `en-US/index.ts` and translate all strings. |
-| 2 | `frontend/src/lib/locales/index.ts` | Register the locale: import it, add to `resources`, add to the `languages` array (`{ code, label }`). |
+| 1 | `frontend/src/lib/locales/<code>/index.ts` | Copy `en-US/index.ts`, translate it, export it, and end the object with `} satisfies TranslationShape;`. |
+| 2 | `frontend/src/lib/locales/index.ts` | Import it, add it to `resources` and to the `languages` array. The language toggle (`components/common/LanguageToggle.tsx`) renders `languages`, so the new language appears there with no further edit. |
 | 3 | `frontend/src/lib/utils/date-locale.ts` | Import the matching `date-fns/locale` and add it to `LOCALE_MAP`. |
-| 4 | **Test** | Switch languages via the UI language toggle; missing keys fall back to en-US. |
+| 4 | Test | Switch to the language in the toggle; dates and labels should change. |
 
 ---
 
-## Quick Reference: File Locations by Layer
+## Quick Reference: Where Things Live
 
-| Layer | Location | Schema/Types | Tests |
-|-------|----------|-------------|-------|
-| Domain models | `open_notebook/domain/` | Pydantic fields | `tests/` |
-| Database | `open_notebook/database/repository.py` | SurrealQL | `tests/` |
-| Migrations | `open_notebook/database/migrations/*.surrealql` | SurrealQL | Auto-run on startup |
-| AI/LLM | `open_notebook/ai/` | Esperanto types | `tests/` |
-| Graphs | `open_notebook/graphs/` | TypedDict state | `tests/` |
-| Prompts | `prompts/**/*.jinja` | Jinja2 context | — |
-| Commands | `commands/` | CommandInput/Output | `tests/` |
-| API routers | `api/routers/` | `api/models.py` | `tests/` |
-| API services | `api/*_service.py` | — | `tests/` |
-| Frontend types | `frontend/src/lib/types/` | TypeScript interfaces | — |
-| Frontend API | `frontend/src/lib/api/` | — | — |
-| Frontend hooks | `frontend/src/lib/hooks/` | — | `frontend/src/test/` |
-| Frontend components | `frontend/src/components/` | Props interfaces | `frontend/src/test/` |
-| Frontend pages | `frontend/src/app/` | — | — |
-| i18n | `frontend/src/lib/locales/` | — | — |
+| Layer | Location | Tests |
+|-------|----------|-------|
+| Domain models | `open_notebook/domain/`, `open_notebook/ai/models.py`, `open_notebook/podcasts/models.py` | `tests/` |
+| Database access | `open_notebook/database/repository.py` (`repo_query`, `repo_create`, …) | `tests/` |
+| Migrations | `open_notebook/database/migrations/` + `async_migrate.py` | run on API startup |
+| AI provisioning and providers | `open_notebook/ai/` | `tests/` |
+| Graphs | `open_notebook/graphs/` | `tests/` |
+| Prompts | `prompts/**/*.jinja` | `tests/` (podcast templates) |
+| Background commands | `commands/` | `tests/` |
+| API routers and schemas | `api/routers/`, `api/models.py` | `tests/` |
+| Frontend types / API / hooks | `frontend/src/lib/types/`, `lib/api/`, `lib/hooks/` | colocated `*.test.ts` |
+| Frontend components / pages | `frontend/src/components/`, `frontend/src/app/` | colocated `*.test.tsx` |
+| i18n | `frontend/src/lib/locales/` | `locales/index.test.ts` |

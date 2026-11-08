@@ -18,7 +18,7 @@ from api.models import CredentialResponse, validate_url_key_provider_required_fi
 from open_notebook.ai.connection_tester import normalize_anthropic_compatible_base_url
 from open_notebook.ai.model_discovery import (
     ANTHROPIC_FALLBACK_MODELS,
-    OPENROUTER_AUDIO_MODELS,
+    audio_seed,
     classify_model_type,
     fetch_anthropic_model_ids,
 )
@@ -187,16 +187,22 @@ def create_credential_from_env(provider: str) -> Credential:
             api_key=SecretStr(api_key) if api_key else None,
         )
     else:
-        # Simple API key providers
+        # Simple API key providers (plus an optional *_BASE_URL endpoint
+        # override for providers that declare one, e.g. regional endpoints)
         config = PROVIDER_ENV_CONFIG.get(provider, {})
         required = config.get("required", [])
         env_var = required[0] if required else None
         api_key = os.environ.get(env_var) if env_var else None
+        spec = PROVIDERS.get(provider)
+        base_url_env = spec.base_url_env if spec else None
         return Credential(
             name=name,
             provider=provider,
             modalities=modalities,
             api_key=SecretStr(api_key) if api_key else None,
+            base_url=(os.environ.get(base_url_env, "").strip() or None)
+            if base_url_env
+            else None,
         )
 
 
@@ -684,8 +690,14 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
     # Standard OpenAI-style API discovery
     discovery_url = url_map.get(provider)
     user_supplied_url = False
-    if provider == "openai" and base_url:
-        discovery_url = models_endpoint(base_url)
+    # A credential's base URL override is also where its models are listed:
+    # OpenAI (gateways) and providers that declare a *_BASE_URL override, e.g.
+    # SiliconFlow's mainland-China api.siliconflow.cn. Other providers keep
+    # their registry URL, which may carry provider-specific query params.
+    spec = PROVIDERS.get(provider)
+    honors_base_url = provider == "openai" or bool(spec and spec.base_url_env)
+    if base_url and base_url.strip() and discovery_url and honors_base_url:
+        discovery_url = models_endpoint(base_url.strip())
         user_supplied_url = True
     if not discovery_url or not api_key:
         return []
@@ -722,15 +734,15 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
                 for m in data.get("data", [])
                 if m.get("id")
             ]
-            # OpenRouter's /models listing does not reliably surface its TTS/STT
-            # catalog, so seed the audio model ids esperanto ships as defaults.
-            if provider == "openrouter":
+            # Some /models listings (OpenRouter, MiniMax) don't surface their
+            # TTS/STT catalog, so seed the audio model ids esperanto supports
+            # (only on top of a successful listing).
+            if discovered:
                 seen = {m["name"] for m in discovered}
-                for names in OPENROUTER_AUDIO_MODELS.values():
-                    for name in names:
-                        if name not in seen:
-                            discovered.append({"name": name, "provider": provider})
-                            seen.add(name)
+                for name, _model_type in audio_seed(provider):
+                    if name not in seen:
+                        discovered.append({"name": name, "provider": provider})
+                        seen.add(name)
             return discovered
     except Exception as e:
         logger.warning(f"Failed to discover {provider} models: {e}")
@@ -934,6 +946,9 @@ async def migrate_from_env() -> dict:
 
             logger.info(f"[{provider}] Creating credential from env vars")
             cred = create_credential_from_env(provider)
+            # Same URL checks as credentials created through the API.
+            if cred.base_url:
+                await validate_url(cred.base_url, provider)
             await cred.save()
             logger.info(f"[{provider}] Credential saved successfully (id={cred.id})")
 

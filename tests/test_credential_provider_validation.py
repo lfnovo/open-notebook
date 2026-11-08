@@ -32,6 +32,8 @@ KNOWN_GOOD_PROVIDERS = [
     "dashscope",
     "minimax",
     "novita",
+    "siliconflow",
+    "zai",
     "ppq",
     "cohere",
     "voyage",
@@ -114,6 +116,8 @@ class TestProviderRegistryIsTheSourceOfTruth:
             "dashscope": "https://dashscope.aliyuncs.com/compatible-mode/v1/models",
             "minimax": "https://api.minimax.io/v1/models",
             "novita": "https://api.novita.ai/openai/models",
+            "siliconflow": "https://api.siliconflow.com/v1/models",
+            "zai": "https://api.z.ai/api/paas/v4/models",
             "ppq": "https://api.ppq.ai/v1/models?type=all",
         }
         assert {

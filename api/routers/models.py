@@ -112,7 +112,7 @@ MODEL_PREFERENCES = {
     "mistral": ["mistral-large", "mixtral"],
     "groq": ["llama-3.3", "llama-3.1", "mixtral"],
     "dashscope": ["qwen-max", "qwen-plus", "qwen-turbo"],
-    "minimax": ["MiniMax-M2.5", "MiniMax-M2.5-highspeed"],
+    "minimax": ["MiniMax-M3", "MiniMax-M2.5", "MiniMax-M2.5-highspeed"],
 }
 
 
@@ -409,6 +409,8 @@ async def get_provider_availability():
             "dashscope": "DASHSCOPE_API_KEY",
             "minimax": "MINIMAX_API_KEY",
             "novita": "NOVITA_API_KEY",
+            "siliconflow": "SILICONFLOW_API_KEY",
+            "zai": "ZAI_API_KEY",
             "ppq": "PPQ_API_KEY",
             "cohere": "COHERE_API_KEY",
         }

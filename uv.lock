@@ -431,7 +431,7 @@ wheels = [
 
 [[package]]
 name = "content-core"
-version = "2.2.1"
+version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ai-prompter" },
@@ -462,9 +462,9 @@ dependencies = [
     { name = "validators" },
     { name = "youtube-transcript-api" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/46/f3/cf597ee4d52ed046ce4461d256a1ce56948e3b7de3943128576101e4aa78/content_core-2.2.1.tar.gz", hash = "sha256:296e10c65720aaeb9b230a78ed20ebab334978683ae25e6db6a067a8855b4428", size = 19306321, upload-time = "2026-11-04T00:15:22.778Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a9/c3/351789938595bd3f39575dcee85d87f57c2d4a899c483e1e76bb772108a1/content_core-2.3.0.tar.gz", hash = "sha256:ce61b54faf3c502ec52a018cc49e39391685378471ce34bca10dcd9494360adc", size = 19309600, upload-time = "2026-11-08T00:41:42.209Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/64/ca/a93050a33fcdd404de16fd18aaba9401dddd88fe6944a77804c30ddccf1d/content_core-2.2.1-py3-none-any.whl", hash = "sha256:cb5c6de2bc162d6399df4f86d32ba2f35f0c4b247a96609a948fcbca97154605", size = 73479, upload-time = "2026-11-04T00:15:21.131Z" },
+    { url = "https://files.pythonhosted.org/packages/69/0d/9b8132354a187b02ecb02c0138861154bad7152ace4cb8b5e9388a2a65d3/content_core-2.3.0-py3-none-any.whl", hash = "sha256:95a9917f95d7a97adb64d97dcff46f613d5c50a65d1524033a2b7965849ed451", size = 74771, upload-time = "2026-11-08T00:41:40.398Z" },
 ]
 
 [[package]]
@@ -2076,7 +2076,7 @@ notebooks = [
 requires-dist = [
     { name = "ai-prompter", specifier = ">=0.4,<1" },
     { name = "babel", specifier = ">=2.18.0" },
-    { name = "content-core", specifier = ">=2.2.1,<3" },
+    { name = "content-core", specifier = ">=2.3.0,<3" },
     { name = "esperanto", specifier = ">=2.28.0,<3" },
     { name = "fastapi", specifier = ">=0.104.0" },
     { name = "httpx", extras = ["socks"], specifier = ">=0.27.0" },

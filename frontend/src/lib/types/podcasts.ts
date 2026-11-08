@@ -22,6 +22,7 @@ export interface EpisodeProfile {
   default_briefing: string
   num_segments: number
   max_tokens?: number | null
+  audio_gap_ms?: number | null
 }
 
 export interface SpeakerVoiceConfig {

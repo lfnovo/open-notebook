@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Pause between podcast turns.** Episode profiles have a **Pause between turns (ms)** field for the silence between speakers in the finished audio. Leave it blank for the default (400 ms) or set 0 for back-to-back audio; the API rejects negative values with a 400 (#1436)
 - **Image descriptions through your own vision model.** With **Describe images and charts** on, Docling can now send images to any OpenAI-compatible endpoint (vLLM, Ollama, LM Studio, a hosted API) instead of its small built-in model: set `CCORE_DOCLING_VISION_URL` and `CCORE_DOCLING_VISION_MODEL` for the worker, plus optional `_API_KEY`, `_PROMPT`, `_MAX_TOKENS`, `_TIMEOUT` and `_TOKEN_PARAM`. Requires content-core 2.3. Without the URL nothing changes and nothing leaves the machine (#1478)
 - **Arabic README.** An Arabic translation of the README is at [docs/i18n/ar/README.md](docs/i18n/ar/README.md), linked from the README's language bar (#1551)
 - **Turkish README.** A Turkish translation of the README is at [docs/i18n/tr/README.md](docs/i18n/tr/README.md), linked from the README's language bar (#1549)

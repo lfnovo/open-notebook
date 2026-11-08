@@ -250,6 +250,10 @@ async def generate_podcast_command(
                 del episode_profiles_dict[ep_name]
                 continue
             ep_dict["speaker_config"] = speaker_name
+            # podcast-creator types audio_gap_ms as int; an unset (None)
+            # value must fall back to its default instead of failing validation.
+            if ep_dict.get("audio_gap_ms") is None:
+                ep_dict.pop("audio_gap_ms", None)
 
             try:
                 if ep_dict.get("outline_llm"):

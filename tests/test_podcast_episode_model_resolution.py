@@ -312,3 +312,34 @@ class TestGetEpisodeModelResolution:
         mock_batch.assert_awaited_once()
         assert response.episode_profile["outline_model_name"] == "gpt-4o"
         assert response.speaker_profile["voice_model_provider"] == "elevenlabs"
+
+
+@pytest.mark.asyncio
+async def test_rejected_retry_keeps_the_failed_episode():
+    """Retry submits before deleting: when the profiles are still incomplete
+    the request fails and the failed episode stays in the list (#1400)."""
+    from unittest.mock import Mock
+
+    from api.routers.podcasts import retry_podcast_episode
+    from open_notebook.exceptions import InvalidInputError
+
+    episode = Mock()
+    episode.get_job_detail = AsyncMock(return_value={"status": "failed"})
+    episode.episode_profile = {"name": "Episode"}
+    episode.speaker_profile = {"name": "Speakers"}
+    episode.delete = AsyncMock()
+
+    with (
+        patch(
+            "api.routers.podcasts.PodcastService.get_episode",
+            new=AsyncMock(return_value=episode),
+        ),
+        patch(
+            "api.routers.podcasts.PodcastService.submit_generation_job",
+            new=AsyncMock(side_effect=InvalidInputError("no outline model")),
+        ),
+    ):
+        with pytest.raises(InvalidInputError):
+            await retry_podcast_episode("episode:1")
+
+    episode.delete.assert_not_awaited()

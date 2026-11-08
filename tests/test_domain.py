@@ -9,7 +9,7 @@ import sys
 import tempfile
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from pydantic import ValidationError
@@ -532,14 +532,22 @@ class TestPodcastService:
 
         with (
             patch.object(
-                EpisodeProfile, "get_by_name", new=AsyncMock(return_value=object())
+                EpisodeProfile,
+                "get_by_name",
+                new=AsyncMock(
+                    return_value=SimpleNamespace(
+                        name="Episode", outline_llm="model:o", transcript_llm="model:t"
+                    )
+                ),
             ),
             patch.object(
                 SpeakerProfile,
                 "get_by_name",
                 new=AsyncMock(
                     return_value=SimpleNamespace(
-                        id="speaker_profile:speakers", name="Speakers"
+                        id="speaker_profile:speakers",
+                        name="Speakers",
+                        voice_model="model:v",
                     )
                 ),
             ),
@@ -566,6 +574,48 @@ class TestPodcastService:
         assert "First source full text for submitted podcast content." in content
         assert "Second source full text for submitted podcast content." in content
         assert "Notebook(id=" not in content
+
+    @pytest.mark.parametrize(
+        "missing, message",
+        [
+            ("outline_llm", "Episode profile 'Episode' has no outline model"),
+            ("transcript_llm", "Episode profile 'Episode' has no transcript model"),
+            ("voice_model", "Speaker profile 'Speakers' has no voice model"),
+        ],
+    )
+    @pytest.mark.asyncio
+    async def test_incomplete_profile_is_rejected_before_queueing(
+        self, missing, message
+    ):
+        """An incomplete profile is a 400 naming the missing model, and no job
+        is queued: the worker would fail before creating an episode (#1400)."""
+        episode = SimpleNamespace(
+            name="Episode", outline_llm="model:o", transcript_llm="model:t"
+        )
+        speaker = SimpleNamespace(
+            id="speaker_profile:s", name="Speakers", voice_model="model:v"
+        )
+        setattr(episode if missing != "voice_model" else speaker, missing, None)
+        submit = Mock()
+
+        with (
+            patch.object(
+                EpisodeProfile, "get_by_name", new=AsyncMock(return_value=episode)
+            ),
+            patch.object(
+                SpeakerProfile, "resolve", new=AsyncMock(return_value=speaker)
+            ),
+            patch("api.podcast_service.submit_command", new=submit),
+        ):
+            with pytest.raises(InvalidInputError, match=message):
+                await PodcastService.submit_generation_job(
+                    episode_profile_name="Episode",
+                    speaker_profile_name="Speakers",
+                    episode_name="Episode Name",
+                    content="content",
+                )
+
+        submit.assert_not_called()
 
 
 # ============================================================================

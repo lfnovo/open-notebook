@@ -5,7 +5,7 @@ import { podcastsApi, EpisodeProfileInput, SpeakerProfileInput } from '@/lib/api
 import { QUERY_KEYS } from '@/lib/api/query-client'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { getApiErrorKey } from '@/lib/utils/error-handler'
+import { getApiErrorKey, getApiErrorMessage } from '@/lib/utils/error-handler'
 import {
   ACTIVE_EPISODE_STATUSES,
   EpisodeProfile,
@@ -105,7 +105,7 @@ export function useRetryPodcastEpisode() {
     onError: (error: unknown) => {
       toast({
         title: t('podcasts.failedToRetry'),
-        description: getApiErrorKey(error, t('common.error')),
+        description: getApiErrorMessage(error, t, 'common.error'),
         variant: 'destructive',
       })
     },
@@ -407,7 +407,7 @@ export function useGeneratePodcast() {
     onError: (error: unknown) => {
       toast({
         title: t('podcasts.failedToStartGeneration'),
-        description: getApiErrorKey(error, t('podcasts.tryAgainMoment')),
+        description: getApiErrorMessage(error, t, 'podcasts.tryAgainMoment'),
         variant: 'destructive',
       })
     },

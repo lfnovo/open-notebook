@@ -372,19 +372,20 @@ async def retry_podcast_episode(episode_id: str):
                 detail="Cannot retry: episode or speaker profile name missing from stored data",
             )
 
-        # Delete audio file if any
-        _delete_episode_audio(episode, episode_id)
-
-        # Delete the failed episode
-        await episode.delete()
-
-        # Submit a new job
+        # Submit first: if the profiles are still incomplete the request is
+        # rejected and the failed episode stays visible instead of vanishing.
         job_id = await PodcastService.submit_generation_job(
             episode_profile_name=ep_profile_name,
             speaker_profile_name=sp_profile_name,
             episode_name=episode_name,
             content=content,
         )
+
+        # Delete audio file if any
+        _delete_episode_audio(episode, episode_id)
+
+        # Delete the failed episode
+        await episode.delete()
 
         return {"job_id": job_id, "message": "Retry submitted successfully"}
 

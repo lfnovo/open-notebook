@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from surreal_commands import get_command_status, submit_command
 
 from open_notebook.domain.notebook import Notebook
+from open_notebook.exceptions import InvalidInputError, OpenNotebookError
 from open_notebook.podcasts.models import EpisodeProfile, PodcastEpisode, SpeakerProfile
 
 
@@ -54,6 +55,20 @@ class PodcastService:
             speaker_profile = await SpeakerProfile.resolve(speaker_profile_name)
             if not speaker_profile:
                 raise ValueError(f"Speaker profile '{speaker_profile_name}' not found")
+
+            # Reject incomplete profiles here: the worker would fail before
+            # creating the episode, so nothing would show in the list (#1400).
+            for profile, label, value in (
+                (episode_profile, "outline model", episode_profile.outline_llm),
+                (episode_profile, "transcript model", episode_profile.transcript_llm),
+                (speaker_profile, "voice model", speaker_profile.voice_model),
+            ):
+                if not value:
+                    kind = "Episode" if profile is episode_profile else "Speaker"
+                    raise InvalidInputError(
+                        f"{kind} profile '{profile.name}' has no {label} "
+                        f"configured. Please update the profile to select a {label}."
+                    )
 
             # Get content from notebook if not provided directly
             if not content and notebook_id:
@@ -105,6 +120,8 @@ class PodcastService:
             )
             return job_id_str
 
+        except OpenNotebookError:
+            raise
         except Exception as e:
             logger.error(f"Failed to submit podcast generation job: {e}")
             raise HTTPException(

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Turkish README.** A Turkish translation of the README is at [docs/i18n/tr/README.md](docs/i18n/tr/README.md), linked from the README's language bar (#1549)
 
 ### Security
+- **Without a password, the API only answers browser pages on its own host.** When `OPEN_NOTEBOOK_PASSWORD` and `CORS_ORIGINS` are both unset, the API used to accept cross-origin requests from any web page, so a page you visited could call an unauthenticated Open Notebook through your browser and read the answers. The default now admits only `localhost` origins and pages on the same host name the browser used to reach the API, which is where the UI lives. The default UI keeps working from this machine, the LAN or a VPS. If the UI and the API are served from different host names (for example behind a reverse proxy), set a password or list the UI origin in `CORS_ORIGINS`. CORS only stops other pages from reading the answers; it is not authentication
 - The API logs a warning at startup when `OPEN_NOTEBOOK_PASSWORD` is not set, saying that authentication is disabled and how to fix it.
 
 ### Fixed

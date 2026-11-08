@@ -104,7 +104,7 @@ Two more Docling options in **Settings → Content Processing**, both off by def
 
 Like OCR, both only take effect when Docling handles the document.
 
-By default, image descriptions come from Docling's small built-in model, which is fast but often too weak for real charts and figures. To use a stronger vision model you already run (Qwen2.5-VL, Pixtral, Gemma vision and similar, served by vLLM, Ollama, LM Studio or a hosted API), point the worker at its OpenAI-compatible endpoint with `CCORE_DOCLING_VISION_URL` and `CCORE_DOCLING_VISION_MODEL` ([Environment Reference](../5-CONFIGURATION/environment-reference.md#content-extraction)). Chart data extraction keeps using Docling's own model.
+By default, image descriptions come from Docling's small built-in model, which is fast but often too weak for real charts and figures. To use a stronger vision model you already run (Qwen2.5-VL, Pixtral, Gemma vision and similar, served by vLLM, Ollama, LM Studio or a hosted API), point the worker at its OpenAI-compatible endpoint with `CCORE_DOCLING_VISION_URL` and `CCORE_DOCLING_VISION_MODEL`. A hosted endpoint receives every described image, so use a model running on your own hardware to keep documents local ([Environment Reference](../5-CONFIGURATION/environment-reference.md#content-extraction)). Chart data extraction keeps using Docling's own model.
 
 ---
 

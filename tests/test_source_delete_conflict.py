@@ -99,6 +99,58 @@ async def test_persistent_conflict_raises_and_keeps_file(source_file):
 
 
 @pytest.mark.asyncio
+async def test_persistent_record_delete_conflict_raises_and_keeps_file(source_file):
+    # The embeddings and insights are gone, but the source record itself can't
+    # be deleted: the file must stay so the source still points at it.
+    repo_delete = AsyncMock(
+        side_effect=RuntimeError(f"Failed to delete record: {CONFLICT}")
+    )
+
+    with (
+        patch("open_notebook.domain.notebook.repo_query", AsyncMock(return_value=[])),
+        patch("open_notebook.domain.base.repo_delete", repo_delete),
+        pytest.raises(DatabaseOperationError, match="transaction conflict"),
+    ):
+        await _source(source_file).delete()
+
+    assert repo_delete.await_count == notebook_module.SOURCE_DELETE_MAX_ATTEMPTS
+    assert source_file.exists()
+
+
+@pytest.mark.asyncio
+async def test_notebook_delete_stops_when_an_exclusive_source_delete_fails():
+    # Before, the failure was logged and the notebook delete went on: the
+    # source was unlinked from every notebook but still existed.
+    from open_notebook.domain.notebook import Notebook
+
+    queries = []
+
+    async def repo_query(query, params=None):
+        queries.append(query)
+        if "assigned_others" in query:
+            return [{"id": "source:abc", "assigned_others": 0}]
+        return []
+
+    failing_source = AsyncMock()
+    failing_source.delete.side_effect = DatabaseOperationError(
+        "Failed to delete source: database transaction conflict, please retry"
+    )
+    notebook = Notebook(id="notebook:nb", name="NB", description="")
+
+    with (
+        patch("open_notebook.domain.notebook.repo_query", repo_query),
+        patch.object(Notebook, "get_notes", AsyncMock(return_value=[])),
+        patch.object(Source, "get", AsyncMock(return_value=failing_source)),
+        patch("open_notebook.domain.base.repo_delete", AsyncMock()) as repo_delete,
+        pytest.raises(DatabaseOperationError, match="Failed to delete notebook"),
+    ):
+        await notebook.delete(delete_exclusive_sources=True)
+
+    assert not any(q.strip().startswith("DELETE reference") for q in queries)
+    repo_delete.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_other_errors_are_not_retried():
     repo_query = AsyncMock(side_effect=RuntimeError("connection refused"))
 

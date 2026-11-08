@@ -280,15 +280,12 @@ class Notebook(ObjectModel):
                 for src in source_counts:
                     source_id = src.get("id")
                     if source_id and src.get("assigned_others", 0) == 0:
-                        # Exclusive source - delete it
-                        try:
-                            source = await Source.get(str(source_id))
-                            await source.delete()
-                            deleted_sources += 1
-                        except Exception as e:
-                            logger.warning(
-                                f"Failed to delete exclusive source {source_id}: {e}"
-                            )
+                        # Exclusive source - delete it. A failure stops the
+                        # notebook delete before the source is unlinked, so it
+                        # is not left behind in no notebook (#1510).
+                        source = await Source.get(str(source_id))
+                        await source.delete()
+                        deleted_sources += 1
                     else:
                         unlinked_sources += 1
             else:

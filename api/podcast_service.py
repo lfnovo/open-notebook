@@ -65,9 +65,10 @@ class PodcastService:
             ):
                 if not value:
                     kind = "Episode" if profile is episode_profile else "Speaker"
+                    article = "an" if label[0] in "aeiou" else "a"
                     raise InvalidInputError(
                         f"{kind} profile '{profile.name}' has no {label} "
-                        f"configured. Please update the profile to select a {label}."
+                        f"configured. Please update the profile to select {article} {label}."
                     )
 
             # Get content from notebook if not provided directly

@@ -381,11 +381,13 @@ async def retry_podcast_episode(episode_id: str):
             content=content,
         )
 
-        # Delete audio file if any
-        _delete_episode_audio(episode, episode_id)
-
-        # Delete the failed episode
-        await episode.delete()
+        # The new job is already queued, so a failed cleanup must not turn
+        # this into an error: the old failed episode just stays in the list.
+        try:
+            _delete_episode_audio(episode, episode_id)
+            await episode.delete()
+        except Exception as e:
+            logger.warning(f"Retry queued but failed episode {episode_id} kept: {e}")
 
         return {"job_id": job_id, "message": "Retry submitted successfully"}
 

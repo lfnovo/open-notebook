@@ -578,7 +578,10 @@ class TestPodcastService:
     @pytest.mark.parametrize(
         "missing, message",
         [
-            ("outline_llm", "Episode profile 'Episode' has no outline model"),
+            (
+                "outline_llm",
+                "Episode profile 'Episode' has no outline model.*select an outline",
+            ),
             ("transcript_llm", "Episode profile 'Episode' has no transcript model"),
             ("voice_model", "Speaker profile 'Speakers' has no voice model"),
         ],

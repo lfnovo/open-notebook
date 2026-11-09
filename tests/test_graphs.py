@@ -664,28 +664,8 @@ class TestContentProcessDeleteSource:
         assert config.url_engine == "firecrawl"
         assert config.document_engine == "simple"
 
-    @pytest.mark.asyncio
-    @patch("open_notebook.ai.key_provider.provision_provider_keys")
-    @patch("open_notebook.graphs.source.Model")
-    @patch("open_notebook.graphs.source.extract_content")
-    @patch("open_notebook.graphs.source.ModelManager")
-    async def test_credential_linked_stt_model_provisions_key(
-        self, mock_model_manager, mock_extract, mock_model, mock_provision
-    ):
-        """A credential-linked default STT model must provision its provider's
-        env var before content-core runs, the same fallback resolve_* /
-        get_model use for language and embedding models (see #567, which
-        fixed the same class of bug for embeddings).
-
-        Without this, content-core builds its speech-to-text client from
-        process env vars only and raises ConfigurationError when
-        OPENAI_API_KEY is unset, even though a credential is configured in
-        the UI.
-        """
-        from content_core.common import ExtractionOutput
-
-        from open_notebook.graphs.source import SourceState, content_process
-
+    @staticmethod
+    def _stt_setup(mock_model_manager, mock_model, linked_credential):
         mm_instance = MagicMock()
         mm_instance.get_defaults = AsyncMock(
             return_value=MagicMock(default_speech_to_text_model="model:stt1")
@@ -696,20 +676,90 @@ class TestContentProcessDeleteSource:
         mock_stt_model = MagicMock()
         mock_stt_model.provider = "openai"
         mock_stt_model.name = "gpt-4o-mini-transcribe"
+        mock_stt_model.get_credential_obj = AsyncMock(return_value=linked_credential)
         mock_model.get = AsyncMock(return_value=mock_stt_model)
-        mock_provision.return_value = True
-        mock_extract.return_value = ExtractionOutput(title="T", content="body")
+
+    @pytest.mark.asyncio
+    @patch("open_notebook.ai.key_provider.provision_provider_keys")
+    @patch("open_notebook.graphs.source.Model")
+    @patch("open_notebook.graphs.source.extract_content")
+    @patch("open_notebook.graphs.source.ModelManager")
+    async def test_stt_key_provisioned_before_extraction(
+        self, mock_model_manager, mock_extract, mock_model, mock_provision, tmp_path
+    ):
+        """The default STT model's provider env vars must be provisioned before
+        content-core runs, the same fallback resolve_* / get_model use for
+        language and embedding models (see #567, which fixed the same class
+        of bug for embeddings).
+
+        content-core builds its speech-to-text client from process env vars
+        only, so without this it raises ConfigurationError when
+        OPENAI_API_KEY is unset, even though a credential is configured in
+        the UI.
+        """
+        from content_core.common import ExtractionOutput
+
+        from open_notebook.graphs.source import SourceState, content_process
+
+        self._stt_setup(mock_model_manager, mock_model, linked_credential=None)
+        calls: list[str] = []
+
+        async def provision(*args, **kwargs):
+            calls.append("provision")
+            return True
+
+        async def extract(*args, **kwargs):
+            calls.append("extract")
+            return ExtractionOutput(title="T", content="body")
+
+        mock_provision.side_effect = provision
+        mock_extract.side_effect = extract
+        audio = tmp_path / "audio.mp3"
+        audio.write_bytes(b"fake")
 
         state = {
             "source_id": "source:123",
-            "content_state": {"file_path": "/tmp/audio.mp3"},
+            "content_state": {"file_path": str(audio)},
             "embed": False,
             "apply_transformations": [],
         }
 
         await content_process(cast(SourceState, state))
 
-        mock_provision.assert_awaited_once_with("openai")
+        assert calls == ["provision", "extract"]
+        mock_provision.assert_awaited_once_with("openai", credential=None)
+
+    @pytest.mark.asyncio
+    @patch("open_notebook.ai.key_provider.provision_provider_keys")
+    @patch("open_notebook.graphs.source.Model")
+    @patch("open_notebook.graphs.source.extract_content")
+    @patch("open_notebook.graphs.source.ModelManager")
+    async def test_stt_model_linked_credential_is_provisioned(
+        self, mock_model_manager, mock_extract, mock_model, mock_provision, tmp_path
+    ):
+        """With several credentials for one provider, the STT model's own linked
+        credential is provisioned, not the provider's first one."""
+        from content_core.common import ExtractionOutput
+
+        from open_notebook.graphs.source import SourceState, content_process
+
+        linked = MagicMock()
+        self._stt_setup(mock_model_manager, mock_model, linked_credential=linked)
+        mock_provision.return_value = True
+        mock_extract.return_value = ExtractionOutput(title="T", content="body")
+        audio = tmp_path / "audio.mp3"
+        audio.write_bytes(b"fake")
+
+        state = {
+            "source_id": "source:123",
+            "content_state": {"file_path": str(audio)},
+            "embed": False,
+            "apply_transformations": [],
+        }
+
+        await content_process(cast(SourceState, state))
+
+        mock_provision.assert_awaited_once_with("openai", credential=linked)
 
 
 # ============================================================================

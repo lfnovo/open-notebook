@@ -788,7 +788,7 @@ export const frFR = {
     visionEnabled: "Décrire les images et les graphiques",
     visionHelp: "Utilise un modèle de vision pour décrire les images et extraire les données des graphiques avec le moteur Docling. Nettement plus lent et peut appeler un modèle de vision.",
     visionUrl: "URL du point de terminaison de vision",
-    visionUrlHelp: "URL chat completions compatible OpenAI à laquelle les images sont envoyées, par exemple http://localhost:1234/v1/chat/completions. Laissez vide pour utiliser CCORE_DOCLING_VISION_URL ; si aucun n'est défini, le modèle local intégré de Docling décrit les images. Définissez la clé d'API dans la variable d'environnement CCORE_DOCLING_VISION_API_KEY.",
+    visionUrlHelp: "URL de chat completions compatible avec OpenAI à laquelle les images sont envoyées, par exemple http://localhost:1234/v1/chat/completions. Laissez-la vide pour utiliser CCORE_DOCLING_VISION_URL ; si aucune URL n'est définie, le modèle local intégré de Docling décrit les images. Définissez la clé d'API dans la variable d'environnement CCORE_DOCLING_VISION_API_KEY.",
     visionModel: "Modèle de vision",
     visionModelHelp: "Nom du modèle envoyé au point de terminaison de vision. Laissez vide pour utiliser CCORE_DOCLING_VISION_MODEL ou le modèle par défaut du serveur.",
     visionPrompt: "Prompt de description d'image",

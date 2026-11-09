@@ -221,13 +221,17 @@ async def content_process(state: SourceState) -> dict:
             config_kwargs["docling_formulas"] = settings.docling_formulas
         if settings.docling_vision is not None:
             config_kwargs["docling_vision"] = settings.docling_vision
-        # Pass the vision endpoint fields only when filled in: an empty field
-        # must leave the CCORE_DOCLING_VISION_* worker variables in effect,
-        # since ContentCoreConfig prefers explicit kwargs over its env vars.
-        for field in _DOCLING_VISION_SETTINGS:
-            value = (getattr(settings, field) or "").strip()
-            if value:
-                config_kwargs[field] = value
+        # Pass the vision endpoint fields only while image description is on
+        # (otherwise Docling never uses them, and the URL re-check below would
+        # do a DNS lookup for every source), and only when filled in: an empty
+        # field must leave the CCORE_DOCLING_VISION_* worker variables in
+        # effect, since ContentCoreConfig prefers explicit kwargs over its env
+        # vars.
+        if settings.docling_vision:
+            for field in _DOCLING_VISION_SETTINGS:
+                value = (getattr(settings, field) or "").strip()
+                if value:
+                    config_kwargs[field] = value
     except Exception as e:
         # Keep the server-side traceback for diagnosing DB/deserialization
         # failures while still falling back to defaults (non-fatal).

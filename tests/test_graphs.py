@@ -616,6 +616,61 @@ class TestContentProcessDeleteSource:
         assert config.docling_vision_prompt == "env prompt"
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "blank_field",
+        ["docling_vision_url", "docling_vision_model", "docling_vision_prompt"],
+    )
+    async def test_each_blank_docling_vision_setting_keeps_its_env(
+        self, blank_field, monkeypatch
+    ):
+        """Each field falls back on its own: an empty one leaves its
+        CCORE_DOCLING_VISION_* variable in effect while the other two still
+        come from Settings (#1561)."""
+        env = {
+            "docling_vision_url": "http://env.local/v1",
+            "docling_vision_model": "env-model",
+            "docling_vision_prompt": "env prompt",
+        }
+        stored = {
+            "docling_vision_url": "http://192.168.1.20:1234/v1/chat/completions",
+            "docling_vision_model": "qwen2.5-vl-7b",
+            "docling_vision_prompt": "Describe the chart.",
+        }
+        for field, value in env.items():
+            monkeypatch.setenv(f"CCORE_{field.upper()}", value)
+
+        config = await self._config_with_vision_settings(**{**stored, blank_field: ""})
+
+        for field in stored:
+            expected = env[field] if field == blank_field else stored[field]
+            assert getattr(config, field) == expected
+
+    @pytest.mark.asyncio
+    async def test_docling_vision_settings_unused_while_vision_off(self, monkeypatch):
+        """With image description off, the stored endpoint is neither passed
+        to content-core nor re-validated, so other extractions do no DNS
+        lookup for it."""
+        for field in ("URL", "MODEL", "PROMPT"):
+            monkeypatch.delenv(f"CCORE_DOCLING_VISION_{field}", raising=False)
+
+        with patch(
+            "open_notebook.graphs.source.validate_url", new_callable=AsyncMock
+        ) as mock_validate:
+            config = await self._config_with_vision_settings(
+                docling_vision=False,
+                docling_vision_url="http://192.168.1.20:1234/v1/chat/completions",
+                docling_vision_model="qwen2.5-vl-7b",
+                docling_vision_prompt="Describe the chart.",
+            )
+
+        checked = [call.args[1] for call in mock_validate.await_args_list]
+        assert "docling_vision" not in checked
+        assert config.docling_vision is False
+        assert config.docling_vision_url is None
+        assert config.docling_vision_model is None
+        assert config.docling_vision_prompt is None
+
+    @pytest.mark.asyncio
     async def test_unsafe_docling_vision_url_is_not_used(self, monkeypatch):
         """A stored vision URL that fails validate_url() at extraction time
         (e.g. it now points at a cloud metadata address) is dropped instead of

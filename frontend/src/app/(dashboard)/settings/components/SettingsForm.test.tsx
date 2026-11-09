@@ -173,6 +173,9 @@ describe('SettingsForm vision endpoint fields', () => {
     fireEvent.change(screen.getByLabelText('settings.visionModel'), {
       target: { value: 'qwen2.5-vl-7b' },
     })
+    fireEvent.change(screen.getByLabelText('settings.visionPrompt'), {
+      target: { value: 'Describe the chart.' },
+    })
     fireEvent.click(screen.getByRole('button', { name: 'common.save' }))
 
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1))
@@ -181,7 +184,7 @@ describe('SettingsForm vision endpoint fields', () => {
         docling_vision: true,
         docling_vision_url: visionUrl,
         docling_vision_model: 'qwen2.5-vl-7b',
-        docling_vision_prompt: '',
+        docling_vision_prompt: 'Describe the chart.',
       })
     )
   })

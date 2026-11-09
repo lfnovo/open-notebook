@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Text search ranks the best match first.** `fn::text_search` had the same single-`SELECT` group/order/limit as vector search, so results came back in record-id order (notes before sources) and the `LIMIT` could drop the best match. Nothing re-sorted them afterwards, so the wrong order reached the search page and Ask as-is. Migration 26 now fixes both functions the same way (#1505)
 - Search result counts use the correct singular and plural forms in every supported language (#1402)
 - Adding a source that is already in a notebook no longer links it a second time. The duplicate check looked the link up in the wrong direction, so each call added another link: the notebook's source count went up and the source was listed twice (#1533)
+- **Notebook chat no longer refers to a search tool it doesn't have.** The chat system prompt told the model that document ids come from a search tool; it now says they are the ones in the provided context. The API reference and the `/api/chat/execute` schema now say that its `context` field takes the `context` object returned by `/api/chat/context`, not the `context_config` sent to it (#1553)
 
 ## [1.15.1] - 2026-11-03
 

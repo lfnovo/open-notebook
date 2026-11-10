@@ -153,6 +153,10 @@ Done! Create a notebook, add a source and start chatting. Full walkthrough: [Con
 - **[Docker Compose guide](docs/1-INSTALLATION/docker-compose.md)** - Settings, backups, updates, remote access
 - **[From Source (Developers)](docs/1-INSTALLATION/from-source.md)** - For development and contributions
 - **[Complete Installation Guide](docs/1-INSTALLATION/index.md)** - All deployment scenarios
+- **[Deploy on Easypanel][easypanel-deploy]** - One-click deployment template on [Easypanel][easypanel-home], a self-hosted Docker deployment platform
+
+[easypanel-home]: https://easypanel.io
+[easypanel-deploy]: https://easypanel.io/templates/open-notebook
 
 ---
 

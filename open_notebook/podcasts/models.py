@@ -202,11 +202,19 @@ class SpeakerProfile(ObjectModel):
         POST /api/podcasts/generate), while episode_profile.speaker_config
         stores a record ID (migration 20). This resolves either form and
         returns None when the reference doesn't match anything.
+
+        Uses a WHERE-filtered query rather than the direct record-pointer
+        form (`SELECT * FROM $id`), matching get_by_name()'s style. The
+        direct-pointer form was observed to reliably return empty in a
+        real deployment (AsyncSurreal over the websocket RPC protocol,
+        surrealdb 2.7.0) even though the same record ID resolves fine via
+        a WHERE query and via a direct SurrealQL session. See #1489.
         """
         ref_str = str(ref)
         if ref_str.startswith(f"{cls.table_name}:"):
             result = await repo_query(
-                "SELECT * FROM $id", {"id": ensure_record_id(ref_str)}
+                "SELECT * FROM speaker_profile WHERE id = $id",
+                {"id": ensure_record_id(ref_str)},
             )
             if result:
                 return cls(**result[0])

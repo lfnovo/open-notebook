@@ -104,6 +104,17 @@ class TestOpenAICompatTable:
             assert PROVIDER_DISCOVERY_FUNCTIONS[provider] is func
 
 
+class TestOllamaModelClassification:
+    def test_embedding_models_are_not_classified_as_language_models(self):
+        from open_notebook.ai.model_discovery import classify_model_type
+
+        assert classify_model_type("embeddinggemma:latest", "ollama") == "embedding"
+        assert classify_model_type("qwen3-embedding:0.6b", "ollama") == "embedding"
+        assert classify_model_type("gemma3", "ollama") == "language"
+        assert classify_model_type("qwen3", "ollama") == "language"
+        assert classify_model_type("llama3.2", "ollama") == "language"
+
+
 class TestGenericOpenAICompatDiscovery:
     @pytest.mark.asyncio
     async def test_discovery_uses_spec_url_and_bearer_key(self, monkeypatch):

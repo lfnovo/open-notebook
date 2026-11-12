@@ -1,3 +1,4 @@
+<!-- Hand-maintained translation of README.md as of commit f7e7067. Update this line when the translation is brought up to date. Kept by hand only while zdoc.app does not serve this language (#1550). -->
 <a id="readme-top"></a>
 
 <!-- [![Contributors][contributors-shield]][contributors-url] -->

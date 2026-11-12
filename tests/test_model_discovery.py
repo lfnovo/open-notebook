@@ -281,6 +281,22 @@ class TestMiniMaxDiscovery:
         assert classify_model_type("MiniMax-M3", "minimax") == "language"
 
 
+class TestOllamaEmbeddingClassification:
+    def test_embedding_models_are_classified_as_embedding(self):
+        from open_notebook.ai.model_discovery import classify_model_type
+
+        assert classify_model_type("embeddinggemma:latest", "ollama") == "embedding"
+        assert classify_model_type("qwen3-embedding:0.6b", "ollama") == "embedding"
+        assert classify_model_type("nomic-embed-text", "ollama") == "embedding"
+
+    def test_language_models_stay_language(self):
+        from open_notebook.ai.model_discovery import classify_model_type
+
+        assert classify_model_type("gemma3:latest", "ollama") == "language"
+        assert classify_model_type("qwen3:8b", "ollama") == "language"
+        assert classify_model_type("llama3.2:latest", "ollama") == "language"
+
+
 class TestAnthropicDiscovery:
     @pytest.mark.asyncio
     async def test_missing_key_returns_empty(self, monkeypatch):

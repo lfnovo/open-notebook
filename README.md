@@ -41,8 +41,8 @@
 </p>
 
 <div align="center">
-  <!-- Keep these links. zdoc.app translations update automatically with the README; translations under docs/i18n/ are maintained by hand. -->
-  <a href="docs/i18n/ar/README.md" dir="rtl">العربية</a> |
+  <!-- Keep these links. Translations are provided by zdoc.app and update automatically with the README. -->
+  <a href="https://zdoc.app/ar/lfnovo/open-notebook" dir="rtl">العربية</a> |
   <a href="https://zdoc.app/de/lfnovo/open-notebook">Deutsch</a> | 
   <a href="https://zdoc.app/es/lfnovo/open-notebook">Español</a> | 
   <a href="https://zdoc.app/fr/lfnovo/open-notebook">français</a> | 
@@ -50,7 +50,7 @@
   <a href="https://zdoc.app/ko/lfnovo/open-notebook">한국어</a> | 
   <a href="https://zdoc.app/pt/lfnovo/open-notebook">Português</a> | 
   <a href="https://zdoc.app/ru/lfnovo/open-notebook">Русский</a> | 
-  <a href="docs/i18n/tr/README.md">Türkçe</a> |
+  <a href="https://zdoc.app/tr/lfnovo/open-notebook">Türkçe</a> |
   <a href="https://zdoc.app/zh/lfnovo/open-notebook">中文</a>
 </div>
 

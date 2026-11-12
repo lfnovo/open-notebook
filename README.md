@@ -41,7 +41,7 @@
 </p>
 
 <div align="center">
-  <!-- Keep these links. zdoc.app translations update automatically with the README; translations under docs/i18n/ are maintained by hand. -->
+  <!-- Keep these links. Translations come from zdoc.app, which follows the current README automatically. Arabic and Turkish are hand-maintained under docs/i18n/ only because zdoc.app does not serve them; new languages are not added by hand (#1550). -->
   <a href="docs/i18n/ar/README.md" dir="rtl">العربية</a> |
   <a href="https://zdoc.app/de/lfnovo/open-notebook">Deutsch</a> | 
   <a href="https://zdoc.app/es/lfnovo/open-notebook">Español</a> | 

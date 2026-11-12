@@ -26,6 +26,7 @@ class EpisodeProfileResponse(BaseModel):
     default_briefing: str
     num_segments: int
     max_tokens: Optional[int] = None
+    audio_gap_ms: Optional[int] = None
 
 
 async def _speaker_names_by_id() -> Dict[str, str]:
@@ -60,6 +61,7 @@ def _profile_to_response(
         default_briefing=profile.default_briefing,
         num_segments=profile.num_segments,
         max_tokens=profile.max_tokens,
+        audio_gap_ms=profile.audio_gap_ms,
     )
 
 
@@ -70,6 +72,11 @@ async def _resolve_speaker_config(value: str) -> SpeakerProfile:
     if not speaker:
         raise InvalidInputError(f"Speaker profile '{value}' not found")
     return speaker
+
+
+def _check_audio_gap_ms(value: Optional[int]) -> None:
+    if value is not None and value < 0:
+        raise InvalidInputError("audio_gap_ms must be 0 or greater")
 
 
 @router.get("/episode-profiles", response_model=List[EpisodeProfileResponse])
@@ -138,12 +145,23 @@ class EpisodeProfileCreate(BaseModel):
         None,
         description="Max output tokens for outline/transcript generation",
     )
+    audio_gap_ms: Optional[int] = Field(
+        None,
+        description=(
+            "Milliseconds of silence between dialogue turns (0 = none, "
+            "null = default 400 ms)"
+        ),
+        # Schema-only: advertises the bound to clients; _check_audio_gap_ms
+        # enforces it so a negative value is a 400, not FastAPI's 422.
+        json_schema_extra={"minimum": 0},
+    )
 
 
 @router.post("/episode-profiles", response_model=EpisodeProfileResponse)
 async def create_episode_profile(profile_data: EpisodeProfileCreate):
     """Create a new episode profile"""
     try:
+        _check_audio_gap_ms(profile_data.audio_gap_ms)
         speaker = await _resolve_speaker_config(profile_data.speaker_config)
         profile = EpisodeProfile(
             name=profile_data.name,
@@ -155,6 +173,7 @@ async def create_episode_profile(profile_data: EpisodeProfileCreate):
             default_briefing=profile_data.default_briefing,
             num_segments=profile_data.num_segments,
             max_tokens=profile_data.max_tokens,
+            audio_gap_ms=profile_data.audio_gap_ms,
         )
 
         await profile.save()
@@ -181,6 +200,7 @@ async def update_episode_profile(profile_id: str, profile_data: EpisodeProfileCr
             )
 
         update_data = profile_data.model_dump(exclude_unset=True)
+        _check_audio_gap_ms(update_data.get("audio_gap_ms"))
         speaker_name: Optional[str] = None
         if "speaker_config" in update_data:
             speaker = await _resolve_speaker_config(update_data["speaker_config"])
@@ -250,6 +270,7 @@ async def duplicate_episode_profile(profile_id: str):
             default_briefing=original.default_briefing,
             num_segments=original.num_segments,
             max_tokens=original.max_tokens,
+            audio_gap_ms=original.audio_gap_ms,
         )
 
         await duplicate.save()

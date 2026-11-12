@@ -50,6 +50,7 @@ class EpisodeProfile(ObjectModel):
         "transcript_llm",
         "language",
         "max_tokens",
+        "audio_gap_ms",
     }
 
     name: str = Field(..., description="Unique profile name")
@@ -79,6 +80,14 @@ class EpisodeProfile(ObjectModel):
     max_tokens: Optional[int] = Field(
         None,
         description="Max output tokens for outline/transcript generation (passed through to podcast_creator)",
+    )
+    audio_gap_ms: Optional[int] = Field(
+        None,
+        ge=0,
+        description=(
+            "Milliseconds of silence between dialogue turns (0 = none). "
+            "None uses podcast-creator's default (400 ms)."
+        ),
     )
 
     @field_validator("num_segments")

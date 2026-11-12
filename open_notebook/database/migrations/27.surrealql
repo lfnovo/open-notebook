@@ -1,0 +1,7 @@
+-- Migration 27: Add optional audio_gap_ms to episode_profile (#1436).
+--
+-- Milliseconds of silence podcast-creator inserts between dialogue turns.
+-- NONE means podcast-creator's default (400 ms); 0 means back-to-back audio.
+-- No backfill: existing profiles keep NONE.
+
+DEFINE FIELD IF NOT EXISTS audio_gap_ms ON TABLE episode_profile TYPE option<int>;

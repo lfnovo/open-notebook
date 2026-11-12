@@ -52,7 +52,23 @@ const episodeProfileSchema = (t: TFunction) => z.object({
     .positive(t('podcasts.maxTokensPositive') || 'Must be a positive integer')
     .nullable()
     .optional(),
+  audio_gap_ms: z.number()
+    .int(t('podcasts.maxTokensInteger') || 'Must be an integer')
+    .min(0, t('podcasts.audioGapMsNonNegative') || 'Must be 0 or greater')
+    .nullable()
+    .optional(),
 })
+
+// Empty and transient/invalid number-input states (which yield NaN) both mean
+// "unset" for an optional override; map them to null so an empty field never
+// trips the number rules.
+const optionalNumber = (value: unknown): number | null => {
+  if (value === '' || value === null || value === undefined) {
+    return null
+  }
+  const parsed = Number(value)
+  return Number.isNaN(parsed) ? null : parsed
+}
 
 export type EpisodeProfileFormValues = z.infer<ReturnType<typeof episodeProfileSchema>>
 
@@ -92,6 +108,7 @@ export function EpisodeProfileFormDialog({
         default_briefing: initialData.default_briefing,
         num_segments: initialData.num_segments,
         max_tokens: initialData.max_tokens ?? null,
+        audio_gap_ms: initialData.audio_gap_ms ?? null,
       }
     }
 
@@ -105,6 +122,7 @@ export function EpisodeProfileFormDialog({
       default_briefing: '',
       num_segments: 5,
       max_tokens: null,
+      audio_gap_ms: null,
     }
   }, [initialData, speakerProfiles])
 
@@ -132,6 +150,7 @@ export function EpisodeProfileFormDialog({
       description: values.description ?? '',
       language: values.language || null,
       max_tokens: values.max_tokens ?? null,
+      audio_gap_ms: values.audio_gap_ms ?? null,
     }
 
     if (mode === 'create') {
@@ -204,23 +223,29 @@ export function EpisodeProfileFormDialog({
                 min={1}
                 step={1}
                 placeholder={t('podcasts.maxTokensPlaceholder')}
-                {...register('max_tokens', {
-                  // Empty and transient/invalid number-input states (which yield
-                  // NaN) both mean "unset" for this optional override; map them to
-                  // null so an empty field never trips the positive-integer rule.
-                  setValueAs: (value) => {
-                    if (value === '' || value === null || value === undefined) {
-                      return null
-                    }
-                    const parsed = Number(value)
-                    return Number.isNaN(parsed) ? null : parsed
-                  },
-                })}
+                {...register('max_tokens', { setValueAs: optionalNumber })}
                 autoComplete="off"
               />
               <p className="text-xs text-muted-foreground">{t('podcasts.maxTokensHelp')}</p>
               {errors.max_tokens ? (
                 <p className="text-xs text-destructive">{errors.max_tokens.message}</p>
+              ) : null}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="audio_gap_ms">{t('podcasts.audioGapMs')}</Label>
+              <Input
+                id="audio_gap_ms"
+                type="number"
+                min={0}
+                step={1}
+                placeholder={t('podcasts.audioGapMsPlaceholder')}
+                {...register('audio_gap_ms', { setValueAs: optionalNumber })}
+                autoComplete="off"
+              />
+              <p className="text-xs text-muted-foreground">{t('podcasts.audioGapMsHelp')}</p>
+              {errors.audio_gap_ms ? (
+                <p className="text-xs text-destructive">{errors.audio_gap_ms.message}</p>
               ) : null}
             </div>
 

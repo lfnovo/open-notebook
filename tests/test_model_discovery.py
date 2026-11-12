@@ -280,6 +280,21 @@ class TestMiniMaxDiscovery:
         assert classify_model_type("speech-2.8-hd", "minimax") == "text_to_speech"
         assert classify_model_type("MiniMax-M3", "minimax") == "language"
 
+    def test_ollama_embedding_models_classify_as_embedding(self):
+        from open_notebook.ai.model_discovery import classify_model_type
+
+        assert classify_model_type("embeddinggemma:latest", "ollama") == "embedding"
+        assert classify_model_type("qwen3-embedding:0.6b", "ollama") == "embedding"
+        assert classify_model_type("nomic-embed-text", "ollama") == "embedding"
+        assert classify_model_type("snowflake-arctic-embed", "ollama") == "embedding"
+
+    def test_ollama_language_models_stay_language(self):
+        from open_notebook.ai.model_discovery import classify_model_type
+
+        assert classify_model_type("gemma3:latest", "ollama") == "language"
+        assert classify_model_type("qwen3:8b", "ollama") == "language"
+        assert classify_model_type("llama3.2", "ollama") == "language"
+
 
 class TestAnthropicDiscovery:
     @pytest.mark.asyncio

@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Text search ranks the best match first.** `fn::text_search` had the same single-`SELECT` group/order/limit as vector search, so results came back in record-id order (notes before sources) and the `LIMIT` could drop the best match. Nothing re-sorted them afterwards, so the wrong order reached the search page and Ask as-is. Migration 26 now fixes both functions the same way (#1505)
 - Search result counts use the correct singular and plural forms in every supported language (#1402)
 - Adding a source that is already in a notebook no longer links it a second time. The duplicate check looked the link up in the wrong direction, so each call added another link: the notebook's source count went up and the source was listed twice (#1533)
+- **Bold text in Chinese, Japanese and Korean renders.** Chat, Ask, insights, transformation output and the note preview showed literal `**` when the bold text ended in punctuation and a CJK letter followed, as in `**注意：**请先备份` or `**요일(일)**입니다`. CommonMark only closes emphasis there before a space or punctuation, which CJK text doesn't use between words. The Markdown renderers now use `remark-cjk-friendly` (#1403)
 
 ## [1.15.1] - 2026-11-03
 

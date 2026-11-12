@@ -52,6 +52,7 @@
     "react-syntax-highlighter": "^16.1.2",
     "rehype-katex": "^7.0.1",
     "rehype-sanitize": "^6.0.0",
+    "remark-cjk-friendly": "^2.3.3",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
     "sonner": "^2.0.8",

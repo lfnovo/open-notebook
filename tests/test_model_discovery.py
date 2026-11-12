@@ -470,3 +470,19 @@ class TestNewEsperantoProviders:
             ("command-a-03-2025", "language"),
             ("embed-v4.0", "embedding"),
         }
+
+
+class TestOllamaEmbeddingClassification:
+    def test_embedding_models_with_embed_in_name(self):
+        from open_notebook.ai.model_discovery import classify_model_type
+
+        assert classify_model_type("embeddinggemma:latest", "ollama") == "embedding"
+        assert classify_model_type("qwen3-embedding:0.6b", "ollama") == "embedding"
+        assert classify_model_type("nomic-embed-text", "ollama") == "embedding"
+
+    def test_language_models_unchanged(self):
+        from open_notebook.ai.model_discovery import classify_model_type
+
+        assert classify_model_type("gemma3", "ollama") == "language"
+        assert classify_model_type("qwen3", "ollama") == "language"
+        assert classify_model_type("llama3.2", "ollama") == "language"

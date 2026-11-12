@@ -108,7 +108,7 @@ OLLAMA_MODEL_TYPES = {
         "zephyr",
         "tinyllama",
     ],
-    "embedding": ["nomic-embed", "mxbai-embed", "all-minilm", "bge-", "e5-"],
+    "embedding": ["embed", "nomic-embed", "mxbai-embed", "all-minilm", "bge-", "e5-"],
 }
 
 MISTRAL_MODEL_TYPES = {

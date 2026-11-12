@@ -8,6 +8,7 @@ from loguru import logger
 from surrealdb import AsyncSurreal, RecordID  # type: ignore
 from surrealdb.data.types.table import Table  # type: ignore
 
+from open_notebook.exceptions import DatabaseOperationError
 from open_notebook.utils.proxy import ensure_internal_no_proxy
 
 # Keep the internal SurrealDB websocket out of any configured HTTP proxy
@@ -220,7 +221,7 @@ async def repo_delete(record_id: Union[str, RecordID]):
     # conflict) instead of raising; don't report that as a successful delete
     if isinstance(result, str):
         logger.debug(result)
-        raise RuntimeError(f"Failed to delete record: {result}")
+        raise DatabaseOperationError(f"Failed to delete record: {result}")
     return result
 
 

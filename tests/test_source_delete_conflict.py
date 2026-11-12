@@ -172,7 +172,7 @@ async def test_repo_delete_raises_on_error_string(monkeypatch):
     context.__aenter__.return_value = db
     monkeypatch.setattr(repository, "db_connection", lambda: context)
 
-    with pytest.raises(RuntimeError, match="can be retried"):
+    with pytest.raises(DatabaseOperationError, match="can be retried"):
         await repository.repo_delete("source:abc")
 
 

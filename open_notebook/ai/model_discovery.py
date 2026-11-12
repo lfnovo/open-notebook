@@ -108,7 +108,10 @@ OLLAMA_MODEL_TYPES = {
         "zephyr",
         "tinyllama",
     ],
-    "embedding": ["nomic-embed", "mxbai-embed", "all-minilm", "bge-", "e5-"],
+    # Any name containing "embed" (embeddinggemma, qwen3-embedding,
+    # snowflake-arctic-embed, granite-embedding, ...) is an embedding model.
+    # Checked before the language patterns, so "gemma"/"qwen" don't win.
+    "embedding": ["embed", "nomic-embed", "mxbai-embed", "all-minilm", "bge-", "e5-"],
 }
 
 MISTRAL_MODEL_TYPES = {

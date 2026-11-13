@@ -63,6 +63,7 @@ import {
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { getDateLocale } from '@/lib/utils/date-locale'
+import { markdownPreview } from '@/lib/utils/markdown-preview'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { SourceInsightDialog } from '@/components/sources/SourceInsightDialog'
@@ -655,7 +656,7 @@ function SourceDetailContentInner({
                         </span>
                       </div>
                       <p className="mt-2 text-sm text-muted-foreground">
-                        {insight.content.slice(0, 180)}{insight.content.length > 180 ? '…' : ''}
+                        {markdownPreview(insight.content, 180)}
                       </p>
                       <div className="mt-3 flex justify-end gap-2">
                         <Button size="sm" variant="outline" onClick={() => setSelectedInsight(insight)}>

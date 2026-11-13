@@ -61,7 +61,7 @@ Click **Save to Notebooks** to keep the answer as a note (titled with your quest
 ### Requirements
 
 - **An Embedding Model** must be set. Without one, the Ask tab says *You can't use this feature because you have no embedding model selected.*
-- **A Chat Model** must be set; it is used for all three stages by default.
+- **A Chat Model** must be set. All three stages use the **Tools Model** by default, or the Chat Model when no Tools Model is set.
 - Ask only sees **embedded** content (sources added with embedding enabled, notes and insights).
 
 ### Choosing models

@@ -161,7 +161,8 @@ You can't forget a locale silently: each non-en-US locale ends with `satisfies T
 | 1 | `frontend/src/lib/locales/<code>/index.ts` | Copy `en-US/index.ts`, translate it, export it, and end the object with `} satisfies TranslationShape;`. |
 | 2 | `frontend/src/lib/locales/index.ts` | Import it, add it to `resources` and to the `languages` array. The language toggle (`components/common/LanguageToggle.tsx`) renders `languages`, so the new language appears there with no further edit. |
 | 3 | `frontend/src/lib/utils/date-locale.ts` | Import the matching `date-fns/locale` and add it to `LOCALE_MAP`. |
-| 4 | Test | Switch to the language in the toggle; dates and labels should change. |
+| 4 | `frontend/src/lib/language-resolution.ts` | Right-to-left languages only: make `languageToDirection` return `'rtl'` for the new code, so the page and the Radix components switch direction. |
+| 5 | Test | Switch to the language in the toggle; dates and labels should change. |
 
 ---
 

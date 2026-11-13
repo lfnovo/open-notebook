@@ -21,6 +21,7 @@ DB access is mocked following the style of tests/test_crud_404.py and
 tests/test_recently_viewed_api.py.
 """
 
+from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -68,6 +69,13 @@ SPEAKER_BODY = {
         }
     ],
 }
+
+
+def _required_fields(profile: str) -> dict[str, Any]:
+    """The fields each profile model needs besides its name."""
+    if profile == "EpisodeProfile":
+        return {"default_briefing": "Summarise the day."}
+    return {"speakers": SPEAKER_BODY["speakers"]}
 
 
 # --- the translation itself ----------------------------------------------------
@@ -197,11 +205,7 @@ def test_rename_onto_taken_name_returns_409(
     existing = model(
         id=record_id,
         name="old_name",
-        **(
-            {"default_briefing": "Summarise the day."}
-            if profile == "EpisodeProfile"
-            else {"speakers": SPEAKER_BODY["speakers"]}
-        ),
+        **_required_fields(profile),
     )
 
     with (
@@ -332,11 +336,7 @@ def test_other_failure_still_returns_500(client, method, endpoint, profile, erro
     existing = model(
         id=error,
         name="old_name",
-        **(
-            {"default_briefing": "Summarise the day."}
-            if profile == "EpisodeProfile"
-            else {"speakers": SPEAKER_BODY["speakers"]}
-        ),
+        **_required_fields(profile),
     )
 
     with (

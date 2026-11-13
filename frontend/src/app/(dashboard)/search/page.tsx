@@ -201,7 +201,13 @@ export default function SearchPage() {
                     onChange={(e) => setAskQuestion(e.target.value)}
                     onKeyDown={(e) => {
                       // Submit on Cmd/Ctrl+Enter
-                      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !ask.isStreaming && askQuestion.trim()) {
+                      if (
+                        hasEmbeddingModel &&
+                        (e.metaKey || e.ctrlKey) &&
+                        e.key === 'Enter' &&
+                        !ask.isStreaming &&
+                        askQuestion.trim()
+                      ) {
                         e.preventDefault()
                         handleAsk()
                       }
@@ -210,7 +216,9 @@ export default function SearchPage() {
                     rows={3}
                     aria-label={t('common.accessibility.enterQuestion')}
                   />
-                  <p className="text-xs text-muted-foreground">{t('searchPage.pressToSubmit')}</p>
+                  {hasEmbeddingModel && (
+                    <p className="text-xs text-muted-foreground">{t('searchPage.pressToSubmit')}</p>
+                  )}
                 </div>
 
                 {/* Notebook scope */}

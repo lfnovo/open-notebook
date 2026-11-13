@@ -300,7 +300,7 @@ export const jaJP = {
     deleteSourceConfirm: "このソースを削除しますか？",
     deleteConfirm: "削除しますか？",
     deleteConfirmWithTitle: "「{{title}}」を削除しますか？",
-    deleteSuccess: "ソースを削除しました。注意：ストレージからファイルを削除するには、設定ページで「ファイルを削除」オプションを有効にする必要があります。",
+    deleteSuccess: "ソースを削除しました。",
     failedToDelete: "ソースの削除に失敗しました",
     sourceQueued: "ソースをキューに追加",
     sourceQueuedDesc: "ソースをバックグラウンド処理に送信しました。ソース一覧で進捗を確認できます。",

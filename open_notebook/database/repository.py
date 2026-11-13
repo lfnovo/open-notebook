@@ -67,6 +67,23 @@ def get_database_name() -> str:
     return _get_env_or_default("SURREAL_DATABASE", "open_notebook")
 
 
+def apply_database_defaults() -> None:
+    """Give the job queue Open Notebook's namespace and database defaults.
+
+    surreal-commands stores the ``command`` records and defaults both
+    settings to ``test``, while Open Notebook defaults them to
+    ``open_notebook``. With the variables unset the two used different
+    databases, and every read of ``command`` through Open Notebook's own
+    connection (the sources list, podcast episode status) found nothing
+    (#1466). Writing the resolved values back keeps an explicitly set value
+    and makes both libraries read the same one. surreal-commands reads the
+    environment when it first connects, so this runs once at startup, in the
+    API and in the worker.
+    """
+    os.environ["SURREAL_NAMESPACE"] = get_database_namespace()
+    os.environ["SURREAL_DATABASE"] = get_database_name()
+
+
 def parse_record_ids(obj: Any) -> Any:
     """Recursively parse and convert RecordIDs into strings."""
     if isinstance(obj, dict):
@@ -79,9 +96,20 @@ def parse_record_ids(obj: Any) -> Any:
 
 
 def ensure_record_id(value: Union[str, RecordID]) -> RecordID:
-    """Ensure a value is a RecordID."""
+    """Ensure a value is a RecordID.
+
+    Normalises double-prefixed IDs like ``source:source:xyz`` down to
+    ``source:xyz`` because LLM outputs occasionally emit citations that
+    re-prepend the type prefix (e.g. `[source:source:abc]`). Without this,
+    the fetch endpoint would receive a malformed ID and 404.
+    """
     if isinstance(value, RecordID):
         return value
+    if isinstance(value, str) and ":" in value:
+        table, _, rest = value.partition(":")
+        while rest.startswith(f"{table}:"):
+            rest = rest[len(table) + 1 :]
+        value = f"{table}:{rest}"
     return RecordID.parse(value)
 
 

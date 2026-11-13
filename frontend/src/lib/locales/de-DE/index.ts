@@ -303,7 +303,7 @@ export const deDE = {
     deleteSourceConfirm: "Möchtest du diese Quelle wirklich löschen?",
     deleteConfirm: "Möchtest du das wirklich löschen?",
     deleteConfirmWithTitle: "Möchtest du „{{title}}“ wirklich löschen?",
-    deleteSuccess: "Quelle erfolgreich gelöscht. Hinweis: Um die Datei auch aus dem Speicher zu löschen, musst du in den Einstellungen die Option „Datei löschen“ aktivieren.",
+    deleteSuccess: "Quelle erfolgreich gelöscht.",
     failedToDelete: "Quelle konnte nicht gelöscht werden",
     sourceQueued: "Quelle eingereiht",
     sourceQueuedDesc: "Quelle wurde zur Hintergrundverarbeitung eingereicht. Den Fortschritt kannst du in der Quellenliste verfolgen.",

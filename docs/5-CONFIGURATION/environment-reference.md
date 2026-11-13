@@ -51,15 +51,15 @@ Variables read by the frontend (`API_URL`, `INTERNAL_API_URL`, `NEXT_PUBLIC_*`, 
 
 ## Database (SurrealDB)
 
-Set all five `SURREAL_*` variables explicitly, as the shipped compose file does. The API and the job queue (the surreal-commands library) fall back to different defaults when they are missing: the API uses `open_notebook` for namespace and database, the job queue uses `test`. With mismatched defaults, jobs are written where the worker never looks.
+Set all five `SURREAL_*` variables explicitly, as the shipped compose file does. Namespace and database default to `open_notebook` in the API and the job queue (the surreal-commands library) alike. The user and password defaults still differ between the two (see the table), so with those unset sign-in fails.
 
 | Variable | Default when unset | Read by | Description |
 |----------|--------------------|---------|-------------|
 | `SURREAL_URL` | built from `SURREAL_ADDRESS`/`SURREAL_PORT` | API + Worker | WebSocket URL, e.g. `ws://surrealdb:8000/rpc` (compose) or `ws://localhost:8000/rpc` (from source). See [Database](database.md) |
 | `SURREAL_USER` | none in the API (sign-in fails); `test` in the job queue | API + Worker | SurrealDB user. Must match the `--user` the database was started with |
 | `SURREAL_PASSWORD` | `root` in the API; `test` in the job queue | API + Worker | SurrealDB password. Must match `--pass`. Change it before exposing the instance |
-| `SURREAL_NAMESPACE` | `open_notebook` in the API; `test` in the job queue | API + Worker | SurrealDB namespace |
-| `SURREAL_DATABASE` | `open_notebook` in the API; `test` in the job queue | API + Worker | SurrealDB database |
+| `SURREAL_NAMESPACE` | `open_notebook` | API + Worker | SurrealDB namespace |
+| `SURREAL_DATABASE` | `open_notebook` | API + Worker | SurrealDB database |
 | `SURREAL_ADDRESS`, `SURREAL_PORT` | `localhost`, `8000` | API + Worker | Legacy fallback used only when `SURREAL_URL` is unset. `SURREAL_ADDRESS` may already include the port. Prefer `SURREAL_URL` |
 | `SURREAL_PASS` | none | API + Worker | Legacy alias of `SURREAL_PASSWORD` |
 

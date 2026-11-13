@@ -78,6 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - Source processing now enforces the uploads-directory and URL checks in the background worker itself, so they apply on every path that processes a source, not only when a source is created.
 - Requires `content-core` 2.2.1 or later, which refuses link-local and cloud-metadata addresses on every redirect hop when fetching URLs.
+- Azure OpenAI credentials created in Manage → Models now work for models, not only for Test Connection. The form has an **API version** field, prefilled with `2024-10-21`, and a credential without a version uses that same default unless `AZURE_OPENAI_API_VERSION` (or a per-modality variable) sets one. Before, model calls failed with "Azure OpenAI API version not found" (#1470)
 
 ## [1.15.0] - 2026-10-04
 

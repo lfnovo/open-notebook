@@ -9,8 +9,10 @@ export interface CredentialFormValues {
   location: string
   credentialsPath: string
   numCtx: string
+  apiVersion: string
   isVertex: boolean
   isOllama: boolean
+  isAzure: boolean
 }
 
 /**
@@ -41,6 +43,10 @@ export function buildCredentialUpdatePayload(
   if (values.isOllama && values.numCtx !== (credential.num_ctx ? String(credential.num_ctx) : '')) {
     // empty clears the override (0 -> backend resets to default)
     data.num_ctx = values.numCtx.trim() ? Number(values.numCtx) : 0
+  }
+  if (values.isAzure && values.apiVersion !== (credential.api_version || '')) {
+    // empty clears it, and the backend falls back to the default version
+    data.api_version = values.apiVersion.trim() || null
   }
   return data
 }

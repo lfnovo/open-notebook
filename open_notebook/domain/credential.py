@@ -88,6 +88,13 @@ def default_azure_api_version() -> Optional[str]:
         # Esperanto reads these before the generic variable, and falls back to
         # it for a modality without one, so it must not hold a leftover.
         _restore_azure_api_version_env()
+        if (
+            not os.environ.get(_AZURE_API_VERSION_VAR, "").strip()
+            and not os.environ.get("OPENAI_API_VERSION", "").strip()
+            and spec.default_api_version
+        ):
+            # A modality without its own variable still needs a version.
+            os.environ[_AZURE_API_VERSION_VAR] = spec.default_api_version
         return None
     if from_env:
         # Name it explicitly only when another credential's version hides it.

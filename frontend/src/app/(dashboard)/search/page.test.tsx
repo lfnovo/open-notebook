@@ -25,8 +25,24 @@ vi.mock('@/components/search/StreamingResponse', () => ({
   StreamingResponse: () => null,
 }))
 
+// Stands in for the dialog: exposes its initial values and a button that saves custom models
 vi.mock('@/components/search/AdvancedModelsDialog', () => ({
-  AdvancedModelsDialog: () => null,
+  AdvancedModelsDialog: ({
+    defaultModels,
+    onSave,
+  }: {
+    defaultModels: { strategy: string; answer: string; finalAnswer: string }
+    onSave: (models: { strategy: string; answer: string; finalAnswer: string }) => void
+  }) => (
+    <div>
+      <span data-testid="advanced-defaults">{JSON.stringify(defaultModels)}</span>
+      <button
+        onClick={() => onSave({ strategy: 'model:custom-s', answer: 'model:custom-a', finalAnswer: 'model:custom-f' })}
+      >
+        save custom models
+      </button>
+    </div>
+  ),
 }))
 
 vi.mock('@/components/search/SaveToNotebooksDialog', () => ({
@@ -43,7 +59,13 @@ vi.mock('@/lib/hooks/use-ask', () => ({
 
 vi.mock('@/lib/hooks/use-models', () => ({
   useModelDefaults: vi.fn(),
-  useModels: () => ({ data: [], isLoading: false }),
+  useModels: () => ({
+    data: [
+      { id: 'model:chat', name: 'chat-model' },
+      { id: 'model:tools', name: 'tools-model' },
+    ],
+    isLoading: false,
+  }),
 }))
 
 vi.mock('@/lib/hooks/use-modal-manager', () => ({
@@ -57,6 +79,18 @@ const mockUseSearchParams = vi.mocked(useSearchParams)
 const mockUseAsk = vi.mocked(useAsk)
 const openModal = vi.fn()
 const sendAsk = vi.fn()
+
+function mockModelDefaults(defaults: { default_chat_model: string; default_tools_model?: string | null }) {
+  mockUseModelDefaults.mockReturnValue({
+    data: { default_embedding_model: 'model:embedding', ...defaults },
+    isLoading: false,
+  } as unknown as ReturnType<typeof useModelDefaults>)
+}
+
+function askQuestion() {
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: 'What is new?' } })
+  fireEvent.click(screen.getByRole('button', { name: 'searchPage.ask' }))
+}
 
 describe('SearchPage', () => {
   beforeEach(() => {
@@ -167,5 +201,75 @@ describe('SearchPage', () => {
         }
       },
     )
+  })
+
+  describe('Ask default models', () => {
+    beforeEach(() => {
+      mockUseSearchParams.mockReturnValue(
+        new URLSearchParams('mode=ask') as ReturnType<typeof useSearchParams>,
+      )
+    })
+
+    it('uses the tools model for every stage when one is set', () => {
+      mockModelDefaults({ default_chat_model: 'model:chat', default_tools_model: 'model:tools' })
+      render(<SearchPage />)
+
+      askQuestion()
+
+      expect(sendAsk).toHaveBeenCalledWith(
+        'What is new?',
+        { strategy: 'model:tools', answer: 'model:tools', finalAnswer: 'model:tools' },
+        { notebookIds: [] }
+      )
+      expect(screen.getByText('searchPage.strategy: tools-model')).toBeInTheDocument()
+      expect(screen.getByText('searchPage.answer: tools-model')).toBeInTheDocument()
+      expect(screen.getByText('searchPage.final: tools-model')).toBeInTheDocument()
+      expect(JSON.parse(screen.getByTestId('advanced-defaults').textContent ?? '')).toEqual({
+        strategy: 'model:tools',
+        answer: 'model:tools',
+        finalAnswer: 'model:tools',
+      })
+    })
+
+    it('falls back to the chat model when no tools model is set', () => {
+      mockModelDefaults({ default_chat_model: 'model:chat', default_tools_model: null })
+      render(<SearchPage />)
+
+      askQuestion()
+
+      expect(sendAsk).toHaveBeenCalledWith(
+        'What is new?',
+        { strategy: 'model:chat', answer: 'model:chat', finalAnswer: 'model:chat' },
+        { notebookIds: [] }
+      )
+      expect(screen.getByText('searchPage.strategy: chat-model')).toBeInTheDocument()
+    })
+
+    it('runs on the tools model even when no chat model is set', () => {
+      mockModelDefaults({ default_chat_model: '', default_tools_model: 'model:tools' })
+      render(<SearchPage />)
+
+      askQuestion()
+
+      expect(sendAsk).toHaveBeenCalledWith(
+        'What is new?',
+        { strategy: 'model:tools', answer: 'model:tools', finalAnswer: 'model:tools' },
+        { notebookIds: [] }
+      )
+    })
+
+    it('lets models picked in Advanced override the defaults', () => {
+      mockModelDefaults({ default_chat_model: 'model:chat', default_tools_model: 'model:tools' })
+      render(<SearchPage />)
+
+      fireEvent.click(screen.getByRole('button', { name: 'save custom models' }))
+      askQuestion()
+
+      expect(sendAsk).toHaveBeenCalledWith(
+        'What is new?',
+        { strategy: 'model:custom-s', answer: 'model:custom-a', finalAnswer: 'model:custom-f' },
+        { notebookIds: [] }
+      )
+    })
   })
 })

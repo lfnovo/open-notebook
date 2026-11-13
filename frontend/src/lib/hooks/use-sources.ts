@@ -237,13 +237,21 @@ export function useSourceStatus(sourceId: string, enabled = true) {
     queryFn: () => sourcesApi.status(sourceId),
     enabled: !!sourceId && enabled,
     refetchInterval: (query) => {
-      // Auto-refresh every 2 seconds if processing
+      // Keep polling unresolved commands until a terminal status arrives.
       // The query.state.data contains the SourceStatusResponse
       const data = query.state.data as SourceStatusResponse | undefined
-      if (data?.status === 'running' || data?.status === 'queued' || data?.status === 'new') {
+      if (data?.status === 'unknown') {
+        // Missing commands can stay unknown permanently; slow down repeated checks.
+        return Math.min(2000 * 2 ** Math.max(0, query.state.dataUpdateCount - 1), 30000)
+      }
+      if (
+        data?.status === 'running' ||
+        data?.status === 'queued' ||
+        data?.status === 'new'
+      ) {
         return 2000
       }
-      // No auto-refresh if completed, failed, or unknown
+      // No auto-refresh if completed or failed
       return false
     },
     staleTime: 0, // Always consider status data stale for real-time updates

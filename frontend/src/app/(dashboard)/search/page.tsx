@@ -82,6 +82,9 @@ export default function SearchPage() {
 
   const hasEmbeddingModel = !!modelDefaults?.default_embedding_model
 
+  // Ask runs on the tools model; like the backend, fall back to the chat model when none is set
+  const defaultAskModel = modelDefaults?.default_tools_model || modelDefaults?.default_chat_model || ''
+
   // Track if we've already auto-triggered from URL params
   const hasAutoTriggeredRef = useRef(false)
   const lastUrlParamsRef = useRef({ q: '', mode: '' })
@@ -107,16 +110,16 @@ export default function SearchPage() {
   }
 
   const handleAsk = useCallback(() => {
-    if (!askQuestion.trim() || !modelDefaults?.default_chat_model) return
+    if (!askQuestion.trim() || !defaultAskModel) return
 
     const models = customModels || {
-      strategy: modelDefaults.default_chat_model,
-      answer: modelDefaults.default_chat_model,
-      finalAnswer: modelDefaults.default_chat_model
+      strategy: defaultAskModel,
+      answer: defaultAskModel,
+      finalAnswer: defaultAskModel
     }
 
     ask.sendAsk(askQuestion, models, { notebookIds: scopeNotebookIds })
-  }, [askQuestion, modelDefaults, customModels, scopeNotebookIds, ask])
+  }, [askQuestion, defaultAskModel, customModels, scopeNotebookIds, ask])
 
   // Auto-trigger search/ask when arriving with URL params
   useEffect(() => {
@@ -129,11 +132,11 @@ export default function SearchPage() {
     if (urlMode === 'search') {
       handleSearch()
       hasAutoTriggeredRef.current = true
-    } else if (urlMode === 'ask' && modelDefaults?.default_chat_model) {
+    } else if (urlMode === 'ask' && defaultAskModel) {
       handleAsk()
       hasAutoTriggeredRef.current = true
     }
-  }, [urlQuery, urlMode, modelsLoading, modelDefaults, handleSearch, handleAsk])
+  }, [urlQuery, urlMode, modelsLoading, defaultAskModel, handleSearch, handleAsk])
 
   // Handle URL param changes while on page (e.g., from command palette again)
   useEffect(() => {
@@ -254,13 +257,13 @@ export default function SearchPage() {
                       </div>
                       <div className="flex gap-2 text-xs flex-wrap">
                         <Badge variant="secondary" className="font-mono text-[11px]">
-                          {t('searchPage.strategy')}: {resolveModelName(customModels?.strategy || modelDefaults?.default_chat_model)}
+                          {t('searchPage.strategy')}: {resolveModelName(customModels?.strategy || defaultAskModel)}
                         </Badge>
                         <Badge variant="secondary" className="font-mono text-[11px]">
-                          {t('searchPage.answer')}: {resolveModelName(customModels?.answer || modelDefaults?.default_chat_model)}
+                          {t('searchPage.answer')}: {resolveModelName(customModels?.answer || defaultAskModel)}
                         </Badge>
                         <Badge variant="secondary" className="font-mono text-[11px]">
-                          {t('searchPage.final')}: {resolveModelName(customModels?.finalAnswer || modelDefaults?.default_chat_model)}
+                          {t('searchPage.final')}: {resolveModelName(customModels?.finalAnswer || defaultAskModel)}
                         </Badge>
                       </div>
                     </div>
@@ -308,9 +311,9 @@ export default function SearchPage() {
                   open={showAdvancedModels}
                   onOpenChange={setShowAdvancedModels}
                   defaultModels={{
-                    strategy: customModels?.strategy || modelDefaults?.default_chat_model || '',
-                    answer: customModels?.answer || modelDefaults?.default_chat_model || '',
-                    finalAnswer: customModels?.finalAnswer || modelDefaults?.default_chat_model || ''
+                    strategy: customModels?.strategy || defaultAskModel,
+                    answer: customModels?.answer || defaultAskModel,
+                    finalAnswer: customModels?.finalAnswer || defaultAskModel
                   }}
                   onSave={setCustomModels}
                 />

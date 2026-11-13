@@ -22,7 +22,7 @@ Provider tree in `app/layout.tsx` (outermost → innermost): ErrorBoundary → T
 
 1. `notebooks/[id]/page.tsx` passes `notebookId` to `ChatColumn`.
 2. `useNotebookChat()` queries sessions, manages message state, returns `{ messages, sendMessage(), setModelOverride() }`.
-3. On send: `buildContext()` assembles selected sources/notes (token/char counts), calls `chatApi.sendMessage()`, and applies an **optimistic update** (message added locally, removed on error).
+3. On send: `buildContext()` assembles selected sources/notes (token/char counts), calls `chatApi.sendMessage()`, and applies an **optimistic update** (message added locally; on error it's removed and the composer gets the text back). While a send is in flight, a session refetch doesn't replace the message list, and `ChatPanel` disables the **Sessions** button so the session can't change mid-reply.
 4. Response updates the TanStack Query cache; related source/note mutations elsewhere invalidate broadly so stale UI refreshes.
 5. Model override before a session exists is stored as pending and applied on session creation.
 

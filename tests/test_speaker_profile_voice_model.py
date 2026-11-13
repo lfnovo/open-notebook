@@ -47,6 +47,11 @@ def mocks():
         patch(
             "api.routers.speaker_profiles.SpeakerProfile.save", new_callable=AsyncMock
         ) as save,
+        patch(
+            "api.routers.speaker_profiles._speaker_profile_named",
+            new_callable=AsyncMock,
+            return_value=False,
+        ),
     ):
         get.side_effect = MODELS.__getitem__
         yield get, pget, save

@@ -4,7 +4,13 @@ from fastapi import APIRouter, HTTPException
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from open_notebook.exceptions import InvalidInputError, OpenNotebookError
+from open_notebook.database.repository import repo_query
+from open_notebook.exceptions import (
+    InvalidInputError,
+    OpenNotebookError,
+    as_name_conflict,
+    name_conflict,
+)
 from open_notebook.podcasts.models import EpisodeProfile, SpeakerProfile
 
 router = APIRouter()
@@ -61,6 +67,23 @@ def _profile_to_response(
         num_segments=profile.num_segments,
         max_tokens=profile.max_tokens,
     )
+
+
+async def _episode_profile_named(name: str, exclude_id: Optional[str] = None) -> bool:
+    """Whether an episode profile already holds this name.
+
+    Pre-checks the unique index the way models.py does before creating a model,
+    so the 409 does not depend on the SurrealDB driver passing the rejection
+    message back intact. `exclude_id` leaves a profile's own name alone when it
+    is renamed to itself.
+    """
+    rows = await repo_query(
+        "SELECT id FROM episode_profile WHERE name = $name LIMIT 1", {"name": name}
+    )
+    for row in rows or []:
+        if exclude_id is None or str(row.get("id", "")) != exclude_id:
+            return True
+    return False
 
 
 async def _resolve_speaker_config(value: str) -> SpeakerProfile:
@@ -144,6 +167,8 @@ class EpisodeProfileCreate(BaseModel):
 async def create_episode_profile(profile_data: EpisodeProfileCreate):
     """Create a new episode profile"""
     try:
+        if await _episode_profile_named(profile_data.name):
+            raise name_conflict("episode profile", profile_data.name)
         speaker = await _resolve_speaker_config(profile_data.speaker_config)
         profile = EpisodeProfile(
             name=profile_data.name,
@@ -165,6 +190,9 @@ async def create_episode_profile(profile_data: EpisodeProfileCreate):
     except OpenNotebookError:
         raise
     except Exception as e:
+        conflict = as_name_conflict(e, "episode profile", profile_data.name)
+        if conflict is not None:
+            raise conflict from e
         logger.error(f"Failed to create episode profile: {e}")
         raise HTTPException(status_code=500, detail="Failed to create episode profile")
 
@@ -181,6 +209,10 @@ async def update_episode_profile(profile_id: str, profile_data: EpisodeProfileCr
             )
 
         update_data = profile_data.model_dump(exclude_unset=True)
+        if "name" in update_data and await _episode_profile_named(
+            update_data["name"], str(profile.id)
+        ):
+            raise name_conflict("episode profile", update_data["name"])
         speaker_name: Optional[str] = None
         if "speaker_config" in update_data:
             speaker = await _resolve_speaker_config(update_data["speaker_config"])
@@ -199,6 +231,9 @@ async def update_episode_profile(profile_id: str, profile_data: EpisodeProfileCr
     except OpenNotebookError:
         raise
     except Exception as e:
+        conflict = as_name_conflict(e, "episode profile", profile_data.name)
+        if conflict is not None:
+            raise conflict from e
         logger.error(f"Failed to update episode profile: {e}")
         raise HTTPException(status_code=500, detail="Failed to update episode profile")
 

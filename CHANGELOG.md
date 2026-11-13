@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Arabic README.** An Arabic translation of the README is at [docs/i18n/ar/README.md](docs/i18n/ar/README.md), linked from the README's language bar (#1551)
 - **Turkish README.** A Turkish translation of the README is at [docs/i18n/tr/README.md](docs/i18n/tr/README.md), linked from the README's language bar (#1549)
 - **Duplicate source warning.** Adding a single source now checks whether it looks like one you already have: the same link (ignoring tracking parameters, trailing slashes and similar noise), the same pasted text, or the same file name or title. If so, a dialog lists the matches and lets you cancel or add it anyway. The check never blocks: if it fails, the source is added as before. Batch adds are not checked (#257)
+- **Save an insight as a note from the UI.** The insight dialog has a **Save as Note** button: pick a notebook (preselected when you have only one) and the insight becomes a note in it, without a reload. This was possible only through the API since the move to the Next.js UI (#1469)
 
 ### Security
 - **Dependency security updates.** Python: `pillow` 13.0.0, `filelock`, `virtualenv`, `authlib`, `aiohttp`, `pyasn1`, `mcp`, `fastmcp`, `tornado`, `certifi`, `dnspython`, `fsspec`, `multidict`, `opentelemetry-api` and the `langgraph` packages move to versions with the published fixes, and the new floors are pinned in `constraint-dependencies` so a future lock can't resolve back. Frontend: `katex` 0.19, `vite` 7.3.7, `vitest` 4.1.12, `follow-redirects` 1.16.2 and `postcss-selector-parser` 6.1.5
@@ -49,11 +50,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Insight cards no longer show raw markdown.** The preview under each insight on a source page cut the first 180 characters of the markdown, so `##`, `**` and `*` markers showed up in the card (the detail dialog was already rendered correctly). The preview is now plain text: headings, emphasis, list markers, links and table borders are stripped before truncating
 - Chat no longer loses a message that fails to send (network down, API error): the text goes back into the input so you can send it again. The first message of a new chat also stays on screen while the answer is generated, instead of disappearing until it arrives. Both apply to notebook and source chat (#1391)
 - **A duplicate profile name is a 409 again, not a 500.** `POST /api/episode-profiles` and `POST /api/speaker-profiles` with a name that already exists are rejected by the unique indexes from migration 7 (`idx_episode_profile_name` / `idx_speaker_profile_name`), and each router's catch-all `except Exception` turned that into a generic 500 — so a client could not tell "that name is taken" from "the server is broken", and the form showed a generic error. Renaming a profile onto a taken name failed the same way. The rejection is now translated into a typed `ConflictError` that the global handler maps to 409 with a message naming the profile, matching what the client can act on. SurrealDB reports a rejected index in the message text rather than a typed driver exception, so the translation keys off the same "already contains" wording the repository layer already uses for bulk inserts; every other database failure still answers 500 (#1451)
-### Fixed
 - Failed write requests are no longer automatically sent a second time by the frontend. Retries must be requested explicitly by the caller (#1395).
+- Notes saved from a source insight are now marked as AI-generated instead of Human (#1469)
+- The Add Source file picker no longer offers `.zip`, `.tar` and `.gz` files. Archives aren't supported, so uploading one always failed with "Unsupported file type". The hint under the picker and the FAQ no longer list ZIP archives as supported either (#1472)
+- Azure OpenAI credentials created in Manage → Models now work for models, not only for Test Connection. The form has an **API version** field, prefilled with `2024-10-21`, and a credential without a version uses that same default unless `AZURE_OPENAI_API_VERSION` (or a per-modality variable) sets one. Before, model calls failed with "Azure OpenAI API version not found" (#1470)
 
 ## [1.15.1] - 2026-11-03
-- **Save an insight as a note from the UI.** The insight dialog has a **Save as Note** button: pick a notebook (preselected when you have only one) and the insight becomes a note in it, without a reload. This was possible only through the API since the move to the Next.js UI (#1469)
 
 ### Changed
 - **Docker Compose reads the encryption key and password from `.env`.** The shipped `docker-compose.yml`, and the example compose files, interpolate `OPEN_NOTEBOOK_ENCRYPTION_KEY` and `OPEN_NOTEBOOK_PASSWORD` the same way the shipped file already does for `SURREAL_USER` and `SURREAL_PASSWORD`. Other settings still go in the `environment:` block. The key still defaults to `change-me-to-a-secret-string` when it is unset, and an empty password still leaves authentication off. **If you changed the key in an older copy of the compose file, carry that key into `.env` (or into the new file) before `docker compose up -d`.** Otherwise the placeholder comes back and stored credentials cannot be decrypted. An install that keeps its edited compose file is unaffected (#1476)
@@ -64,7 +66,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Development:** `architecture.md`, `testing.md`, `api-reference.md` and `code-standards.md` are rewritten from the code. A new playbook covers adding an AI provider. Dev setup lives on one page. The AGENTS files agree with the docs. Contributor conventions (Conventional Commits, CHANGELOG sections, pre-PR checks that match CI) are documented
 
 ### Fixed
-- Notes saved from a source insight are now marked as AI-generated instead of Human (#1469)
 - **Docs no longer recommend settings that do nothing.** `API_CLIENT_TIMEOUT` was never read by Open Notebook; the timeout guidance now covers what actually applies: `ESPERANTO_LLM_TIMEOUT` per model call (keep it below 600) and the web UI's 10-minute request limit (`NEXT_PUBLIC_API_TIMEOUT_MS`, build time only). Remaining `SURREAL_COMMANDS_MAX_TASKS` advice now uses `OPEN_NOTEBOOK_WORKER_MAX_TASKS`. Docker instructions no longer say to edit `.env` and `docker compose restart`: the shipped compose file doesn't load `.env` into the container and `restart` doesn't reload environment changes, so they now point to the `open_notebook` service's `environment:` block and `docker compose up -d`
 - **Timeouts no longer read as connection failures.** A model that doesn't answer within `ESPERANTO_LLM_TIMEOUT` used to report "Could not connect to the AI provider"; it now says the provider took too long and how to raise the limit. Connection failures (including connect timeouts) keep the old message
 - Error hints point to screens that exist: an authentication failure sends you to Manage → Models (not "Settings → Credentials"), and an unsupported podcast voice to Podcasts → Profiles. The empty Podcasts page points to the Generate Podcast button instead of chat screens that can't start a podcast
@@ -72,7 +73,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `make start-all` starts SurrealDB again (it pointed to a compose file removed long ago)
 - The legacy `SURREAL_ADDRESS` / `SURREAL_PORT` fallback builds a valid database URL (`ws://host:port/rpc`, was `ws://host/rpc:port`); an address that already includes the port is kept as is
 - `.env.example` names the chunking variables Open Notebook actually reads (`OPEN_NOTEBOOK_CHUNK_SIZE` / `OPEN_NOTEBOOK_CHUNK_OVERLAP`)
-- The Add Source file picker no longer offers `.zip`, `.tar` and `.gz` files. Archives aren't supported, so uploading one always failed with "Unsupported file type". The hint under the picker and the FAQ no longer list ZIP archives as supported either (#1472)
 
 ### Removed
 - `POST /api/commands/jobs`, the generic "submit any background command" endpoint. Nothing in Open Notebook used it; every operation has its own endpoint. Job status (`GET /api/commands/jobs/{job_id}`) is unchanged.
@@ -80,7 +80,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - Source processing now enforces the uploads-directory and URL checks in the background worker itself, so they apply on every path that processes a source, not only when a source is created.
 - Requires `content-core` 2.2.1 or later, which refuses link-local and cloud-metadata addresses on every redirect hop when fetching URLs.
-- Azure OpenAI credentials created in Manage → Models now work for models, not only for Test Connection. The form has an **API version** field, prefilled with `2024-10-21`, and a credential without a version uses that same default unless `AZURE_OPENAI_API_VERSION` (or a per-modality variable) sets one. Before, model calls failed with "Azure OpenAI API version not found" (#1470)
 
 ## [1.15.0] - 2026-10-04
 

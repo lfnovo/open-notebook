@@ -63,10 +63,12 @@ describe('CredentialFormDialog', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('prefills the Azure API version and sends it when creating', () => {
+  it('leaves the Azure API version to the backend default unless one is typed', () => {
     renderDialog('azure')
 
-    expect(screen.getByLabelText('apiKeys.apiVersion')).toHaveValue('2024-10-21')
+    const versionInput = screen.getByLabelText('apiKeys.apiVersion')
+    expect(versionInput).toHaveValue('')
+    expect(versionInput).toHaveAttribute('placeholder', '2024-10-21')
 
     fireEvent.change(screen.getByLabelText('apiKeys.configName'), {
       target: { value: 'Work Azure' },
@@ -77,7 +79,25 @@ describe('CredentialFormDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'apiKeys.addConfig' }))
 
     expect(createMutate).toHaveBeenCalledWith(
-      expect.objectContaining({ provider: 'azure', api_version: '2024-10-21' }),
+      expect.objectContaining({ provider: 'azure' }),
+      expect.anything(),
+    )
+    expect(createMutate.mock.calls[0][0].api_version).toBeUndefined()
+  })
+
+  it('sends a typed Azure API version when creating', () => {
+    renderDialog('azure')
+
+    fireEvent.change(screen.getByLabelText('models.apiKey'), {
+      target: { value: 'azure-key' },
+    })
+    fireEvent.change(screen.getByLabelText('apiKeys.apiVersion'), {
+      target: { value: '2025-01-01-preview' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'apiKeys.addConfig' }))
+
+    expect(createMutate).toHaveBeenCalledWith(
+      expect.objectContaining({ provider: 'azure', api_version: '2025-01-01-preview' }),
       expect.anything(),
     )
   })

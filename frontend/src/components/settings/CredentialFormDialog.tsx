@@ -84,8 +84,9 @@ export function CredentialFormDialog({
       setLocation('')
       setCredentialsPath('')
       setNumCtx('')
-      // Registry default; only Azure has one
-      setApiVersion(providerInfo?.default_api_version ?? '')
+      // Left empty so the backend default (env var or registry) applies; the
+      // registry default shows as the placeholder.
+      setApiVersion('')
       setModalities(providerInfo?.modalities ?? ['language'])
     }
     // providerInfo keeps a stable reference for a given provider (react-query

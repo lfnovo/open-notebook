@@ -53,7 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Failed write requests are no longer automatically sent a second time by the frontend. Retries must be requested explicitly by the caller (#1395).
 - Notes saved from a source insight are now marked as AI-generated instead of Human (#1469)
 - The Add Source file picker no longer offers `.zip`, `.tar` and `.gz` files. Archives aren't supported, so uploading one always failed with "Unsupported file type". The hint under the picker and the FAQ no longer list ZIP archives as supported either (#1472)
-- Azure OpenAI credentials created in Manage → Models now work for models, not only for Test Connection. The form has an **API version** field, prefilled with `2024-10-21`, and a credential without a version uses that same default unless `AZURE_OPENAI_API_VERSION` (or a per-modality variable) sets one. Before, model calls failed with "Azure OpenAI API version not found" (#1470)
+- Azure OpenAI credentials created in Manage → Models now work for models, not only for Test Connection. The form has an optional **API version** field, and a credential without a version uses `2024-10-21` unless `AZURE_OPENAI_API_VERSION` (or a per-modality variable) sets one, even after another Azure credential with its own version has been used. Before, model calls failed with "Azure OpenAI API version not found" (#1470)
 
 ## [1.15.1] - 2026-11-03
 

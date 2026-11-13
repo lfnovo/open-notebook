@@ -26,17 +26,63 @@ from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel
 from open_notebook.utils.encryption import decrypt_value, encrypt_value
 
+_AZURE_API_VERSION_VAR = "AZURE_OPENAI_API_VERSION"
+_NOT_CAPTURED: Any = object()
+# What AZURE_OPENAI_API_VERSION held before a credential first overwrote it.
+_azure_api_version_from_env: Any = _NOT_CAPTURED
+
+
+def apply_azure_api_version_env(version: Optional[str]) -> None:
+    """
+    Point AZURE_OPENAI_API_VERSION at a credential's version.
+
+    Env-var provisioning writes the saved version into the process env. A later
+    credential with no version must not inherit it, so this puts back what the
+    environment had (or the registry default) instead.
+    """
+    global _azure_api_version_from_env
+    if _azure_api_version_from_env is _NOT_CAPTURED:
+        _azure_api_version_from_env = os.environ.get(_AZURE_API_VERSION_VAR)
+
+    if version:
+        os.environ[_AZURE_API_VERSION_VAR] = version
+        return
+
+    if _azure_api_version_from_env:
+        os.environ[_AZURE_API_VERSION_VAR] = _azure_api_version_from_env
+    else:
+        os.environ.pop(_AZURE_API_VERSION_VAR, None)
+    default_version = default_azure_api_version()
+    if default_version:
+        os.environ[_AZURE_API_VERSION_VAR] = default_version
+
 
 def default_azure_api_version() -> Optional[str]:
     """
     API version for an Azure credential that has none.
 
     Returns None when an env var already sets one, so Esperanto keeps reading
-    it; otherwise the same default the connection test uses.
+    it; otherwise the same default the connection test uses. A version that
+    another credential left in AZURE_OPENAI_API_VERSION does not count as set
+    by the environment.
     """
     spec = PROVIDERS["azure"]
-    if any(os.environ.get(var, "").strip() for var in spec.api_version_env):
+    current = os.environ.get(_AZURE_API_VERSION_VAR, "").strip()
+    if _azure_api_version_from_env is _NOT_CAPTURED:
+        from_env = current
+    else:
+        from_env = (_azure_api_version_from_env or "").strip()
+
+    if any(
+        os.environ.get(var, "").strip()
+        for var in spec.api_version_env
+        if var != _AZURE_API_VERSION_VAR
+    ):
+        # Esperanto reads these before the generic variable.
         return None
+    if from_env:
+        # Name it explicitly only when another credential's version hides it.
+        return from_env if current != from_env else None
     return spec.default_api_version
 
 

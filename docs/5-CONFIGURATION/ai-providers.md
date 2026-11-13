@@ -172,7 +172,7 @@ vLLM, llama.cpp, LocalAI, Text Generation WebUI and Speaches all work through **
 ### Azure OpenAI
 
 1. Create an Azure OpenAI resource and deploy the models you need.
-2. In Manage → Models, add an **Azure OpenAI** configuration with the **API Key**, and put the resource endpoint (`https://<resource>.openai.azure.com`) in **Base URL**. **API version** is prefilled with `2024-10-21`; change it if your resource needs a different one.
+2. In Manage → Models, add an **Azure OpenAI** configuration with the **API Key**, and put the resource endpoint (`https://<resource>.openai.azure.com`) in **Base URL**. **API version** is optional: leave it empty to use the default below, or type the one your resource needs.
 3. Register models by **deployment name**.
 
 A credential without an API version uses `2024-10-21`, unless `AZURE_OPENAI_API_VERSION` (or `AZURE_OPENAI_API_VERSION_LLM`, `_EMBEDDING`, `_STT`, `_TTS`, or `OPENAI_API_VERSION`) is set in the environment. The form has no field for per-modality endpoints: create the credential through the API for those (`POST /api/credentials` accepts `endpoint_llm`, `endpoint_embedding`, `endpoint_stt` and `endpoint_tts`). Credentials migrated from environment variables carry these values over.

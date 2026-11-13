@@ -572,8 +572,15 @@ class TestCredentialAzureApiVersion:
     def _clear_azure_env(self, monkeypatch):
         # setenv registers an undo, so values the code writes are removed
         # after the test. Esperanto treats an empty value as unset.
+        from open_notebook.domain import credential as credential_module
+
         for var in self.AZURE_ENV:
             monkeypatch.setenv(var, "")
+        monkeypatch.setattr(
+            credential_module,
+            "_azure_api_version_from_env",
+            credential_module._NOT_CAPTURED,
+        )
 
     def _azure_credential(self, api_version=None):
         from open_notebook.domain.credential import Credential
@@ -642,6 +649,53 @@ class TestCredentialAzureApiVersion:
 
         assert await key_provider._provision_azure() is True
         assert os.environ["AZURE_OPENAI_API_VERSION"] == "2024-10-21"
+
+    def _provisionable(self, api_version=None):
+        from types import SimpleNamespace
+
+        return SimpleNamespace(
+            api_key=SecretStr("azure-key"),
+            api_version=api_version,
+            endpoint=None,
+            base_url="https://example.openai.azure.com",
+            endpoint_llm=None,
+            endpoint_embedding=None,
+            endpoint_stt=None,
+            endpoint_tts=None,
+        )
+
+    @pytest.mark.asyncio
+    async def test_versionless_credential_does_not_inherit_a_previous_version(
+        self, monkeypatch
+    ):
+        from open_notebook.ai import key_provider
+
+        self._clear_azure_env(monkeypatch)
+
+        await key_provider._provision_azure(self._provisionable("2025-01-01-preview"))
+        assert os.environ["AZURE_OPENAI_API_VERSION"] == "2025-01-01-preview"
+
+        # The config path must not fall through to the leftover env value
+        config = self._azure_credential().to_esperanto_config()
+        assert config["api_version"] == "2024-10-21"
+
+        await key_provider._provision_azure(self._provisionable())
+        assert os.environ["AZURE_OPENAI_API_VERSION"] == "2024-10-21"
+
+    @pytest.mark.asyncio
+    async def test_versionless_credential_gets_the_env_version_back(self, monkeypatch):
+        from open_notebook.ai import key_provider
+
+        self._clear_azure_env(monkeypatch)
+        monkeypatch.setenv("AZURE_OPENAI_API_VERSION", "2024-06-01")
+
+        await key_provider._provision_azure(self._provisionable("2025-01-01-preview"))
+        config = self._azure_credential().to_esperanto_config()
+        assert config["api_version"] == "2024-06-01"
+
+        await key_provider._provision_azure(self._provisionable())
+        assert os.environ["AZURE_OPENAI_API_VERSION"] == "2024-06-01"
+        assert "api_version" not in self._azure_credential().to_esperanto_config()
 
 
 class TestAudioProviderWiring:

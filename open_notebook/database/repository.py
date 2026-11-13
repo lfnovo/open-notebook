@@ -221,7 +221,6 @@ async def repo_delete(record_id: Union[str, RecordID]):
 async def repo_insert(
     table: str,
     data: List[Dict[str, Any]],
-    ignore_duplicates: bool = False,
     batch_size: int = 50,
 ) -> List[Dict[str, Any]]:
     """Insert records in bounded batches using a single database connection."""
@@ -246,8 +245,6 @@ async def repo_insert(
                 elif result is not None:
                     results.append(result)
             except RuntimeError as e:
-                if ignore_duplicates and "already contains" in str(e):
-                    continue
                 # Log transaction conflicts at debug level (they are expected during concurrent operations)
                 error_str = str(e).lower()
                 if "transaction" in error_str or "conflict" in error_str:
@@ -256,8 +253,6 @@ async def repo_insert(
                     logger.error(str(e))
                 raise
             except Exception as e:
-                if ignore_duplicates and "already contains" in str(e):
-                    continue
                 logger.exception(e)
                 raise RuntimeError("Failed to create record")
     return results

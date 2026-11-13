@@ -449,6 +449,8 @@ export const trTR = {
     sessionCreated: "Sohbet oturumu oluşturuldu",
     sessionUpdated: "Oturum güncellendi",
     sessionDeleted: "Oturum silindi",
+    stop: "Durdur",
+    generating: "Oluşturuluyor...",
   },
   searchPage: {
     askAndSearch: "Sor ve Ara",

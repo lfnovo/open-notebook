@@ -619,6 +619,19 @@ class TestCredentialAzureApiVersion:
         monkeypatch.setenv("AZURE_OPENAI_API_VERSION_LLM", "2025-04-01-preview")
         assert "api_version" not in self._azure_credential().to_esperanto_config()
 
+    @pytest.mark.asyncio
+    async def test_modality_env_version_does_not_leave_a_leftover(self, monkeypatch):
+        from open_notebook.ai import key_provider
+
+        self._clear_azure_env(monkeypatch)
+        monkeypatch.setenv("AZURE_OPENAI_API_VERSION", "2024-06-01")
+        monkeypatch.setenv("AZURE_OPENAI_API_VERSION_LLM", "2025-04-01-preview")
+
+        await key_provider._provision_azure(self._provisionable("2025-01-01-preview"))
+        assert "api_version" not in self._azure_credential().to_esperanto_config()
+        # Modalities without their own variable fall back to this one
+        assert os.environ["AZURE_OPENAI_API_VERSION"] == "2024-06-01"
+
     def test_other_providers_get_no_api_version(self, monkeypatch):
         from open_notebook.domain.credential import Credential
 

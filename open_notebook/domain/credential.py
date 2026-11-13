@@ -48,13 +48,20 @@ def apply_azure_api_version_env(version: Optional[str]) -> None:
         os.environ[_AZURE_API_VERSION_VAR] = version
         return
 
+    _restore_azure_api_version_env()
+    default_version = default_azure_api_version()
+    if default_version:
+        os.environ[_AZURE_API_VERSION_VAR] = default_version
+
+
+def _restore_azure_api_version_env() -> None:
+    """Put AZURE_OPENAI_API_VERSION back to what the environment had."""
+    if _azure_api_version_from_env is _NOT_CAPTURED:
+        return
     if _azure_api_version_from_env:
         os.environ[_AZURE_API_VERSION_VAR] = _azure_api_version_from_env
     else:
         os.environ.pop(_AZURE_API_VERSION_VAR, None)
-    default_version = default_azure_api_version()
-    if default_version:
-        os.environ[_AZURE_API_VERSION_VAR] = default_version
 
 
 def default_azure_api_version() -> Optional[str]:
@@ -78,7 +85,9 @@ def default_azure_api_version() -> Optional[str]:
         for var in spec.api_version_env
         if var != _AZURE_API_VERSION_VAR
     ):
-        # Esperanto reads these before the generic variable.
+        # Esperanto reads these before the generic variable, and falls back to
+        # it for a modality without one, so it must not hold a leftover.
+        _restore_azure_api_version_env()
         return None
     if from_env:
         # Name it explicitly only when another credential's version hides it.

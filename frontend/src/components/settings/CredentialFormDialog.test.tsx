@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Credential } from '@/lib/api/credentials'
 import { enUS } from '@/lib/locales/en-US'
 import { CredentialFormDialog } from './CredentialFormDialog'
@@ -39,6 +39,10 @@ function renderDialog(provider: string) {
 }
 
 describe('CredentialFormDialog', () => {
+  beforeEach(() => {
+    createMutate.mockClear()
+  })
+
   it('shows the version-path hint for OpenAI-compatible providers', () => {
     renderDialog('openai_compatible')
 
@@ -82,12 +86,15 @@ describe('CredentialFormDialog', () => {
       expect.objectContaining({ provider: 'azure' }),
       expect.anything(),
     )
-    expect(createMutate.mock.calls[0][0].api_version).toBeUndefined()
+    expect(createMutate.mock.lastCall?.[0].api_version).toBeUndefined()
   })
 
   it('sends a typed Azure API version when creating', () => {
     renderDialog('azure')
 
+    fireEvent.change(screen.getByLabelText('apiKeys.configName'), {
+      target: { value: 'Work Azure' },
+    })
     fireEvent.change(screen.getByLabelText('models.apiKey'), {
       target: { value: 'azure-key' },
     })

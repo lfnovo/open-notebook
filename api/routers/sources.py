@@ -233,15 +233,16 @@ async def find_duplicate_sources(
         )
         params["host"] = host
     if wanted_hash:
-        # Bounded prefilter: stored full_text is un-normalized, so bound the raw
-        # candidate length loosely and let the exact hash compare decide. The DB
-        # still skips wildly mismatched rows before any copying+hashing.
+        # Bounded prefilter: stored full_text is un-normalized and the hash
+        # ignores whitespace, so the bounds are proportional (half to double)
+        # rather than a fixed margin, and the exact hash compare decides. The
+        # DB still skips wildly mismatched rows before any copying+hashing.
         raw_len = len(content or "")
         clauses.append(
             "(full_text != NONE AND string::len(full_text) >= $min_len "
             "AND string::len(full_text) <= $max_len)"
         )
-        params["min_len"] = max(raw_len // 2, raw_len - 512)
+        params["min_len"] = raw_len // 2
         params["max_len"] = raw_len * 2 + 512
     if weak:
         clauses.append(

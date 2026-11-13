@@ -457,8 +457,9 @@ export function AddSourceDialog({
           setPendingSubmit(data)
           return
         }
-      } catch {
+      } catch (error) {
         if (probeRef.current !== probeId) return
+        console.warn('Duplicate check failed; creating source without warning:', error)
         // fail-open: proceed with creation when the probe errors
       } finally {
         setCheckingDuplicates(false)
@@ -498,6 +499,7 @@ export function AddSourceDialog({
     setBatchProgress(null)
     setDuplicateMatches([])
     setPendingSubmit(null)
+    setCheckingDuplicates(false)
     probeRef.current += 1
 
     // Reset to default transformations

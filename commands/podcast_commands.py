@@ -163,6 +163,28 @@ async def generate_podcast_command(
         logger.info(f"Loaded episode profile: {episode_profile.name}")
         logger.info(f"Loaded speaker profile: {speaker_profile.name}")
 
+        # Create the episode before anything below can fail, so a failure
+        # (missing or unresolvable model, provider error) shows up as a
+        # failed episode in the list instead of nothing at all (#1400).
+        briefing = episode_profile.default_briefing
+        if input_data.briefing_suffix:
+            briefing += f"\n\nAdditional instructions: {input_data.briefing_suffix}"
+
+        episode = PodcastEpisode(
+            name=input_data.episode_name,
+            episode_profile=full_model_dump(episode_profile.model_dump()),
+            speaker_profile=full_model_dump(speaker_profile.model_dump()),
+            command=ensure_record_id(input_data.execution_context.command_id)
+            if input_data.execution_context
+            else None,
+            briefing=briefing,
+            content=input_data.content,
+            audio_file=None,
+            transcript=None,
+            outline=None,
+        )
+        await episode.save()
+
         # 2. Validate that model registry fields are populated
         if not episode_profile.outline_llm:
             raise ValueError(
@@ -321,27 +343,6 @@ async def generate_podcast_command(
                         logger.warning(
                             f"Failed to resolve per-speaker TTS for '{speaker.get('name')}': {e}"
                         )
-
-        # 6. Generate briefing
-        briefing = episode_profile.default_briefing
-        if input_data.briefing_suffix:
-            briefing += f"\n\nAdditional instructions: {input_data.briefing_suffix}"
-
-        # Create the record for the episode and associate with the ongoing command
-        episode = PodcastEpisode(
-            name=input_data.episode_name,
-            episode_profile=full_model_dump(episode_profile.model_dump()),
-            speaker_profile=full_model_dump(speaker_profile.model_dump()),
-            command=ensure_record_id(input_data.execution_context.command_id)
-            if input_data.execution_context
-            else None,
-            briefing=briefing,
-            content=input_data.content,
-            audio_file=None,
-            transcript=None,
-            outline=None,
-        )
-        await episode.save()
 
         # SECURITY NOTE for future work: podcast_creator also supports
         # configure("templates", {...}), which compiles the given string

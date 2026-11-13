@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Ollama embedding models such as `embeddinggemma` and `qwen3-embedding` are now discovered as embedding models instead of language models (#1585)
 - Podcast episode and speaker profile action menus now have localized names for screen readers (#1403).
+- **A podcast with an incomplete profile no longer disappears.** Generating with an episode profile missing its outline or transcript model, or a speaker profile missing its voice model, now fails at once with a message naming the profile and the missing model, and nothing is queued. A failure later in generation shows up as a failed episode in the Podcasts list instead of no episode at all, and retrying a failed episode keeps it if the retry is rejected (#1400)
 - The provider credential dialog (Manage → Models → Add configuration) fits on short screens. It is capped at 90% of the window height and the form scrolls inside it, so the title, the close button and the Save/Cancel buttons stay reachable (#1507)
 - Transformation deletion confirmations no longer show a source-deletion title (#1402)
 - **`NEXT_PUBLIC_API_URL=/api` no longer requests `/api/api/...`.** A trailing `/api` on the API URL is dropped once, when the URL is resolved, so every request that adds its own `/api` (config check, API client, sign-in) gets a single one (#1522)

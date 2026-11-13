@@ -24,7 +24,7 @@ After an Ask answer finishes on the **Ask and Search** page, click **Save to Not
 
 ### Turn an insight into a note
 
-Open an insight from a source's **Insights**, pick a notebook at the bottom of the insight and click **Save as Note**. If you have only one notebook, it is already selected. The note is titled *"<insight type> from source <source title>"* and shows up in that notebook's Notes column. Each click creates a new note.
+Open an insight from a source's **Insights**, pick a notebook at the bottom of the insight and click **Save as Note**. If you have only one notebook, it is already selected. The note is titled *"<insight type> from source <source title>"*, is marked **AI Generated**, and shows up in that notebook's Notes column. Each click creates a new note.
 
 ---
 

@@ -35,7 +35,7 @@ def default_azure_api_version() -> Optional[str]:
     it; otherwise the same default the connection test uses.
     """
     spec = PROVIDERS["azure"]
-    if any(os.environ.get(var) for var in spec.api_version_env):
+    if any(os.environ.get(var, "").strip() for var in spec.api_version_env):
         return None
     return spec.default_api_version
 

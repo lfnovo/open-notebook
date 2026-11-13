@@ -14,6 +14,53 @@ from open_notebook.exceptions import ExternalServiceError, IncompleteGenerationE
 from open_notebook.graphs.transformation import run_transformation
 
 
+@pytest.mark.asyncio
+async def test_default_prompt_is_applied_without_mutating_cached_prompt():
+    default_prompt = "DEFAULT_PROMPT"
+    transformation_prompt = "TRANSFORMATION_PROMPT"
+    transformation = SimpleNamespace(
+        title="Summary",
+        prompt=transformation_prompt,
+    )
+    chain = AsyncMock()
+    chain.ainvoke.return_value = AIMessage(
+        content="Transformed content",
+        response_metadata={},
+    )
+    cached_default_prompts = SimpleNamespace(transformation_instructions=default_prompt)
+
+    with (
+        patch(
+            "open_notebook.graphs.transformation.DefaultPrompts.get_instance",
+            new_callable=AsyncMock,
+            return_value=cached_default_prompts,
+        ) as get_default_prompts,
+        patch(
+            "open_notebook.graphs.transformation.provision_langchain_model",
+            new=AsyncMock(return_value=chain),
+        ),
+        patch(
+            "open_notebook.graphs.transformation.Source.add_insight",
+            new_callable=AsyncMock,
+        ),
+    ):
+        result = await run_transformation(
+            {
+                "input_text": "Source content",
+                "transformation": transformation,
+            },
+            {"configurable": {}},
+        )
+
+    assert result == {"output": "Transformed content"}
+    get_default_prompts.assert_awaited_once_with(force_reload=True)
+    system_prompt = chain.ainvoke.await_args.args[0][0].content
+    assert system_prompt.index(default_prompt) < system_prompt.index(
+        transformation_prompt
+    )
+    assert cached_default_prompts.transformation_instructions == default_prompt
+
+
 @pytest.fixture
 def transformation_call():
     source = Source(id="source:test", full_text="Source content")
@@ -21,7 +68,8 @@ def transformation_call():
     chain = AsyncMock()
     with (
         patch(
-            "open_notebook.graphs.transformation.DefaultPrompts",
+            "open_notebook.graphs.transformation.DefaultPrompts.get_instance",
+            new_callable=AsyncMock,
             return_value=SimpleNamespace(transformation_instructions=None),
         ),
         patch(

@@ -44,9 +44,9 @@ async def run_transformation(state: dict, config: RunnableConfig) -> dict:
         # plain render variable into a fixed, developer-authored template instead.
         # See docs/7-DEVELOPMENT/security.md (GHSA-f35w-wx37-26q7).
         instructions = transformation.prompt
-        default_prompts: DefaultPrompts = DefaultPrompts(
-            transformation_instructions=None
-        )
+        default_prompts: DefaultPrompts = await DefaultPrompts.get_instance(
+            force_reload=True
+        )  # type: ignore[assignment]
         if default_prompts.transformation_instructions:
             instructions = (
                 f"{default_prompts.transformation_instructions}\n\n{instructions}"

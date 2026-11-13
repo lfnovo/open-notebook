@@ -304,9 +304,14 @@ class TestSourceDomain:
             assert tmp_path.exists()
 
             # Mock the parent delete method to avoid database operations
-            with patch.object(
-                Source.__bases__[0], "delete", new_callable=AsyncMock
-            ) as mock_delete:
+            with (
+                patch(
+                    "open_notebook.domain.notebook.repo_query", new_callable=AsyncMock
+                ),
+                patch.object(
+                    Source.__bases__[0], "delete", new_callable=AsyncMock
+                ) as mock_delete,
+            ):
                 mock_delete.return_value = True
 
                 # Delete the source
@@ -331,9 +336,12 @@ class TestSourceDomain:
         source = Source(id="source:test_no_file", title="Test Source", asset=None)
 
         # Mock the parent delete method
-        with patch.object(
-            Source.__bases__[0], "delete", new_callable=AsyncMock
-        ) as mock_delete:
+        with (
+            patch("open_notebook.domain.notebook.repo_query", new_callable=AsyncMock),
+            patch.object(
+                Source.__bases__[0], "delete", new_callable=AsyncMock
+            ) as mock_delete,
+        ):
             mock_delete.return_value = True
 
             # Delete should complete without error
@@ -352,9 +360,12 @@ class TestSourceDomain:
         )
 
         # Mock the parent delete method
-        with patch.object(
-            Source.__bases__[0], "delete", new_callable=AsyncMock
-        ) as mock_delete:
+        with (
+            patch("open_notebook.domain.notebook.repo_query", new_callable=AsyncMock),
+            patch.object(
+                Source.__bases__[0], "delete", new_callable=AsyncMock
+            ) as mock_delete,
+        ):
             mock_delete.return_value = True
 
             # Delete should complete even though file doesn't exist

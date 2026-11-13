@@ -1,3 +1,4 @@
+import asyncio
 import os
 from datetime import datetime
 from pathlib import Path
@@ -14,7 +15,22 @@ from open_notebook.exceptions import (
     DatabaseOperationError,
     InvalidInputError,
     NotFoundError,
+    OpenNotebookError,
 )
+
+# Retry budget for SurrealDB transaction conflicts when deleting a source
+SOURCE_DELETE_MAX_ATTEMPTS = 3
+SOURCE_DELETE_RETRY_DELAY_SECONDS = 0.5
+
+
+def _is_transaction_conflict(error: BaseException) -> bool:
+    """True if SurrealDB rejected the query with a retryable transaction conflict.
+
+    Checks the wrapped cause too: ObjectModel.delete() re-raises DB errors as a
+    generic DatabaseOperationError.
+    """
+    cause = error.__cause__ or error.__context__
+    return any("can be retried" in str(err).lower() for err in (error, cause) if err)
 
 
 class Notebook(ObjectModel):
@@ -264,15 +280,12 @@ class Notebook(ObjectModel):
                 for src in source_counts:
                     source_id = src.get("id")
                     if source_id and src.get("assigned_others", 0) == 0:
-                        # Exclusive source - delete it
-                        try:
-                            source = await Source.get(str(source_id))
-                            await source.delete()
-                            deleted_sources += 1
-                        except Exception as e:
-                            logger.warning(
-                                f"Failed to delete exclusive source {source_id}: {e}"
-                            )
+                        # Exclusive source - delete it. A failure stops the
+                        # notebook delete before the source is unlinked, so it
+                        # is not left behind in no notebook (#1510).
+                        source = await Source.get(str(source_id))
+                        await source.delete()
+                        deleted_sources += 1
                     else:
                         unlinked_sources += 1
             else:
@@ -648,8 +661,48 @@ class Source(ObjectModel):
         return data
 
     async def delete(self) -> bool:
-        """Delete source and clean up associated file, embeddings, and insights."""
-        # Clean up uploaded file if it exists
+        """Delete source, its embeddings and insights, then its uploaded file.
+
+        SurrealDB transaction conflicts (e.g. the worker writing embeddings at
+        the same time) are retried a few times. Any failure is raised so the
+        API does not report a source as deleted when it still exists.
+        """
+        if self.id is None:
+            raise InvalidInputError("Cannot delete object without an ID")
+        source_id = ensure_record_id(self.id)
+        for attempt in range(1, SOURCE_DELETE_MAX_ATTEMPTS + 1):
+            try:
+                await repo_query(
+                    "DELETE source_embedding WHERE source = $source_id",
+                    {"source_id": source_id},
+                )
+                await repo_query(
+                    "DELETE source_insight WHERE source = $source_id",
+                    {"source_id": source_id},
+                )
+                deleted = await super().delete()
+                break
+            except Exception as e:
+                conflict = _is_transaction_conflict(e)
+                if conflict and attempt < SOURCE_DELETE_MAX_ATTEMPTS:
+                    logger.debug(
+                        f"Transaction conflict deleting source {self.id} "
+                        f"(attempt {attempt}/{SOURCE_DELETE_MAX_ATTEMPTS}), retrying: {e}"
+                    )
+                    await asyncio.sleep(SOURCE_DELETE_RETRY_DELAY_SECONDS * attempt)
+                    continue
+                logger.error(f"Failed to delete source {self.id}: {e}")
+                if conflict:
+                    raise DatabaseOperationError(
+                        "Failed to delete source: database transaction conflict, "
+                        "please retry"
+                    ) from e
+                if isinstance(e, OpenNotebookError):
+                    raise
+                raise DatabaseOperationError("Failed to delete source") from e
+
+        # Remove the uploaded file only once the database records are gone,
+        # so a failed delete never leaves a source pointing to a missing file.
         if self.asset and self.asset.file_path:
             file_path = Path(self.asset.file_path)
             if file_path.exists():
@@ -658,34 +711,14 @@ class Source(ObjectModel):
                     logger.info(f"Deleted file for source {self.id}: {file_path}")
                 except Exception as e:
                     logger.warning(
-                        f"Failed to delete file {file_path} for source {self.id}: {e}. "
-                        "Continuing with database deletion."
+                        f"Failed to delete file {file_path} for source {self.id}: {e}"
                     )
             else:
                 logger.debug(
                     f"File {file_path} not found for source {self.id}, skipping cleanup"
                 )
 
-        # Delete associated embeddings and insights to prevent orphaned records
-        try:
-            source_id = ensure_record_id(self.id)
-            await repo_query(
-                "DELETE source_embedding WHERE source = $source_id",
-                {"source_id": source_id},
-            )
-            await repo_query(
-                "DELETE source_insight WHERE source = $source_id",
-                {"source_id": source_id},
-            )
-            logger.debug(f"Deleted embeddings and insights for source {self.id}")
-        except Exception as e:
-            logger.warning(
-                f"Failed to delete embeddings/insights for source {self.id}: {e}. "
-                "Continuing with source deletion."
-            )
-
-        # Call parent delete to remove database record
-        return await super().delete()
+        return deleted
 
 
 class Note(ObjectModel):

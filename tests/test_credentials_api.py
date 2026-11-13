@@ -1,6 +1,7 @@
 """Tests for the credentials API endpoint."""
 
 import os
+from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import httpx
@@ -1031,3 +1032,69 @@ class TestMiniMaxRegionalBaseUrl:
 
         assert requested == ["https://api.minimax.cn/v1/models"]
         assert "speech-2.8-hd" in [m["name"] for m in models]
+
+
+class TestProvisionExplicitCredential:
+    """provision_provider_keys(provider, credential=...) provisions that exact
+    credential, so a model linked to one of several credentials for the same
+    provider authenticates as the account it is linked to (#1534)."""
+
+    @pytest.mark.asyncio
+    async def test_simple_provider_uses_given_credential(self, monkeypatch):
+        from types import SimpleNamespace
+
+        from open_notebook.ai import key_provider
+
+        monkeypatch.setenv("OPENAI_API_KEY", "")
+        default = AsyncMock(
+            return_value=SimpleNamespace(api_key=SecretStr("first"), base_url=None)
+        )
+        monkeypatch.setattr(key_provider, "_get_default_credential", default)
+        linked: Any = SimpleNamespace(api_key=SecretStr("linked"), base_url=None)
+
+        assert (
+            await key_provider.provision_provider_keys("openai", credential=linked)
+            is True
+        )
+        assert os.environ["OPENAI_API_KEY"] == "linked"
+        default.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_compatible_provider_uses_given_credential(self, monkeypatch):
+        from types import SimpleNamespace
+
+        from open_notebook.ai import key_provider
+
+        monkeypatch.setenv("OPENAI_COMPATIBLE_API_KEY", "")
+        monkeypatch.setenv("OPENAI_COMPATIBLE_BASE_URL", "")
+        default = AsyncMock(return_value=None)
+        monkeypatch.setattr(key_provider, "_get_default_credential", default)
+        linked: Any = SimpleNamespace(
+            api_key=SecretStr("linked"), base_url="http://localhost:9000/v1"
+        )
+
+        assert (
+            await key_provider.provision_provider_keys(
+                "openai_compatible", credential=linked
+            )
+            is True
+        )
+        assert os.environ["OPENAI_COMPATIBLE_API_KEY"] == "linked"
+        assert os.environ["OPENAI_COMPATIBLE_BASE_URL"] == "http://localhost:9000/v1"
+        default.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_without_credential_falls_back_to_default(self, monkeypatch):
+        from types import SimpleNamespace
+
+        from open_notebook.ai import key_provider
+
+        monkeypatch.setenv("OPENAI_API_KEY", "")
+        default = AsyncMock(
+            return_value=SimpleNamespace(api_key=SecretStr("first"), base_url=None)
+        )
+        monkeypatch.setattr(key_provider, "_get_default_credential", default)
+
+        assert await key_provider.provision_provider_keys("openai") is True
+        assert os.environ["OPENAI_API_KEY"] == "first"
+        default.assert_awaited_once_with("openai")

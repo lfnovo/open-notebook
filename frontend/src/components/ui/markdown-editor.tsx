@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { forwardRef } from 'react'
+import remarkCjkFriendly from 'remark-cjk-friendly'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
@@ -48,7 +49,7 @@ const SANITIZE_SCHEMA = {
 }
 
 export const PREVIEW_OPTIONS = {
-  remarkPlugins: [remarkMath] as PluggableList,
+  remarkPlugins: [remarkCjkFriendly, remarkMath] as PluggableList,
   rehypePlugins: [[rehypeSanitize, SANITIZE_SCHEMA], [rehypeKatex, KATEX_OPTIONS]] as PluggableList,
 }
 

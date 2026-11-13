@@ -8,6 +8,7 @@ from loguru import logger
 from surrealdb import AsyncSurreal, RecordID  # type: ignore
 from surrealdb.data.types.table import Table  # type: ignore
 
+from open_notebook.exceptions import DatabaseOperationError
 from open_notebook.utils.proxy import ensure_internal_no_proxy
 
 # Keep the internal SurrealDB websocket out of any configured HTTP proxy
@@ -212,10 +213,16 @@ async def repo_delete(record_id: Union[str, RecordID]):
 
     try:
         async with db_connection() as connection:
-            return await connection.delete(ensure_record_id(record_id))
+            result = await connection.delete(ensure_record_id(record_id))
     except Exception as e:
         logger.exception(e)
         raise RuntimeError(f"Failed to delete record: {str(e)}")
+    # SurrealDB may return a string error message (e.g. a retriable transaction
+    # conflict) instead of raising; don't report that as a successful delete
+    if isinstance(result, str):
+        logger.debug(result)
+        raise DatabaseOperationError(f"Failed to delete record: {result}")
+    return result
 
 
 async def repo_insert(

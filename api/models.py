@@ -323,6 +323,18 @@ class SettingsUpdate(BaseModel):
 
 
 # Sources API models
+def reject_nul_bytes(value: Any) -> Any:
+    # SurrealDB stores a NUL byte but then can't read the record back, so
+    # a source or a queued command holding one breaks later queries (#1558).
+    values = value if isinstance(value, list) else [value]
+    if any(isinstance(v, str) and "\x00" in v for v in values):
+        raise ValueError(
+            "contains a NUL byte (\\x00), which the database can't store. "
+            "Remove it and try again."
+        )
+    return value
+
+
 class AssetModel(BaseModel):
     file_path: Optional[str] = None
     url: Optional[str] = None
@@ -358,6 +370,8 @@ class SourceCreate(BaseModel):
     async_processing: bool = Field(
         False, description="Whether to process source asynchronously"
     )
+
+    _no_nul_bytes = field_validator("content", "title", "url")(reject_nul_bytes)
 
     @model_validator(mode="after")
     def validate_notebook_fields(self):
@@ -411,6 +425,8 @@ class DuplicateCheckResponse(BaseModel):
 class SourceUpdate(BaseModel):
     title: Optional[str] = Field(None, description="Source title")
     topics: Optional[List[str]] = Field(None, description="Source topics")
+
+    _no_nul_bytes = field_validator("title", "topics")(reject_nul_bytes)
 
 
 class SourceResponse(BaseModel):

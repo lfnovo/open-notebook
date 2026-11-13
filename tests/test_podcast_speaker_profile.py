@@ -521,3 +521,39 @@ class TestUnconfiguredSpeakerProfileDoesNotPoisonConfig:
         from podcast_creator.speakers import SpeakerConfig
 
         SpeakerConfig(profiles=speakers_config)
+
+
+class TestEpisodeCreatedBeforeValidation:
+    """The worker saves the episode before validating models, so a failure
+    shows as a failed episode instead of nothing in the list (#1400)."""
+
+    @pytest.mark.asyncio
+    async def test_missing_model_still_leaves_an_episode(self):
+        episode_profile = EpisodeProfile(
+            name="Test Episode Profile",
+            speaker_config="speaker_profile:s",
+            default_briefing="brief",
+        )
+        speaker_profile = SpeakerProfile(
+            name="Speakers",
+            speakers=[
+                {"name": "Host", "voice_id": "v", "backstory": "", "personality": ""}
+            ],
+        )
+        save = AsyncMock()
+
+        with (
+            patch.object(
+                EpisodeProfile,
+                "get_by_name",
+                new=AsyncMock(return_value=episode_profile),
+            ),
+            patch.object(
+                SpeakerProfile, "resolve", new=AsyncMock(return_value=speaker_profile)
+            ),
+            patch("open_notebook.podcasts.models.PodcastEpisode.save", new=save),
+        ):
+            with pytest.raises(ValueError, match="no outline model configured"):
+                await generate_podcast_command(make_input())
+
+        save.assert_awaited_once()

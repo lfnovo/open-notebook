@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Search result counts use the correct singular and plural forms in every supported language (#1402)
 - Adding a source that is already in a notebook no longer links it a second time. The duplicate check looked the link up in the wrong direction, so each call added another link: the notebook's source count went up and the source was listed twice (#1533)
 - **Notebook chat no longer refers to a search tool it doesn't have.** The chat system prompt told the model that document ids come from a search tool; it now says they are the ones in the provided context. The API reference and the `/api/chat/execute` schema now say that its `context` field takes the `context` object returned by `/api/chat/context`, not the `context_config` sent to it (#1553)
+- **A NUL byte in a text source no longer stops the worker.** Text with a NUL byte (`\x00`, which some PDF text extraction produces) failed with `Failed to queue processing`, but still left a queued job that SurrealDB could not read back. The worker's queue query then failed on every poll, so all background processing stopped until the row was deleted by hand. A NUL byte in a new source's text, title or URL, or in an edited title or topics, is now rejected with a 422 that names the problem, and no job is submitted with one. To remove a job left by an older version, see [Processing Issues](docs/6-TROUBLESHOOTING/processing-issues.md#sources-stay-queued-waiting-to-be-processed) (#1558)
 
 ## [1.15.1] - 2026-11-03
 

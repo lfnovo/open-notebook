@@ -65,8 +65,14 @@ describe('markdownPreview', () => {
     expect(markdownPreview('short text', 20)).toBe('short text')
   })
 
+  it('never cuts an emoji in half when truncating', () => {
+    expect(markdownPreview('ab😀cd', 3)).toBe('ab😀…')
+  })
+
   it('returns an empty string for empty or markup-only input', () => {
     expect(markdownPreview('')).toBe('')
     expect(markdownPreview('---')).toBe('')
+    expect(markdownPreview('***')).toBe('')
+    expect(markdownPreview('_ _ _')).toBe('')
   })
 })

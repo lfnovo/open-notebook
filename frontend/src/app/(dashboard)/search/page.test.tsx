@@ -245,6 +245,19 @@ describe('SearchPage', () => {
       expect(screen.getByText('searchPage.strategy: chat-model')).toBeInTheDocument()
     })
 
+    it('runs on the tools model even when no chat model is set', () => {
+      mockModelDefaults({ default_chat_model: '', default_tools_model: 'model:tools' })
+      render(<SearchPage />)
+
+      askQuestion()
+
+      expect(sendAsk).toHaveBeenCalledWith(
+        'What is new?',
+        { strategy: 'model:tools', answer: 'model:tools', finalAnswer: 'model:tools' },
+        { notebookIds: [] }
+      )
+    })
+
     it('lets models picked in Advanced override the defaults', () => {
       mockModelDefaults({ default_chat_model: 'model:chat', default_tools_model: 'model:tools' })
       render(<SearchPage />)

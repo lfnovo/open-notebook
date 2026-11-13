@@ -21,6 +21,8 @@ export function markdownPreview(markdown: string, maxLength = 180): string {
     .replace(/^\s*(?:[-*+]|\d+[.)])\s+/gm, '')
     // Horizontal rules and table separator rows
     .replace(/^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)*\|?\s*$/gm, ' ')
+    // Thematic breaks written with asterisks or underscores (`***`, `_ _ _`)
+    .replace(/^[ \t]*(?:[*_][ \t]*){3,}$/gm, ' ')
     // Table cell borders
     .replace(/\|/g, ' ')
     // Inline emphasis. Asterisks must hug the text (as in markdown) so
@@ -35,6 +37,8 @@ export function markdownPreview(markdown: string, maxLength = 180): string {
     .replace(/\s+/g, ' ')
     .trim()
 
-  if (text.length <= maxLength) return text
-  return `${text.slice(0, maxLength).trimEnd()}…`
+  // Count code points, not UTF-16 units, so an emoji is never cut in half
+  const characters = [...text]
+  if (characters.length <= maxLength) return text
+  return `${characters.slice(0, maxLength).join('').trimEnd()}…`
 }

@@ -110,7 +110,7 @@ export default function SearchPage() {
   }
 
   const handleAsk = useCallback(() => {
-    if (!askQuestion.trim() || !modelDefaults?.default_chat_model) return
+    if (!askQuestion.trim() || !defaultAskModel) return
 
     const models = customModels || {
       strategy: defaultAskModel,
@@ -119,7 +119,7 @@ export default function SearchPage() {
     }
 
     ask.sendAsk(askQuestion, models, { notebookIds: scopeNotebookIds })
-  }, [askQuestion, modelDefaults, defaultAskModel, customModels, scopeNotebookIds, ask])
+  }, [askQuestion, defaultAskModel, customModels, scopeNotebookIds, ask])
 
   // Auto-trigger search/ask when arriving with URL params
   useEffect(() => {
@@ -132,11 +132,11 @@ export default function SearchPage() {
     if (urlMode === 'search') {
       handleSearch()
       hasAutoTriggeredRef.current = true
-    } else if (urlMode === 'ask' && modelDefaults?.default_chat_model) {
+    } else if (urlMode === 'ask' && defaultAskModel) {
       handleAsk()
       hasAutoTriggeredRef.current = true
     }
-  }, [urlQuery, urlMode, modelsLoading, modelDefaults, handleSearch, handleAsk])
+  }, [urlQuery, urlMode, modelsLoading, defaultAskModel, handleSearch, handleAsk])
 
   // Handle URL param changes while on page (e.g., from command palette again)
   useEffect(() => {

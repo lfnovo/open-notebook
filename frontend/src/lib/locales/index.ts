@@ -30,7 +30,6 @@ export const resources = {
   'pl-PL': { translation: plPL },
   'tr-TR': { translation: trTR },
   'ar-SA': { translation: arSA },
-
 } as const;
 
 export type TranslationKeys = typeof enUS;

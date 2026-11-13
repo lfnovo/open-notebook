@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import i18n from '@/lib/i18n'
 import { arSA } from '@/lib/locales'
+import { languageToDirection } from '@/lib/language-resolution'
 import { languageScript } from '@/lib/language-script'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { I18nProvider } from './I18nProvider'
@@ -96,7 +97,7 @@ describe('I18nProvider document language', () => {
     expect(observations.map(([language]) => language)).toEqual(['ar-SA', 'fr-FR', 'ar-SA', 'en-US'])
     for (const [rendered, lang, dir] of observations) {
       expect(lang).toBe(rendered)
-      expect(dir).toBe(rendered.startsWith('ar') ? 'rtl' : 'ltr')
+      expect(dir).toBe(languageToDirection(rendered))
     }
   })
 

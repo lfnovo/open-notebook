@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { resources } from './locales'
 import { languageScript } from './language-script'
 import { languageDetection } from './language-detection'
+import { languageToDirection } from './language-resolution'
 
 beforeEach(() => {
   localStorage.clear()
@@ -63,7 +64,7 @@ describe('document language before hydration', () => {
       const beforeDirection = document.documentElement.dir
 
       expect(beforeHydration).toBe(await detectLanguage())
-      expect(beforeDirection).toBe(beforeHydration.startsWith('ar') ? 'rtl' : 'ltr')
+      expect(beforeDirection).toBe(languageToDirection(beforeHydration))
     },
   )
 

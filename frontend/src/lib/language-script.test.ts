@@ -56,7 +56,24 @@ describe('document language before hydration', () => {
       expect(await detectLanguage()).toBe(language)
     },
   )
-  it.each([...Object.keys(resources), 'ar', 'fr', 'zh', 'ar-sa', 'ar-EG', 'he-IL', 'fr-CA', 'zh-Hant', 'ar-SA-x-test', 'invalid_language'])(
+  it.each([
+    ['ar-EG', 'ar-SA', 'rtl'], ['ar-AE', 'ar-SA', 'rtl'],
+    ['ar-SA-u-nu-arab', 'ar-SA', 'rtl'], ['ar-EG-u-nu-latn', 'ar-SA', 'rtl'],
+    ['fr-CA', 'fr-FR', 'ltr'], ['pt-PT', 'pt-BR', 'ltr'],
+    // Two Chinese variants are registered, so a region alone does not pick one.
+    ['zh-HK', 'en-US', 'ltr'], ['he-IL', 'en-US', 'ltr'],
+  ])('resolves regional or extended preference %s to %s on startup and detection', async (preference, language, direction) => {
+    for (const source of ['saved', 'browser']) {
+      localStorage.clear()
+      vi.spyOn(navigator, 'languages', 'get').mockReturnValue(source === 'browser' ? [preference] : ['en-US'])
+      if (source === 'saved') localStorage.setItem('i18nextLng', preference)
+      new Function(languageScript)()
+      expect(document.documentElement.lang).toBe(language)
+      expect(document.documentElement.dir).toBe(direction)
+      expect(await detectLanguage()).toBe(language)
+    }
+  })
+  it.each([...Object.keys(resources), 'ar', 'fr', 'zh', 'ar-sa', 'ar-EG', 'ar-SA-u-nu-arab', 'he-IL', 'fr-CA', 'zh-HK', 'zh-Hant', 'ar-SA-x-test', 'invalid_language'])(
     'matches the real detector and translation fallback for saved %s', async (saved) => {
       localStorage.setItem('i18nextLng', saved)
       new Function(languageScript)()

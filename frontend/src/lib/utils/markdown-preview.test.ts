@@ -46,6 +46,17 @@ describe('markdownPreview', () => {
     expect(markdownPreview('> *Note:* __really__ ~~old~~ _new_')).toBe('Note: really old new')
   })
 
+  it('leaves asterisks used as multiplication alone', () => {
+    expect(markdownPreview('Area is 5 * 3 * 2 units')).toBe('Area is 5 * 3 * 2 units')
+    expect(markdownPreview('2 ** 8 and 3 ** 2 are **powers**')).toBe(
+      '2 ** 8 and 3 ** 2 are powers'
+    )
+  })
+
+  it('drops tilde-fenced code blocks like backtick ones', () => {
+    expect(markdownPreview('Before\n~~~python\nprint("x")\n~~~\nAfter')).toBe('Before After')
+  })
+
   it('truncates long text with an ellipsis and leaves short text alone', () => {
     const long = 'word '.repeat(100)
     const out = markdownPreview(long, 20)

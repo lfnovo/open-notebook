@@ -11,7 +11,7 @@
 export function markdownPreview(markdown: string, maxLength = 180): string {
   const text = markdown
     // Fenced code blocks carry no readable preview text
-    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/(```|~~~)[\s\S]*?\1/g, ' ')
     // Images keep their alt text, links keep their label
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
@@ -23,10 +23,12 @@ export function markdownPreview(markdown: string, maxLength = 180): string {
     .replace(/^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)*\|?\s*$/gm, ' ')
     // Table cell borders
     .replace(/\|/g, ' ')
-    // Inline emphasis; underscores only count at word edges so snake_case survives
-    .replace(/\*\*(.+?)\*\*/g, '$1')
+    // Inline emphasis. Asterisks must hug the text (as in markdown) so
+    // arithmetic like `5 * 3 * 2` survives; underscores only count at word
+    // edges so snake_case survives
+    .replace(/\*\*(?=\S)(.+?)(?<=\S)\*\*/g, '$1')
     .replace(/(^|[^\w])__(.+?)__(?=[^\w]|$)/g, '$1$2')
-    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/\*(?=\S)(.+?)(?<=\S)\*/g, '$1')
     .replace(/(^|[^\w])_(.+?)_(?=[^\w]|$)/g, '$1$2')
     .replace(/~~(.+?)~~/g, '$1')
     .replace(/`([^`]*)`/g, '$1')

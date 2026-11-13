@@ -291,17 +291,20 @@ class RecordModel(BaseModel):
 
     async def _load_from_db(self, force_reload: bool = False):
         """Load data from database if not already loaded or when forced."""
-        if force_reload:
-            for field_name, field_info in type(self).model_fields.items():
-                default = field_info.get_default(call_default_factory=True)
-                if default is not PydanticUndefined:
-                    object.__setattr__(self, field_name, default)
-
         if force_reload or not getattr(self, "_db_loaded", False):
             result = await repo_query(
                 "SELECT * FROM ONLY $record_id",
                 {"record_id": ensure_record_id(self.record_id)},
             )
+
+            # Reset to defaults only once the query has succeeded, so a failed
+            # reload keeps the values already in memory. No await sits between
+            # the reset and the assignments below.
+            if force_reload:
+                for field_name, field_info in type(self).model_fields.items():
+                    default = field_info.get_default(call_default_factory=True)
+                    if default is not PydanticUndefined:
+                        object.__setattr__(self, field_name, default)
 
             # Handle case where record doesn't exist yet
             if result:

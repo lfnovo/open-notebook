@@ -113,6 +113,7 @@ MODEL_PREFERENCES = {
     "anthropic": [
         "claude-sonnet",
         "claude-haiku",
+        "claude-opus",
         "claude-3-5-sonnet",
         "claude-3-opus",
         "claude-3-sonnet",

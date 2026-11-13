@@ -67,6 +67,28 @@ Source processing, embedding and podcast generation run on the background worker
 
 If the worker isn't running, jobs stay queued.
 
+## Notebook chat
+
+A notebook chat turn takes two calls. The `context` that `/api/chat/execute` expects is the **output** of `/api/chat/context`, not the `context_config` sent to it. The web UI makes the same two calls (`frontend/src/lib/hooks/use-notebook-chat.ts`).
+
+1. `POST /api/chat/context` with a `context_config` that maps each source and note id to `"insights"`, `"full content"` or `"not in"` (notes accept `"full content"` or `"not in"`; a note set to `"insights"` is left out). It returns `{"context": {"sources": [...], "notes": [...]}, "token_count": ..., "char_count": ...}`, where each item carries its id, title and the content selected for it.
+2. `POST /api/chat/execute` with that returned `context` object as `context`.
+
+```bash
+CONTEXT=$(curl -s http://localhost:5055/api/chat/context \
+  -H "Authorization: Bearer $OPEN_NOTEBOOK_PASSWORD" \
+  -H "Content-Type: application/json" \
+  -d '{"notebook_id": "notebook:...", "context_config": {"sources": {"source:...": "full content"}, "notes": {}}}' \
+  | jq '.context')
+
+curl http://localhost:5055/api/chat/execute \
+  -H "Authorization: Bearer $OPEN_NOTEBOOK_PASSWORD" \
+  -H "Content-Type: application/json" \
+  -d "$(jq -n --argjson context "$CONTEXT" '{session_id: "chat_session:...", message: "Summarize this source", context: $context}')"
+```
+
+Sending the `context_config` itself to `/api/chat/execute` is accepted, but the model then sees only ids and status strings such as `"full content"`, not the source text. Create the session first with `POST /api/chat/sessions`.
+
 ## Streaming
 
 `POST /api/search/ask` and the source-chat message endpoint return Server-Sent Events (`text/event-stream`). Each event is a `data: {json}` line with a `type` field. For Ask, the types are `strategy`, `answer`, `final_answer`, `complete` and `error`.

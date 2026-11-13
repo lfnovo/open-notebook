@@ -30,7 +30,7 @@ export function markdownPreview(markdown: string, maxLength = 180): string {
     // edges so snake_case survives
     .replace(/\*\*(?=\S)(.+?)(?<=\S)\*\*/g, '$1')
     .replace(/(^|[^\w])__(.+?)__(?=[^\w]|$)/g, '$1$2')
-    .replace(/\*(?=\S)(.+?)(?<=\S)\*/g, '$1')
+    .replace(/(?<!\*)\*(?![\s*])(.+?)(?<![\s*])\*(?!\*)/g, '$1')
     .replace(/(^|[^\w])_(.+?)_(?=[^\w]|$)/g, '$1$2')
     .replace(/~~(.+?)~~/g, '$1')
     .replace(/`([^`]*)`/g, '$1')

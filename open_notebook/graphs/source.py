@@ -228,6 +228,20 @@ async def content_process(state: SourceState) -> dict:
             if stt_model:
                 config_kwargs["audio_provider"] = stt_model.provider
                 config_kwargs["audio_model"] = stt_model.name
+                # content-core builds its own speech-to-text client from
+                # environment variables only (ContentCoreConfig has no
+                # api_key/base_url fields for audio). Provision the env vars
+                # from the model's linked credential (or the provider's first
+                # credential when none is linked), mirroring the fallback used
+                # for language/embedding models in open_notebook/ai/models.py
+                # and podcast models in open_notebook/podcasts/models.py (see
+                # #567 for the same class of bug fixed for embeddings).
+                from open_notebook.ai.key_provider import provision_provider_keys
+
+                await provision_provider_keys(
+                    stt_model.provider,
+                    credential=await stt_model.get_credential_obj(),
+                )
                 logger.debug(
                     f"Using speech-to-text model: {stt_model.provider}/{stt_model.name}"
                 )

@@ -53,6 +53,9 @@ const arabicWordedCounts = new Set([
   'podcasts.usedByCount_zero',
   'podcasts.usedByCount_one',
   'podcasts.usedByCount_two',
+  'searchPage.resultsFound_zero',
+  'searchPage.resultsFound_one',
+  'searchPage.resultsFound_two',
 ])
 
 const placeholderProblems = (code: string, key: string, enValue: string, localeValue: string) => {
@@ -105,6 +108,9 @@ describe('Placeholder Parity', () => {
     ['podcasts.usedByCount_zero', 'لا تستخدمه أي حلقة'],
     ['podcasts.usedByCount_one', 'تستخدمه حلقة واحدة'],
     ['podcasts.usedByCount_two', 'تستخدمه حلقتان'],
+    ['searchPage.resultsFound_zero', 'لم يتم العثور على نتائج'],
+    ['searchPage.resultsFound_one', 'تم العثور على نتيجة واحدة'],
+    ['searchPage.resultsFound_two', 'تم العثور على نتيجتين'],
   ])('validates the real Arabic worded count at %s', (key, expected) => {
     const enValue = enLeaves[key]
     const arValue = arLeaves[key]
@@ -121,9 +127,14 @@ describe('Placeholder Parity', () => {
 
   it.each(['zero', 'one', 'two'])('still rejects an Arabic {count} typo in the %s exception', suffix => {
     expect(placeholderProblems('ar-SA', `podcasts.usedByCount_${suffix}`, 'Used by {{count}} episodes', 'تستخدمه {count} حلقة').stray).toEqual(['{count}'])
+    expect(placeholderProblems('ar-SA', `searchPage.resultsFound_${suffix}`, '{{count}} results found', 'تم العثور على {count} نتيجة').stray).toEqual(['{count}'])
   })
 
-  it.each(['podcasts.usedByCount_few', 'podcasts.usedByCount_many', 'podcasts.usedByCount_other', 'unrelated_one'])('requires count in Arabic %s', key => {
+  it.each([
+    'podcasts.usedByCount_few', 'podcasts.usedByCount_many', 'podcasts.usedByCount_other',
+    'searchPage.resultsFound_few', 'searchPage.resultsFound_many', 'searchPage.resultsFound_other',
+    'unrelated_one',
+  ])('requires count in Arabic %s', key => {
     expect(placeholderProblems('ar-SA', key, '{{count}} items', 'عناصر').missing).toEqual(['count'])
   })
 
@@ -175,7 +186,7 @@ describe('Unused Key Detection', () => {
   it(
     'all en-US leaf keys should be referenced in source files',
     () => {
-      const srcDir = path.resolve(__dirname, '../../..')
+      const srcDir = path.resolve(__dirname, '../..')
       const localesDir = path.resolve(__dirname)
 
       const files = fs.readdirSync(srcDir, { recursive: true }) as string[]

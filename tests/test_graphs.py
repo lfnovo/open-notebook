@@ -311,6 +311,11 @@ class TestSaveSourceTitlePreservation:
 class TestContentProcessDeleteSource:
     """content-core 2.x no longer deletes the uploaded file; the graph must."""
 
+    @pytest.fixture(autouse=True)
+    def _uploads_in_tmp_path(self, tmp_path, monkeypatch):
+        # content_process only reads (and deletes) files inside the uploads folder.
+        monkeypatch.setattr("open_notebook.graphs.source.UPLOADS_FOLDER", str(tmp_path))
+
     @pytest.mark.asyncio
     @patch("open_notebook.graphs.source.extract_content")
     @patch("open_notebook.graphs.source.ModelManager")
@@ -457,6 +462,63 @@ class TestContentProcessDeleteSource:
         assert config.docling_ocr is False
         assert config.docling_formulas is True
         assert config.docling_vision is True
+
+    @pytest.mark.asyncio
+    @patch("open_notebook.graphs.source.ContentSettings")
+    @patch("open_notebook.graphs.source.engine_runtime_missing", return_value=None)
+    @patch("open_notebook.graphs.source.extract_content")
+    @patch("open_notebook.graphs.source.ModelManager")
+    async def test_docling_vision_endpoint_env_reaches_config(
+        self,
+        mock_model_manager,
+        mock_extract,
+        _mock_runtime,
+        mock_settings,
+        monkeypatch,
+    ):
+        """The CCORE_DOCLING_VISION_* worker variables (#1478) still apply when
+        content_process builds ContentCoreConfig with its own overrides."""
+        from content_core.common import ExtractionOutput
+
+        from open_notebook.graphs.source import SourceState, content_process
+
+        monkeypatch.setenv(
+            "CCORE_DOCLING_VISION_URL", "http://vlm.local:8000/v1/chat/completions"
+        )
+        monkeypatch.setenv("CCORE_DOCLING_VISION_MODEL", "qwen2.5-vl-7b")
+        monkeypatch.setenv("CCORE_DOCLING_VISION_API_KEY", "test-key")
+
+        mm_instance = MagicMock()
+        mm_instance.get_defaults = AsyncMock(
+            return_value=MagicMock(default_speech_to_text_model=None)
+        )
+        mock_model_manager.return_value = mm_instance
+        mock_settings.get_instance = AsyncMock(
+            return_value=MagicMock(
+                youtube_preferred_languages=None,
+                default_content_processing_engine_url=None,
+                default_content_processing_engine_doc="docling",
+                docling_ocr=None,
+                docling_formulas=None,
+                docling_vision=True,
+            )
+        )
+        mock_extract.return_value = ExtractionOutput(title="T", content="body")
+
+        state = {
+            "source_id": "source:123",
+            "content_state": {"url": "https://example.com"},
+            "embed": False,
+            "apply_transformations": [],
+        }
+
+        await content_process(cast(SourceState, state))
+
+        config = mock_extract.await_args.kwargs["config"]
+        assert config.docling_vision is True
+        assert config.docling_vision_url == "http://vlm.local:8000/v1/chat/completions"
+        assert config.docling_vision_model == "qwen2.5-vl-7b"
+        assert config.docling_vision_api_key == "test-key"
 
     @pytest.mark.asyncio
     @patch("open_notebook.graphs.source.ContentSettings")

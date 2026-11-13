@@ -8,7 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Image descriptions through your own vision model.** With **Describe images and charts** on, Docling can now send images to any OpenAI-compatible endpoint (vLLM, Ollama, LM Studio, a hosted API) instead of its small built-in model: set `CCORE_DOCLING_VISION_URL` and `CCORE_DOCLING_VISION_MODEL` for the worker, plus optional `_API_KEY`, `_PROMPT`, `_MAX_TOKENS`, `_TIMEOUT` and `_TOKEN_PARAM`. Requires content-core 2.3. Without the URL nothing changes and nothing leaves the machine (#1478)
+- **Arabic README.** An Arabic translation of the README is at [docs/i18n/ar/README.md](docs/i18n/ar/README.md), linked from the README's language bar (#1551)
+- **Turkish README.** A Turkish translation of the README is at [docs/i18n/tr/README.md](docs/i18n/tr/README.md), linked from the README's language bar (#1549)
 - Arabic (`ar-SA`) interface translations and Saudi date formatting, selectable from the language menu, with app-wide document language and RTL direction handling before hydration and language-switch paint (#1277, #1367)
+
+### Security
+- **Dependency security updates.** Python: `pillow` 13.0.0, `filelock`, `virtualenv`, `authlib`, `aiohttp`, `pyasn1`, `mcp`, `fastmcp`, `tornado`, `certifi`, `dnspython`, `fsspec`, `multidict`, `opentelemetry-api` and the `langgraph` packages move to versions with the published fixes, and the new floors are pinned in `constraint-dependencies` so a future lock can't resolve back. Frontend: `katex` 0.19, `vite` 7.3.7, `vitest` 4.1.12, `follow-redirects` 1.16.2 and `postcss-selector-parser` 6.1.5
+- **Without a password, the API only answers browser pages on its own host.** When `OPEN_NOTEBOOK_PASSWORD` and `CORS_ORIGINS` are both unset, the API used to accept cross-origin requests from any web page, so a page you visited could call an unauthenticated Open Notebook through your browser and read the answers. The default now admits only `localhost` origins and pages on the same host name the browser used to reach the API, which is where the UI lives. The default UI keeps working from this machine, the LAN or a VPS. If the UI and the API are served from different host names (for example behind a reverse proxy), set a password or list the UI origin in `CORS_ORIGINS`. CORS only stops other pages from reading the answers; it is not authentication
+- The API logs a warning at startup when `OPEN_NOTEBOOK_PASSWORD` is not set, saying that authentication is disabled and how to fix it.
+
+### Fixed
+- The provider credential dialog (Manage → Models → Add configuration) fits on short screens. It is capped at 90% of the window height and the form scrolls inside it, so the title, the close button and the Save/Cancel buttons stay reachable (#1507)
+- Transformation deletion confirmations no longer show a source-deletion title (#1402)
+- **`NEXT_PUBLIC_API_URL=/api` no longer requests `/api/api/...`.** A trailing `/api` on the API URL is dropped once, when the URL is resolved, so every request that adds its own `/api` (config check, API client, sign-in) gets a single one (#1522)
+- **Vector search returns sources again.** `fn::vector_search` grouped, ordered and limited in a single `SELECT`; SurrealDB returns grouped rows in group-key order, so the `ORDER BY similarity DESC` was inert and the `LIMIT` truncated a list ordered by record id. Because `note:` sorts before `source:` and `source_insight:`, any `match_count` below the number of embedded notes returned notes **only**, silently discarding sources that scored higher than every note in the result — an instance that accumulates notes gradually stopped being able to return any source at all through vector search, with no error and no indication that anything had been filtered. Migration 26 splits the final statement so the grouped set is ordered and limited after grouping, with `id` as a tie-break for determinism. The signature is unchanged, including the optional `notebook_ids` from migration 24 (#1431)
+- **Text search ranks the best match first.** `fn::text_search` had the same single-`SELECT` group/order/limit as vector search, so results came back in record-id order (notes before sources) and the `LIMIT` could drop the best match. Nothing re-sorted them afterwards, so the wrong order reached the search page and Ask as-is. Migration 26 now fixes both functions the same way (#1505)
+- Search result counts use the correct singular and plural forms in every supported language (#1402)
+- Adding a source that is already in a notebook no longer links it a second time. The duplicate check looked the link up in the wrong direction, so each call added another link: the notebook's source count went up and the source was listed twice (#1533)
+
+## [1.15.1] - 2026-11-03
 
 ### Changed
 - **Documentation rewritten against the code.** Every page under `docs/` was checked against v1.15.0 and rewritten where it described an older or imagined product (#1458, #1459, #1460, #1461):
@@ -25,6 +44,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `make start-all` starts SurrealDB again (it pointed to a compose file removed long ago)
 - The legacy `SURREAL_ADDRESS` / `SURREAL_PORT` fallback builds a valid database URL (`ws://host:port/rpc`, was `ws://host/rpc:port`); an address that already includes the port is kept as is
 - `.env.example` names the chunking variables Open Notebook actually reads (`OPEN_NOTEBOOK_CHUNK_SIZE` / `OPEN_NOTEBOOK_CHUNK_OVERLAP`)
+
+### Removed
+- `POST /api/commands/jobs`, the generic "submit any background command" endpoint. Nothing in Open Notebook used it; every operation has its own endpoint. Job status (`GET /api/commands/jobs/{job_id}`) is unchanged.
+
+### Security
+- Source processing now enforces the uploads-directory and URL checks in the background worker itself, so they apply on every path that processes a source, not only when a source is created.
+- Requires `content-core` 2.2.1 or later, which refuses link-local and cloud-metadata addresses on every redirect hop when fetching URLs.
 
 ## [1.15.0] - 2026-10-04
 

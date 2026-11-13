@@ -1,0 +1,3 @@
+-- Restore migration 1: updated recomputed on every notebook/source write.
+DEFINE FIELD OVERWRITE updated ON TABLE notebook DEFAULT time::now() VALUE time::now();
+DEFINE FIELD OVERWRITE updated ON TABLE source DEFAULT time::now() VALUE time::now();

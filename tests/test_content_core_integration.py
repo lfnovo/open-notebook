@@ -69,6 +69,7 @@ async def test_docling_selection_falls_back_to_auto_when_runtime_missing():
         patch.object(
             source_graph, "extract_content", new=AsyncMock(return_value=extracted)
         ) as mock_extract,
+        patch.object(source_graph, "UPLOADS_FOLDER", "/tmp"),
     ):
         await source_graph.content_process(
             {"content_state": {"file_path": "/tmp/doc.pdf"}}  # type: ignore[typeddict-item]

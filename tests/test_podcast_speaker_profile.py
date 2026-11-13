@@ -129,6 +129,13 @@ class TestSpeakerProfileResolve:
 
     @pytest.mark.asyncio
     async def test_resolve_by_record_id_queries_by_id(self):
+        """Regression test for #1489: resolve() must use a WHERE-filtered
+        query (`SELECT * FROM speaker_profile WHERE id = $id`), not the
+        direct record-pointer form (`SELECT * FROM $id`). The latter was
+        observed to reliably return empty for every speaker profile in a
+        real deployment (AsyncSurreal over the websocket RPC protocol,
+        surrealdb 2.7.0), even though the same record ID resolves fine via
+        a WHERE query and via a direct SurrealQL session."""
         with patch(
             "open_notebook.podcasts.models.repo_query", new_callable=AsyncMock
         ) as mock_query:
@@ -152,7 +159,8 @@ class TestSpeakerProfileResolve:
         assert profile.name == "Tech Experts"
         assert mock_query.await_args is not None
         query, params = mock_query.await_args.args
-        assert "FROM $id" in query
+        assert "FROM speaker_profile WHERE id = $id" in query
+        assert "FROM $id" not in query
         assert str(params["id"]) == "speaker_profile:abc"
 
     @pytest.mark.asyncio

@@ -20,6 +20,8 @@ export function useSourceChat(sourceId: string) {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<SourceChatMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
+  // Same as isStreaming, but readable from the session effect without re-running it
+  const streamingRef = useRef(false)
   const [contextIndicators, setContextIndicators] = useState<SourceChatContextIndicator | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
@@ -37,9 +39,11 @@ export function useSourceChat(sourceId: string) {
     enabled: !!sourceId && !!currentSessionId
   })
 
-  // Update messages when session changes
+  // Update messages when session changes. Skipped while an answer is
+  // streaming: the session can load mid-stream without the new messages, and
+  // would hide them until the stream ends (#1391).
   useEffect(() => {
-    if (currentSession?.messages) {
+    if (currentSession?.messages && !streamingRef.current) {
       setMessages(currentSession.messages)
     }
     // Also clears the badge when the session goes away (deleted / switched).
@@ -119,7 +123,7 @@ export function useSourceChat(sourceId: string) {
         const error = err as { response?: { data?: { detail?: string } }, message?: string };
         console.error('Failed to create chat session:', error)
         toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToCreateSession'))
-        return
+        return false
       }
     }
 
@@ -131,6 +135,7 @@ export function useSourceChat(sourceId: string) {
       timestamp: new Date().toISOString()
     }
     setMessages(prev => [...prev, userMessage])
+    streamingRef.current = true
     setIsStreaming(true)
 
     try {
@@ -200,13 +205,16 @@ export function useSourceChat(sourceId: string) {
           }
         }
       }
+      return true
     } catch (err: unknown) {
       const error = err as { response?: { data?: { detail?: string } }, message?: string };
       console.error('Error sending message:', error)
       toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToSendMessage'))
       // Remove optimistic messages on error
       setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
+      return false
     } finally {
+      streamingRef.current = false
       setIsStreaming(false)
       // Refetch session to get persisted messages
       refetchCurrentSession()

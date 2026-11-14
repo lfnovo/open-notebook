@@ -62,7 +62,7 @@ import {
   MessageSquare,
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import { getDateLocale } from '@/lib/utils/date-locale'
+import { formatDateTime, getDateLocale } from '@/lib/utils/date-locale'
 import { markdownPreview } from '@/lib/utils/markdown-preview'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -814,7 +814,7 @@ function SourceDetailContentInner({
                         })}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(source.created).toLocaleString()}
+                        {formatDateTime(source.created, language)}
                       </p>
                     </div>
                     <div>
@@ -826,7 +826,7 @@ function SourceDetailContentInner({
                         })}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(source.updated).toLocaleString()}
+                        {formatDateTime(source.updated, language)}
                       </p>
                     </div>
                   </div>

@@ -308,6 +308,9 @@ class SettingsResponse(BaseModel):
     docling_ocr: Optional[bool] = None
     docling_formulas: Optional[bool] = None
     docling_vision: Optional[bool] = None
+    docling_vision_url: Optional[str] = None
+    docling_vision_model: Optional[str] = None
+    docling_vision_prompt: Optional[str] = None
     youtube_preferred_languages: Optional[List[str]] = None
 
 
@@ -319,6 +322,11 @@ class SettingsUpdate(BaseModel):
     docling_ocr: Optional[bool] = None
     docling_formulas: Optional[bool] = None
     docling_vision: Optional[bool] = None
+    # An empty string clears the field, so the CCORE_DOCLING_VISION_* worker
+    # variable applies again; None (omitted) leaves it unchanged.
+    docling_vision_url: Optional[str] = None
+    docling_vision_model: Optional[str] = None
+    docling_vision_prompt: Optional[str] = None
     youtube_preferred_languages: Optional[List[str]] = None
 
 

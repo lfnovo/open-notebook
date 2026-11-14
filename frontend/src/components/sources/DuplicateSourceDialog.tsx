@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { formatDateTime } from '@/lib/utils/date-locale'
 import type { DuplicateSourceInfo } from '@/lib/types/api'
 
 interface DuplicateSourceDialogProps {
@@ -31,7 +32,7 @@ export function DuplicateSourceDialog({
   onCancel,
   onProceed,
 }: DuplicateSourceDialogProps) {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
 
   return (
     <AlertDialog open={open} onOpenChange={(next) => !next && onCancel()}>
@@ -54,7 +55,7 @@ export function DuplicateSourceDialog({
               </p>
               {(match.created || match.updated) && (
                 <p className="text-xs text-muted-foreground">
-                  {new Date(match.created || match.updated || '').toLocaleString()}
+                  {formatDateTime(match.created || match.updated, language)}
                 </p>
               )}
               {match.excerpt && (

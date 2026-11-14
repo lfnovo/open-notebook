@@ -60,6 +60,9 @@ export interface SettingsResponse {
   docling_ocr?: boolean
   docling_formulas?: boolean
   docling_vision?: boolean
+  docling_vision_url?: string | null
+  docling_vision_model?: string | null
+  docling_vision_prompt?: string | null
   youtube_preferred_languages?: string[]
 }
 

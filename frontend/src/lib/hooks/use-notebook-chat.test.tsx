@@ -132,7 +132,7 @@ describe('useNotebookChat', () => {
     const history = [{ id: 'old-message', type: 'human' as const, content: 'previous question' }]
     await act(async () => {
       historyResolve({ ...session, messages: history })
-      await waitFor(() => expect(result.current.currentSession?.messages).toEqual(history))
+      await waitFor(() => expect(result.current.currentSession).toHaveProperty('messages', history))
     })
     expect(result.current.messages.map(message => message.content)).toEqual(['new question'])
 

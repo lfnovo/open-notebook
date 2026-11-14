@@ -984,4 +984,11 @@ export const trTR = {
     goToSettings: "Ayarlara Git",
     viewDocs: "Belgeleri Görüntüle",
   },
+  securityWarnings: {
+    defaultKeyTitle: "Herkese açık örnek şifreleme anahtarı kullanılıyor",
+    defaultKeyDescription: "openssl rand -hex 32 komutuyla özel bir anahtar üretin. Anahtarı değiştirmek kayıtlı sağlayıcı kimlik bilgilerini okunamaz hâle getirir; ardından sağlayıcıları yeniden yapılandırın.",
+    noPasswordTitle: "Bu örnekte parola ayarlanmamış",
+    noPasswordDescription: "8502 veya 5055 numaralı bağlantı noktalarına erişebilen herkes oturum açmadan bu örneği kullanabilir. OPEN_NOTEBOOK_PASSWORD ayarlayın veya yayımlanan portları 127.0.0.1 adresine bağlayın.",
+    securityGuide: "Güvenlik kılavuzunu okuyun",
+  },
 } satisfies TranslationShape;

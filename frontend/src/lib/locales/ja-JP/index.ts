@@ -984,4 +984,11 @@ export const jaJP = {
     goToSettings: "設定へ移動",
     viewDocs: "ドキュメントを見る",
   },
+  securityWarnings: {
+    defaultKeyTitle: "公開されているサンプル暗号化キーが使用されています",
+    defaultKeyDescription: "openssl rand -hex 32 で専用キーを生成してください。キーを変更すると保存済みのプロバイダー認証情報を読めなくなるため、その後に再設定が必要です。",
+    noPasswordTitle: "このインスタンスにはパスワードがありません",
+    noPasswordDescription: "ポート 8502 または 5055 にアクセスできる人は誰でも、サインインせずにこのインスタンスを使用できます。OPEN_NOTEBOOK_PASSWORD を設定するか、公開ポートを 127.0.0.1 にバインドしてください。",
+    securityGuide: "セキュリティガイドを読む",
+  },
 } satisfies TranslationShape;

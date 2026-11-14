@@ -985,4 +985,11 @@ export const esES = {
     goToSettings: "Ir a configuración",
     viewDocs: "Ver documentación",
   },
+  securityWarnings: {
+    defaultKeyTitle: "Se está usando la clave de cifrado pública de ejemplo",
+    defaultKeyDescription: "Genera una clave privada con openssl rand -hex 32. Cambiar esta clave hará ilegibles las credenciales de proveedor guardadas; vuelve a configurar esos proveedores después.",
+    noPasswordTitle: "Esta instancia no tiene contraseña",
+    noPasswordDescription: "Cualquier persona que pueda acceder a los puertos 8502 o 5055 puede usar esta instancia sin iniciar sesión. Define OPEN_NOTEBOOK_PASSWORD o limita los puertos publicados a 127.0.0.1.",
+    securityGuide: "Leer la guía de seguridad",
+  },
 } satisfies TranslationShape;

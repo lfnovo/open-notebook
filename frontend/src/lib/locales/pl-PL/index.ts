@@ -984,4 +984,11 @@ export const plPL = {
     goToSettings: "Przejdź do Ustawień",
     viewDocs: "Zobacz dokumentację",
   },
+  securityWarnings: {
+    defaultKeyTitle: "Używany jest publiczny przykładowy klucz szyfrowania",
+    defaultKeyDescription: "Wygeneruj prywatny klucz poleceniem openssl rand -hex 32. Zmiana klucza uniemożliwi odczyt zapisanych danych logowania dostawców; później skonfiguruj tych dostawców ponownie.",
+    noPasswordTitle: "Ta instancja nie ma hasła",
+    noPasswordDescription: "Każda osoba mająca dostęp do portu 8502 lub 5055 może korzystać z tej instancji bez logowania. Ustaw OPEN_NOTEBOOK_PASSWORD lub przypisz opublikowane porty do 127.0.0.1.",
+    securityGuide: "Przeczytaj poradnik bezpieczeństwa",
+  },
 } satisfies TranslationShape;

@@ -31,6 +31,9 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
   const [isSending, setIsSending] = useState(false)
   // Same as isSending, but readable from the session effect without re-running it
   const sendingRef = useRef(false)
+  // A failed refetch after a successful send can leave currentSession stale.
+  // Keep the response messages for the effect pass that follows that send.
+  const preserveMessagesAfterSendRef = useRef(false)
   const [tokenCount, setTokenCount] = useState<number>(0)
   const [charCount, setCharCount] = useState<number>(0)
   // Pending model override for when user changes model before a session exists
@@ -61,6 +64,10 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
   // flight: the session can load mid-send without the optimistic message, and
   // would hide it until the reply arrives (#1391).
   useEffect(() => {
+    if (preserveMessagesAfterSendRef.current && !sendingRef.current) {
+      preserveMessagesAfterSendRef.current = false
+      return
+    }
     if (currentSession?.messages && !sendingRef.current) {
       setMessages(currentSession.messages)
     }
@@ -232,6 +239,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
 
       // Update messages with API response
       setMessages(response.messages)
+      preserveMessagesAfterSendRef.current = true
 
       // Refetch current session to get updated data
       await refetchCurrentSession()

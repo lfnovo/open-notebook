@@ -17,7 +17,7 @@ The worker is not optional. Source processing, embeddings and podcasts are backg
 
 - **Python 3.11 or 3.12** (`pyproject.toml` requires `>=3.11,<3.13`; `.python-version` pins 3.12, which uv picks up)
 - **[uv](https://docs.astral.sh/uv/)** for Python dependencies
-- **Node.js 20.9 or newer** (Next.js 16 requires it; CI and the Docker image use Node 22)
+- **Node.js 22.12 or newer** (the frontend dependencies require it; CI and the Docker image use Node 22)
 - **Docker** with the Compose plugin, for SurrealDB
 - **ffmpeg** if you work on podcasts or audio/video sources (the Docker image installs it)
 

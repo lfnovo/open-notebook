@@ -984,4 +984,11 @@ export const ruRU = {
     goToSettings: "Перейти к настройкам",
     viewDocs: "Документация",
   },
+  securityWarnings: {
+    defaultKeyTitle: "Используется общедоступный пример ключа шифрования",
+    defaultKeyDescription: "Создайте личный ключ командой openssl rand -hex 32. После смены ключа сохранённые учётные данные провайдеров станут нечитаемыми; настройте провайдеры заново.",
+    noPasswordTitle: "У этого экземпляра нет пароля",
+    noPasswordDescription: "Любой, кто может подключиться к портам 8502 или 5055, сможет пользоваться экземпляром без входа. Задайте OPEN_NOTEBOOK_PASSWORD или привяжите опубликованные порты к 127.0.0.1.",
+    securityGuide: "Открыть руководство по безопасности",
+  },
 } satisfies TranslationShape;

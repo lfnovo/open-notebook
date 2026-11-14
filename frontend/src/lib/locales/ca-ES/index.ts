@@ -984,4 +984,11 @@ export const caES = {
     goToSettings: "Ves a la configuració",
     viewDocs: "Visualitza la documentació",
   },
+  securityWarnings: {
+    defaultKeyTitle: "S'està utilitzant la clau de xifratge pública d'exemple",
+    defaultKeyDescription: "Genera una clau privada amb openssl rand -hex 32. Canviar aquesta clau farà que les credencials de proveïdor desades siguin il·legibles; torna a configurar aquests proveïdors després.",
+    noPasswordTitle: "Aquesta instància no té contrasenya",
+    noPasswordDescription: "Qualsevol persona que pugui accedir als ports 8502 o 5055 pot utilitzar aquesta instància sense iniciar sessió. Defineix OPEN_NOTEBOOK_PASSWORD o vincula els ports publicats a 127.0.0.1.",
+    securityGuide: "Llegeix la guia de seguretat",
+  },
 } satisfies TranslationShape;

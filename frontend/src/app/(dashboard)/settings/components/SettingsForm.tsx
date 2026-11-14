@@ -13,6 +13,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { useSettings, useUpdateSettings } from '@/lib/hooks/use-settings'
 import { useCapabilities } from '@/lib/hooks/use-capabilities'
+import { useDismissibleWarning } from '@/lib/hooks/use-dismissible-warning'
+import { useAuthStore } from '@/lib/stores/auth-store'
 import { useEffect, useState } from 'react'
 import { ChevronDownIcon } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -31,6 +33,11 @@ type SettingsFormData = z.infer<typeof settingsSchema>
 
 export function SettingsForm() {
   const { t } = useTranslation()
+  const authRequired = useAuthStore(state => state.authRequired)
+  const authWarning = useDismissibleWarning(
+    'open-notebook-no-password-warning',
+    authRequired === false
+  )
   const { data: settings, isLoading, error } = useSettings()
   const { data: capabilities, isError: capabilitiesError } = useCapabilities()
   const updateSettings = useUpdateSettings()
@@ -115,6 +122,24 @@ export function SettingsForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {authRequired === false && !authWarning.dismissed && (
+        <Alert className="border-destructive/30 bg-destructive-tint">
+          <AlertTitle className="flex items-center justify-between gap-3 text-destructive">
+            {t('securityWarnings.noPasswordTitle')}
+            <button
+              type="button"
+              aria-label={t('common.close')}
+              onClick={authWarning.dismiss}
+              className="rounded-sm opacity-70 hover:opacity-100"
+            >
+              ×
+            </button>
+          </AlertTitle>
+          <AlertDescription className="text-destructive">
+            {t('securityWarnings.noPasswordDescription')}
+          </AlertDescription>
+        </Alert>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>{t('settings.contentProcessing')}</CardTitle>

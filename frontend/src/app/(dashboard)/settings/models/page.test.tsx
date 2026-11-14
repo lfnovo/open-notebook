@@ -6,6 +6,10 @@ import { Credential } from '@/lib/api/credentials'
 
 // useTranslation is mocked globally in setup.ts (t returns the key string)
 
+vi.mock('@/lib/hooks/use-dismissible-warning', () => ({
+  useDismissibleWarning: () => ({ dismissed: false, dismiss: vi.fn() }),
+}))
+
 vi.mock('@/components/layout/AppShell', () => ({
   AppShell: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
@@ -24,11 +28,10 @@ vi.mock('@/lib/hooks/use-models', () => ({
 }))
 
 const mockUseCredentials = vi.fn()
+const mockUseCredentialStatus = vi.fn()
 vi.mock('@/lib/hooks/use-credentials', () => ({
   useCredentials: () => mockUseCredentials(),
-  useCredentialStatus: vi.fn(() => ({
-    data: { configured: {}, source: {}, encryption_configured: true },
-  })),
+  useCredentialStatus: () => mockUseCredentialStatus(),
   useEnvStatus: vi.fn(() => ({ data: {} })),
 }))
 
@@ -67,6 +70,14 @@ const anthropicCredential = {
 
 describe('ApiKeysPage', () => {
   beforeEach(() => {
+    mockUseCredentialStatus.mockReturnValue({
+      data: {
+        configured: {},
+        source: {},
+        encryption_configured: true,
+        encryption_key_is_default: false,
+      },
+    })
     mockUseCredentials.mockReturnValue({ data: [], isLoading: false })
     mockUseProviders.mockReturnValue({
       data: providers,
@@ -101,6 +112,11 @@ describe('ApiKeysPage', () => {
     expect(screen.queryAllByTestId('provider-section')).toHaveLength(0)
   })
 
+  it('does not show the default-key warning when the API reports a custom key', () => {
+    render(<ApiKeysPage />)
+    expect(screen.queryByText('securityWarnings.defaultKeyTitle')).not.toBeInTheDocument()
+  })
+
   it('shows an error state when the provider list fails to load', () => {
     mockUseProviders.mockReturnValue({
       data: undefined,
@@ -113,5 +129,18 @@ describe('ApiKeysPage', () => {
       screen.getByText('apiKeys.providersLoadFailedDescription')
     ).toBeInTheDocument()
     expect(screen.queryAllByTestId('provider-section')).toHaveLength(0)
+  })
+
+  it('shows the default-key warning only when the API reports the public key', () => {
+    mockUseCredentialStatus.mockReturnValue({
+      data: {
+        configured: {},
+        source: {},
+        encryption_configured: true,
+        encryption_key_is_default: true,
+      },
+    })
+    render(<ApiKeysPage />)
+    expect(screen.getByText('securityWarnings.defaultKeyTitle')).toBeInTheDocument()
   })
 })

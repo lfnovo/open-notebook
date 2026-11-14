@@ -5,8 +5,8 @@ Pick the route that fits your setup. All of them end the same way: open the UI a
 | Route | For | You need |
 |---|---|---|
 | **[Docker Compose](docker-compose.md)** (recommended) | Almost everyone: laptops, home servers, VPS | Docker with Compose v2 |
-| [From Source](from-source.md) | Developers and contributors | Python 3.11–3.12, uv, Node.js 20.9+, Docker (for the database), ffmpeg |
-| [Windows Native](windows-native.md) | Windows machines that can't run Docker or WSL (for example ARM64) | Python 3.11–3.12 via uv, Node.js 20.9+, SurrealDB 2.x, ffmpeg |
+| [From Source](from-source.md) | Developers and contributors | Python 3.11–3.12, uv, Node.js 22.12+, Docker (for the database), ffmpeg |
+| [Windows Native](windows-native.md) | Windows machines that can't run Docker or WSL (for example ARM64) | Python 3.11–3.12 via uv, Node.js 22.12+, SurrealDB 2.x, ffmpeg |
 | [Single Container](single-container.md) (deprecated) | Hosting platforms that run one container per app; removed in v2 | Docker or a container host with persistent storage |
 
 Want a guided first run with a specific provider? The [quick starts](../0-START-HERE/index.md) wrap the Docker Compose route with provider-specific steps (cloud API key, Ollama in Docker, Ollama on the host).

@@ -15,7 +15,7 @@ This guide runs [Open Notebook](https://github.com/lfnovo/open-notebook) on Wind
 | Git | `winget install Git.Git` | |
 | uv | `winget install astral-sh.uv` | Also installs a matching Python for you |
 | Python 3.11 or 3.12 | Installed by `uv sync` | 3.13+ is not supported yet |
-| Node.js 20.9+ | `winget install OpenJS.NodeJS.LTS` | Next.js 16 requires 20.9 or later |
+| Node.js 22.12+ | `winget install OpenJS.NodeJS.LTS` | The frontend dependencies require 22.12 or later |
 | SurrealDB 2.x | [SurrealDB releases](https://github.com/surrealdb/surrealdb/releases) or `scoop install surrealdb` | Use a 2.x release: the Docker setup pins `surrealdb:v2` |
 | ffmpeg | `winget install Gyan.FFmpeg` | Needed for audio/video sources and podcasts |
 

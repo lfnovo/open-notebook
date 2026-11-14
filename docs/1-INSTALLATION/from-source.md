@@ -15,7 +15,7 @@ A source install runs four processes, each in its own terminal:
 
 - **Python 3.11 or 3.12.** 3.13 and later are not supported yet (`pyproject.toml` requires `>=3.11,<3.13`). uv can install a matching Python for you.
 - **uv**: `curl -LsSf https://astral.sh/uv/install.sh | sh` ([other install methods](https://docs.astral.sh/uv/getting-started/installation/))
-- **Node.js 20.9 or later** (22 LTS recommended; CI uses 22). Next.js 16 refuses older versions.
+- **Node.js 22.12 or later** (CI and the Docker image use 22). The frontend dependencies require it.
 - **Git**
 - **Docker**, to run SurrealDB
 - **ffmpeg**, for audio and video sources and podcasts (`brew install ffmpeg`, `sudo apt install ffmpeg`, or `winget install Gyan.FFmpeg`)
@@ -140,7 +140,7 @@ The development workflow is described in the [Development Setup](../7-DEVELOPMEN
 
 **Wrong Python version.** `uv sync --python 3.12` installs and uses a supported version.
 
-**`npm run dev` fails with an engine or syntax error.** Your Node.js is older than 20.9. Check with `node --version`.
+**`npm run dev` fails with an engine or syntax error.** Your Node.js is older than 22.12. Check with `node --version`.
 
 **API can't connect to the database.** Check that `SURREAL_URL` in `.env` uses `127.0.0.1`, and that the database is running: `docker compose ps` and `docker compose logs surrealdb`.
 

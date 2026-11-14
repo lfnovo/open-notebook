@@ -685,6 +685,12 @@ class TestPodcastService:
         submit = Mock()
 
         with (
+            patch(
+                "api.podcast_service.DefaultModels.get_instance",
+                new=AsyncMock(
+                    return_value=SimpleNamespace(default_text_to_speech_model=None)
+                ),
+            ),
             patch.object(
                 EpisodeProfile, "get_by_name", new=AsyncMock(return_value=episode)
             ),
@@ -702,6 +708,45 @@ class TestPodcastService:
                 )
 
         submit.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_missing_voice_model_with_default_tts_is_queued(self):
+        """A speaker profile without a voice model is accepted when a default
+        Text-to-Speech model is set: the worker falls back to it (#1467)."""
+        episode = SimpleNamespace(
+            name="Episode", outline_llm="model:o", transcript_llm="model:t"
+        )
+        speaker = SimpleNamespace(
+            id="speaker_profile:s", name="Speakers", voice_model=None
+        )
+        submit = Mock(return_value="command:podcast")
+
+        with (
+            patch(
+                "api.podcast_service.DefaultModels.get_instance",
+                new=AsyncMock(
+                    return_value=SimpleNamespace(
+                        default_text_to_speech_model="model:tts"
+                    )
+                ),
+            ),
+            patch.object(
+                EpisodeProfile, "get_by_name", new=AsyncMock(return_value=episode)
+            ),
+            patch.object(
+                SpeakerProfile, "resolve", new=AsyncMock(return_value=speaker)
+            ),
+            patch("api.podcast_service.submit_command", new=submit),
+        ):
+            job_id = await PodcastService.submit_generation_job(
+                episode_profile_name="Episode",
+                speaker_profile_name="Speakers",
+                episode_name="Episode Name",
+                content="content",
+            )
+
+        assert job_id == "command:podcast"
+        submit.assert_called_once()
 
 
 # ============================================================================

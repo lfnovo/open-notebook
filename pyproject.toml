@@ -11,7 +11,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
 ]
-requires-python = ">=3.11,<3.13"
+requires-python = ">=3.11.5,<3.13"
 dependencies = [
     "fastapi>=0.104.0",
     "uvicorn>=0.24.0",
@@ -99,7 +99,7 @@ constraint-dependencies = [
     "urllib3>=2.8.0",
     "tornado>=6.6",
     "virtualenv>=21.14.9",
-    "soupsieve>=2.9",
+    "soupsieve>=4.0.1",
     "pillow>=13.0.0",
     "filelock>=4.2.1",
     "authlib>=1.9.1",

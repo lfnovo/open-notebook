@@ -224,6 +224,8 @@ async def test_commands_log_incomplete_generation_as_permanent(during_import):
             ),
         ),
         patch(graph_path, new=AsyncMock(side_effect=error)),
+        # the failure path resets a placeholder title with one UPDATE
+        patch("commands.source_commands.repo_query", new=AsyncMock(return_value=[])),
         patch("commands.source_commands.logger") as logger,
     ):
         with pytest.raises(IncompleteGenerationError) as caught:

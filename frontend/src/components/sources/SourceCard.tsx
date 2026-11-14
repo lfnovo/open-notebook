@@ -195,6 +195,16 @@ function SourceCardImpl({
   
    const title = source.title || t('sources.untitledSource')
 
+  // The polled status only exists while a card watched the source process;
+  // the list response carries the same reason for sources that failed earlier.
+  const polledError = statusData?.processing_info?.error
+  const listedError = sourceWithStatus.processing_info?.error
+  const failureReason =
+    (typeof polledError === 'string' && polledError) ||
+    (typeof listedError === 'string' && listedError) ||
+    statusData?.message ||
+    ''
+
   const handleRetry = () => {
     if (onRetry) {
       onRetry(source.id)
@@ -274,10 +284,18 @@ function SourceCardImpl({
               </h4>
             </div>
 
-            {/* Processing message for active statuses */}
-            {statusData?.message && (isProcessing || isFailed) && (
+            {/* Progress message while processing, failure reason once failed */}
+            {isProcessing && statusData?.message && (
               <p className="text-xs text-muted-foreground mb-2 italic">
                 {statusData.message}
+              </p>
+            )}
+            {isFailed && failureReason && (
+              <p
+                className="text-xs text-muted-foreground mb-2 italic line-clamp-3 break-words"
+                title={failureReason}
+              >
+                {failureReason}
               </p>
             )}
 

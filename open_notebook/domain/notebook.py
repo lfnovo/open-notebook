@@ -417,6 +417,36 @@ class SourceInsight(ObjectModel):
         return note
 
 
+PLACEHOLDER_SOURCE_TITLE = "Processing..."
+
+
+def fallback_source_title(
+    url: Optional[str] = None, file_path: Optional[str] = None
+) -> Optional[str]:
+    """Title for a source whose processing never produced one.
+
+    The URL or the file name tells the user which source this is; `None`
+    (rendered as "Untitled source") when there is neither, as for pasted text.
+    """
+    if url and url.strip():
+        return url.strip()
+    if file_path:
+        return os.path.basename(file_path.rstrip("/\\")) or None
+    return None
+
+
+def is_replaceable_source_title(
+    title: Optional[str],
+    url: Optional[str] = None,
+    file_path: Optional[str] = None,
+) -> bool:
+    """True when `title` was set by the app (placeholder or failure fallback),
+    not by the user, so the extracted title may overwrite it."""
+    if not title or title == PLACEHOLDER_SOURCE_TITLE:
+        return True
+    return title == fallback_source_title(url, file_path)
+
+
 class Source(ObjectModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 

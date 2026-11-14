@@ -27,6 +27,9 @@ from typing import Optional
 from cryptography.fernet import Fernet, InvalidToken
 from loguru import logger
 
+# Public placeholder shipped in the example Compose configuration.
+DEFAULT_ENCRYPTION_KEY = "change-me-to-a-secret-string"
+
 
 def get_secret_from_env(var_name: str) -> Optional[str]:
     """

@@ -32,7 +32,7 @@ Don't copy an example value from any guide, including this one.
 
 - **The key has no default.** Without it you can't save credentials: **Manage → Models** shows "Encryption key not configured" and the API logs `OPEN_NOTEBOOK_ENCRYPTION_KEY not set. API key encryption will fail until this is configured.`
 - **Use a generated value.** Any string is accepted, but PBKDF2 only slows down guessing; it can't save a short, common or published passphrase.
-- **Replace the placeholder.** The shipped `docker-compose.yml` sets `change-me-to-a-secret-string`. That value is public, and Open Notebook does not warn about it.
+- **Replace the placeholder.** The shipped `docker-compose.yml` sets `change-me-to-a-secret-string`. That value is public. While it is in use the API logs a warning at startup and **Manage → Models** shows a banner.
 - **Don't change it once credentials are saved.** Keys encrypted with the old value can't be decrypted with the new one. Each affected credential shows **Decryption Error** in Manage → Models; delete and re-create it. There is no key-rotation command.
 - **Keep it apart from your backups.** A database backup plus the key gives access to every stored provider key.
 
@@ -76,7 +76,7 @@ Values that are not encrypted at all (from versions before credential encryption
 
 ### When to use it
 
-Set a password for any deployment reachable from something other than your own machine: a cloud host, a shared LAN, a reverse proxy on the internet. Without `OPEN_NOTEBOOK_PASSWORD`, authentication is off and anyone who can reach ports 8502 or 5055 can use the app and its stored provider keys. The API logs a warning at startup while the password is unset.
+Set a password for any deployment reachable from something other than your own machine: a cloud host, a shared LAN, a reverse proxy on the internet. Without `OPEN_NOTEBOOK_PASSWORD` (or `OPEN_NOTEBOOK_PASSWORD_FILE`), authentication is off and anyone who can reach ports 8502 or 5055 can use the app and its stored provider keys. While the password is unset, the API logs a warning at startup and the **Settings** page shows a banner.
 
 With Docker Compose, set it in the same `.env` file, using a different value from the key. Editing `docker-compose.yml` is a valid alternative.
 

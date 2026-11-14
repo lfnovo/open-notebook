@@ -481,6 +481,8 @@ function areEqual(prev: SourceCardProps, next: SourceCardProps): boolean {
     p.updated === n.updated &&
     p.status === n.status &&
     p.command_id === n.command_id &&
+    // the failure reason shown on a failed card
+    p.processing_info?.error === n.processing_info?.error &&
     p.embedded === n.embedded &&
     p.insights_count === n.insights_count &&
     p.asset?.url === n.asset?.url &&

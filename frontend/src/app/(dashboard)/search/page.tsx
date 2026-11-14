@@ -493,7 +493,7 @@ export default function SearchPage() {
                                   </button>
                                   {/* Text search returns a raw BM25 score (it can be
                                       negative), which is not a relevance users can read. */}
-                                  {searchMutation.data.search_type !== 'text' && (
+                                  {(searchMutation.data.search_type !== 'text' || typeof result.similarity === 'number') && (
                                     <Badge variant="secondary" className="ml-2 font-mono text-[11px]">
                                       {result.final_score.toFixed(2)}
                                     </Badge>

@@ -22,7 +22,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html']
-      // Note: reportsDirectory is NOT specified - vitest 4.x uses default location
+      // Note: reportsDirectory is NOT specified - vitest uses its default location
     }
   }
 })

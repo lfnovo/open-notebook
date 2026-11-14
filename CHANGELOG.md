@@ -54,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Notes saved from a source insight are now marked as AI-generated instead of Human (#1469)
 - The Add Source file picker no longer offers `.zip`, `.tar` and `.gz` files. Archives aren't supported, so uploading one always failed with "Unsupported file type". The hint under the picker and the FAQ no longer list ZIP archives as supported either (#1472)
 - Azure OpenAI credentials created in Manage → Models now work for models, not only for Test Connection. The form has an optional **API version** field, and a credential without a version uses `2024-10-21` unless `AZURE_OPENAI_API_VERSION` (or a per-modality variable) sets one, even after another Azure credential with its own version has been used. Before, model calls failed with "Azure OpenAI API version not found" (#1470)
+- **Uploads over 100 MB through the frontend proxy explain the limit instead of failing with a bare 500.** When `API_URL` points at the frontend's own URL and `/api/*` reaches the frontend, uploads go through the Next.js rewrite, which cuts bodies over 100 MB. The Add Source dialog now checks file sizes first in that setup (a small `/api/frontend-proxy` route tells it apart from a reverse proxy that routes `/api/` straight to the API), names the files that are too large and says how to route `/api/` straight to port 5055; nothing is sent. Direct API calls are unchanged and still answer with the API's 413 (#1477)
 
 ## [1.15.1] - 2026-11-03
 

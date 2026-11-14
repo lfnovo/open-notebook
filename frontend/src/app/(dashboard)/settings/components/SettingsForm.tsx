@@ -123,8 +123,8 @@ export function SettingsForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {authRequired === false && !authWarning.dismissed && (
-        <Alert className="border-destructive/30 bg-destructive-tint">
-          <AlertTitle className="flex items-center justify-between gap-3 text-destructive">
+        <Alert className="border-warn/30 bg-warn-tint">
+          <AlertTitle className="flex items-center justify-between gap-3 text-warn">
             {t('securityWarnings.noPasswordTitle')}
             <button
               type="button"
@@ -135,7 +135,7 @@ export function SettingsForm() {
               ×
             </button>
           </AlertTitle>
-          <AlertDescription className="text-destructive">
+          <AlertDescription className="text-warn">
             {t('securityWarnings.noPasswordDescription')}
           </AlertDescription>
         </Alert>

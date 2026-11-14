@@ -117,9 +117,9 @@ export default function ApiKeysPage() {
           )}
 
           {credentialStatus?.encryption_key_is_default && !defaultKeyWarning.dismissed && (
-            <Alert className="border-destructive/30 bg-destructive-tint">
-              <ShieldAlert className="h-4 w-4 text-destructive" />
-              <AlertTitle className="flex items-center justify-between gap-3 text-destructive">
+            <Alert className="border-warn/30 bg-warn-tint">
+              <ShieldAlert className="h-4 w-4 text-warn" />
+              <AlertTitle className="flex items-center justify-between gap-3 text-warn">
                 {t('securityWarnings.defaultKeyTitle')}
                 <button
                   type="button"
@@ -130,7 +130,7 @@ export default function ApiKeysPage() {
                   ×
                 </button>
               </AlertTitle>
-              <AlertDescription className="text-destructive">
+              <AlertDescription className="text-warn">
                 {t('securityWarnings.defaultKeyDescription')}{' '}
                 <code>openssl rand -hex 32</code>{' '}
                 <a

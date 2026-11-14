@@ -1,3 +1,4 @@
+import { format } from 'date-fns'
 import { zhCN, enUS, zhTW, ptBR, ja, it, fr, ru, bn, ca, es, de, pl, tr, Locale } from 'date-fns/locale'
 
 /**
@@ -30,4 +31,24 @@ const LOCALE_MAP: Record<string, Locale> = {
  */
 export function getDateLocale(language: string): Locale {
   return LOCALE_MAP[language] || enUS
+}
+
+/**
+ * Format an absolute date and time in the UI language (not the browser's),
+ * e.g. "Nov 14, 2026, 3:04 PM". Returns '' for a missing or invalid date.
+ */
+export function formatDateTime(value: string | number | Date | null | undefined, language: string): string {
+  return formatWith(value, language, 'PPp')
+}
+
+/** Format an absolute date in the UI language, e.g. "Nov 14, 2026". */
+export function formatDate(value: string | number | Date | null | undefined, language: string): string {
+  return formatWith(value, language, 'PP')
+}
+
+function formatWith(value: string | number | Date | null | undefined, language: string, pattern: string): string {
+  if (value === null || value === undefined || value === '') return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return format(date, pattern, { locale: getDateLocale(language) })
 }

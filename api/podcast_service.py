@@ -5,6 +5,8 @@ from loguru import logger
 from pydantic import BaseModel
 from surreal_commands import get_command_status, submit_command
 
+from commands.podcast_commands import pick_voice_model
+from open_notebook.ai.models import DefaultModels
 from open_notebook.domain.notebook import Notebook
 from open_notebook.exceptions import InvalidInputError, OpenNotebookError
 from open_notebook.podcasts.models import EpisodeProfile, PodcastEpisode, SpeakerProfile
@@ -61,8 +63,20 @@ class PodcastService:
             for profile, label, value in (
                 (episode_profile, "outline model", episode_profile.outline_llm),
                 (episode_profile, "transcript model", episode_profile.transcript_llm),
-                (speaker_profile, "voice model", speaker_profile.voice_model),
             ):
+                # A speaker profile without a voice model falls back to the Default
+                # Text-to-Speech Model (#1467), so reject it only when neither is set.
+                if not speaker_profile.voice_model:
+                    defaults = await DefaultModels.get_instance()
+                    try:
+                        pick_voice_model(
+                            speaker_profile.name,
+                            speaker_profile.voice_model,
+                            defaults.default_text_to_speech_model,
+                        )
+                    except ValueError as e:
+                        raise InvalidInputError(str(e)) from e
+
                 if not value:
                     kind = "Episode" if profile is episode_profile else "Speaker"
                     article = "an" if label[0] in "aeiou" else "a"

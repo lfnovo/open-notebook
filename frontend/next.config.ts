@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { PROXY_MAX_UPLOAD_MB } from "./src/lib/upload-limits";
 
 // Next.js dev server blocks cross-origin requests (including the HMR
 // websocket) from any host not in this list, to guard against DNS
@@ -18,8 +19,9 @@ const nextConfig: NextConfig = {
   // Type assertion needed: proxyClientMaxBodySize is valid in Next.js 15 but types lag behind
   experimental: {
     // Increase proxy body size limit for file uploads (default is 10MB)
-    // This allows larger files to be uploaded through the /api/* rewrite proxy to FastAPI
-    proxyClientMaxBodySize: '100mb',
+    // This allows larger files to be uploaded through the /api/* rewrite proxy to FastAPI.
+    // The Add Source dialog checks against the same value before uploading.
+    proxyClientMaxBodySize: `${PROXY_MAX_UPLOAD_MB}mb`,
   } as NextConfig['experimental'],
 
   // API Rewrites: Proxy /api/* requests to FastAPI backend

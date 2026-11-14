@@ -39,7 +39,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.4.0",
-    "i18next": "^25.7.3",
+    "i18next": "^27.0.0",
     "i18next-browser-languagedetector": "^8.2.4",
     "katex": "^0.19.1",
     "lucide-react": "^0.525.0",

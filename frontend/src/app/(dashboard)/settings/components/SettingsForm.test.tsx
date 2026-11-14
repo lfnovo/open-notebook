@@ -23,6 +23,17 @@ vi.mock('@/lib/hooks/use-capabilities', () => ({
   useCapabilities: vi.fn(),
 }))
 
+vi.mock('@/lib/hooks/use-dismissible-warning', () => ({
+  useDismissibleWarning: () => ({ dismissed: false, dismiss: vi.fn() }),
+}))
+
+const authState = vi.hoisted(() => ({ authRequired: false as boolean | null }))
+
+vi.mock('@/lib/stores/auth-store', () => ({
+  useAuthStore: (selector: (state: { authRequired: boolean | null }) => unknown) =>
+    selector(authState),
+}))
+
 import { useSettings } from '@/lib/hooks/use-settings'
 import { useCapabilities } from '@/lib/hooks/use-capabilities'
 
@@ -48,6 +59,7 @@ function mockCapabilities(caps: unknown, { isError = false } = {}) {
 
 describe('SettingsForm engine gating', () => {
   beforeEach(() => {
+    authState.authRequired = false
     vi.clearAllMocks()
   })
 
@@ -103,5 +115,32 @@ describe('SettingsForm engine gating', () => {
     expect(
       screen.getByRole('checkbox', { name: 'settings.ocrEnabled' })
     ).toBeDisabled()
+  })
+
+  it('warns when authentication is disabled', () => {
+    mockCapabilities({
+      docling_available: true,
+      crawl4ai_available: true,
+      crawl4ai_remote_configured: false,
+    })
+    render(<SettingsForm />)
+
+    expect(screen.getByText('securityWarnings.noPasswordTitle')).toBeInTheDocument()
+    expect(screen.getByText('securityWarnings.noPasswordDescription')).toBeInTheDocument()
+  })
+
+  it('shows no password warning when authentication is on or still unknown', () => {
+    for (const authRequired of [true, null]) {
+      authState.authRequired = authRequired
+      mockCapabilities({
+        docling_available: true,
+        crawl4ai_available: true,
+        crawl4ai_remote_configured: false,
+      })
+      const { unmount } = render(<SettingsForm />)
+
+      expect(screen.queryByText('securityWarnings.noPasswordTitle')).not.toBeInTheDocument()
+      unmount()
+    }
   })
 })

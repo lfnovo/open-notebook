@@ -984,6 +984,13 @@ export const enUS = {
     goToSettings: "Go to Settings",
     viewDocs: "View docs",
   },
+  securityWarnings: {
+    defaultKeyTitle: "The public example encryption key is in use",
+    defaultKeyDescription: "Generate a private key with openssl rand -hex 32. Changing this key makes existing stored provider credentials unreadable, so re-create those provider configurations afterwards.",
+    noPasswordTitle: "This instance has no password",
+    noPasswordDescription: "Anyone who can reach ports 8502 or 5055 can use this instance without signing in. Set OPEN_NOTEBOOK_PASSWORD or bind the published ports to 127.0.0.1.",
+    securityGuide: "Read the security guide",
+  },
 }
 
 // Compile-time shape of the en-US translations. Every other locale must

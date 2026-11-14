@@ -112,6 +112,7 @@ export interface CredentialStatus {
   configured: Record<string, boolean>
   source: Record<string, string>
   encryption_configured: boolean
+  encryption_key_is_default: boolean
 }
 
 export type EnvStatus = Record<string, boolean>

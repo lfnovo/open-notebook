@@ -137,6 +137,19 @@ describe('SourceDetailContent', () => {
     }])
   })
 
+  it('shows why processing failed', async () => {
+    mockSourcesGet.mockResolvedValue({
+      ...loadedSource,
+      status: 'failed',
+      processing_info: { error: 'Could not reach https://example.com' },
+    })
+
+    renderContent(undefined, loadedSource.id)
+
+    expect(await screen.findByText('Could not reach https://example.com')).toBeInTheDocument()
+    expect(screen.getByText('sources.statusFailedDesc')).toBeInTheDocument()
+  })
+
   it('shows the shared not-found state when the source returns 404', async () => {
     mockSourcesGet.mockRejectedValue(notFoundError)
 

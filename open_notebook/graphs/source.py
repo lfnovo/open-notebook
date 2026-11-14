@@ -16,7 +16,11 @@ from typing_extensions import Annotated, TypedDict
 from open_notebook.ai.models import Model, ModelManager
 from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.domain.content_settings import ContentSettings
-from open_notebook.domain.notebook import Asset, Source
+from open_notebook.domain.notebook import (
+    Asset,
+    Source,
+    is_replaceable_source_title,
+)
 from open_notebook.domain.transformation import Transformation
 from open_notebook.graphs.transformation import graph as transform_graph
 from open_notebook.utils.runtime_capabilities import engine_runtime_missing
@@ -357,7 +361,10 @@ async def save_source(state: SourceState) -> dict:
     source.full_text = extraction.content
 
     # Preserve user-set title; only overwrite placeholder or empty titles
-    if extraction.title and (not source.title or source.title == "Processing..."):
+    # (the placeholder, or the fallback a failed earlier attempt left behind)
+    if extraction.title and is_replaceable_source_title(
+        source.title, content_state.get("url"), content_state.get("file_path")
+    ):
         source.title = extraction.title
 
     await source.save()

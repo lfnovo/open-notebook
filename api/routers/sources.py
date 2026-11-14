@@ -3,7 +3,7 @@ import hashlib
 import os
 import re
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse, urlunparse
 
 from content_core import check_file_support
@@ -40,7 +40,12 @@ from api.models import (
 from commands.source_commands import SourceProcessingInput
 from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.database.repository import ensure_record_id, repo_query
-from open_notebook.domain.notebook import Asset, Notebook, Source
+from open_notebook.domain.notebook import (
+    PLACEHOLDER_SOURCE_TITLE,
+    Asset,
+    Notebook,
+    Source,
+)
 from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import (
     InvalidInputError,
@@ -88,6 +93,15 @@ def _truncate_error(msg: Optional[str], limit: int = 200) -> Optional[str]:
     if not msg:
         return msg
     return msg if len(msg) <= limit else msg[:limit] + "…"
+
+
+def _with_truncated_error(
+    processing_info: Optional[Dict[str, Any]],
+) -> Optional[Dict[str, Any]]:
+    """Cap the failure reason in a source's processing info before returning it."""
+    if processing_info and processing_info.get("error"):
+        return {**processing_info, "error": _truncate_error(processing_info["error"])}
+    return processing_info
 
 
 SOURCE_SORT_FIELDS = {
@@ -712,7 +726,7 @@ async def _create_source_async_path(
         source_asset = None
 
     source = Source(
-        title=source_data.title or "Processing...",
+        title=source_data.title or PLACEHOLDER_SOURCE_TITLE,
         topics=[],
         asset=source_asset,
     )
@@ -794,7 +808,7 @@ async def _create_source_sync_path(
 
         # Create source record - let SurrealDB generate the ID
         source = Source(
-            title=source_data.title or "Processing...",
+            title=source_data.title or PLACEHOLDER_SOURCE_TITLE,
             topics=[],
         )
         await source.save()
@@ -985,7 +999,9 @@ async def get_source(source_id: str):
         if source.command:
             try:
                 status = await source.get_status()
-                processing_info = await source.get_processing_progress()
+                processing_info = _with_truncated_error(
+                    await source.get_processing_progress()
+                )
             except Exception as e:
                 logger.warning(f"Failed to get status for source {source_id}: {e}")
                 status = "unknown"
@@ -1078,13 +1094,18 @@ async def get_source_status(source_id: str):
         # Get command status and processing info
         try:
             status = await source.get_status()
-            processing_info = await source.get_processing_progress()
+            processing_info = _with_truncated_error(
+                await source.get_processing_progress()
+            )
 
             # Generate descriptive message based on status
             if status == "completed":
                 message = "Source processing completed successfully"
             elif status == "failed":
-                message = "Source processing failed"
+                # Say why it failed when the command recorded a reason
+                message = (processing_info or {}).get(
+                    "error"
+                ) or "Source processing failed"
             elif status == "running":
                 message = "Source processing in progress"
             elif status == "queued":

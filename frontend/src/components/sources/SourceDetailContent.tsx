@@ -516,6 +516,19 @@ function SourceDetailContentInner({
         </div>
       </div>
 
+      {/* Why processing failed, when the source carries a reason */}
+      {source.status === 'failed' && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>{t('sources.statusFailedDesc')}</AlertTitle>
+          {typeof source.processing_info?.error === 'string' && source.processing_info.error && (
+            <AlertDescription className="break-words">
+              {source.processing_info.error}
+            </AlertDescription>
+          )}
+        </Alert>
+      )}
+
       {/* Tabs Content */}
       <div className="flex-1 overflow-y-auto">
         <Tabs defaultValue="content" className="w-full">

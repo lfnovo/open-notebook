@@ -1,0 +1,3 @@
+-- Migration 28 rollback: remove the Docling vision endpoint fields (#1561)
+
+UPDATE open_notebook:content_settings UNSET docling_vision_url, docling_vision_model, docling_vision_prompt;

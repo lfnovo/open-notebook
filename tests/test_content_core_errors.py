@@ -30,6 +30,9 @@ async def _run(state, extract):
         docling_ocr=None,
         docling_formulas=None,
         docling_vision=None,
+        docling_vision_url=None,
+        docling_vision_model=None,
+        docling_vision_prompt=None,
     )
     with (
         patch.object(

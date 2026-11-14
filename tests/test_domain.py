@@ -773,6 +773,15 @@ class TestContentSettings:
         assert settings.docling_vision is False
         assert ContentSettings(docling_vision=True).docling_vision is True
 
+    def test_docling_vision_endpoint_fields_default_unset(self):
+        """The vision endpoint fields default to None, so the
+        CCORE_DOCLING_VISION_* worker variables apply until set (#1561)."""
+        settings = ContentSettings()
+        assert settings.docling_vision_url is None
+        assert settings.docling_vision_model is None
+        assert settings.docling_vision_prompt is None
+        assert not hasattr(settings, "docling_vision_api_key")
+
 
 # ============================================================================
 # TEST SUITE 9: Episode Profile Validation

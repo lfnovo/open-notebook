@@ -76,7 +76,7 @@ Values that are not encrypted at all (from versions before credential encryption
 
 ### When to use it
 
-Set a password for any deployment reachable from something other than your own machine: a cloud host, a shared LAN, a reverse proxy on the internet. Without `OPEN_NOTEBOOK_PASSWORD`, authentication is off and anyone who can reach ports 8502 or 5055 can use the app and its stored provider keys. While the password is unset, the API logs a warning at startup and the **Settings** page shows a banner.
+Set a password for any deployment reachable from something other than your own machine: a cloud host, a shared LAN, a reverse proxy on the internet. Without `OPEN_NOTEBOOK_PASSWORD` (or `OPEN_NOTEBOOK_PASSWORD_FILE`), authentication is off and anyone who can reach ports 8502 or 5055 can use the app and its stored provider keys. While the password is unset, the API logs a warning at startup and the **Settings** page shows a banner.
 
 With Docker Compose, set it in the same `.env` file, using a different value from the key. Editing `docker-compose.yml` is a valid alternative.
 

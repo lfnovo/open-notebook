@@ -15,7 +15,9 @@ export function useDismissibleWarning(storageKey: string, active: boolean) {
     let mounted = true
     getConfig()
       .then(config => {
-        if (mounted) setBuildId(config.buildTime || config.version)
+        // config.buildTime is stamped on every page load, so only the
+        // version is stable enough to key a dismissal on.
+        if (mounted) setBuildId(config.version)
       })
       .catch(() => {
         if (mounted) setBuildId('unknown')

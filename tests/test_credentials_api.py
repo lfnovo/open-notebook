@@ -55,6 +55,25 @@ def client():
     return TestClient(app)
 
 
+def test_status_endpoint_returns_the_default_key_flag(client, monkeypatch):
+    from api.routers import credentials as credentials_router
+
+    async def fake_status():
+        return {
+            "configured": {},
+            "source": {},
+            "encryption_configured": True,
+            "encryption_key_is_default": True,
+        }
+
+    monkeypatch.setattr(credentials_router, "get_provider_status", fake_status)
+
+    response = client.get("/api/credentials/status")
+
+    assert response.status_code == 200
+    assert response.json()["encryption_key_is_default"] is True
+
+
 class TestCredentialCascadeDelete:
     """Tests for #651 - deleting credential cascade-deletes linked models."""
 

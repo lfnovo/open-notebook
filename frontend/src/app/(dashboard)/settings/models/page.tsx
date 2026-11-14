@@ -132,7 +132,6 @@ export default function ApiKeysPage() {
               </AlertTitle>
               <AlertDescription className="text-warn">
                 {t('securityWarnings.defaultKeyDescription')}{' '}
-                <code>openssl rand -hex 32</code>{' '}
                 <a
                   href="https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/security.md"
                   target="_blank"

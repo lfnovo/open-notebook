@@ -16,6 +16,7 @@ import { EmptyState } from '@/components/common/EmptyState'
 import { Badge } from '@/components/ui/badge'
 import { NoteEditorDialog } from './NoteEditorDialog'
 import { getDateLocale } from '@/lib/utils/date-locale'
+import { cn } from '@/lib/utils'
 import { formatDistanceToNow } from 'date-fns'
 import { ContextToggle } from '@/components/common/ContextToggle'
 import type { NoteContextMode } from '../[id]/page'
@@ -180,8 +181,9 @@ export function NotesColumn({
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                               onClick={(e) => e.stopPropagation()}
+                              aria-label={t('common.actions')}
                             >
                               <MoreVertical className="h-4 w-4" />
                             </Button>
@@ -202,9 +204,9 @@ export function NotesColumn({
                       </div>
                     </div>
 
-                    {note.title && (
-                      <h4 className="text-sm font-medium mb-2 break-all">{note.title}</h4>
-                    )}
+                    <h4 className={cn('text-sm font-medium mb-2 break-all', !note.title && 'text-muted-foreground')}>
+                      {note.title || t('sources.untitledNote')}
+                    </h4>
 
                     {note.content && (
                       <p className="text-sm text-muted-foreground line-clamp-3 break-all">

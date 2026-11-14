@@ -335,8 +335,8 @@ export default function SourcesPage() {
               <col className="w-auto" />
               <col className="w-[140px]" />
               <col className="w-[140px]" />
-              <col className="w-[100px]" />
-              <col className="w-[100px]" />
+              <col className="w-[110px]" />
+              <col className="w-[130px]" />
               <col className="w-[100px]" />
             </colgroup>
             <thead className="sticky top-0 bg-background z-10">

@@ -8,6 +8,14 @@ vi.mock('@/lib/hooks/use-modal-manager', () => ({
   useModalManager: () => ({ openModal: vi.fn() }),
 }))
 
+const modelDefaults = vi.hoisted(() => ({
+  current: { default_chat_model: 'model:chat' } as { default_chat_model: string | null } | undefined,
+}))
+
+vi.mock('@/lib/hooks/use-models', () => ({
+  useModelDefaults: () => ({ data: modelDefaults.current }),
+}))
+
 // Keep the message-content deps light for this composer-focused test.
 vi.mock('@/components/sources/MessageActions', () => ({
   MessageActions: () => null,
@@ -21,6 +29,38 @@ describe('ChatPanel composer', () => {
   })
 
   const getTextarea = () => screen.getByRole('textbox') as HTMLTextAreaElement
+
+  // Sending without any chat model can only fail (#1403).
+  it('does not send when no chat model is configured', () => {
+    modelDefaults.current = { default_chat_model: null }
+    const onSendMessage = vi.fn().mockResolvedValue(true)
+    try {
+      const { rerender } = render(
+        <ChatPanel messages={[]} isStreaming={false} contextIndicators={null} onSendMessage={onSendMessage} />
+      )
+      fireEvent.change(getTextarea(), { target: { value: 'hello' } })
+
+      const sendButton = screen.getByRole('button', { name: 'chat.send' })
+      expect(sendButton).toBeDisabled()
+      expect(screen.getByText('chat.noChatModel')).toBeInTheDocument()
+      fireEvent.keyDown(getTextarea(), { key: 'Enter', ctrlKey: true, metaKey: true })
+      expect(onSendMessage).not.toHaveBeenCalled()
+
+      // A per-session override is enough
+      rerender(
+        <ChatPanel
+          messages={[]}
+          isStreaming={false}
+          contextIndicators={null}
+          onSendMessage={onSendMessage}
+          modelOverride="model:override"
+        />
+      )
+      expect(screen.getByRole('button', { name: 'chat.send' })).toBeEnabled()
+    } finally {
+      modelDefaults.current = { default_chat_model: 'model:chat' }
+    }
+  })
 
   it('sends the typed message and clears the input on send-button click', () => {
     const onSendMessage = vi.fn().mockResolvedValue(true)

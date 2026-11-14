@@ -444,6 +444,8 @@ export const ptBR = {
     deleteSession: "Excluir Sessão",
     deleteSessionDesc: "Tem certeza que deseja excluir esta sessão de chat? Esta ação não pode ser desfeita.",
     sendPlaceholder: "Pergunte qualquer coisa sobre suas fontes...",
+    send: "Enviar mensagem",
+    noChatModel: "Nenhum modelo de chat selecionado. Configure um na página de Modelos para conversar.",
     sessionsTitle: "Sessões de Chat",
     chatWith: "Conversar com {{name}}",
     startConversation: "Inicie uma conversa sobre este {{type}}",

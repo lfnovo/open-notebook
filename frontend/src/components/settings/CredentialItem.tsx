@@ -190,6 +190,7 @@ export function CredentialItem({
                             className="opacity-0 group-hover/model:opacity-60 hover:!opacity-100 hover:text-destructive transition-opacity"
                             onClick={() => deleteModel.mutate(model.id)}
                             title={t('models.deleteModel')}
+                            aria-label={t('models.deleteModel')}
                           >
                             <X className="h-3 w-3" />
                           </button>

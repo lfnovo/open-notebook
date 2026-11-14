@@ -95,7 +95,7 @@ export function MarkdownRenderer({ children, components = {}}: { children: React
                   language={match ? match[1] : 'text'}
                   style={isDark ? darkTheme : lightTheme}
                   PreTag="div"
-                  className="text-sm border border-border"
+                  className="text-sm border border-border max-w-full overflow-x-auto"
                 >
                   {String(children)}
                 </SyntaxHighlighter>

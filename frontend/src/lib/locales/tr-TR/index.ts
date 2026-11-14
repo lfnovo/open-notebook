@@ -444,6 +444,8 @@ export const trTR = {
     deleteSession: "Oturumu Sil",
     deleteSessionDesc: "Bu sohbet oturumunu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
     sendPlaceholder: "Kaynaklarınız hakkında herhangi bir şey sorun...",
+    send: "Mesajı gönder",
+    noChatModel: "Seçili bir sohbet modeli yok. Sohbet etmek için Modeller sayfasında bir tane ayarlayın.",
     sessionsTitle: "Sohbet Oturumları",
     chatWith: "{{name}} ile sohbet et",
     startConversation: "Bu {{type}} hakkında sohbet başlatın",

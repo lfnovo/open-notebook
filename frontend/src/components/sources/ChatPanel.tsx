@@ -22,6 +22,7 @@ import { convertReferencesToCompactMarkdown, createCompactReferenceLinkComponent
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { useModelDefaults } from '@/lib/hooks/use-models'
 
 interface NotebookContextStats {
   sourcesInsights: number
@@ -250,9 +251,14 @@ function ChatComposer({
   const chatInputId = useId()
   const [input, setInput] = useState('')
 
+  // Without a default chat model or a per-session override the request can
+  // only fail, so don't offer it (Ask does the same). Unknown while loading.
+  const { data: modelDefaults } = useModelDefaults()
+  const noChatModel = !modelOverride && !!modelDefaults && !modelDefaults.default_chat_model
+
   const handleSend = async () => {
     const message = input.trim()
-    if (message && !isStreaming) {
+    if (message && !isStreaming && !noChatModel) {
       setInput('')
       // Give the text back if the send failed, so it isn't lost (#1391),
       // unless something new was typed while it was pending
@@ -292,6 +298,10 @@ function ChatComposer({
         </div>
       )}
 
+      {noChatModel && (
+        <p className="text-xs text-muted-foreground" role="status">{t('chat.noChatModel')}</p>
+      )}
+
       <div className="flex gap-2 items-end min-w-0">
         <Textarea
           id={chatInputId}
@@ -307,9 +317,10 @@ function ChatComposer({
         />
         <Button
           onClick={handleSend}
-          disabled={!input.trim() || isStreaming}
+          disabled={!input.trim() || isStreaming || noChatModel}
           size="icon"
           className="h-[40px] w-[40px] flex-shrink-0"
+          aria-label={t('chat.send')}
         >
           {isStreaming ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -348,7 +359,7 @@ const ChatMessage = memo(function ChatMessage({
           </div>
         </div>
       )}
-      <div className="flex flex-col gap-2 max-w-[80%]">
+      <div className="flex flex-col gap-2 max-w-[80%] min-w-0">
         <div
           className={`rounded-lg px-4 py-2 border ${
             message.type === 'human'

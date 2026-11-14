@@ -323,8 +323,9 @@ function SourceCardImpl({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="absolute top-1.5 right-1.5 h-7 w-7 p-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-1.5 right-1.5 h-7 w-7 p-0 text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                   onClick={(e) => e.stopPropagation()}
+                  aria-label={t('common.actions')}
                 >
                   <MoreVertical className="h-4 w-4" />
                 </Button>

@@ -150,7 +150,7 @@ export function ChatPanel({
               <div className="text-center text-muted-foreground py-8">
                 <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p className="text-sm">
-                  {t('chat.startConversation', { type: contextType === 'source' ? t('navigation.sources') : t('common.notebook') })}
+                  {contextType === 'source' ? t('chat.startConversationSource') : t('chat.startConversationNotebook')}
                 </p>
                 <p className="text-xs mt-2">{t('chat.askQuestions')}</p>
               </div>
@@ -187,7 +187,7 @@ export function ChatPanel({
               {contextIndicators.sources?.length > 0 && (
                 <Badge variant="outline" className="gap-1">
                   <FileText className="h-3 w-3" />
-                  {contextIndicators.sources.length} {t('navigation.sources')}
+                  {t('chat.sourcesCount', { count: contextIndicators.sources.length })}
                 </Badge>
               )}
               {contextIndicators.insights?.length > 0 && (

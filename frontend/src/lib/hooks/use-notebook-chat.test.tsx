@@ -78,6 +78,34 @@ describe('useNotebookChat', () => {
     expect(result.current.messages).toEqual([])
   })
 
+  // The chat must count as sending while its session is still being created,
+  // so the composer and session switcher stay disabled for the whole send (#1597).
+  it('marks the chat as sending while a new session is being created', async () => {
+    vi.mocked(chatApi.listSessions).mockResolvedValue([])
+    let createResolve!: (value: Awaited<ReturnType<typeof chatApi.createSession>>) => void
+    vi.mocked(chatApi.createSession).mockReturnValue(new Promise(resolve => { createResolve = resolve }))
+    vi.mocked(chatApi.getSession).mockResolvedValue({ ...session, messages: [] })
+    vi.mocked(chatApi.sendMessage).mockResolvedValue({ session_id: session.id, messages: [] })
+
+    const { result } = renderHook(() => useNotebookChat(params), { wrapper })
+    await waitFor(() => expect(chatApi.listSessions).toHaveBeenCalled())
+
+    let sending!: Promise<boolean>
+    act(() => {
+      sending = result.current.sendMessage('hello')
+    })
+
+    await waitFor(() => expect(chatApi.createSession).toHaveBeenCalled())
+    expect(result.current.isSending).toBe(true)
+
+    await act(async () => {
+      createResolve(session)
+      await sending
+    })
+
+    expect(result.current.isSending).toBe(false)
+  })
+
   // Creating the session enables the session query, which comes back with no
   // messages while the reply is still being generated. That used to replace
   // the list and hide the question until the answer arrived (#1391).

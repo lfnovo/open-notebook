@@ -64,7 +64,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     if (currentSession?.messages && !sendingRef.current) {
       setMessages(currentSession.messages)
     }
-  }, [currentSession])
+  }, [currentSession, isSending])
 
   // Auto-select most recent session when sessions are loaded
   useEffect(() => {
@@ -178,46 +178,49 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
 
   // Send message (synchronous, no streaming)
   const sendMessage = useCallback(async (message: string, modelOverride?: string) => {
-    let sessionId = currentSessionId
-
-    // Auto-create session if none exists
-    if (!sessionId) {
-      try {
-        const defaultTitle = message.length > 30
-          ? `${message.substring(0, 30)}...`
-          : message
-        const newSession = await chatApi.createSession({
-          notebook_id: notebookId,
-          title: defaultTitle,
-          // Include pending model override when creating session
-          model_override: pendingModelOverride ?? undefined
-        })
-        sessionId = newSession.id
-        setCurrentSessionId(sessionId)
-        // Clear pending model override now that it's applied to the session
-        setPendingModelOverride(null)
-        queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.notebookChatSessions(notebookId)
-        })
-      } catch (err: unknown) {
-        const error = err as { response?: { data?: { detail?: string } }, message?: string };
-        toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToCreateSession'))
-        return false
-      }
-    }
-
-    // Add user message optimistically
-    const userMessage: NotebookChatMessage = {
-      id: `temp-${Date.now()}`,
-      type: 'human',
-      content: message,
-      timestamp: new Date().toISOString()
-    }
-    setMessages(prev => [...prev, userMessage])
+    // Mark sending before any await (including session creation) so the
+    // composer and session switcher stay disabled for the whole send (#1597).
     sendingRef.current = true
     setIsSending(true)
 
     try {
+      let sessionId = currentSessionId
+
+      // Auto-create session if none exists
+      if (!sessionId) {
+        try {
+          const defaultTitle = message.length > 30
+            ? `${message.substring(0, 30)}...`
+            : message
+          const newSession = await chatApi.createSession({
+            notebook_id: notebookId,
+            title: defaultTitle,
+            // Include pending model override when creating session
+            model_override: pendingModelOverride ?? undefined
+          })
+          sessionId = newSession.id
+          setCurrentSessionId(sessionId)
+          // Clear pending model override now that it's applied to the session
+          setPendingModelOverride(null)
+          queryClient.invalidateQueries({
+            queryKey: QUERY_KEYS.notebookChatSessions(notebookId)
+          })
+        } catch (err: unknown) {
+          const error = err as { response?: { data?: { detail?: string } }, message?: string };
+          toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToCreateSession'))
+          return false
+        }
+      }
+
+      // Add user message optimistically
+      const userMessage: NotebookChatMessage = {
+        id: `temp-${Date.now()}`,
+        type: 'human',
+        content: message,
+        timestamp: new Date().toISOString()
+      }
+      setMessages(prev => [...prev, userMessage])
+
       // Build context and send message
       const context = await buildContext()
       const response = await chatApi.sendMessage({

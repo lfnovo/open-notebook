@@ -6,7 +6,8 @@ without heavy mocking of the actual processing logic.
 """
 
 from datetime import datetime
-from typing import cast
+from types import SimpleNamespace
+from typing import Iterator, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -22,6 +23,151 @@ from open_notebook.graphs.transformation import (
 from open_notebook.graphs.transformation import (
     graph as transformation_graph,
 )
+
+
+class TestContentProcessSettingsRefresh:
+    @pytest.fixture
+    def settings_extraction(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> Iterator[tuple[AsyncMock, AsyncMock]]:
+        from content_core.common import ExtractionOutput
+
+        from open_notebook.domain.content_settings import ContentSettings
+
+        ContentSettings.clear_instance()
+        monkeypatch.setenv("CCORE_DOCLING_OCR", "true")
+        monkeypatch.setenv("CCORE_DOCLING_FORMULAS", "false")
+        monkeypatch.setenv("CCORE_DOCLING_VISION", "false")
+        try:
+            with (
+                patch(
+                    "open_notebook.domain.base.repo_query", new_callable=AsyncMock
+                ) as query,
+                patch(
+                    "open_notebook.graphs.source.extract_content",
+                    new_callable=AsyncMock,
+                ) as extract,
+                patch(
+                    "open_notebook.graphs.source.ModelManager.get_defaults",
+                    new=AsyncMock(
+                        return_value=SimpleNamespace(default_speech_to_text_model=None)
+                    ),
+                ),
+            ):
+                extract.return_value = ExtractionOutput(title="Text", content="Body")
+                yield query, extract
+        finally:
+            ContentSettings.clear_instance()
+
+    @pytest.mark.asyncio
+    async def test_settings_refresh_between_extractions(
+        self, settings_extraction: tuple[AsyncMock, AsyncMock]
+    ) -> None:
+        """A long-lived worker must see settings saved between sources (#1616)."""
+        from open_notebook.graphs.source import SourceState, content_process
+
+        query, extract = settings_extraction
+        query.side_effect = [
+            [{"docling_ocr": True, "youtube_preferred_languages": ["en"]}],
+            [{"docling_ocr": False, "youtube_preferred_languages": ["ja"]}],
+        ]
+        state = cast(SourceState, {"content_state": {"content": "Body"}})
+
+        await content_process(state)
+        await content_process(state)
+
+        first_config, second_config = (
+            call.kwargs["config"] for call in extract.await_args_list
+        )
+        assert first_config.docling_ocr is True
+        assert first_config.youtube_languages == ["en"]
+        assert second_config.docling_ocr is False
+        assert second_config.youtube_languages == ["ja"]
+        assert query.await_count == 2
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "second_row",
+        [
+            [],
+            [{}],
+            [
+                {
+                    "docling_ocr": None,
+                    "docling_formulas": None,
+                    "youtube_preferred_languages": None,
+                }
+            ],
+        ],
+    )
+    async def test_removed_settings_do_not_survive_refresh(
+        self,
+        second_row: list[dict[str, object]],
+        settings_extraction: tuple[AsyncMock, AsyncMock],
+    ) -> None:
+        from open_notebook.graphs.source import SourceState, content_process
+
+        query, extract = settings_extraction
+        query.side_effect = [
+            [
+                {
+                    "docling_ocr": False,
+                    "docling_formulas": True,
+                    "youtube_preferred_languages": ["fr"],
+                }
+            ],
+            second_row,
+        ]
+        state = cast(SourceState, {"content_state": {"content": "Body"}})
+
+        await content_process(state)
+        await content_process(state)
+
+        first_config, second_config = (
+            call.kwargs["config"] for call in extract.await_args_list
+        )
+        assert first_config.docling_ocr is False
+        assert first_config.docling_formulas is True
+        assert second_config.docling_ocr is True
+        assert second_config.docling_formulas is False
+        assert "en" in second_config.youtube_languages
+        assert query.await_count == 2
+
+    @pytest.mark.asyncio
+    async def test_failed_refresh_uses_config_defaults_without_resetting_cache(
+        self, settings_extraction: tuple[AsyncMock, AsyncMock]
+    ) -> None:
+        from loguru import logger
+
+        from open_notebook.domain.content_settings import ContentSettings
+        from open_notebook.graphs.source import SourceState, content_process
+
+        query, extract = settings_extraction
+        query.side_effect = [
+            [{"docling_ocr": False, "docling_formulas": True}],
+            RuntimeError("Settings database unavailable"),
+        ]
+        state = cast(SourceState, {"content_state": {"content": "Body"}})
+        warnings: list[str] = []
+        sink = logger.add(
+            lambda message: warnings.append(str(message)), level="WARNING"
+        )
+        try:
+            await content_process(state)
+            await content_process(state)
+        finally:
+            logger.remove(sink)
+
+        assert extract.await_count == 2
+        assert extract.await_args is not None
+        config = extract.await_args.kwargs["config"]
+        assert config.docling_ocr is True
+        assert config.docling_formulas is False
+        assert ContentSettings().docling_ocr is False
+        assert ContentSettings().docling_formulas is True
+        assert any("Failed to load content settings" in warning for warning in warnings)
+        assert query.await_count == 2
+
 
 # ============================================================================
 # TEST SUITE 1: Graph Tools

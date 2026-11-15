@@ -208,7 +208,9 @@ async def content_process(state: SourceState) -> dict:
     # "auto"/"docling"/"simple" for documents; falling back to "auto" keeps the
     # previous behavior when settings are unset.
     try:
-        settings: ContentSettings = await ContentSettings.get_instance()  # type: ignore[assignment]
+        settings: ContentSettings = await ContentSettings.get_instance(  # type: ignore[assignment]
+            force_reload=True
+        )
         if settings.youtube_preferred_languages:
             config_kwargs["youtube_languages"] = settings.youtube_preferred_languages
         if settings.default_content_processing_engine_url:

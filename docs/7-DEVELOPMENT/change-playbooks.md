@@ -50,6 +50,8 @@ Every playbook ends the same way: tests, a CHANGELOG entry under `[Unreleased]`,
 
 Open Notebook never calls provider SDKs directly; every model is created through [Esperanto](https://github.com/lfnovo/esperanto). So step 0 is: **Esperanto must already support the provider**, under the same provider name. If support arrived in a newer Esperanto release, bump `esperanto` in `pyproject.toml` and run `uv lock`.
 
+**Where a new provider is decided.** Whether a provider or hosted gateway gets first-class support is decided in Esperanto, not here: Open Notebook reflects what Esperanto supports. To propose one, open the proposal in [lfnovo/esperanto](https://github.com/lfnovo/esperanto/issues). Once an Esperanto release includes it, registering it here is the mechanical work below and needs no separate proposal. Until then, any host that speaks the OpenAI API already works through the [OpenAI Compatible](../5-CONFIGURATION/openai-compatible.md) provider, with no code change. The docs don't carry setup pages for individual hosted gateways.
+
 The provider registry is the source of truth. Most backend tables and the frontend read from it, but a few copies are still maintained by hand. This is the full list for a provider with a single API key (the common case):
 
 | Step | File | What to do |

@@ -105,7 +105,11 @@ class TestContentProcessSettingsRefresh:
         second_row: list[dict[str, object]],
         settings_extraction: tuple[AsyncMock, AsyncMock],
     ) -> None:
-        from open_notebook.graphs.source import SourceState, content_process
+        from open_notebook.graphs.source import (
+            YOUTUBE_PREFERRED_LANGUAGES,
+            SourceState,
+            content_process,
+        )
 
         query, extract = settings_extraction
         query.side_effect = [
@@ -128,9 +132,10 @@ class TestContentProcessSettingsRefresh:
         )
         assert first_config.docling_ocr is False
         assert first_config.docling_formulas is True
+        assert first_config.youtube_languages == ["fr"]
         assert second_config.docling_ocr is True
         assert second_config.docling_formulas is False
-        assert "en" in second_config.youtube_languages
+        assert second_config.youtube_languages == YOUTUBE_PREFERRED_LANGUAGES
         assert query.await_count == 2
 
     @pytest.mark.asyncio

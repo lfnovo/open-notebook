@@ -156,6 +156,8 @@ Providers that need several config fields (like `azure`, `vertex`, `openai_compa
 
 You can't forget a locale silently: each non-en-US locale ends with `satisfies TranslationShape`, so a missing or extra key fails `npm run build` (type check), and `src/lib/locales/index.test.ts` checks parity at runtime.
 
+**Counts:** a label that changes with a number is one key per CLDR plural form, called with `t('section.key', { count })`. Add all six forms (`_zero`, `_one`, `_two`, `_few`, `_many`, `_other`) to every locale, because a language that needs `zero` or `two` (Arabic, for example) cannot add keys en-US lacks. In a language that does not use `zero` or `two`, repeat the form it uses for 0 and for 2: i18next picks `_zero` for a count of 0 in every language. `src/lib/locales/interpolation.test.ts` checks this for the count labels listed there.
+
 ### Adding a new language
 
 | Step | File(s) | What to do |

@@ -80,6 +80,43 @@ describe('i18next interpolation', () => {
     })
   })
 
+  // Count labels carry all six CLDR plural forms so that a locale whose
+  // language needs `zero` or `two` (Arabic, for example) can translate them:
+  // every locale must have the same keys as en-US. In a language that does not
+  // use those categories, `_zero` and `_two` repeat the form it uses for 0 and
+  // 2, because i18next picks `_zero` for a count of 0 in every language.
+  describe('zero and two plural forms', () => {
+    const families = [
+      'sources.insightsCount',
+      'sources.selectedCount',
+      'chat.messagesCount',
+      'chat.sourcesCount',
+      'podcasts.itemsSelected',
+    ]
+    const lookup = (lng: string, key: string): unknown =>
+      key.split('.').reduce<unknown>(
+        (node, part) => (node as Record<string, unknown> | undefined)?.[part],
+        resources[lng as keyof typeof resources].translation,
+      )
+    const cases = Object.keys(resources).flatMap(lng =>
+      families.map(family => [lng, family] as const),
+    )
+
+    it.each(cases)('%s %s repeats the forms used for 0 and 2', (lng, family) => {
+      const rules = new Intl.PluralRules(lng)
+      expect(lookup(lng, `${family}_zero`)).toBe(lookup(lng, `${family}_${rules.select(0)}`))
+      expect(lookup(lng, `${family}_two`)).toBe(lookup(lng, `${family}_${rules.select(2)}`))
+    })
+
+    it.each(cases)('%s %s renders 0 and 2 without falling back', (lng, family) => {
+      for (const count of [0, 2]) {
+        const rendered = i18n.t(family, { lng, count, fallbackLng: false })
+        expect(rendered).toContain(String(count))
+        expect(rendered).not.toContain(family)
+      }
+    })
+  })
+
   it('does not escape interpolated values (React escapes at render)', () => {
     expect(i18n.t('notebooks.deleteNotebookDesc', { name: 'Research & Notes' })).toBe(
       'Are you sure you want to delete "Research & Notes"? This action cannot be undone.',

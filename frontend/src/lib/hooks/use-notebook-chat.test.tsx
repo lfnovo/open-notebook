@@ -78,6 +78,95 @@ describe('useNotebookChat', () => {
     expect(result.current.messages).toEqual([])
   })
 
+  // The chat must count as sending while its session is still being created,
+  // so the composer and session switcher stay disabled for the whole send (#1597).
+  it('marks the chat as sending while a new session is being created', async () => {
+    vi.mocked(chatApi.listSessions).mockResolvedValue([])
+    let createResolve!: (value: Awaited<ReturnType<typeof chatApi.createSession>>) => void
+    vi.mocked(chatApi.createSession).mockReturnValue(new Promise(resolve => { createResolve = resolve }))
+    vi.mocked(chatApi.getSession).mockResolvedValue({ ...session, messages: [] })
+    vi.mocked(chatApi.sendMessage).mockResolvedValue({ session_id: session.id, messages: [] })
+
+    const { result } = renderHook(() => useNotebookChat(params), { wrapper })
+    await waitFor(() => expect(chatApi.listSessions).toHaveBeenCalled())
+
+    let sending!: Promise<boolean>
+    act(() => {
+      sending = result.current.sendMessage('hello')
+    })
+
+    await waitFor(() => expect(chatApi.createSession).toHaveBeenCalled())
+    expect(result.current.isSending).toBe(true)
+
+    await act(async () => {
+      createResolve(session)
+      await sending
+    })
+
+    expect(result.current.isSending).toBe(false)
+  })
+
+  it('shows loaded session history after a send fails', async () => {
+    vi.mocked(chatApi.listSessions).mockResolvedValue([])
+    let createResolve!: (value: Awaited<ReturnType<typeof chatApi.createSession>>) => void
+    vi.mocked(chatApi.createSession).mockReturnValue(new Promise(resolve => { createResolve = resolve }))
+    let historyResolve!: (value: Awaited<ReturnType<typeof chatApi.getSession>>) => void
+    vi.mocked(chatApi.getSession).mockReturnValue(new Promise(resolve => { historyResolve = resolve }))
+    let sendReject!: (reason: Error) => void
+    vi.mocked(chatApi.sendMessage).mockReturnValue(new Promise((_, reject) => { sendReject = reject }))
+
+    const { result } = renderHook(() => useNotebookChat(params), { wrapper })
+    await waitFor(() => expect(chatApi.listSessions).toHaveBeenCalled())
+
+    let sending!: Promise<boolean>
+    act(() => {
+      sending = result.current.sendMessage('new question')
+    })
+
+    await waitFor(() => expect(chatApi.createSession).toHaveBeenCalled())
+    await act(async () => {
+      createResolve(session)
+    })
+    await waitFor(() => expect(chatApi.getSession).toHaveBeenCalled())
+
+    const history = [{ id: 'old-message', type: 'human' as const, content: 'previous question' }]
+    await act(async () => {
+      historyResolve({ ...session, messages: history })
+      await waitFor(() => expect(result.current.currentSession).toHaveProperty('messages', history))
+    })
+    expect(result.current.messages.map(message => message.content)).toEqual(['new question'])
+
+    await act(async () => {
+      sendReject(new Error('Network Error'))
+      expect(await sending).toBe(false)
+    })
+
+    expect(result.current.messages).toEqual(history)
+  })
+
+  it('keeps sent messages when the session refetch fails', async () => {
+    vi.mocked(chatApi.listSessions).mockResolvedValue([session])
+    const sentMessages = [
+      { id: 'm1', type: 'human' as const, content: 'hello' },
+      { id: 'm2', type: 'ai' as const, content: 'hi there' },
+    ]
+    vi.mocked(chatApi.getSession)
+      .mockResolvedValueOnce({ ...session, messages: [] })
+      .mockRejectedValueOnce(new Error('Refetch failed'))
+    vi.mocked(chatApi.sendMessage).mockResolvedValue({ session_id: session.id, messages: sentMessages })
+
+    const { result } = renderHook(() => useNotebookChat(params), { wrapper })
+    await waitFor(() => expect(result.current.currentSessionId).toBe(session.id))
+    await waitFor(() => expect(chatApi.getSession).toHaveBeenCalledTimes(1))
+
+    await act(async () => {
+      expect(await result.current.sendMessage('hello')).toBe(true)
+    })
+
+    expect(chatApi.getSession).toHaveBeenCalledTimes(2)
+    expect(result.current.messages).toEqual(sentMessages)
+  })
+
   // Creating the session enables the session query, which comes back with no
   // messages while the reply is still being generated. That used to replace
   // the list and hide the question until the answer arrived (#1391).

@@ -138,4 +138,33 @@ describe('useSourceChat', () => {
       expect(result.current.messages.map(m => m.content)).toEqual(['hello', 'hi there'])
     )
   })
+
+  // The chat must count as streaming while its session is still being created,
+  // so the composer and session switcher stay disabled for the whole send (#1597).
+  it('marks the chat as streaming while a new session is being created', async () => {
+    vi.mocked(sourceChatApi.listSessions).mockResolvedValue([])
+    let createResolve!: (value: Awaited<ReturnType<typeof sourceChatApi.createSession>>) => void
+    vi.mocked(sourceChatApi.createSession).mockReturnValue(new Promise(resolve => { createResolve = resolve }))
+    vi.mocked(sourceChatApi.getSession).mockResolvedValue({ ...session, messages: [] })
+    const stream = new ReadableStream<Uint8Array>({ start(controller) { controller.close() } })
+    vi.mocked(sourceChatApi.sendMessage).mockResolvedValue(stream)
+
+    const { result } = renderHook(() => useSourceChat('source:xyz'), { wrapper })
+    await waitFor(() => expect(sourceChatApi.listSessions).toHaveBeenCalled())
+
+    let sending!: Promise<boolean>
+    act(() => {
+      sending = result.current.sendMessage('hello')
+    })
+
+    await waitFor(() => expect(sourceChatApi.createSession).toHaveBeenCalled())
+    expect(result.current.isStreaming).toBe(true)
+
+    await act(async () => {
+      createResolve(session)
+      await sending
+    })
+
+    expect(result.current.isStreaming).toBe(false)
+  })
 })

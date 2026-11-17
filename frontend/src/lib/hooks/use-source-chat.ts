@@ -109,36 +109,38 @@ export function useSourceChat(sourceId: string) {
 
   // Send message with streaming
   const sendMessage = useCallback(async (message: string, modelOverride?: string) => {
-    let sessionId = currentSessionId
-
-    // Auto-create session if none exists
-    if (!sessionId) {
-      try {
-        const defaultTitle = message.length > 30 ? `${message.substring(0, 30)}...` : message
-        const newSession = await sourceChatApi.createSession(sourceId, { title: defaultTitle })
-        sessionId = newSession.id
-        setCurrentSessionId(sessionId)
-        queryClient.invalidateQueries({ queryKey: ['sourceChatSessions', sourceId] })
-      } catch (err: unknown) {
-        const error = err as { response?: { data?: { detail?: string } }, message?: string };
-        console.error('Failed to create chat session:', error)
-        toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToCreateSession'))
-        return false
-      }
-    }
-
-    // Add user message optimistically
-    const userMessage: SourceChatMessage = {
-      id: `temp-${Date.now()}`,
-      type: 'human',
-      content: message,
-      timestamp: new Date().toISOString()
-    }
-    setMessages(prev => [...prev, userMessage])
+    // Mark streaming before any await (including session creation) so the
+    // composer and session switcher stay disabled for the whole send (#1597).
     streamingRef.current = true
     setIsStreaming(true)
+    let sessionId = currentSessionId
 
     try {
+      // Auto-create session if none exists
+      if (!sessionId) {
+        try {
+          const defaultTitle = message.length > 30 ? `${message.substring(0, 30)}...` : message
+          const newSession = await sourceChatApi.createSession(sourceId, { title: defaultTitle })
+          sessionId = newSession.id
+          setCurrentSessionId(sessionId)
+          queryClient.invalidateQueries({ queryKey: ['sourceChatSessions', sourceId] })
+        } catch (err: unknown) {
+          const error = err as { response?: { data?: { detail?: string } }, message?: string };
+          console.error('Failed to create chat session:', error)
+          toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToCreateSession'))
+          return false
+        }
+      }
+
+      // Add user message optimistically
+      const userMessage: SourceChatMessage = {
+        id: `temp-${Date.now()}`,
+        type: 'human',
+        content: message,
+        timestamp: new Date().toISOString()
+      }
+      setMessages(prev => [...prev, userMessage])
+
       const response = await sourceChatApi.sendMessage(sourceId, sessionId, {
         message,
         model_override: modelOverride
@@ -216,8 +218,8 @@ export function useSourceChat(sourceId: string) {
     } finally {
       streamingRef.current = false
       setIsStreaming(false)
-      // Refetch session to get persisted messages
-      refetchCurrentSession()
+      // Refetch session to get persisted messages (none exists if creating it failed)
+      if (sessionId) refetchCurrentSession()
     }
   }, [sourceId, currentSessionId, refetchCurrentSession, queryClient, t])
 

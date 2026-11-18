@@ -205,7 +205,7 @@ status:
 	@echo "Database (SurrealDB):"
 	@docker compose ps surrealdb 2>/dev/null || echo "  ❌ Not running"
 	@echo "API Backend:"
-	@pgrep -f "run_api.py\|uvicorn api.main:app" >/dev/null && echo "  ✅ Running" || echo "  ❌ Not running"
+	@(pgrep -f "run_api.py" >/dev/null || pgrep -f "uvicorn api.main:app" >/dev/null) && echo "  ✅ Running" || echo "  ❌ Not running"
 	@echo "Background Worker:"
 	@pgrep -f "surreal-commands-worker" >/dev/null && echo "  ✅ Running" || echo "  ❌ Not running"
 	@echo "Next.js Frontend:"

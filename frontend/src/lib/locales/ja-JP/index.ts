@@ -80,6 +80,8 @@ export const jaJP = {
     description: "説明",
     saveToNote: "ノートに保存",
     copyToClipboard: "クリップボードにコピー",
+    showDiagram: "図を表示",
+    showCode: "コードを表示",
     close: "閉じる",
     insights: "インサイト",
     progress: "進捗",

@@ -80,6 +80,8 @@ export const esES = {
     description: "Descripción",
     saveToNote: "Guardar en nota",
     copyToClipboard: "Copiar al portapapeles",
+    showDiagram: "Mostrar diagrama",
+    showCode: "Mostrar código",
     close: "Cerrar",
     insights: "Análisis",
     progress: "Progreso",

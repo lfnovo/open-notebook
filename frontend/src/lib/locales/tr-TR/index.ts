@@ -80,6 +80,8 @@ export const trTR = {
     description: "Açıklama",
     saveToNote: "Nota kaydet",
     copyToClipboard: "Panoya kopyala",
+    showDiagram: "Diyagramı göster",
+    showCode: "Kodu göster",
     close: "Kapat",
     insights: "İçgörüler",
     progress: "İlerleme",

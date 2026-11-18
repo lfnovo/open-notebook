@@ -80,6 +80,8 @@ export const ptBR = {
     description: "Descrição",
     saveToNote: "Salvar em nota",
     copyToClipboard: "Copiar para área de transferência",
+    showDiagram: "Mostrar diagrama",
+    showCode: "Mostrar código",
     close: "Fechar",
     insights: "Insights",
     progress: "Progresso",

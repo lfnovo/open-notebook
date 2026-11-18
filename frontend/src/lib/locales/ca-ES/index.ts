@@ -80,6 +80,8 @@ export const caES = {
     description: "Descripció",
     saveToNote: "Desa a una nota",
     copyToClipboard: "Copia al porta-retalls",
+    showDiagram: "Mostra el diagrama",
+    showCode: "Mostra el codi",
     close: "Tanca",
     insights: "Anàlisis",
     progress: "Progrés",

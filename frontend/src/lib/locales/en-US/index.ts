@@ -78,6 +78,8 @@ export const enUS = {
     description: "Description",
     saveToNote: "Save to note",
     copyToClipboard: "Copy to clipboard",
+    showDiagram: "Show diagram",
+    showCode: "Show code",
     close: "Close",
     insights: "Insights",
     progress: "Progress",

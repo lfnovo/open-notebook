@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 
+import { MermaidBlock } from '@/components/ui/mermaid-block'
 import { useThemeStore } from '@/lib/stores/theme-store'
 import { KATEX_OPTIONS } from '@/lib/utils/katex-options'
 import { oneDark as darkTheme } from 'react-syntax-highlighter/dist/esm/styles/prism'
@@ -56,10 +57,24 @@ type Components = {
   [Key in Extract<ElementType, string>]?: ElementType<ComponentProps<Key> & ExtraProps>
 }
 
+const CLOSING_FENCE = /\n[ \t>]*(`{3,}|~{3,})[ \t]*$/
+
+// While an answer streams in, an unfinished fenced block runs to the end of the
+// text. Only a block whose closing fence has arrived is complete enough to draw.
+function isFenceClosed(markdown: string, node: ExtraProps['node']): boolean {
+  const start = node?.position?.start.offset
+  const end = node?.position?.end.offset
+  if (start === undefined || end === undefined) {
+    return true
+  }
+  return CLOSING_FENCE.test(markdown.slice(start, end))
+}
+
 export function MarkdownRenderer({ children, components = {}}: { children: React.ReactNode , components?: Components }) {
 
   const { getEffectiveTheme } = useThemeStore()
   const isDark = getEffectiveTheme() === 'dark'
+  const markdown = String(children)
 
   return (
     <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none break-words prose-headings:font-semibold prose-a:text-primary prose-a:break-all prose-code:before:content-none prose-code:after:content-none prose-pre:p-0 prose-pre:bg-transparent prose-p:mb-4 prose-p:leading-7 prose-li:mb-2">
@@ -87,10 +102,13 @@ export function MarkdownRenderer({ children, components = {}}: { children: React
             tr: ({ children }) => <tr className="border-b border-border">{children}</tr>,
             th: ({ children }) => <th className="border border-border px-3 py-2 text-left font-semibold">{children}</th>,
             td: ({ children }) => <td className="border border-border px-3 py-2">{children}</td>,
-            code: ({ children, className }) => {
+            code: ({ children, className, node }) => {
               const match = /language-(\w+)/.exec(className || '')
               const isBlock = match || String(children).includes('\n')
-              return isBlock ? (
+              if (!isBlock) {
+                return <code className="bg-border rounded px-1 py-0.5">{children}</code>
+              }
+              const codeBlock = (
                 <SyntaxHighlighter
                   language={match ? match[1] : 'text'}
                   style={isDark ? darkTheme : lightTheme}
@@ -99,13 +117,16 @@ export function MarkdownRenderer({ children, components = {}}: { children: React
                 >
                   {String(children)}
                 </SyntaxHighlighter>
+              )
+              return match?.[1] === 'mermaid' && isFenceClosed(markdown, node) ? (
+                <MermaidBlock source={String(children).trim()} isDark={isDark} codeBlock={codeBlock} />
               ) : (
-                <code className="bg-border rounded px-1 py-0.5">{children}</code>
+                codeBlock
               )
             },
           }, ...components}}
         >
-          {String(children)}
+          {markdown}
         </ReactMarkdown>
       </div>
   )

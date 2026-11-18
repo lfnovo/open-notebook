@@ -80,6 +80,8 @@ export const ruRU = {
     description: "Описание",
     saveToNote: "Сохранить в заметку",
     copyToClipboard: "Копировать в буфер обмена",
+    showDiagram: "Показать диаграмму",
+    showCode: "Показать код",
     close: "Закрыть",
     insights: "Инсайты",
     progress: "Прогресс",

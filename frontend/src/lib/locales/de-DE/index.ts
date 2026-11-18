@@ -83,6 +83,8 @@ export const deDE = {
     description: "Beschreibung",
     saveToNote: "In Notiz speichern",
     copyToClipboard: "In Zwischenablage kopieren",
+    showDiagram: "Diagramm anzeigen",
+    showCode: "Code anzeigen",
     close: "Schließen",
     insights: "Erkenntnisse",
     progress: "Fortschritt",

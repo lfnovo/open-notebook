@@ -7,7 +7,7 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 
 // While an answer streams in, the source changes on every token. Wait for it
 // to settle before parsing so partial syntax never triggers a render.
-const SETTLE_DELAY_MS = 300
+export const SETTLE_DELAY_MS = 300
 
 // A diagram can carry its own %%{init}%% directive. Mermaid only protects the
 // keys listed here from it, so list every option this component relies on.
@@ -20,6 +20,7 @@ const SECURE_KEYS = [
   'maxEdges',
   'htmlLabels',
   'themeCSS',
+  'theme',
 ]
 
 // Mermaid sizes the SVG to width="100%" with a max-width, which shrinks a wide

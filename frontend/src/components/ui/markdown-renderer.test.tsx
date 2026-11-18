@@ -1,9 +1,10 @@
-import { beforeEach, describe, it, expect, vi } from 'vitest'
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import { useThemeStore } from '@/lib/stores/theme-store'
 
 import { MarkdownRenderer } from './markdown-renderer'
+import { SETTLE_DELAY_MS } from './mermaid-block'
 
 // useTranslation is mocked globally in setup.ts (t returns the key string).
 // jsdom cannot lay out SVG, so Mermaid itself is mocked.
@@ -56,6 +57,10 @@ describe('MarkdownRenderer', () => {
 })
 
 describe('MarkdownRenderer mermaid blocks', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     mermaidMock.parse.mockResolvedValue(true)
@@ -122,25 +127,28 @@ describe('MarkdownRenderer mermaid blocks', () => {
   })
 
   it('does not load Mermaid for other languages', async () => {
+    vi.useFakeTimers()
     render(<MarkdownRenderer>{'```python\nprint(1)\n```'}</MarkdownRenderer>)
-    await new Promise((resolve) => setTimeout(resolve, 400))
+    await act(() => vi.advanceTimersByTimeAsync(SETTLE_DELAY_MS + 1))
     expect(mermaidMock.parse).not.toHaveBeenCalled()
   })
 
-  it('protects its security options from an %%{init}%% directive in the diagram', async () => {
+  it('passes the security keys that guard against %%{init}%% overrides', async () => {
     render(<MarkdownRenderer>{DIAGRAM}</MarkdownRenderer>)
     await screen.findByTestId('mermaid-diagram')
 
     const config = mermaidMock.initialize.mock.calls[0][0]
-    expect(config.secure).toEqual(expect.arrayContaining(['securityLevel', 'htmlLabels', 'themeCSS']))
+    expect(config.secure).toEqual(expect.arrayContaining(['securityLevel', 'htmlLabels', 'themeCSS', 'theme']))
   })
 
   it('keeps an unfinished block as code until its closing fence arrives', async () => {
+    vi.useFakeTimers()
     const { rerender } = render(<MarkdownRenderer>{'```mermaid\ngraph TD\n  A --> B'}</MarkdownRenderer>)
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    await act(() => vi.advanceTimersByTimeAsync(SETTLE_DELAY_MS + 1))
     expect(mermaidMock.parse).not.toHaveBeenCalled()
     expect(screen.queryByTestId('mermaid-diagram')).not.toBeInTheDocument()
 
+    vi.useRealTimers()
     rerender(<MarkdownRenderer>{DIAGRAM}</MarkdownRenderer>)
     expect(await screen.findByTestId('mermaid-diagram')).toBeInTheDocument()
   })

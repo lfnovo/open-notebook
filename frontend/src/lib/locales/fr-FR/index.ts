@@ -80,6 +80,8 @@ export const frFR = {
     description: "Description",
     saveToNote: "Enregistrer dans la note",
     copyToClipboard: "Copier dans le presse-papiers",
+    showDiagram: "Afficher le diagramme",
+    showCode: "Afficher le code",
     close: "Fermer",
     insights: "Analyses",
     progress: "Progression",

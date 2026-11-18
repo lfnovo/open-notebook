@@ -80,6 +80,8 @@ export const itIT = {
     description: "Descrizione",
     saveToNote: "Salva come nota",
     copyToClipboard: "Copia negli appunti",
+    showDiagram: "Mostra il diagramma",
+    showCode: "Mostra il codice",
     close: "Chiudi",
     insights: "Approfondimenti",
     progress: "Progresso",

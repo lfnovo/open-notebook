@@ -80,6 +80,8 @@ export const plPL = {
     description: "Opis",
     saveToNote: "Zapisz do notatki",
     copyToClipboard: "Kopiuj do schowka",
+    showDiagram: "Pokaż diagram",
+    showCode: "Pokaż kod",
     close: "Zamknij",
     insights: "Wglądy",
     progress: "Postęp",

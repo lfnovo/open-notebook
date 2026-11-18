@@ -80,6 +80,8 @@ export const zhTW = {
     description: "描述",
     saveToNote: "儲存到筆記",
     copyToClipboard: "複製到剪貼簿",
+    showDiagram: "顯示圖表",
+    showCode: "顯示程式碼",
     close: "關閉",
     insights: "見解",
     progress: "進度",

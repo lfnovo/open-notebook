@@ -80,6 +80,8 @@ export const zhCN = {
     description: "描述",
     saveToNote: "保存到笔记",
     copyToClipboard: "复制到剪贴板",
+    showDiagram: "显示图表",
+    showCode: "显示代码",
     close: "关闭",
     insights: "见解",
     progress: "进度",

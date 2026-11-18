@@ -80,6 +80,8 @@ export const bnIN = {
     description: "বিবরণ",
     saveToNote: "নোটে সংরক্ষণ করুন",
     copyToClipboard: "ক্লিপবোর্ডে কপি করুন",
+    showDiagram: "ডায়াগ্রাম দেখান",
+    showCode: "কোড দেখান",
     close: "বন্ধ",
     insights: "অন্তর্দৃষ্টি",
     progress: "অগ্রগতি",

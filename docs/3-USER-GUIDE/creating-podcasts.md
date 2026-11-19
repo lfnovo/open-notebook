@@ -76,6 +76,7 @@ The **Episodes** tab groups episodes into **Currently Processing**, **Queued / P
 
 Each episode card has:
 - an **audio player** (completed episodes),
+- **Download** (completed episodes): saves the episode as an `.mp3` file named after the episode. The same button is in **Details**, next to the player. Use it in Safari, whose player has no download option,
 - **Details**, with the episode's **Summary** (profiles and models used), **Outline** and **Transcript**,
 - **Delete** (removes the episode and its audio file),
 - **Retry** (failed episodes): deletes the failed episode and submits a new job with the same name, content, episode profile and speaker profile, using the profiles' current settings (so you can fix a profile, then retry). The episode's **Additional instructions** are not kept.

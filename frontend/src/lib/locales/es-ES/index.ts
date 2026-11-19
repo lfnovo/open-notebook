@@ -766,6 +766,7 @@ export const esES = {
     failedToDelete: "Error al eliminar el podcast",
     retry: "Reintentar",
     retrying: "Reintentando…",
+    downloadEpisode: "Descargar \"{{name}}\"",
     retryStarted: "Reintento iniciado",
     retryStartedDesc: "Se ha enviado un nuevo trabajo de generación de podcast.",
     failedToRetry: "Error al reintentar el episodio",

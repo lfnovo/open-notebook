@@ -769,6 +769,7 @@ export const deDE = {
     failedToDelete: "Podcast konnte nicht gelöscht werden",
     retry: "Erneut versuchen",
     retrying: "Wird erneut versucht…",
+    downloadEpisode: "„{{name}}“ herunterladen",
     retryStarted: "Neuer Versuch gestartet",
     retryStartedDesc: "Ein neuer Auftrag zur Podcast-Erzeugung wurde eingereicht.",
     failedToRetry: "Episode konnte nicht erneut versucht werden",

@@ -766,6 +766,7 @@ export const frFR = {
     failedToDelete: "Échec de la suppression du podcast",
     retry: "Réessayer",
     retrying: "Nouvelle tentative…",
+    downloadEpisode: "Télécharger “{{name}}”",
     retryStarted: "Nouvelle tentative lancée",
     retryStartedDesc: "Un nouveau travail de génération de podcast a été soumis.",
     failedToRetry: "Échec de la nouvelle tentative",

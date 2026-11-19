@@ -766,6 +766,7 @@ export const bnIN = {
     failedToDelete: "পডকাস্ট মুছে ফেলতে ব্যর্থ",
     retry: "পুনঃচেষ্টা",
     retrying: "পুনঃচেষ্টা করছে…",
+    downloadEpisode: "\"{{name}}\" ডাউনলোড করুন",
     retryStarted: "পুনঃচেষ্টা শুরু হয়েছে",
     retryStartedDesc: "একটি নতুন পডকাস্ট তৈরির কাজ জমা দেওয়া হয়েছে।",
     failedToRetry: "এপিসোড পুনঃচেষ্টা করতে ব্যর্থ",

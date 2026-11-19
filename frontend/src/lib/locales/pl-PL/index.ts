@@ -766,6 +766,7 @@ export const plPL = {
     failedToDelete: "Nie udało się usunąć podcastu",
     retry: "Ponów",
     retrying: "Ponawianie…",
+    downloadEpisode: "Pobierz „{{name}}”",
     retryStarted: "Rozpoczęto ponowienie",
     retryStartedDesc: "Przesłano nowe zadanie generowania podcastu.",
     failedToRetry: "Nie udało się ponowić odcinka",

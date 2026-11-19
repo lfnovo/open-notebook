@@ -766,6 +766,7 @@ export const ruRU = {
     failedToDelete: "Не удалось удалить подкаст",
     retry: "Повторить",
     retrying: "Повтор…",
+    downloadEpisode: "Скачать «{{name}}»",
     retryStarted: "Повтор запущен",
     retryStartedDesc: "Новое задание на генерацию подкаста отправлено.",
     failedToRetry: "Не удалось повторить",

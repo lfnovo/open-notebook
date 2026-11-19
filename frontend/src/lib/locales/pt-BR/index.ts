@@ -766,6 +766,7 @@ export const ptBR = {
     failedToDelete: "Falha ao excluir podcast",
     retry: "Tentar novamente",
     retrying: "Tentando novamente…",
+    downloadEpisode: "Baixar \"{{name}}\"",
     retryStarted: "Nova tentativa iniciada",
     retryStartedDesc: "Um novo trabalho de geração de podcast foi enviado.",
     failedToRetry: "Falha ao tentar novamente",

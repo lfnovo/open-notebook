@@ -766,6 +766,7 @@ export const itIT = {
     failedToDelete: "Impossibile eliminare il podcast",
     retry: "Riprova",
     retrying: "Nuovo tentativo…",
+    downloadEpisode: "Scarica \"{{name}}\"",
     retryStarted: "Nuovo tentativo avviato",
     retryStartedDesc: "Un nuovo lavoro di generazione podcast è stato inviato.",
     failedToRetry: "Impossibile riprovare",

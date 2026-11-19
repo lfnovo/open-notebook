@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { getDateLocale } from '@/lib/utils/date-locale'
-import { InfoIcon, RefreshCcw, Trash2 } from 'lucide-react'
+import { Download, InfoIcon, RefreshCcw, Trash2 } from 'lucide-react'
 
 import apiClient from '@/lib/api/client'
 import { resolvePodcastAssetUrl } from '@/lib/api/podcasts'
@@ -143,6 +143,19 @@ function formatModelLabel(
   return `${provider || legacyProvider || '—'} / ${name || legacyName || '—'}`
 }
 
+/**
+ * File name for a downloaded episode: the episode name without characters
+ * that are not allowed in file names, plus the `.mp3` extension.
+ */
+export function episodeAudioFilename(name?: string | null): string {
+  const base = (name ?? '')
+    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^\.+|\.+$/g, '')
+  return `${base || 'podcast-episode'}.mp3`
+}
+
 function extractTranscriptEntries(transcript: unknown): TranscriptEntry[] {
   if (transcript && typeof transcript === 'object' && 'transcript' in transcript) {
     const data = transcript as TranscriptData
@@ -156,6 +169,9 @@ function extractTranscriptEntries(transcript: unknown): TranscriptEntry[] {
 export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: EpisodeCardProps) {
   const { t, language } = useTranslation()
   const [audioSrc, setAudioSrc] = useState<string | undefined>()
+  // Object URL of the audio fetched with the auth header. Only this one can be
+  // saved with a file name: browsers ignore `download` on cross-origin URLs.
+  const [downloadUrl, setDownloadUrl] = useState<string | undefined>()
   const [audioError, setAudioError] = useState<string | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
 
@@ -173,6 +189,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
 
       if (!directAudioUrl || !episode.audio_url) {
         setAudioSrc(directAudioUrl)
+        setDownloadUrl(undefined)
         return
       }
 
@@ -185,10 +202,12 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
 
         revokeUrl = URL.createObjectURL(response.data)
         setAudioSrc(revokeUrl)
+        setDownloadUrl(revokeUrl)
       } catch (error) {
         console.error('Unable to load podcast audio', error)
         setAudioError(t('podcasts.audioUnavailable'))
         setAudioSrc(undefined)
+        setDownloadUrl(undefined)
       }
     }
 
@@ -224,6 +243,19 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
 
   const isFailed = FAILED_EPISODE_STATUSES.includes(episode.job_status as EpisodeStatus)
 
+  const downloadButton = downloadUrl ? (
+    <Button asChild variant="outline" size="sm">
+      <a
+        href={downloadUrl}
+        download={episodeAudioFilename(episode.name)}
+        aria-label={t('podcasts.downloadEpisode', { name: episode.name })}
+      >
+        <Download className="mr-2 h-4 w-4" aria-hidden="true" />
+        {t('common.download')}
+      </a>
+    </Button>
+  ) : null
+
   return (
     <Card>
       <CardContent className="space-y-4 p-4">
@@ -257,8 +289,9 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                 </DialogHeader>
                 <div className="space-y-4 overflow-hidden">
                   {audioSrc ? (
-                    <div className="rounded-md border bg-card p-2">
+                    <div className="flex items-center gap-2 rounded-md border bg-card p-2">
                       <audio controls preload="none" src={audioSrc} className="w-full" />
+                      {downloadButton}
                     </div>
                   ) : audioError ? (
                     <p className="text-sm text-destructive">{audioError}</p>
@@ -394,6 +427,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                 </div>
               </DialogContent>
             </Dialog>
+            {downloadButton}
             {isFailed && onRetry ? (
               <Button
                 variant="outline"

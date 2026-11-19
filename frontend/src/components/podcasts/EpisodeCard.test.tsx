@@ -1,7 +1,9 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 
-import { EpisodeCard } from './EpisodeCard'
+import { EpisodeCard, episodeAudioFilename } from './EpisodeCard'
+import apiClient from '@/lib/api/client'
+import { resolvePodcastAssetUrl } from '@/lib/api/podcasts'
 import type { PodcastEpisode } from '@/lib/types/podcasts'
 
 // useTranslation is mocked globally in setup.ts (t returns the key string)
@@ -133,5 +135,90 @@ describe('EpisodeCard model details', () => {
     )
 
     expect(screen.getAllByText('— / —')).toHaveLength(3)
+  })
+})
+
+describe('EpisodeCard download', () => {
+  const AUDIO_URL = '/api/podcasts/episodes/episode:1/audio'
+  const BLOB_URL = 'blob:http://localhost/audio-1'
+
+  beforeEach(() => {
+    vi.mocked(resolvePodcastAssetUrl).mockImplementation(async (path) =>
+      path ? `http://localhost:5055${path}` : undefined
+    )
+    vi.mocked(apiClient.get).mockResolvedValue({ data: new Blob(['mp3']) })
+    URL.createObjectURL = vi.fn(() => BLOB_URL)
+    URL.revokeObjectURL = vi.fn()
+  })
+
+  afterEach(() => {
+    vi.mocked(resolvePodcastAssetUrl).mockReset()
+    vi.mocked(resolvePodcastAssetUrl).mockImplementation(async () => undefined)
+    vi.mocked(apiClient.get).mockReset()
+  })
+
+  it('offers the fetched audio as a named mp3 download', async () => {
+    render(
+      <EpisodeCard
+        episode={makeEpisode({ name: 'AI: news / week 3', audio_url: AUDIO_URL })}
+        onDelete={vi.fn()}
+      />
+    )
+
+    const link = await screen.findByRole('link', { name: 'podcasts.downloadEpisode' })
+    expect(link).toHaveAttribute('href', BLOB_URL)
+    expect(link).toHaveAttribute('download', 'AI news week 3.mp3')
+    expect(link).toHaveTextContent('common.download')
+    expect(apiClient.get).toHaveBeenCalledWith('http://localhost:5055' + AUDIO_URL, {
+      responseType: 'blob',
+    })
+  })
+
+  it('also shows the download control in the Details dialog', async () => {
+    render(
+      <EpisodeCard episode={makeEpisode({ audio_url: AUDIO_URL })} onDelete={vi.fn()} />
+    )
+    await screen.findByRole('link', { name: 'podcasts.downloadEpisode' })
+
+    fireEvent.click(screen.getByText('podcasts.details'))
+
+    const dialog = await screen.findByRole('dialog')
+    const link = await within(dialog).findByRole('link', { name: 'podcasts.downloadEpisode' })
+    expect(link).toHaveAttribute('download', 'Test Episode.mp3')
+  })
+
+  it('has no download control when the episode has no audio', async () => {
+    render(<EpisodeCard episode={makeEpisode({ job_status: 'running' })} onDelete={vi.fn()} />)
+
+    await vi.waitFor(() => expect(resolvePodcastAssetUrl).toHaveBeenCalled())
+    expect(screen.queryByRole('link', { name: 'podcasts.downloadEpisode' })).not.toBeInTheDocument()
+  })
+
+  it('has no download control when the audio cannot be fetched', async () => {
+    vi.mocked(apiClient.get).mockRejectedValue(new Error('network'))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    render(
+      <EpisodeCard episode={makeEpisode({ audio_url: AUDIO_URL })} onDelete={vi.fn()} />
+    )
+
+    expect(await screen.findByText('podcasts.audioUnavailable')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'podcasts.downloadEpisode' })).not.toBeInTheDocument()
+  })
+})
+
+describe('episodeAudioFilename', () => {
+  it('keeps a plain episode name', () => {
+    expect(episodeAudioFilename('Weekly digest')).toBe('Weekly digest.mp3')
+  })
+
+  it('removes characters that are not allowed in file names', () => {
+    expect(episodeAudioFilename('Q&A: "LLMs" <2026>?')).toBe('Q&A LLMs 2026.mp3')
+  })
+
+  it('falls back when nothing usable is left', () => {
+    expect(episodeAudioFilename('')).toBe('podcast-episode.mp3')
+    expect(episodeAudioFilename(null)).toBe('podcast-episode.mp3')
+    expect(episodeAudioFilename('...')).toBe('podcast-episode.mp3')
   })
 })

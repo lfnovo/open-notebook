@@ -145,7 +145,8 @@ function formatModelLabel(
 
 /**
  * File name for a downloaded episode: the episode name without characters
- * that are not allowed in file names, plus the `.mp3` extension.
+ * that are not allowed in file names, plus the `.mp3` extension. Names that
+ * Windows reserves for devices (CON, NUL, COM1, ...) get a `_` prefix.
  */
 export function episodeAudioFilename(name?: string | null): string {
   const base = (name ?? '')
@@ -153,7 +154,11 @@ export function episodeAudioFilename(name?: string | null): string {
     .replace(/\s+/g, ' ')
     .trim()
     .replace(/^\.+|\.+$/g, '')
-  return `${base || 'podcast-episode'}.mp3`
+  if (!base) {
+    return 'podcast-episode.mp3'
+  }
+  const reserved = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i.test(base)
+  return `${reserved ? `_${base}` : base}.mp3`
 }
 
 function extractTranscriptEntries(transcript: unknown): TranscriptEntry[] {
@@ -172,7 +177,9 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
   // Object URL of the audio fetched with the auth header. Only this one can be
   // saved with a file name: browsers ignore `download` on cross-origin URLs.
   const [downloadUrl, setDownloadUrl] = useState<string | undefined>()
-  const [audioError, setAudioError] = useState<string | null>(null)
+  // Stored as a flag and translated when rendered, so a language change does
+  // not re-run the effect that fetches the audio.
+  const [audioFailed, setAudioFailed] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
 
   const outlineSegments = useMemo(() => extractOutlineSegments(episode.outline), [episode.outline])
@@ -180,12 +187,20 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
 
   useEffect(() => {
     let revokeUrl: string | undefined
-    setAudioError(null)
+    // False once this load is replaced or the card unmounts, so a response
+    // that arrives late cannot overwrite the current audio or leak a blob URL.
+    let active = true
+    setAudioFailed(false)
+    // The previous object URL is revoked by the cleanup below.
+    setDownloadUrl(undefined)
 
     // If backend exposed a protected endpoint, fetch it with auth headers
     const loadProtectedAudio = async () => {
       // First resolve the audio URL
       const directAudioUrl = await resolvePodcastAssetUrl(episode.audio_url ?? episode.audio_file)
+      if (!active) {
+        return
+      }
 
       if (!directAudioUrl || !episode.audio_url) {
         setAudioSrc(directAudioUrl)
@@ -199,13 +214,19 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
         const response = await apiClient.get<Blob>(directAudioUrl, {
           responseType: 'blob',
         })
+        if (!active) {
+          return
+        }
 
         revokeUrl = URL.createObjectURL(response.data)
         setAudioSrc(revokeUrl)
         setDownloadUrl(revokeUrl)
       } catch (error) {
+        if (!active) {
+          return
+        }
         console.error('Unable to load podcast audio', error)
-        setAudioError(t('podcasts.audioUnavailable'))
+        setAudioFailed(true)
         setAudioSrc(undefined)
         setDownloadUrl(undefined)
       }
@@ -214,11 +235,12 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
     void loadProtectedAudio()
 
     return () => {
+      active = false
       if (revokeUrl) {
         URL.revokeObjectURL(revokeUrl)
       }
     }
-  }, [episode.audio_url, episode.audio_file, t])
+  }, [episode.audio_url, episode.audio_file])
 
   const distance = episode.created
     ? formatDistanceToNow(new Date(episode.created), {
@@ -272,7 +294,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
               {createdLabel ? ` • ${createdLabel}` : ''}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -289,12 +311,12 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                 </DialogHeader>
                 <div className="space-y-4 overflow-hidden">
                   {audioSrc ? (
-                    <div className="flex items-center gap-2 rounded-md border bg-card p-2">
-                      <audio controls preload="none" src={audioSrc} className="w-full" />
+                    <div className="flex flex-col gap-2 rounded-md border bg-card p-2 sm:flex-row sm:items-center">
+                      <audio controls preload="none" src={audioSrc} className="w-full min-w-0" />
                       {downloadButton}
                     </div>
-                  ) : audioError ? (
-                    <p className="text-sm text-destructive">{audioError}</p>
+                  ) : audioFailed ? (
+                    <p className="text-sm text-destructive">{t('podcasts.audioUnavailable')}</p>
                   ) : null}
 
                   <Tabs defaultValue="summary" className="h-[60vh] flex flex-col">
@@ -468,8 +490,8 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
           <div className="rounded-md border bg-card p-2">
             <audio controls preload="none" src={audioSrc} className="w-full" />
           </div>
-        ) : audioError ? (
-          <p className="text-sm text-destructive">{audioError}</p>
+        ) : audioFailed ? (
+          <p className="text-sm text-destructive">{t('podcasts.audioUnavailable')}</p>
         ) : null}
 
         {isFailed && episode.error_message ? (

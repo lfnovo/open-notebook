@@ -196,14 +196,48 @@ describe('EpisodeCard download', () => {
 
   it('has no download control when the audio cannot be fetched', async () => {
     vi.mocked(apiClient.get).mockRejectedValue(new Error('network'))
-    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    render(
-      <EpisodeCard episode={makeEpisode({ audio_url: AUDIO_URL })} onDelete={vi.fn()} />
+    try {
+      render(
+        <EpisodeCard episode={makeEpisode({ audio_url: AUDIO_URL })} onDelete={vi.fn()} />
+      )
+
+      expect(await screen.findByText('podcasts.audioUnavailable')).toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: 'podcasts.downloadEpisode' })).not.toBeInTheDocument()
+    } finally {
+      consoleError.mockRestore()
+    }
+  })
+
+  it('ignores audio that arrives after the episode changed', async () => {
+    let resolveOld: (value: { data: Blob }) => void = () => {}
+    vi.mocked(apiClient.get)
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveOld = resolve }))
+      .mockResolvedValueOnce({ data: new Blob(['new']) })
+    vi.mocked(URL.createObjectURL).mockImplementation(
+      (blob) => (blob instanceof Blob && blob.size === 3 ? 'blob:new' : 'blob:old')
     )
 
-    expect(await screen.findByText('podcasts.audioUnavailable')).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'podcasts.downloadEpisode' })).not.toBeInTheDocument()
+    const { rerender } = render(
+      <EpisodeCard episode={makeEpisode({ audio_url: AUDIO_URL })} onDelete={vi.fn()} />
+    )
+    await vi.waitFor(() => expect(apiClient.get).toHaveBeenCalledTimes(1))
+
+    rerender(
+      <EpisodeCard
+        episode={makeEpisode({ audio_url: '/api/podcasts/episodes/episode:2/audio' })}
+        onDelete={vi.fn()}
+      />
+    )
+    const link = await screen.findByRole('link', { name: 'podcasts.downloadEpisode' })
+    expect(link).toHaveAttribute('href', 'blob:new')
+
+    resolveOld({ data: new Blob(['old audio']) })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(screen.getByRole('link', { name: 'podcasts.downloadEpisode' })).toHaveAttribute('href', 'blob:new')
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -214,6 +248,13 @@ describe('episodeAudioFilename', () => {
 
   it('removes characters that are not allowed in file names', () => {
     expect(episodeAudioFilename('Q&A: "LLMs" <2026>?')).toBe('Q&A LLMs 2026.mp3')
+  })
+
+  it('prefixes names that Windows reserves for devices', () => {
+    expect(episodeAudioFilename('CON')).toBe('_CON.mp3')
+    expect(episodeAudioFilename('nul.backup')).toBe('_nul.backup.mp3')
+    expect(episodeAudioFilename('Com1')).toBe('_Com1.mp3')
+    expect(episodeAudioFilename('Console talk')).toBe('Console talk.mp3')
   })
 
   it('falls back when nothing usable is left', () => {

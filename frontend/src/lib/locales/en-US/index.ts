@@ -765,6 +765,7 @@ export const enUS = {
     failedToDelete: "Failed to delete podcast",
     retry: "Retry",
     retrying: "Retrying…",
+    downloadEpisode: "Download “{{name}}”",
     retryStarted: "Retry Started",
     retryStartedDesc: "A new podcast generation job has been submitted.",
     failedToRetry: "Failed to retry episode",

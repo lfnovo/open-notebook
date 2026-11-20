@@ -766,6 +766,7 @@ export const zhTW = {
     failedToDelete: "刪除播客失敗",
     retry: "重試",
     retrying: "重試中…",
+    downloadEpisode: "下載 “{{name}}”",
     retryStarted: "已開始重試",
     retryStartedDesc: "已提交新的播客生成任務。",
     failedToRetry: "重試失敗",

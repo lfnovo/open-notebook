@@ -766,6 +766,7 @@ export const jaJP = {
     failedToDelete: "ポッドキャストの削除に失敗しました",
     retry: "再試行",
     retrying: "再試行中…",
+    downloadEpisode: "「{{name}}」をダウンロード",
     retryStarted: "再試行を開始しました",
     retryStartedDesc: "新しいポッドキャスト生成ジョブが送信されました。",
     failedToRetry: "再試行に失敗しました",

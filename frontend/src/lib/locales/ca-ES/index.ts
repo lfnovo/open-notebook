@@ -766,6 +766,7 @@ export const caES = {
     failedToDelete: "Ha fallat la supressió del podcast",
     retry: "Reintenta",
     retrying: "S'està reintentant…",
+    downloadEpisode: "Baixa «{{name}}»",
     retryStarted: "S'ha iniciat el reintent",
     retryStartedDesc: "S'ha enviat un nou treball de generació de podcast.",
     failedToRetry: "Ha fallat el reintent de l'episodi",

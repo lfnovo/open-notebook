@@ -766,6 +766,7 @@ export const trTR = {
     failedToDelete: "Podcast silinemedi",
     retry: "Yeniden Dene",
     retrying: "Yeniden deneniyor…",
+    downloadEpisode: "\"{{name}}\" indir",
     retryStarted: "Yeniden Deneme Başladı",
     retryStartedDesc: "Yeni bir podcast oluşturma işi gönderildi.",
     failedToRetry: "Bölüm yeniden denenemedi",

@@ -40,4 +40,26 @@ describe('MarkdownRenderer', () => {
     expect(container.querySelector('code')?.textContent).toBe('npm ci')
     expect(container.querySelectorAll('span[class*="token"]').length).toBe(0)
   })
+
+  it('does not render the Markdown again when only the parent re-renders', () => {
+    let paragraphRenders = 0
+    const components = {
+      p: ({ children }: { children?: React.ReactNode }) => {
+        paragraphRenders++
+        return <p>{children}</p>
+      },
+    }
+    const Parent = ({ tick }: { tick: number }) => (
+      <div data-tick={tick}>
+        <MarkdownRenderer components={components}>{'Some text'}</MarkdownRenderer>
+      </div>
+    )
+
+    const { rerender } = render(<Parent tick={0} />)
+    rerender(<Parent tick={1} />)
+    expect(paragraphRenders).toBe(1)
+
+    rerender(<Parent tick={2} />)
+    expect(paragraphRenders).toBe(1)
+  })
 })

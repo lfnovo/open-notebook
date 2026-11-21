@@ -40,6 +40,7 @@ import tsx from 'react-syntax-highlighter/dist/esm/languages/prism/tsx'
 import typescript from 'react-syntax-highlighter/dist/esm/languages/prism/typescript'
 import yaml from 'react-syntax-highlighter/dist/esm/languages/prism/yaml'
 
+import { memo } from 'react'
 import type {ExtraProps} from 'react-markdown'
 import type {ComponentProps, ElementType} from 'react'
 
@@ -56,7 +57,10 @@ type Components = {
   [Key in Extract<ElementType, string>]?: ElementType<ComponentProps<Key> & ExtraProps>
 }
 
-export function MarkdownRenderer({ children, components = {}}: { children: React.ReactNode , components?: Components }) {
+// Memoized: each render parses the whole Markdown string again, which takes
+// seconds for a long source. Parents such as the source chat page re-render on
+// every chat state change while the text stays the same.
+export const MarkdownRenderer = memo(function MarkdownRenderer({ children, components = {}}: { children: React.ReactNode , components?: Components }) {
 
   const { getEffectiveTheme } = useThemeStore()
   const isDark = getEffectiveTheme() === 'dark'
@@ -109,4 +113,4 @@ export function MarkdownRenderer({ children, components = {}}: { children: React
         </ReactMarkdown>
       </div>
   )
-}
+})

@@ -105,7 +105,6 @@ async def _cache_store(model_name: str, entries: Dict[str, List[float]]) -> None
                 {"hash": h, "model": model_name, "embedding": e}
                 for h, e in entries.items()
             ],
-            ignore_duplicates=True,
         )
     except Exception as e:
         logger.warning(f"Embedding cache write failed: {e}")

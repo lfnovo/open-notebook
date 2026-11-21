@@ -25,9 +25,9 @@ class _FakeCacheTable:
             return [{"n": len(self.rows)}]
         raise AssertionError(f"unexpected query: {query}")
 
-    async def repo_insert(self, table, records, ignore_duplicates=False):
+    async def repo_insert(self, table, records):
         if self.insert_override is not None:
-            return await self.insert_override(table, records, ignore_duplicates)
+            return await self.insert_override(table, records)
         assert table == "embedding_cache"
         self.rows.extend(records)
         return records

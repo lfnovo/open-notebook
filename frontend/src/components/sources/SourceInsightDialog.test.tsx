@@ -1,12 +1,36 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { SourceInsightDialog } from './SourceInsightDialog'
-import { useInsight } from '@/lib/hooks/use-insights'
+import { useInsight, useSaveInsightAsNote } from '@/lib/hooks/use-insights'
+import { useNotebooks } from '@/lib/hooks/use-notebooks'
 
 // useTranslation is mocked globally in setup.ts (t returns the key string)
 
 vi.mock('@/lib/hooks/use-insights', () => ({
   useInsight: vi.fn(),
+  useSaveInsightAsNote: vi.fn(),
+}))
+
+vi.mock('@/lib/hooks/use-notebooks', () => ({
+  useNotebooks: vi.fn(),
+}))
+
+vi.mock('@/components/ui/select', () => ({
+  Select: ({ children, onValueChange, value }: React.PropsWithChildren<{
+    value: string
+    onValueChange: (value: string) => void
+  }>) => (
+    <select aria-label="notebook" value={value} onChange={event => onValueChange(event.target.value)}>
+      <option value="" />
+      {children}
+    </select>
+  ),
+  SelectTrigger: ({ children }: React.PropsWithChildren) => <>{children}</>,
+  SelectValue: () => null,
+  SelectContent: ({ children }: React.PropsWithChildren) => <>{children}</>,
+  SelectItem: ({ children, value }: React.PropsWithChildren<{ value: string }>) => (
+    <option value={value}>{children}</option>
+  ),
 }))
 
 vi.mock('@/lib/hooks/use-modal-manager', () => ({
@@ -14,6 +38,9 @@ vi.mock('@/lib/hooks/use-modal-manager', () => ({
 }))
 
 const mockUseInsight = vi.mocked(useInsight)
+const mockUseSaveInsightAsNote = vi.mocked(useSaveInsightAsNote)
+const mockUseNotebooks = vi.mocked(useNotebooks)
+const mockSaveAsNote = vi.fn()
 
 const notFoundError = Object.assign(new Error('Request failed with status code 404'), {
   isAxiosError: true,
@@ -29,9 +56,29 @@ type UseInsightResult = ReturnType<typeof useInsight>
 
 const asResult = (value: Partial<UseInsightResult>) => value as UseInsightResult
 
+const loadedInsight = asResult({
+  data: {
+    id: 'insight-1',
+    source_id: 'source:1',
+    insight_type: 'summary',
+    content: 'Fetched insight content',
+    created: null,
+    updated: null,
+  },
+  isLoading: false,
+  isError: false,
+  error: null,
+})
+
 describe('SourceInsightDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockUseSaveInsightAsNote.mockReturnValue(
+      { mutate: mockSaveAsNote, isPending: false } as unknown as ReturnType<typeof useSaveInsightAsNote>
+    )
+    mockUseNotebooks.mockReturnValue(
+      { data: [], isLoading: false } as unknown as ReturnType<typeof useNotebooks>
+    )
   })
 
   it('shows the shared not-found state when the insight returns 404', () => {
@@ -118,5 +165,81 @@ describe('SourceInsightDialog', () => {
 
     expect(screen.getByText('Fetched insight content')).toBeInTheDocument()
     expect(screen.queryByTestId('content-unavailable')).not.toBeInTheDocument()
+  })
+
+  it('saves the insight to the given notebook without a picker', () => {
+    mockUseInsight.mockReturnValue(loadedInsight)
+
+    render(
+      <SourceInsightDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        insight={{ id: 'insight-1', insight_type: '', content: '' }}
+        notebookId="notebook:1"
+      />
+    )
+
+    expect(screen.queryByRole('combobox', { name: 'notebook' })).not.toBeInTheDocument()
+    expect(mockUseNotebooks).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'sources.saveAsNote' }))
+    expect(mockSaveAsNote).toHaveBeenCalledWith({
+      insightId: 'source_insight:insight-1',
+      notebookId: 'notebook:1',
+    })
+  })
+
+  it('asks for a notebook when there is no notebook context and saves to the chosen one', () => {
+    mockUseInsight.mockReturnValue(loadedInsight)
+    mockUseNotebooks.mockReturnValue({
+      data: [
+        { id: 'notebook:1', name: 'First' },
+        { id: 'notebook:2', name: 'Second' },
+      ],
+      isLoading: false,
+    } as unknown as ReturnType<typeof useNotebooks>)
+
+    render(
+      <SourceInsightDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        insight={{ id: 'insight-1', insight_type: '', content: '' }}
+      />
+    )
+
+    const saveButton = screen.getByRole('button', { name: 'sources.saveAsNote' })
+    expect(saveButton).toBeDisabled()
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'notebook' }), {
+      target: { value: 'notebook:2' },
+    })
+    fireEvent.click(saveButton)
+
+    expect(mockSaveAsNote).toHaveBeenCalledWith({
+      insightId: 'source_insight:insight-1',
+      notebookId: 'notebook:2',
+    })
+  })
+
+  it('preselects the notebook when there is only one', () => {
+    mockUseInsight.mockReturnValue(loadedInsight)
+    mockUseNotebooks.mockReturnValue({
+      data: [{ id: 'notebook:1', name: 'Only' }],
+      isLoading: false,
+    } as unknown as ReturnType<typeof useNotebooks>)
+
+    render(
+      <SourceInsightDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        insight={{ id: 'insight-1', insight_type: '', content: '' }}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'sources.saveAsNote' }))
+    expect(mockSaveAsNote).toHaveBeenCalledWith({
+      insightId: 'source_insight:insight-1',
+      notebookId: 'notebook:1',
+    })
   })
 })

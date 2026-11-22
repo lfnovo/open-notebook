@@ -97,4 +97,41 @@ describe('Config Priority', () => {
     const url = await getApiUrl()
     expect(url).toBe('')
   })
+
+  it('should not double the /api segment when the API URL already ends with /api', async () => {
+    process.env.NEXT_PUBLIC_API_URL = '/api'
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ apiUrl: '' }),
+    } as Response)
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ version: '1.0.0' }),
+    } as Response)
+
+    const url = await getApiUrl()
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/config', expect.anything())
+    // Callers append /api themselves (API client, auth store), so it is not kept
+    expect(url).toBe('')
+  })
+
+  it('should drop a trailing /api from an absolute API URL', async () => {
+    process.env.NEXT_PUBLIC_API_URL = 'http://localhost:5055/api/'
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ apiUrl: '' }),
+    } as Response)
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ version: '1.0.0' }),
+    } as Response)
+
+    const url = await getApiUrl()
+    expect(fetchMock).toHaveBeenLastCalledWith('http://localhost:5055/api/config', expect.anything())
+    expect(url).toBe('http://localhost:5055')
+  })
 })

@@ -8,6 +8,7 @@ from loguru import logger
 from surrealdb import AsyncSurreal, RecordID  # type: ignore
 from surrealdb.data.types.table import Table  # type: ignore
 
+from open_notebook.exceptions import DatabaseOperationError
 from open_notebook.utils.proxy import ensure_internal_no_proxy
 
 # Keep the internal SurrealDB websocket out of any configured HTTP proxy
@@ -43,10 +44,12 @@ def get_database_url() -> str:
     if surreal_url:
         return surreal_url
 
-    # Fallback to old format - WebSocket URL format
+    # Fallback to the legacy variables. SURREAL_ADDRESS may already carry the
+    # port ("host:8000", "[::1]:8000"); SURREAL_PORT only applies when it doesn't.
     address = os.getenv("SURREAL_ADDRESS", "localhost")
-    port = os.getenv("SURREAL_PORT", "8000")
-    return f"ws://{address}/rpc:{port}"
+    if ":" not in address.rsplit("]", 1)[-1]:
+        address = f"{address}:{os.getenv('SURREAL_PORT', '8000')}"
+    return f"ws://{address}/rpc"
 
 
 def get_database_password() -> str:
@@ -64,6 +67,23 @@ def get_database_name() -> str:
     return _get_env_or_default("SURREAL_DATABASE", "open_notebook")
 
 
+def apply_database_defaults() -> None:
+    """Give the job queue Open Notebook's namespace and database defaults.
+
+    surreal-commands stores the ``command`` records and defaults both
+    settings to ``test``, while Open Notebook defaults them to
+    ``open_notebook``. With the variables unset the two used different
+    databases, and every read of ``command`` through Open Notebook's own
+    connection (the sources list, podcast episode status) found nothing
+    (#1466). Writing the resolved values back keeps an explicitly set value
+    and makes both libraries read the same one. surreal-commands reads the
+    environment when it first connects, so this runs once at startup, in the
+    API and in the worker.
+    """
+    os.environ["SURREAL_NAMESPACE"] = get_database_namespace()
+    os.environ["SURREAL_DATABASE"] = get_database_name()
+
+
 def parse_record_ids(obj: Any) -> Any:
     """Recursively parse and convert RecordIDs into strings."""
     if isinstance(obj, dict):
@@ -76,9 +96,20 @@ def parse_record_ids(obj: Any) -> Any:
 
 
 def ensure_record_id(value: Union[str, RecordID]) -> RecordID:
-    """Ensure a value is a RecordID."""
+    """Ensure a value is a RecordID.
+
+    Normalises double-prefixed IDs like ``source:source:xyz`` down to
+    ``source:xyz`` because LLM outputs occasionally emit citations that
+    re-prepend the type prefix (e.g. `[source:source:abc]`). Without this,
+    the fetch endpoint would receive a malformed ID and 404.
+    """
     if isinstance(value, RecordID):
         return value
+    if isinstance(value, str) and ":" in value:
+        table, _, rest = value.partition(":")
+        while rest.startswith(f"{table}:"):
+            rest = rest[len(table) + 1 :]
+        value = f"{table}:{rest}"
     return RecordID.parse(value)
 
 
@@ -210,16 +241,21 @@ async def repo_delete(record_id: Union[str, RecordID]):
 
     try:
         async with db_connection() as connection:
-            return await connection.delete(ensure_record_id(record_id))
+            result = await connection.delete(ensure_record_id(record_id))
     except Exception as e:
         logger.exception(e)
         raise RuntimeError(f"Failed to delete record: {str(e)}")
+    # SurrealDB may return a string error message (e.g. a retriable transaction
+    # conflict) instead of raising; don't report that as a successful delete
+    if isinstance(result, str):
+        logger.debug(result)
+        raise DatabaseOperationError(f"Failed to delete record: {result}")
+    return result
 
 
 async def repo_insert(
     table: str,
     data: List[Dict[str, Any]],
-    ignore_duplicates: bool = False,
     batch_size: int = 50,
 ) -> List[Dict[str, Any]]:
     """Insert records in bounded batches using a single database connection."""
@@ -244,8 +280,6 @@ async def repo_insert(
                 elif result is not None:
                     results.append(result)
             except RuntimeError as e:
-                if ignore_duplicates and "already contains" in str(e):
-                    continue
                 # Log transaction conflicts at debug level (they are expected during concurrent operations)
                 error_str = str(e).lower()
                 if "transaction" in error_str or "conflict" in error_str:
@@ -254,8 +288,6 @@ async def repo_insert(
                     logger.error(str(e))
                 raise
             except Exception as e:
-                if ignore_duplicates and "already contains" in str(e):
-                    continue
                 logger.exception(e)
                 raise RuntimeError("Failed to create record")
     return results

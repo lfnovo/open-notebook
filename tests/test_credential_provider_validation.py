@@ -32,6 +32,8 @@ KNOWN_GOOD_PROVIDERS = [
     "dashscope",
     "minimax",
     "novita",
+    "siliconflow",
+    "zai",
     "ppq",
     "cohere",
     "voyage",
@@ -114,6 +116,8 @@ class TestProviderRegistryIsTheSourceOfTruth:
             "dashscope": "https://dashscope.aliyuncs.com/compatible-mode/v1/models",
             "minimax": "https://api.minimax.io/v1/models",
             "novita": "https://api.novita.ai/openai/models",
+            "siliconflow": "https://api.siliconflow.com/v1/models",
+            "zai": "https://api.z.ai/api/paas/v4/models",
             "ppq": "https://api.ppq.ai/v1/models?type=all",
         }
         assert {
@@ -155,6 +159,11 @@ class TestProvidersEndpoint:
         assert "language" in openai["modalities"]
         assert openai["docs_url"].startswith("https://")
         assert isinstance(openai["env_configured"], bool)
+        assert openai["default_api_version"] is None
+
+        # The credential form prefills Azure's API version from here (#1470)
+        azure = next(p for p in data if p["name"] == "azure")
+        assert azure["default_api_version"] == "2024-10-21"
 
 
 class TestCreateCredentialRequestValidation:

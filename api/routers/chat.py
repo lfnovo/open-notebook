@@ -71,7 +71,12 @@ class ExecuteChatRequest(BaseModel):
     session_id: str = Field(..., description="Chat session ID")
     message: str = Field(..., description="User message content")
     context: Dict[str, Any] = Field(
-        ..., description="Chat context with sources and notes"
+        ...,
+        description=(
+            "The `context` object returned by POST /api/chat/context "
+            "(`sources` and `notes` lists with their content), not the "
+            "`context_config` sent to that endpoint"
+        ),
     )
     model_override: Optional[str] = Field(
         None, description="Optional model override for this message"
@@ -89,7 +94,10 @@ class BuildContextRequest(BaseModel):
 
 
 class BuildContextResponse(BaseModel):
-    context: Dict[str, Any] = Field(..., description="Built context data")
+    context: Dict[str, Any] = Field(
+        ...,
+        description="Built context data; send it as `context` to POST /api/chat/execute",
+    )
     token_count: int = Field(..., description="Estimated token count")
     char_count: int = Field(..., description="Character count")
 

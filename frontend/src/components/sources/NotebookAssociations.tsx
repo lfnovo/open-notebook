@@ -145,7 +145,7 @@ export function NotebookAssociations({
         {t('sources.manageNotebooksDesc')}
       </p>
       <div className="mt-4 space-y-4">
-        <ScrollArea className="h-[300px] border rounded-md p-4">
+        <ScrollArea className="h-[300px] border rounded-md p-4 [&_[data-radix-scroll-area-viewport]>div]:!block">
           <div className="space-y-3">
             {notebooks
               .filter(nb => !nb.archived)
@@ -164,6 +164,7 @@ export function NotebookAssociations({
                       checked={isSelected}
                       onCheckedChange={() => handleToggleNotebook(notebook.id)}
                       className="mt-0.5"
+                      aria-label={notebook.name}
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">

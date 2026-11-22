@@ -1,366 +1,73 @@
-# Local Speech-to-Text Setup
+# Local Speech-to-Text
 
-Run speech-to-text locally for free, private audio/video transcription using OpenAI-compatible STT servers.
+Transcribe audio and video sources (and YouTube videos without subtitles) on your own hardware.
 
----
-
-## Why Local STT?
-
-| Benefit | Description |
-|---------|-------------|
-| **Free** | No per-minute costs after setup |
-| **Private** | Audio never leaves your machine |
-| **Unlimited** | No rate limits or quotas |
-| **Offline** | Works without internet |
+Setup is shared with local text-to-speech: run [Speaches](https://github.com/speaches-ai/speaches), add it as an **OpenAI Compatible** configuration in Manage → Models, add a model with **Model Type** **STT**, and choose it as the **Speech-to-Text Model** under Default Model Assignments. Follow [Local Speech with Speaches](local-tts.md) for those steps; this page covers what is specific to transcription.
 
 ---
 
-## Quick Start with Speaches
+## Choosing a Whisper model
 
-[Speaches](https://github.com/speaches-ai/speaches) is an open-source, OpenAI-compatible server that supports both TTS and STT. It uses [faster-whisper](https://github.com/SYSTRAN/faster-whisper) for transcription.
-
-> **💡 Ready-made Docker Compose files available:**
-> - **[docker-compose-speaches.yml](../../examples/docker-compose-speaches.yml)** - Speaches + Open Notebook
-> - **[docker-compose-full-local.yml](../../examples/docker-compose-full-local.yml)** - Speaches + Ollama (100% local setup)
->
-> These include complete setup instructions and configuration examples. Just copy and run!
-
-### Step 1: Create Docker Compose File
-
-Create a folder and add `docker-compose.yml`:
-
-```yaml
-services:
-  speaches:
-    image: ghcr.io/speaches-ai/speaches:latest-cpu
-    container_name: speaches
-    ports:
-      - "8969:8000"
-    volumes:
-      - hf-hub-cache:/home/ubuntu/.cache/huggingface/hub
-    restart: unless-stopped
-
-volumes:
-  hf-hub-cache:
-```
-
-### Step 2: Start and Download Model
+Speaches transcribes with [faster-whisper](https://github.com/SYSTRAN/faster-whisper). Download the model you want before using it:
 
 ```bash
-# Start Speaches
-docker compose up -d
-
-# Wait for startup
-sleep 10
-
-# Download Whisper model (~500MB for small)
 docker compose exec speaches uv tool run speaches-cli model download Systran/faster-whisper-small
 ```
 
-Models can also be downloaded automatically on first use, but pre-downloading avoids delays.
+| Model id | Notes |
+|----------|-------|
+| `Systran/faster-whisper-tiny`, `Systran/faster-whisper-base` | Fastest, least accurate |
+| `Systran/faster-whisper-small` | A reasonable default on CPU |
+| `Systran/faster-whisper-medium` | More accurate, much slower on CPU |
+| `Systran/faster-whisper-large-v3` | Most accurate; use a GPU |
 
-### Step 3: Test
+`speaches-cli registry ls --task automatic-speech-recognition` lists everything Speaches can download. Register the model in Open Notebook under the exact same id.
 
-```bash
-# Create a test audio file (or use your own)
-# Then transcribe it:
-curl "http://localhost:8969/v1/audio/transcriptions" \
-  -F "file=@test.mp3" \
-  -F "model=Systran/faster-whisper-small"
-```
-
-You should see the transcribed text in the response.
-
-### Step 4: Configure Open Notebook
-
-**Via Settings UI (Recommended):**
-1. Go to **Manage** → **Models**
-2. Click **Add Credential** → Select **OpenAI-Compatible**
-3. Enter base URL for STT: `http://host.docker.internal:8969/v1` (Docker) or `http://localhost:8969/v1` (local)
-4. Click **Save**, then **Test Connection**
-
-**Legacy (Deprecated) — Environment variables:**
-```yaml
-# In your Open Notebook docker-compose.yml
-environment:
-  - OPENAI_COMPATIBLE_BASE_URL_STT=http://host.docker.internal:8969/v1
-```
+Test it:
 
 ```bash
-# Local development
-export OPENAI_COMPATIBLE_BASE_URL_STT=http://localhost:8969/v1
+curl http://localhost:8969/v1/audio/transcriptions \
+  -F "file=@test.mp3" -F "model=Systran/faster-whisper-small"
 ```
-
-### Step 5: Add Model in Open Notebook
-
-1. Go to **Manage** → **Models**
-2. Click **Add Model** in Speech-to-Text section
-3. Configure:
-   - **Provider**: `openai_compatible`
-   - **Model Name**: `Systran/faster-whisper-small`
-   - **Display Name**: `Local Whisper`
-4. Click **Save**
-5. Set as default if desired
 
 ---
 
-## Available Models
+## Long recordings
 
-Speaches supports various Whisper model sizes. Larger models are more accurate but slower:
+Before transcription, Open Notebook (through content-core) splits long audio and video into 10-minute segments and transcribes up to 3 at a time. Cloud APIs need this because of their upload limits; a local server usually doesn't. These variables go in the `open_notebook` environment (apply with `docker compose up -d`):
 
-| Model | Size | Speed | Accuracy | VRAM (GPU) |
-|-------|------|-------|----------|------------|
-| `Systran/faster-whisper-tiny` | ~75 MB | Fastest | Basic | ~1 GB |
-| `Systran/faster-whisper-base` | ~150 MB | Fast | Good | ~1 GB |
-| `Systran/faster-whisper-small` | ~500 MB | Medium | Better | ~2 GB |
-| `Systran/faster-whisper-medium` | ~1.5 GB | Slow | Great | ~5 GB |
-| `Systran/faster-whisper-large-v3` | ~3 GB | Slowest | Best | ~10 GB |
-| `Systran/faster-distil-whisper-small.en` | ~400 MB | Fast | Good (English only) | ~2 GB |
+| Variable | Default | Use |
+|----------|---------|-----|
+| `CCORE_AUDIO_SEGMENT_MINUTES` | `10` | `0` sends each file whole, so Whisper sees the full context |
+| `CCORE_AUDIO_CONCURRENCY` | `3` | Segments sent in parallel (1–10). Use `1` for a single CPU or GPU server |
+| `CCORE_STT_TIMEOUT` | `3600` | Seconds allowed per transcription request. Raise it if a whole file on CPU takes longer than an hour |
 
-### List Available Models
+See the [Environment Reference](environment-reference.md#content-extraction).
+
+---
+
+## When transcription fails
+
+The source shows **Failed**. The reason is in the worker log:
 
 ```bash
-docker compose exec speaches uv tool run speaches-cli registry ls --task automatic-speech-recognition
+docker compose logs open_notebook | grep -i "content-core extraction failed"
 ```
 
-### Recommended Models
+Common causes:
 
-- **For speed**: `Systran/faster-whisper-tiny` or `Systran/faster-whisper-base`
-- **For balance**: `Systran/faster-whisper-small` (recommended)
-- **For accuracy**: `Systran/faster-whisper-large-v3`
+- No **Speech-to-Text Model** assigned, or the Speaches configuration's Base URL is wrong.
+- The model id isn't downloaded in Speaches. Download it (see above).
+- The request timed out on a long file. Raise `CCORE_STT_TIMEOUT` or keep segmenting on.
 
----
+Depending on the error, the failure reason reads "Content extraction is not configured correctly. Check the content processing engine and speech-to-text settings; the worker log has the details." or "The content extraction service failed."
 
-## GPU Acceleration
-
-For faster transcription with NVIDIA GPUs:
-
-```yaml
-services:
-  speaches:
-    image: ghcr.io/speaches-ai/speaches:latest-cuda
-    container_name: speaches
-    ports:
-      - "8969:8000"
-    volumes:
-      - hf-hub-cache:/home/ubuntu/.cache/huggingface/hub
-    environment:
-      - WHISPER__TTL=-1  # Keep model in VRAM (recommended if you have enough memory)
-    restart: unless-stopped
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-
-volumes:
-  hf-hub-cache:
-```
-
-### Keep Model in Memory
-
-By default, Speaches unloads models after some time. To keep the Whisper model loaded for instant transcription:
-
-```yaml
-environment:
-  - WHISPER__TTL=-1  # Never unload
-```
-
-This is recommended if you have enough RAM/VRAM, as loading the model can take a few seconds.
-
----
-
-## Docker Networking
-
-When configuring your OpenAI-Compatible credential in **Manage → Models**, use the appropriate STT base URL for your setup:
-
-### Open Notebook in Docker (macOS/Windows)
-
-**STT Base URL:** `http://host.docker.internal:8969/v1`
-
-### Open Notebook in Docker (Linux)
-
-**STT Base URL (Option 1 — Docker bridge IP):** `http://172.17.0.1:8969/v1`
-
-**Option 2:** Use host networking mode (`docker run --network host ...`), then use: `http://localhost:8969/v1`
-
-### Remote Server
-
-Run Speaches on a different machine:
-
-**STT Base URL:** `http://server-ip:8969/v1` (replace with your server's IP)
-
----
-
-## Language Support
-
-Whisper supports 99+ languages. Specify the language for better accuracy:
-
-```bash
-curl "http://localhost:8969/v1/audio/transcriptions" \
-  -F "file=@audio.mp3" \
-  -F "model=Systran/faster-whisper-small" \
-  -F "language=ru"
-```
-
-Common language codes:
-- `en` - English
-- `ru` - Russian
-- `es` - Spanish
-- `fr` - French
-- `de` - German
-- `zh` - Chinese
-- `ja` - Japanese
-
----
-
-## Troubleshooting
-
-### Service Won't Start
-
-```bash
-# Check logs
-docker compose logs speaches
-
-# Verify port available
-lsof -i :8969
-
-# Restart
-docker compose down && docker compose up -d
-```
-
-### Connection Refused
-
-```bash
-# Test Speaches is running
-curl http://localhost:8969/v1/models
-
-# From inside Open Notebook container
-docker exec -it open-notebook curl http://host.docker.internal:8969/v1/models
-```
-
-### Model Download Fails
-
-Models are downloaded automatically on first use. If download fails:
-
-```bash
-# Check available disk space
-df -h
-
-# Check Docker logs for errors
-docker compose logs speaches
-
-# Restart and try again
-docker compose restart speaches
-```
-
-### Poor Transcription Quality
-
-- Use a larger model (`faster-whisper-medium` or `large-v3`)
-- Specify the correct language
-- Ensure audio quality is good (clear speech, minimal background noise)
-- Try different audio formats (WAV often works better than MP3)
-
-### Slow Transcription
-
-| Solution | How |
-|----------|-----|
-| Use GPU | Switch to `latest-cuda` image |
-| Smaller model | Use `faster-whisper-tiny` or `base` |
-| More CPU | Allocate more cores in Docker |
-| SSD storage | Move Docker volumes to SSD |
-
----
-
-## Performance Tips
-
-### Recommended Specs
-
-| Component | Minimum | Recommended |
-|-----------|---------|-------------|
-| CPU | 2 cores | 4+ cores |
-| RAM | 2 GB | 8+ GB |
-| Storage | 5 GB | 10 GB (for multiple models) |
-| GPU | None | NVIDIA (optional, much faster) |
-
-### Resource Limits
-
-```yaml
-services:
-  speaches:
-    # ... other config
-    mem_limit: 4g
-    cpus: 2
-```
-
-### Monitor Usage
-
-```bash
-docker stats speaches
-```
-
----
-
-## Comparison: Local vs Cloud
-
-| Aspect | Local (Speaches) | Cloud (OpenAI Whisper) |
-|--------|------------------|------------------------|
-| **Cost** | Free | $0.006/min |
-| **Privacy** | Complete | Data sent to provider |
-| **Speed** | Depends on hardware | Usually faster |
-| **Quality** | Excellent (same Whisper) | Excellent |
-| **Setup** | Moderate | Simple API key |
-| **Offline** | Yes | No |
-| **Languages** | 99+ | 99+ |
-
-### When to Use Local
-
-- Privacy-sensitive content
-- High-volume transcription
-- Development/testing
-- Offline environments
-- Cost control
-
-### When to Use Cloud
-
-- Limited hardware
-- Time-sensitive projects
-- No GPU available
-- Simple setup preferred
-
----
-
-## Using Both TTS and STT
-
-Speaches supports both TTS and STT in one server. In **Manage → Models**, add a single **OpenAI-Compatible** credential and configure both the TTS and STT base URLs to point to the same Speaches server (e.g., `http://localhost:8969/v1`).
-
-See **[Local TTS Setup](local-tts.md)** for TTS configuration.
-
----
-
-## Other Local STT Options
-
-Any OpenAI-compatible STT server works:
-
-| Server | Description |
-|--------|-------------|
-| [Speaches](https://github.com/speaches-ai/speaches) | TTS + STT in one (recommended) |
-| [faster-whisper-server](https://github.com/fedirz/faster-whisper-server) | Lightweight STT only |
-| [whisper.cpp](https://github.com/ggerganov/whisper.cpp) | C++ implementation with server mode |
-| [LocalAI](https://github.com/mudler/LocalAI) | Multi-model local AI server |
-
-The key requirements:
-
-1. Server implements `/v1/audio/transcriptions` endpoint
-2. Add an OpenAI-Compatible credential in **Manage → Models** with the STT base URL
-3. Add model with provider `openai_compatible`
+More failure messages: [Processing Issues → Failed sources](../6-TROUBLESHOOTING/processing-issues.md#failed-sources).
 
 ---
 
 ## Related
 
-- **[Local TTS Setup](local-tts.md)** - Text-to-speech with Speaches
-- **[OpenAI-Compatible Providers](openai-compatible.md)** - General compatible provider setup
-- **[AI Providers](ai-providers.md)** - All provider configuration
+- [Local Speech with Speaches](local-tts.md) — shared setup, text-to-speech
+- [OpenAI-Compatible Providers](openai-compatible.md)
+- [Adding Sources](../3-USER-GUIDE/adding-sources.md)

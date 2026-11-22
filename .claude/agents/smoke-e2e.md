@@ -157,17 +157,16 @@ curl -s -X POST http://localhost:5055/api/sources \
   -F "embed=true"
 ```
 
-**PDF source** (only if `.harness/fixtures/smoke-test.pdf` exists):
+**PDF source** (fixture: `tests/fixtures/smoke-test.pdf`):
 ```bash
 curl -s -X POST http://localhost:5055/api/sources \
   -F "type=upload" \
   -F 'notebooks=["<notebook_id>"]' \
-  -F "file=@.harness/fixtures/smoke-test.pdf" \
+  -F "file=@tests/fixtures/smoke-test.pdf" \
   -F "async_processing=true" \
   -F "embed=true"
 ```
 
-If no PDF fixture exists, skip it and note it in the report. Two sources are sufficient.
 
 Save all `source_id` values (format: `source:xxxxx`).
 

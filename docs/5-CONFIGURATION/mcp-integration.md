@@ -24,7 +24,7 @@ The [Model Context Protocol](https://modelcontextprotocol.io) is an open standar
 
 2. **Configure Claude Desktop**:
 
-   **macOS/Linux**: Edit `~/Library/Application Support/Claude/claude_desktop_config.json`
+   **macOS**: Edit `~/Library/Application Support/Claude/claude_desktop_config.json`
 
    ```json
    {
@@ -90,12 +90,6 @@ If your Open Notebook instance is running on a remote server, update the URL acc
 
 ```json
 "OPEN_NOTEBOOK_URL": "http://192.168.1.100:5055"
-```
-
-Or with a domain:
-
-```json
-"OPEN_NOTEBOOK_URL": "https://notebook.yourdomain.com/api"
 ```
 
 ## What You Can Do

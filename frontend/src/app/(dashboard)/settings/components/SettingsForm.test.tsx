@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 // Radix Select measures its trigger via ResizeObserver, which jsdom lacks.
 class ResizeObserverStub {
@@ -23,7 +23,18 @@ vi.mock('@/lib/hooks/use-capabilities', () => ({
   useCapabilities: vi.fn(),
 }))
 
-import { useSettings } from '@/lib/hooks/use-settings'
+vi.mock('@/lib/hooks/use-dismissible-warning', () => ({
+  useDismissibleWarning: () => ({ dismissed: false, dismiss: vi.fn() }),
+}))
+
+const authState = vi.hoisted(() => ({ authRequired: false as boolean | null }))
+
+vi.mock('@/lib/stores/auth-store', () => ({
+  useAuthStore: (selector: (state: { authRequired: boolean | null }) => unknown) =>
+    selector(authState),
+}))
+
+import { useSettings, useUpdateSettings } from '@/lib/hooks/use-settings'
 import { useCapabilities } from '@/lib/hooks/use-capabilities'
 
 const settingsData = {
@@ -48,6 +59,7 @@ function mockCapabilities(caps: unknown, { isError = false } = {}) {
 
 describe('SettingsForm engine gating', () => {
   beforeEach(() => {
+    authState.authRequired = false
     vi.clearAllMocks()
   })
 
@@ -103,5 +115,116 @@ describe('SettingsForm engine gating', () => {
     expect(
       screen.getByRole('checkbox', { name: 'settings.ocrEnabled' })
     ).toBeDisabled()
+  })
+
+  it('warns when authentication is disabled', () => {
+    mockCapabilities({
+      docling_available: true,
+      crawl4ai_available: true,
+      crawl4ai_remote_configured: false,
+    })
+    render(<SettingsForm />)
+
+    expect(screen.getByText('securityWarnings.noPasswordTitle')).toBeInTheDocument()
+    expect(screen.getByText('securityWarnings.noPasswordDescription')).toBeInTheDocument()
+  })
+
+  it('shows no password warning when authentication is on or still unknown', () => {
+    for (const authRequired of [true, null]) {
+      authState.authRequired = authRequired
+      mockCapabilities({
+        docling_available: true,
+        crawl4ai_available: true,
+        crawl4ai_remote_configured: false,
+      })
+      const { unmount } = render(<SettingsForm />)
+
+      expect(screen.queryByText('securityWarnings.noPasswordTitle')).not.toBeInTheDocument()
+      unmount()
+    }
+  })
+})
+
+describe('SettingsForm vision endpoint fields', () => {
+  const visionUrl = 'http://192.168.1.20:1234/v1/chat/completions'
+
+  function mockSettings(overrides: Record<string, unknown>) {
+    ;(useSettings as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: { ...settingsData, ...overrides },
+      isLoading: false,
+      error: null,
+    })
+    ;(useCapabilities as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: { docling_available: true, crawl4ai_available: true, crawl4ai_remote_configured: false },
+      isError: false,
+    })
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('hides the endpoint fields while image description is off', () => {
+    mockSettings({ docling_vision: false, docling_vision_url: visionUrl })
+    render(<SettingsForm />)
+
+    expect(screen.queryByLabelText('settings.visionUrl')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('settings.visionModel')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('settings.visionPrompt')).not.toBeInTheDocument()
+  })
+
+  it('shows the stored endpoint fields while image description is on', () => {
+    mockSettings({
+      docling_vision: true,
+      docling_vision_url: visionUrl,
+      docling_vision_model: 'qwen2.5-vl-7b',
+      docling_vision_prompt: null,
+    })
+    render(<SettingsForm />)
+
+    expect(screen.getByLabelText('settings.visionUrl')).toHaveValue(visionUrl)
+    expect(screen.getByLabelText('settings.visionModel')).toHaveValue('qwen2.5-vl-7b')
+    // A null prompt (unset, env var applies) renders as an empty field.
+    expect(screen.getByLabelText('settings.visionPrompt')).toHaveValue('')
+  })
+
+  it('reveals the endpoint fields when image description is turned on', () => {
+    mockSettings({ docling_vision: false })
+    render(<SettingsForm />)
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'settings.visionEnabled' }))
+
+    expect(screen.getByLabelText('settings.visionUrl')).toBeInTheDocument()
+  })
+
+  it('submits the edited endpoint fields', async () => {
+    const mutateAsync = vi.fn()
+    ;(useUpdateSettings as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      mutateAsync,
+      isPending: false,
+    })
+    mockSettings({ docling_vision: true })
+    render(<SettingsForm />)
+
+    fireEvent.change(screen.getByLabelText('settings.visionUrl'), {
+      target: { value: visionUrl },
+    })
+    fireEvent.change(screen.getByLabelText('settings.visionModel'), {
+      target: { value: 'qwen2.5-vl-7b' },
+    })
+    fireEvent.change(screen.getByLabelText('settings.visionPrompt'), {
+      target: { value: 'Describe the chart.' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'common.save' }))
+
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1))
+    expect(mutateAsync.mock.calls[0][0]).toEqual(
+      expect.objectContaining({
+        docling_vision: true,
+        docling_vision_url: visionUrl,
+        docling_vision_model: 'qwen2.5-vl-7b',
+        docling_vision_prompt: 'Describe the chart.',
+      })
+    )
   })
 })

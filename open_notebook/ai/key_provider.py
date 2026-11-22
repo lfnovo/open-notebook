@@ -17,7 +17,8 @@ from typing import Optional
 
 from loguru import logger
 
-from open_notebook.domain.credential import Credential
+from open_notebook.ai.provider_registry import PROVIDERS
+from open_notebook.domain.credential import Credential, apply_azure_api_version_env
 
 # =============================================================================
 # Provider Configuration Mapping
@@ -79,6 +80,12 @@ PROVIDER_CONFIG = {
     "novita": {
         "env_var": "NOVITA_API_KEY",
     },
+    "siliconflow": {
+        "env_var": "SILICONFLOW_API_KEY",
+    },
+    "zai": {
+        "env_var": "ZAI_API_KEY",
+    },
     "ppq": {
         "env_var": "PPQ_API_KEY",
     },
@@ -125,7 +132,9 @@ async def get_api_key(provider: str) -> Optional[str]:
     return None
 
 
-async def _provision_simple_provider(provider: str) -> bool:
+async def _provision_simple_provider(
+    provider: str, credential: Optional[Credential] = None
+) -> bool:
     """
     Set environment variable for a simple provider from DB config.
 
@@ -139,7 +148,7 @@ async def _provision_simple_provider(provider: str) -> bool:
 
     env_var = config_info["env_var"]
 
-    cred = await _get_default_credential(provider_lower)
+    cred = credential or await _get_default_credential(provider_lower)
     if not cred:
         return False
 
@@ -153,11 +162,17 @@ async def _provision_simple_provider(provider: str) -> bool:
         provider_upper = provider_lower.upper()
         os.environ[f"{provider_upper}_API_BASE"] = cred.base_url
         logger.debug(f"Set {provider_upper}_API_BASE from Credential")
+        # Providers with a registry-declared endpoint override (ADR-012) read
+        # it under that name (esperanto's profiles and env discovery).
+        spec = PROVIDERS.get(provider_lower)
+        if spec and spec.base_url_env:
+            os.environ[spec.base_url_env] = cred.base_url
+            logger.debug(f"Set {spec.base_url_env} from Credential")
 
     return True
 
 
-async def _provision_vertex() -> bool:
+async def _provision_vertex(credential: Optional[Credential] = None) -> bool:
     """
     Set environment variables for Google Vertex AI from DB config.
 
@@ -166,7 +181,7 @@ async def _provision_vertex() -> bool:
     """
     any_set = False
 
-    cred = await _get_default_credential("vertex")
+    cred = credential or await _get_default_credential("vertex")
     if not cred:
         return False
 
@@ -186,7 +201,7 @@ async def _provision_vertex() -> bool:
     return any_set
 
 
-async def _provision_azure() -> bool:
+async def _provision_azure(credential: Optional[Credential] = None) -> bool:
     """
     Set environment variables for Azure OpenAI from DB config.
 
@@ -195,7 +210,7 @@ async def _provision_azure() -> bool:
     """
     any_set = False
 
-    cred = await _get_default_credential("azure")
+    cred = credential or await _get_default_credential("azure")
     if not cred:
         return False
 
@@ -203,8 +218,8 @@ async def _provision_azure() -> bool:
         os.environ["AZURE_OPENAI_API_KEY"] = cred.api_key.get_secret_value()
         logger.debug("Set AZURE_OPENAI_API_KEY from Credential")
         any_set = True
+    apply_azure_api_version_env(cred.api_version)
     if cred.api_version:
-        os.environ["AZURE_OPENAI_API_VERSION"] = cred.api_version
         logger.debug("Set AZURE_OPENAI_API_VERSION from Credential")
         any_set = True
     # For Azure, base_url from the UI form maps to endpoint
@@ -233,7 +248,9 @@ async def _provision_azure() -> bool:
     return any_set
 
 
-async def _provision_url_key_compatible(provider: str, env_prefix: str) -> bool:
+async def _provision_url_key_compatible(
+    provider: str, env_prefix: str, credential: Optional[Credential] = None
+) -> bool:
     """Set environment variables for base_url + api_key compatible providers
     (openai_compatible, anthropic_compatible) from DB config.
 
@@ -242,7 +259,7 @@ async def _provision_url_key_compatible(provider: str, env_prefix: str) -> bool:
     """
     any_set = False
 
-    cred = await _get_default_credential(provider)
+    cred = credential or await _get_default_credential(provider)
     if not cred:
         return False
 
@@ -258,19 +275,27 @@ async def _provision_url_key_compatible(provider: str, env_prefix: str) -> bool:
     return any_set
 
 
-async def _provision_openai_compatible() -> bool:
+async def _provision_openai_compatible(
+    credential: Optional[Credential] = None,
+) -> bool:
     """Set environment variables for OpenAI-Compatible providers from DB config."""
-    return await _provision_url_key_compatible("openai_compatible", "OPENAI_COMPATIBLE")
-
-
-async def _provision_anthropic_compatible() -> bool:
-    """Set environment variables for Anthropic-compatible providers from DB config."""
     return await _provision_url_key_compatible(
-        "anthropic_compatible", "ANTHROPIC_COMPATIBLE"
+        "openai_compatible", "OPENAI_COMPATIBLE", credential
     )
 
 
-async def provision_provider_keys(provider: str) -> bool:
+async def _provision_anthropic_compatible(
+    credential: Optional[Credential] = None,
+) -> bool:
+    """Set environment variables for Anthropic-compatible providers from DB config."""
+    return await _provision_url_key_compatible(
+        "anthropic_compatible", "ANTHROPIC_COMPATIBLE", credential
+    )
+
+
+async def provision_provider_keys(
+    provider: str, credential: Optional[Credential] = None
+) -> bool:
     """
     Provision environment variables from database for a specific provider.
 
@@ -283,6 +308,8 @@ async def provision_provider_keys(provider: str) -> bool:
     Args:
         provider: Provider name (openai, anthropic, azure, vertex,
                   openai-compatible, etc.)
+        credential: A specific Credential to provision (e.g. the one linked
+                  to a model). Defaults to the provider's first credential.
 
     Returns:
         True if any keys were set from database, False otherwise
@@ -297,16 +324,16 @@ async def provision_provider_keys(provider: str) -> bool:
 
     # Handle complex providers with multiple config fields
     if provider_lower == "vertex":
-        return await _provision_vertex()
+        return await _provision_vertex(credential)
     elif provider_lower == "azure":
-        return await _provision_azure()
+        return await _provision_azure(credential)
     elif provider_lower in ("openai-compatible", "openai_compatible"):
-        return await _provision_openai_compatible()
+        return await _provision_openai_compatible(credential)
     elif provider_lower in ("anthropic-compatible", "anthropic_compatible"):
-        return await _provision_anthropic_compatible()
+        return await _provision_anthropic_compatible(credential)
 
     # Handle simple providers
-    return await _provision_simple_provider(provider_lower)
+    return await _provision_simple_provider(provider_lower, credential)
 
 
 async def provision_all_keys() -> dict[str, bool]:

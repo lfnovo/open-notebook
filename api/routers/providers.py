@@ -30,6 +30,7 @@ async def list_providers():
             modalities=list(spec.modalities),
             docs_url=spec.docs_url,
             env_configured=check_env_configured(spec.name),
+            default_api_version=spec.default_api_version,
         )
         for spec in PROVIDERS.values()
     ]

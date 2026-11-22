@@ -224,4 +224,12 @@ describe('MarkdownEditor preview sanitization', () => {
     expect(container.querySelectorAll('input[type="checkbox"]').length).toBe(2)
     expect(container.querySelector('a')?.getAttribute('href')).toBe('https://example.com')
   })
+
+  it('bolds CJK text when ** sits between punctuation and a CJK letter', () => {
+    const { container } = renderPreview('**요일(일)**입니다 **注意：**请先备份数据。')
+    expect([...container.querySelectorAll('strong')].map((node) => node.textContent)).toEqual([
+      '요일(일)',
+      '注意：',
+    ])
+  })
 })

@@ -178,6 +178,7 @@ export function SpeakerProfilesPanel({
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
+                            aria-label={t('common.actions')}
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"

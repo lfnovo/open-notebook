@@ -1,12 +1,50 @@
 """Tests for the credentials API endpoint."""
 
+import os
+from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import SecretStr
 
 from api import credentials_service
+
+
+@pytest.mark.asyncio
+async def test_status_reports_when_public_example_encryption_key_is_used(monkeypatch):
+    monkeypatch.setattr(credentials_service, "PROVIDER_ENV_CONFIG", {})
+    monkeypatch.setenv(
+        "OPEN_NOTEBOOK_ENCRYPTION_KEY", credentials_service.DEFAULT_ENCRYPTION_KEY
+    )
+    monkeypatch.delenv("OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE", raising=False)
+
+    status = await credentials_service.get_provider_status()
+
+    assert status["encryption_configured"] is True
+    assert status["encryption_key_is_default"] is True
+
+
+@pytest.mark.asyncio
+async def test_status_does_not_flag_custom_or_file_encryption_keys(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setattr(credentials_service, "PROVIDER_ENV_CONFIG", {})
+    monkeypatch.setenv("OPEN_NOTEBOOK_ENCRYPTION_KEY", "private-test-key")
+    monkeypatch.delenv("OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE", raising=False)
+
+    custom_status = await credentials_service.get_provider_status()
+    assert custom_status["encryption_key_is_default"] is False
+
+    secret_file = tmp_path / "encryption-key"
+    secret_file.write_text("private-test-key")
+    monkeypatch.delenv("OPEN_NOTEBOOK_ENCRYPTION_KEY", raising=False)
+    monkeypatch.setenv("OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE", str(secret_file))
+
+    file_status = await credentials_service.get_provider_status()
+    assert file_status["encryption_configured"] is True
+    assert file_status["encryption_key_is_default"] is False
 
 
 @pytest.fixture
@@ -15,6 +53,25 @@ def client():
     from api.main import app
 
     return TestClient(app)
+
+
+def test_status_endpoint_returns_the_default_key_flag(client, monkeypatch):
+    from api.routers import credentials as credentials_router
+
+    async def fake_status():
+        return {
+            "configured": {},
+            "source": {},
+            "encryption_configured": True,
+            "encryption_key_is_default": True,
+        }
+
+    monkeypatch.setattr(credentials_router, "get_provider_status", fake_status)
+
+    response = client.get("/api/credentials/status")
+
+    assert response.status_code == 200
+    assert response.json()["encryption_key_is_default"] is True
 
 
 class TestCredentialCascadeDelete:
@@ -160,6 +217,71 @@ class TestCredentialModelDiscovery:
                 "timeout": 30.0,
             }
         ]
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "provider,base_url,expected_url",
+        [
+            # Regional override: mainland-China SiliconFlow accounts (#1409)
+            (
+                "siliconflow",
+                "https://api.siliconflow.cn/v1",
+                "https://api.siliconflow.cn/v1/models",
+            ),
+            ("siliconflow", None, "https://api.siliconflow.com/v1/models"),
+            ("zai", None, "https://api.z.ai/api/paas/v4/models"),
+            (
+                "zai",
+                "https://open.bigmodel.cn/api/paas/v4",
+                "https://open.bigmodel.cn/api/paas/v4/models",
+            ),
+        ],
+    )
+    async def test_registry_provider_discovery_honors_base_url(
+        self, monkeypatch, provider, base_url, expected_url
+    ):
+        """Profile providers list models at the credential's base URL when it
+        overrides the default endpoint (pinned like other user URLs)."""
+        from open_notebook.utils.url_validation import PinnedHttpTarget
+
+        requested = []
+        pinned = []
+
+        class FakeAsyncClient:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return None
+
+            async def get(self, url, headers=None, timeout=None, extensions=None):
+                requested.append(url)
+                return httpx.Response(
+                    200,
+                    json={"data": [{"id": "model-a"}]},
+                    request=httpx.Request("GET", url, headers=headers or {}),
+                )
+
+        async def fake_prepare_pinned(url, provider):
+            pinned.append(url)
+            return PinnedHttpTarget(url=url)
+
+        monkeypatch.setattr(credentials_service.httpx, "AsyncClient", FakeAsyncClient)
+        monkeypatch.setattr(
+            credentials_service, "prepare_pinned_http_target", fake_prepare_pinned
+        )
+
+        config = {"api_key": "sk-test"}
+        if base_url:
+            config["base_url"] = base_url
+        models = await credentials_service.discover_with_config(provider, config)
+
+        assert [m["name"] for m in models] == ["model-a"]
+        assert requested == [expected_url]
+        assert pinned == ([expected_url] if base_url else [])
 
     @pytest.mark.asyncio
     async def test_model_discovery_base_url_can_include_models_path(self, monkeypatch):
@@ -486,6 +608,165 @@ class TestCredentialVertexConfig:
         assert "vertex_location" not in config
 
 
+class TestCredentialAzureApiVersion:
+    """#1470 - an Azure credential without an API version must work for models,
+    not only for the connection test."""
+
+    AZURE_ENV = (
+        "AZURE_OPENAI_API_KEY",
+        "AZURE_OPENAI_ENDPOINT",
+        "AZURE_OPENAI_API_VERSION",
+        "AZURE_OPENAI_API_VERSION_LLM",
+        "AZURE_OPENAI_API_VERSION_EMBEDDING",
+        "AZURE_OPENAI_API_VERSION_STT",
+        "AZURE_OPENAI_API_VERSION_TTS",
+        "OPENAI_API_VERSION",
+    )
+
+    def _clear_azure_env(self, monkeypatch):
+        # setenv registers an undo, so values the code writes are removed
+        # after the test. Esperanto treats an empty value as unset.
+        from open_notebook.domain import credential as credential_module
+
+        for var in self.AZURE_ENV:
+            monkeypatch.setenv(var, "")
+        monkeypatch.setattr(
+            credential_module,
+            "_azure_api_version_from_env",
+            credential_module._NOT_CAPTURED,
+        )
+
+    def _azure_credential(self, api_version=None):
+        from open_notebook.domain.credential import Credential
+
+        return Credential(
+            name="Azure",
+            provider="azure",
+            modalities=["language"],
+            api_key=SecretStr("azure-key"),
+            base_url="https://example.openai.azure.com",
+            api_version=api_version,
+        )
+
+    def test_language_model_builds_without_a_configured_version(self, monkeypatch):
+        from esperanto import AIFactory
+        from esperanto.providers.llm.azure import AzureLanguageModel
+
+        self._clear_azure_env(monkeypatch)
+        config = self._azure_credential().to_esperanto_config()
+
+        # Before the fix Esperanto raised "Azure OpenAI API version not found"
+        model = AIFactory.create_language(
+            model_name="gpt-4o-1470", provider="azure", config=config
+        )
+        assert isinstance(model, AzureLanguageModel)
+        assert model.api_version == "2024-10-21"
+
+    def test_saved_version_wins(self, monkeypatch):
+        self._clear_azure_env(monkeypatch)
+        monkeypatch.setenv("AZURE_OPENAI_API_VERSION", "2024-06-01")
+        config = self._azure_credential("2025-01-01-preview").to_esperanto_config()
+        assert config["api_version"] == "2025-01-01-preview"
+
+    def test_env_version_is_left_to_esperanto(self, monkeypatch):
+        self._clear_azure_env(monkeypatch)
+        monkeypatch.setenv("AZURE_OPENAI_API_VERSION_LLM", "2025-04-01-preview")
+        assert "api_version" not in self._azure_credential().to_esperanto_config()
+        # Modalities without their own variable fall back to the default
+        assert os.environ["AZURE_OPENAI_API_VERSION"] == "2024-10-21"
+
+    @pytest.mark.asyncio
+    async def test_modality_env_version_does_not_leave_a_leftover(self, monkeypatch):
+        from open_notebook.ai import key_provider
+
+        self._clear_azure_env(monkeypatch)
+        monkeypatch.setenv("AZURE_OPENAI_API_VERSION", "2024-06-01")
+        monkeypatch.setenv("AZURE_OPENAI_API_VERSION_LLM", "2025-04-01-preview")
+
+        await key_provider._provision_azure(self._provisionable("2025-01-01-preview"))
+        assert "api_version" not in self._azure_credential().to_esperanto_config()
+        # Modalities without their own variable fall back to this one
+        assert os.environ["AZURE_OPENAI_API_VERSION"] == "2024-06-01"
+
+    def test_other_providers_get_no_api_version(self, monkeypatch):
+        from open_notebook.domain.credential import Credential
+
+        self._clear_azure_env(monkeypatch)
+        cred = Credential(name="OpenAI", provider="openai", api_key=SecretStr("sk"))
+        assert "api_version" not in cred.to_esperanto_config()
+
+    @pytest.mark.asyncio
+    async def test_env_provisioning_sets_the_default_version(self, monkeypatch):
+        from types import SimpleNamespace
+
+        from open_notebook.ai import key_provider
+
+        self._clear_azure_env(monkeypatch)
+        cred = SimpleNamespace(
+            api_key=SecretStr("azure-key"),
+            api_version=None,
+            endpoint=None,
+            base_url="https://example.openai.azure.com",
+            endpoint_llm=None,
+            endpoint_embedding=None,
+            endpoint_stt=None,
+            endpoint_tts=None,
+        )
+        monkeypatch.setattr(
+            key_provider, "_get_default_credential", AsyncMock(return_value=cred)
+        )
+
+        assert await key_provider._provision_azure() is True
+        assert os.environ["AZURE_OPENAI_API_VERSION"] == "2024-10-21"
+
+    def _provisionable(self, api_version=None):
+        from types import SimpleNamespace
+
+        return SimpleNamespace(
+            api_key=SecretStr("azure-key"),
+            api_version=api_version,
+            endpoint=None,
+            base_url="https://example.openai.azure.com",
+            endpoint_llm=None,
+            endpoint_embedding=None,
+            endpoint_stt=None,
+            endpoint_tts=None,
+        )
+
+    @pytest.mark.asyncio
+    async def test_versionless_credential_does_not_inherit_a_previous_version(
+        self, monkeypatch
+    ):
+        from open_notebook.ai import key_provider
+
+        self._clear_azure_env(monkeypatch)
+
+        await key_provider._provision_azure(self._provisionable("2025-01-01-preview"))
+        assert os.environ["AZURE_OPENAI_API_VERSION"] == "2025-01-01-preview"
+
+        # The config path must not fall through to the leftover env value
+        config = self._azure_credential().to_esperanto_config()
+        assert config["api_version"] == "2024-10-21"
+
+        await key_provider._provision_azure(self._provisionable())
+        assert os.environ["AZURE_OPENAI_API_VERSION"] == "2024-10-21"
+
+    @pytest.mark.asyncio
+    async def test_versionless_credential_gets_the_env_version_back(self, monkeypatch):
+        from open_notebook.ai import key_provider
+
+        self._clear_azure_env(monkeypatch)
+        monkeypatch.setenv("AZURE_OPENAI_API_VERSION", "2024-06-01")
+
+        await key_provider._provision_azure(self._provisionable("2025-01-01-preview"))
+        config = self._azure_credential().to_esperanto_config()
+        assert config["api_version"] == "2024-06-01"
+
+        await key_provider._provision_azure(self._provisionable())
+        assert os.environ["AZURE_OPENAI_API_VERSION"] == "2024-06-01"
+        assert "api_version" not in self._azure_credential().to_esperanto_config()
+
+
 class TestAudioProviderWiring:
     """Tests for the new audio providers (Mistral STT/TTS, Deepgram TTS, xAI TTS)."""
 
@@ -639,3 +920,394 @@ class TestCredentialUpdateClearsFields:
         response = self._put(client, cred, {"credentials_path": None})
         assert response.status_code == 200
         assert cred.credentials_path is None
+
+
+class TestRegionalBaseUrl:
+    """Providers that declare a *_BASE_URL override (SiliconFlow, Z.ai) honor it
+    in env migration and env-based discovery; other providers ignore a stored
+    base URL for discovery (#1409, #1437)."""
+
+    def test_env_migration_reads_base_url(self, monkeypatch):
+        monkeypatch.setenv("SILICONFLOW_API_KEY", "sf-key")
+        monkeypatch.setenv("SILICONFLOW_BASE_URL", "https://api.siliconflow.cn/v1")
+
+        cred = credentials_service.create_credential_from_env("siliconflow")
+
+        assert cred.base_url == "https://api.siliconflow.cn/v1"
+        assert cred.api_key is not None
+        assert cred.api_key.get_secret_value() == "sf-key"
+
+    def test_siliconflow_non_chat_models_are_not_language(self):
+        from open_notebook.ai.model_discovery import classify_model_type
+
+        assert classify_model_type("BAAI/bge-m3", "siliconflow") == "embedding"
+        assert (
+            classify_model_type("FunAudioLLM/SenseVoiceSmall", "siliconflow")
+            == "speech_to_text"
+        )
+        assert (
+            classify_model_type("FunAudioLLM/CosyVoice2-0.5B", "siliconflow")
+            == "text_to_speech"
+        )
+        assert classify_model_type("Qwen/Qwen3-8B", "siliconflow") == "language"
+
+    @pytest.mark.parametrize("value", [None, "", "   "])
+    def test_env_migration_without_base_url(self, monkeypatch, value):
+        monkeypatch.setenv("ZAI_API_KEY", "zai-key")
+        if value is None:
+            monkeypatch.delenv("ZAI_BASE_URL", raising=False)
+        else:
+            monkeypatch.setenv("ZAI_BASE_URL", value)
+
+        assert credentials_service.create_credential_from_env("zai").base_url is None
+
+    def test_env_migration_reads_zai_base_url(self, monkeypatch):
+        monkeypatch.setenv("ZAI_API_KEY", "zai-key")
+        monkeypatch.setenv("ZAI_BASE_URL", " https://open.bigmodel.cn/api/paas/v4 ")
+
+        cred = credentials_service.create_credential_from_env("zai")
+
+        assert cred.base_url == "https://open.bigmodel.cn/api/paas/v4"
+
+    @pytest.mark.asyncio
+    async def test_env_discovery_uses_base_url(self, monkeypatch):
+        from open_notebook.ai import model_discovery
+
+        requested = []
+
+        class FakeAsyncClient:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return None
+
+            async def get(self, url, headers=None, timeout=None, **kwargs):
+                requested.append(url)
+                return httpx.Response(
+                    200,
+                    json={"data": [{"id": "Qwen/Qwen3-8B"}]},
+                    request=httpx.Request("GET", url),
+                )
+
+        from open_notebook.utils.url_validation import PinnedHttpTarget
+
+        pinned = []
+
+        async def fake_prepare_pinned(url, provider):
+            pinned.append(url)
+            return PinnedHttpTarget(url=url)
+
+        monkeypatch.setenv("SILICONFLOW_API_KEY", "sf-key")
+        monkeypatch.setenv("SILICONFLOW_BASE_URL", "https://api.siliconflow.cn/v1/")
+        monkeypatch.setattr(model_discovery.httpx, "AsyncClient", FakeAsyncClient)
+        monkeypatch.setattr(
+            model_discovery, "prepare_pinned_http_target", fake_prepare_pinned
+        )
+
+        models = await model_discovery.discover_openai_compatible_provider(
+            "siliconflow"
+        )
+
+        assert requested == ["https://api.siliconflow.cn/v1/models"]
+        assert pinned == ["https://api.siliconflow.cn/v1/models"]
+        assert [m.name for m in models] == ["Qwen/Qwen3-8B"]
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "env_value,expected",
+        [
+            (
+                "https://open.bigmodel.cn/api/paas/v4",
+                "https://open.bigmodel.cn/api/paas/v4/models",
+            ),
+            ("   ", "https://api.z.ai/api/paas/v4/models"),
+        ],
+    )
+    async def test_zai_env_discovery_override(self, monkeypatch, env_value, expected):
+        from open_notebook.ai import model_discovery
+        from open_notebook.utils.url_validation import PinnedHttpTarget
+
+        requested = []
+
+        class FakeAsyncClient:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return None
+
+            async def get(self, url, headers=None, timeout=None, **kwargs):
+                requested.append(url)
+                return httpx.Response(
+                    200,
+                    json={"data": [{"id": "glm-5.2"}]},
+                    request=httpx.Request("GET", url),
+                )
+
+        async def fake_prepare_pinned(url, provider):
+            return PinnedHttpTarget(url=url)
+
+        monkeypatch.setenv("ZAI_API_KEY", "zai-key")
+        monkeypatch.setenv("ZAI_BASE_URL", env_value)
+        monkeypatch.setattr(model_discovery.httpx, "AsyncClient", FakeAsyncClient)
+        monkeypatch.setattr(
+            model_discovery, "prepare_pinned_http_target", fake_prepare_pinned
+        )
+
+        await model_discovery.discover_openai_compatible_provider("zai")
+
+        assert requested == [expected]
+
+    @pytest.mark.asyncio
+    async def test_providers_without_override_keep_registry_url(self, monkeypatch):
+        requested = []
+
+        class FakeAsyncClient:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return None
+
+            async def get(self, url, headers=None, timeout=None, extensions=None):
+                requested.append(url)
+                return httpx.Response(
+                    200,
+                    json={"data": [{"id": "m"}]},
+                    request=httpx.Request("GET", url),
+                )
+
+        monkeypatch.setattr(credentials_service.httpx, "AsyncClient", FakeAsyncClient)
+
+        await credentials_service.discover_with_config(
+            "ppq", {"api_key": "k", "base_url": "https://elsewhere.example/v1"}
+        )
+
+        # ppq's registry URL carries a provider-specific query string.
+        assert requested == ["https://api.ppq.ai/v1/models?type=all"]
+
+
+class TestEndpointOverrideProvisioningAndMigration:
+    """ADR-012: provisioning exposes the registry override name, and env
+    migration validates the override before saving."""
+
+    @pytest.mark.asyncio
+    async def test_provisioning_sets_registry_base_url_env(self, monkeypatch):
+        from types import SimpleNamespace
+
+        from open_notebook.ai import key_provider
+
+        # setenv registers an undo, so the values the code writes are removed
+        # after the test.
+        for var in (
+            "SILICONFLOW_BASE_URL",
+            "SILICONFLOW_API_KEY",
+            "SILICONFLOW_API_BASE",
+        ):
+            monkeypatch.setenv(var, "")
+        cred = SimpleNamespace(
+            api_key=SecretStr("sf-key"), base_url="https://api.siliconflow.cn/v1"
+        )
+        monkeypatch.setattr(
+            key_provider, "_get_default_credential", AsyncMock(return_value=cred)
+        )
+
+        assert await key_provider._provision_simple_provider("siliconflow") is True
+        assert os.environ["SILICONFLOW_BASE_URL"] == "https://api.siliconflow.cn/v1"
+        assert os.environ["SILICONFLOW_API_KEY"] == "sf-key"
+
+    @pytest.mark.asyncio
+    async def test_migration_rejects_invalid_base_url(self, monkeypatch):
+        from open_notebook.exceptions import InvalidInputError
+
+        monkeypatch.setattr(
+            credentials_service,
+            "check_env_configured",
+            lambda provider: provider == "siliconflow",
+        )
+        monkeypatch.setattr(credentials_service, "require_encryption_key", lambda: None)
+        monkeypatch.setenv("SILICONFLOW_API_KEY", "sf-key")
+        monkeypatch.setenv("SILICONFLOW_BASE_URL", "http://169.254.169.254/latest")
+
+        async def fake_validate(url, provider):
+            raise InvalidInputError("link-local address not allowed")
+
+        saved = []
+        monkeypatch.setattr(credentials_service, "validate_url", fake_validate)
+        monkeypatch.setattr(
+            credentials_service.Credential,
+            "get_by_provider",
+            AsyncMock(return_value=[]),
+        )
+
+        async def fake_save(self):
+            saved.append(self)
+
+        monkeypatch.setattr(credentials_service.Credential, "save", fake_save)
+
+        result = await credentials_service.migrate_from_env()
+
+        assert saved == []
+        assert "siliconflow" not in result["migrated"]
+        assert any(e.startswith("siliconflow:") for e in result["errors"])
+
+
+class TestMiniMaxCredentialDiscovery:
+    """Credential-based MiniMax discovery seeds its TTS models (#1438)."""
+
+    @pytest.mark.asyncio
+    async def test_seeds_tts_models(self, monkeypatch):
+        class FakeAsyncClient:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return None
+
+            async def get(self, url, headers=None, timeout=None, extensions=None):
+                return httpx.Response(
+                    200,
+                    json={"data": [{"id": "MiniMax-M3"}]},
+                    request=httpx.Request("GET", url, headers=headers or {}),
+                )
+
+        monkeypatch.setattr(credentials_service.httpx, "AsyncClient", FakeAsyncClient)
+
+        models = await credentials_service.discover_with_config(
+            "minimax", {"api_key": "mm-test"}
+        )
+
+        # Pinned independently of the seed constant.
+        assert [m["name"] for m in models] == [
+            "MiniMax-M3",
+            "speech-2.8-hd",
+            "speech-2.8-turbo",
+        ]
+
+
+class TestMiniMaxRegionalBaseUrl:
+    """MiniMax declares MINIMAX_BASE_URL (ADR-012): mainland-China keys list
+    their models at the regional endpoint (#1438)."""
+
+    def test_registry_declares_override(self):
+        from open_notebook.ai.provider_registry import PROVIDERS
+
+        assert PROVIDERS["minimax"].base_url_env == "MINIMAX_BASE_URL"
+
+    @pytest.mark.asyncio
+    async def test_credential_discovery_honors_base_url(self, monkeypatch):
+        from open_notebook.utils.url_validation import PinnedHttpTarget
+
+        requested = []
+
+        class FakeAsyncClient:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return None
+
+            async def get(self, url, headers=None, timeout=None, extensions=None):
+                requested.append(url)
+                return httpx.Response(
+                    200,
+                    json={"data": [{"id": "MiniMax-M3"}]},
+                    request=httpx.Request("GET", url),
+                )
+
+        async def fake_prepare_pinned(url, provider):
+            return PinnedHttpTarget(url=url)
+
+        monkeypatch.setattr(credentials_service.httpx, "AsyncClient", FakeAsyncClient)
+        monkeypatch.setattr(
+            credentials_service, "prepare_pinned_http_target", fake_prepare_pinned
+        )
+
+        models = await credentials_service.discover_with_config(
+            "minimax", {"api_key": "k", "base_url": "https://api.minimax.cn/v1"}
+        )
+
+        assert requested == ["https://api.minimax.cn/v1/models"]
+        assert "speech-2.8-hd" in [m["name"] for m in models]
+
+
+class TestProvisionExplicitCredential:
+    """provision_provider_keys(provider, credential=...) provisions that exact
+    credential, so a model linked to one of several credentials for the same
+    provider authenticates as the account it is linked to (#1534)."""
+
+    @pytest.mark.asyncio
+    async def test_simple_provider_uses_given_credential(self, monkeypatch):
+        from types import SimpleNamespace
+
+        from open_notebook.ai import key_provider
+
+        monkeypatch.setenv("OPENAI_API_KEY", "")
+        default = AsyncMock(
+            return_value=SimpleNamespace(api_key=SecretStr("first"), base_url=None)
+        )
+        monkeypatch.setattr(key_provider, "_get_default_credential", default)
+        linked: Any = SimpleNamespace(api_key=SecretStr("linked"), base_url=None)
+
+        assert (
+            await key_provider.provision_provider_keys("openai", credential=linked)
+            is True
+        )
+        assert os.environ["OPENAI_API_KEY"] == "linked"
+        default.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_compatible_provider_uses_given_credential(self, monkeypatch):
+        from types import SimpleNamespace
+
+        from open_notebook.ai import key_provider
+
+        monkeypatch.setenv("OPENAI_COMPATIBLE_API_KEY", "")
+        monkeypatch.setenv("OPENAI_COMPATIBLE_BASE_URL", "")
+        default = AsyncMock(return_value=None)
+        monkeypatch.setattr(key_provider, "_get_default_credential", default)
+        linked: Any = SimpleNamespace(
+            api_key=SecretStr("linked"), base_url="http://localhost:9000/v1"
+        )
+
+        assert (
+            await key_provider.provision_provider_keys(
+                "openai_compatible", credential=linked
+            )
+            is True
+        )
+        assert os.environ["OPENAI_COMPATIBLE_API_KEY"] == "linked"
+        assert os.environ["OPENAI_COMPATIBLE_BASE_URL"] == "http://localhost:9000/v1"
+        default.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_without_credential_falls_back_to_default(self, monkeypatch):
+        from types import SimpleNamespace
+
+        from open_notebook.ai import key_provider
+
+        monkeypatch.setenv("OPENAI_API_KEY", "")
+        default = AsyncMock(
+            return_value=SimpleNamespace(api_key=SecretStr("first"), base_url=None)
+        )
+        monkeypatch.setattr(key_provider, "_get_default_credential", default)
+
+        assert await key_provider.provision_provider_keys("openai") is True
+        assert os.environ["OPENAI_API_KEY"] == "first"
+        default.assert_awaited_once_with("openai")

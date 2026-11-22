@@ -6,6 +6,7 @@ from typing import Optional
 from loguru import logger
 from surreal_commands import CommandInput, CommandOutput, command
 
+from open_notebook.ai.models import DefaultModels
 from open_notebook.config import PODCASTS_FOLDER
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.podcasts.audio_paths import to_relative_audio_path
@@ -41,6 +42,85 @@ def build_episode_output_dir(
     episode_dir_name = str(uuid.uuid4())
     output_dir = Path(podcasts_folder) / "episodes" / episode_dir_name
     return episode_dir_name, output_dir
+
+
+def explain_generation_failure(error_msg: str) -> Optional[str]:
+    """Map a podcast-generation failure to an actionable hint, or None.
+
+    Ordered most specific first. The GPT-5 extended-thinking hint used to be
+    the only one, so the two most common real failures got either nothing
+    (`Invalid speaker name`) or advice about the wrong provider - a truncated
+    Gemini response was told to switch to gpt-4o (#1238).
+    """
+    if "Invalid speaker name" in error_msg:
+        return (
+            "The transcript model returned a speaker name that is not in the "
+            "speaker profile - usually a placeholder copied from the prompt "
+            'such as "..." rather than an invented person. Speaker names must '
+            "match the profile exactly. Retrying the episode often succeeds, "
+            "since each attempt is a fresh sample."
+        )
+
+    if "Voice name" in error_msg and "not supported" in error_msg:
+        return (
+            "The speaker profile's voice_id is not valid for its TTS model. "
+            "Check the speaker profile voices in Podcasts -> Profiles against the ones "
+            "your voice model provides (the profiles seeded on install use "
+            "OpenAI voice names)."
+        )
+
+    if "Requested entity was not found" in error_msg:
+        return (
+            "Google returns this for any resource it cannot find, without "
+            "naming which one. Two candidates, likeliest first: a speaker "
+            "profile voice_id that its TTS model doesn't provide (the profiles "
+            "seeded on install use OpenAI voice names, which Gemini voice "
+            "models reject with exactly this message), or a model id in the "
+            "episode profile that doesn't exist for its provider. If the "
+            "transcript finished and the failure came during audio, it is the "
+            "voice."
+        )
+
+    if "Invalid json output" in error_msg or "Expecting value" in error_msg:
+        return (
+            "The model's response could not be parsed as JSON. Two common "
+            "causes: (1) the response was truncated - podcast-creator requests "
+            "up to 8192 output tokens per outline or transcript step unless the "
+            "episode profile sets max_tokens; if the model stops earlier (a "
+            "lower output limit, or a token-expensive language), set max_tokens "
+            "to its limit or use fewer and shorter segments; (2) a model using "
+            "extended thinking (e.g. "
+            "GPT-5) put all of its output inside <think> tags, leaving nothing "
+            "to parse - try gpt-4o, gpt-4o-mini or gpt-4-turbo instead."
+        )
+
+    return None
+
+
+def pick_voice_model(
+    profile_name: str,
+    profile_voice_model: Optional[str],
+    default_voice_model: Optional[str],
+) -> str:
+    """
+    Pick the TTS model for a speaker profile.
+
+    The profile's own voice model wins. Without one, the Default
+    Text-to-Speech Model from Manage -> Models is used. Raises
+    ValueError (a permanent failure, no retry) when neither is set.
+    """
+
+    if profile_voice_model:
+        return str(profile_voice_model)
+
+    if default_voice_model:
+        return str(default_voice_model)
+
+    raise ValueError(
+        f"Speaker profile '{profile_name}' has no voice model configured and no "
+        "default Text-to-Speech model is set. Select a voice model in the speaker "
+        "profile, or set a default Text-to-Speech model in Manage -> Models."
+    )
 
 
 class PodcastGenerationInput(CommandInput):
@@ -110,6 +190,28 @@ async def generate_podcast_command(
         logger.info(f"Loaded episode profile: {episode_profile.name}")
         logger.info(f"Loaded speaker profile: {speaker_profile.name}")
 
+        # Create the episode before anything below can fail, so a failure
+        # (missing or unresolvable model, provider error) shows up as a
+        # failed episode in the list instead of nothing at all (#1400).
+        briefing = episode_profile.default_briefing
+        if input_data.briefing_suffix:
+            briefing += f"\n\nAdditional instructions: {input_data.briefing_suffix}"
+
+        episode = PodcastEpisode(
+            name=input_data.episode_name,
+            episode_profile=full_model_dump(episode_profile.model_dump()),
+            speaker_profile=full_model_dump(speaker_profile.model_dump()),
+            command=ensure_record_id(input_data.execution_context.command_id)
+            if input_data.execution_context
+            else None,
+            briefing=briefing,
+            content=input_data.content,
+            audio_file=None,
+            transcript=None,
+            outline=None,
+        )
+        await episode.save()
+
         # 2. Validate that model registry fields are populated
         if not episode_profile.outline_llm:
             raise ValueError(
@@ -121,11 +223,14 @@ async def generate_podcast_command(
                 f"Episode profile '{episode_profile.name}' has no transcript model configured. "
                 "Please update the profile to select a transcript model."
             )
-        if not speaker_profile.voice_model:
-            raise ValueError(
-                f"Speaker profile '{speaker_profile.name}' has no voice model configured. "
-                "Please update the profile to select a voice model."
-            )
+
+        # The selected profile's own voice model wins; without one, fall back
+        # to the Default Text-to-Speech Model.
+        defaults = await DefaultModels.get_instance()
+        default_tts_model = defaults.default_text_to_speech_model
+        voice_model_id = pick_voice_model(
+            speaker_profile.name, speaker_profile.voice_model, default_tts_model
+        )
 
         # 3. Resolve model configs with credentials
         (
@@ -142,7 +247,7 @@ async def generate_podcast_command(
             tts_provider,
             tts_model_name,
             tts_config,
-        ) = await speaker_profile.resolve_tts_config()
+        ) = await _resolve_model_config(voice_model_id)
 
         logger.info(
             f"Resolved models - outline: {outline_provider}/{outline_model_name}, "
@@ -222,25 +327,52 @@ async def generate_podcast_command(
                 )
                 del episode_profiles_dict[ep_name]
 
+        # Resolved TTS configs by model ID: the default model shared by several
+        # profiles, and the selected profile's model resolved above, are
+        # resolved only once.
+        tts_configs = {voice_model_id: (tts_provider, tts_model_name, tts_config)}
+
         # Resolve TTS for ALL speaker profiles (podcast-creator validates all).
         # Remove profiles that fail resolution to prevent validation errors.
         for sp_name in list(speaker_profiles_dict.keys()):
             sp_dict = speaker_profiles_dict[sp_name]
-            if sp_dict.get("voice_model"):
-                try:
-                    prov, model, conf = await _resolve_model_config(
-                        str(sp_dict["voice_model"])
+            # Same rule as the selected profile: its own voice model, else the
+            # Default Text-to-Speech Model (#1467). podcast-creator requires
+            # tts_provider/tts_model on every profile in the config, so a
+            # profile with neither is removed instead of failing every
+            # generation (#1450). The selected profile always has one: it was
+            # validated above.
+            try:
+                sp_voice_model = pick_voice_model(
+                    sp_name, sp_dict.get("voice_model"), default_tts_model
+                )
+            except ValueError:
+                logger.warning(
+                    f"Speaker profile '{sp_name}' has no voice model and no default "
+                    "Text-to-Speech model is set, removing from config to prevent "
+                    "validation errors"
+                )
+                del speaker_profiles_dict[sp_name]
+                continue
+
+            try:
+                if sp_voice_model not in tts_configs:
+                    tts_configs[sp_voice_model] = await _resolve_model_config(
+                        sp_voice_model
                     )
-                    sp_dict["tts_provider"] = prov
-                    sp_dict["tts_model"] = model
-                    sp_dict["tts_config"] = conf
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to resolve TTS for speaker profile '{sp_name}', "
-                        f"removing from config to prevent validation errors: {e}"
-                    )
-                    del speaker_profiles_dict[sp_name]
-                    continue
+
+                prov, model, conf = tts_configs[sp_voice_model]
+
+                sp_dict["tts_provider"] = prov
+                sp_dict["tts_model"] = model
+                sp_dict["tts_config"] = dict(conf)
+            except Exception as e:
+                logger.warning(
+                    f"Failed to resolve TTS for speaker profile '{sp_name}', "
+                    f"removing from config to prevent validation errors: {e}"
+                )
+                del speaker_profiles_dict[sp_name]
+                continue
 
             # Per-speaker TTS overrides
             for speaker in sp_dict.get("speakers", []):
@@ -256,27 +388,6 @@ async def generate_podcast_command(
                         logger.warning(
                             f"Failed to resolve per-speaker TTS for '{speaker.get('name')}': {e}"
                         )
-
-        # 6. Generate briefing
-        briefing = episode_profile.default_briefing
-        if input_data.briefing_suffix:
-            briefing += f"\n\nAdditional instructions: {input_data.briefing_suffix}"
-
-        # Create the record for the episode and associate with the ongoing command
-        episode = PodcastEpisode(
-            name=input_data.episode_name,
-            episode_profile=full_model_dump(episode_profile.model_dump()),
-            speaker_profile=full_model_dump(speaker_profile.model_dump()),
-            command=ensure_record_id(input_data.execution_context.command_id)
-            if input_data.execution_context
-            else None,
-            briefing=briefing,
-            content=input_data.content,
-            audio_file=None,
-            transcript=None,
-            outline=None,
-        )
-        await episode.save()
 
         # SECURITY NOTE for future work: podcast_creator also supports
         # configure("templates", {...}), which compiles the given string
@@ -365,19 +476,27 @@ async def generate_podcast_command(
             processing_time=processing_time,
         )
 
-    except ValueError:
-        raise
+    except ValueError as e:
+        # ValueError is the command layer's "permanent failure, do not retry"
+        # signal (retry config uses stop_on=[ValueError]), so the type has to
+        # survive - but LangChain's OutputParserException and
+        # json.JSONDecodeError are ValueError subclasses too. Every parser
+        # failure therefore left through here, past the hint mapper below:
+        # the placeholder speaker name and the truncated-JSON cases reached
+        # the user with no guidance at all (#1238).
+        hint = explain_generation_failure(str(e))
+        if not hint:
+            raise
+        logger.error(f"Podcast generation failed: {e}")
+        raise ValueError(f"{e}\n\nNOTE: {hint}") from e
 
     except Exception as e:
         logger.error(f"Podcast generation failed: {e}")
         logger.exception(e)
 
         error_msg = str(e)
-        if "Invalid json output" in error_msg or "Expecting value" in error_msg:
-            error_msg += (
-                "\n\nNOTE: This error commonly occurs with GPT-5 models that use extended thinking. "
-                "The model may be putting all output inside <think> tags, leaving nothing to parse. "
-                "Try using gpt-4o, gpt-4o-mini, or gpt-4-turbo instead in your episode profile."
-            )
+        hint = explain_generation_failure(error_msg)
+        if hint:
+            error_msg += f"\n\nNOTE: {hint}"
 
         raise RuntimeError(error_msg) from e

@@ -75,7 +75,7 @@ export function LanguageLoadingOverlay() {
 
   // Use react-i18next's t() directly - this is safe during language transitions
   // because react-i18next handles the loading state internally
-  const loadingText = t('common.loading', { defaultValue: '加载中...' })
+  const loadingText = t('common.loading', { defaultValue: 'Loading...' })
 
   return (
     <div

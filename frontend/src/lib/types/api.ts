@@ -60,6 +60,9 @@ export interface SettingsResponse {
   docling_ocr?: boolean
   docling_formulas?: boolean
   docling_vision?: boolean
+  docling_vision_url?: string | null
+  docling_vision_model?: string | null
+  docling_vision_prompt?: string | null
   youtube_preferred_languages?: string[]
 }
 
@@ -120,6 +123,24 @@ export interface CreateSourceRequest {
   async_processing?: boolean
 }
 
+export interface DuplicateSourceInfo {
+  id: string
+  title?: string | null
+  filename?: string | null
+  url?: string | null
+  created?: string | null
+  updated?: string | null
+  excerpt?: string | null
+  match_reason: string
+}
+
+export interface DuplicateCheckRequest {
+  type: 'link' | 'upload' | 'text'
+  url?: string
+  title?: string
+  content?: string
+  filename?: string
+ }
 export interface UpdateNoteRequest {
   title?: string
   content?: string

@@ -27,10 +27,22 @@ const values = (overrides: Partial<CredentialFormValues>): CredentialFormValues 
   location: credential.location || '',
   credentialsPath: credential.credentials_path || '',
   numCtx: '',
+  apiVersion: '',
   isVertex: false,
   isOllama: true,
+  isAzure: false,
   ...overrides,
 })
+
+const azureCredential: Credential = {
+  ...credential,
+  name: 'Azure',
+  provider: 'azure',
+  api_version: '2024-10-21',
+}
+
+const azureValues = (overrides: Partial<CredentialFormValues>) =>
+  values({ isOllama: false, isAzure: true, apiVersion: '2024-10-21', ...overrides })
 
 describe('buildCredentialUpdatePayload', () => {
   it('sends explicit null when base_url is emptied (the original bug: undefined was dropped from the JSON body and the stale URL survived)', () => {
@@ -69,5 +81,24 @@ describe('buildCredentialUpdatePayload', () => {
     const withCtx = { ...credential, num_ctx: 4096 }
     const payload = buildCredentialUpdatePayload(withCtx, values({ numCtx: '' }))
     expect(payload.num_ctx).toBe(0)
+  })
+
+  it('sends the new Azure API version when changed', () => {
+    const payload = buildCredentialUpdatePayload(
+      azureCredential,
+      azureValues({ apiVersion: '2025-01-01-preview' }),
+    )
+    expect(payload.api_version).toBe('2025-01-01-preview')
+  })
+
+  it('sends explicit null when the Azure API version is emptied', () => {
+    const payload = buildCredentialUpdatePayload(azureCredential, azureValues({ apiVersion: '' }))
+    expect(payload.api_version).toBeNull()
+    expect(JSON.parse(JSON.stringify(payload))).toHaveProperty('api_version')
+  })
+
+  it('omits api_version when the Azure API version is unchanged', () => {
+    const payload = buildCredentialUpdatePayload(azureCredential, azureValues({}))
+    expect(payload).not.toHaveProperty('api_version')
   })
 })

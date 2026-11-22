@@ -5,14 +5,19 @@ from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from surreal_commands import CommandInput, CommandOutput, command
 
-from open_notebook.database.repository import ensure_record_id
-from open_notebook.domain.notebook import Source
+from open_notebook.database.repository import ensure_record_id, repo_query
+from open_notebook.domain.notebook import (
+    PLACEHOLDER_SOURCE_TITLE,
+    Source,
+    fallback_source_title,
+)
 from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import (
     ConfigurationError,
     ContextLengthExceededError,
     IncompleteGenerationError,
     InvalidInputError,
+    NotFoundError,
 )
 
 try:
@@ -40,6 +45,37 @@ class SourceProcessingOutput(CommandOutput):
     error_message: Optional[str] = None
 
 
+async def _replace_placeholder_title(input_data: SourceProcessingInput) -> None:
+    """Give a source that failed processing a title other than "Processing...".
+
+    The placeholder is only replaced on success, so a failed source kept it
+    forever. Use the URL or file name instead, or clear the title so the UI
+    shows "Untitled source". Best effort: never masks the original failure.
+    """
+    try:
+        content_state = input_data.content_state or {}
+        title = fallback_source_title(
+            content_state.get("url"), content_state.get("file_path")
+        )
+        # One conditional UPDATE instead of load-and-save: it cannot overwrite
+        # a title the user set meanwhile, and `title = NONE` clears the field
+        # (save() skips None values).
+        await repo_query(
+            "UPDATE $id SET title = "
+            + ("$title" if title else "NONE")
+            + " WHERE title = $placeholder",
+            {
+                "id": ensure_record_id(input_data.source_id),
+                "title": title,
+                "placeholder": PLACEHOLDER_SOURCE_TITLE,
+            },
+        )
+    except Exception as e:
+        logger.debug(
+            f"Could not replace placeholder title of source {input_data.source_id}: {e}"
+        )
+
+
 @command(
     "process_source",
     app="open_notebook",
@@ -53,7 +89,10 @@ class SourceProcessingOutput(CommandOutput):
             ConfigurationError,
             ContextLengthExceededError,
             IncompleteGenerationError,
-        ],  # Don't retry validation/config errors or incomplete generations
+            NotFoundError,
+        ],  # Don't retry validation/config errors, incomplete generations, or a
+        # record deleted mid-processing (NotFoundError means "missing", never a
+        # DB failure: ObjectModel.get raises DatabaseOperationError for those)
         "retry_log_level": "debug",  # Avoid log noise during transaction conflicts
     },
 )
@@ -75,7 +114,11 @@ async def process_source_command(
         transformations = []
         for trans_id in input_data.transformations:
             logger.info(f"Loading transformation: {trans_id}")
-            transformation = await Transformation.get(trans_id)
+            try:
+                transformation = await Transformation.get(trans_id)
+            except NotFoundError as e:
+                # Same as a deleted source below: permanent, not transient.
+                raise ValueError(f"Transformation '{trans_id}' no longer exists") from e
             if not transformation:
                 raise ValueError(f"Transformation '{trans_id}' not found")
             transformations.append(transformation)
@@ -83,7 +126,18 @@ async def process_source_command(
         logger.info(f"Loaded {len(transformations)} transformations")
 
         # 2. Get existing source record to update its command field
-        source = await Source.get(input_data.source_id)
+        try:
+            source = await Source.get(input_data.source_id)
+        except NotFoundError as e:
+            # The source was removed after this job was queued (e.g. a sync tool
+            # deleted it, or the record was cleaned up). The job can never
+            # succeed: raise a permanent error (ValueError is in `stop_on`) so
+            # surreal-commands marks it failed instead of spending 15 retries
+            # with exponential backoff, which starves every job behind it.
+            raise ValueError(
+                f"Source '{input_data.source_id}' no longer exists "
+                "(deleted before processing?)"
+            ) from e
         if not source:
             raise ValueError(f"Source '{input_data.source_id}' not found")
 
@@ -141,7 +195,15 @@ async def process_source_command(
         logger.error(
             f"Generation failed (permanent) for source {input_data.source_id}: {e}"
         )
+        await _replace_placeholder_title(input_data)
         raise  # Preserve failed job status; stop_on prevents automatic retries.
+    except NotFoundError as e:
+        # E.g. the source was deleted while extraction ran (save_source re-reads
+        # it). Permanent: stop_on prevents retries that would starve the queue.
+        logger.error(
+            f"Source processing failed (permanent), record no longer exists: {e}"
+        )
+        raise
     except ValueError as e:
         # Validation errors are permanent failures. Re-raise so surreal-commands
         # marks the job as `failed` (stop_on=[ValueError] already prevents
@@ -150,10 +212,15 @@ async def process_source_command(
         # which hid extraction failures and left the source without a retryable
         # `failed` status in the UI.
         logger.error(f"Source processing failed (permanent): {e}")
+        await _replace_placeholder_title(input_data)
         raise
     except Exception as e:
         # Transient failure - will be retried (surreal-commands logs final failure)
         logger.debug(f"Transient error processing source {input_data.source_id}: {e}")
+        # The command cannot tell its last attempt from an earlier one, so the
+        # fallback is written on every failure; a later successful attempt
+        # still replaces it with the extracted title (see save_source).
+        await _replace_placeholder_title(input_data)
         raise
 
 
@@ -193,7 +260,9 @@ class RunTransformationOutput(CommandOutput):
             ContextLengthExceededError,
             IncompleteGenerationError,
             InvalidInputError,
-        ],  # Don't retry validation/config errors or incomplete generations
+            NotFoundError,
+        ],  # Don't retry validation/config errors, incomplete generations, or
+        # a source/transformation deleted before the job ran
         "retry_log_level": "warning",
     },
 )
@@ -257,7 +326,7 @@ async def run_transformation_command(
             processing_time=processing_time,
         )
 
-    except (IncompleteGenerationError, InvalidInputError) as e:
+    except (IncompleteGenerationError, InvalidInputError, NotFoundError) as e:
         # e.g. the source has no text to transform
         logger.error(
             f"Generation failed (permanent) for transformation "

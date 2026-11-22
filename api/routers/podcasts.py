@@ -151,7 +151,7 @@ async def generate_podcast(request: PodcastGenerationRequest):
         raise
     except Exception as e:
         logger.error(f"Error generating podcast: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to generate podcast")
+        raise OpenNotebookError("Failed to generate podcast") from e
 
 
 @router.get("/podcasts/jobs/{job_id}")
@@ -167,7 +167,7 @@ async def get_podcast_job_status(job_id: str):
         raise
     except Exception as e:
         logger.error(f"Error fetching podcast job status: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to fetch job status")
+        raise OpenNotebookError("Failed to fetch job status") from e
 
 
 @router.get("/podcasts/episodes", response_model=List[PodcastEpisodeResponse])
@@ -250,7 +250,7 @@ async def list_podcast_episodes():
         raise
     except Exception as e:
         logger.error(f"Error listing podcast episodes: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to list podcast episodes")
+        raise OpenNotebookError("Failed to list podcast episodes") from e
 
 
 @router.get("/podcasts/episodes/{episode_id}", response_model=PodcastEpisodeResponse)
@@ -372,19 +372,22 @@ async def retry_podcast_episode(episode_id: str):
                 detail="Cannot retry: episode or speaker profile name missing from stored data",
             )
 
-        # Delete audio file if any
-        _delete_episode_audio(episode, episode_id)
-
-        # Delete the failed episode
-        await episode.delete()
-
-        # Submit a new job
+        # Submit first: if the profiles are still incomplete the request is
+        # rejected and the failed episode stays visible instead of vanishing.
         job_id = await PodcastService.submit_generation_job(
             episode_profile_name=ep_profile_name,
             speaker_profile_name=sp_profile_name,
             episode_name=episode_name,
             content=content,
         )
+
+        # The new job is already queued, so a failed cleanup must not turn
+        # this into an error: the old failed episode just stays in the list.
+        try:
+            _delete_episode_audio(episode, episode_id)
+            await episode.delete()
+        except Exception as e:
+            logger.warning(f"Retry queued but failed episode {episode_id} kept: {e}")
 
         return {"job_id": job_id, "message": "Retry submitted successfully"}
 
@@ -394,7 +397,7 @@ async def retry_podcast_episode(episode_id: str):
         raise
     except Exception as e:
         logger.error(f"Error retrying podcast episode: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to retry episode")
+        raise OpenNotebookError("Failed to retry episode") from e
 
 
 @router.delete("/podcasts/episodes/{episode_id}")
@@ -419,4 +422,4 @@ async def delete_podcast_episode(episode_id: str):
         raise
     except Exception as e:
         logger.error(f"Error deleting podcast episode: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to delete episode")
+        raise OpenNotebookError("Failed to delete episode") from e

@@ -30,7 +30,7 @@ _CLASSIFICATION_RULES: list[
     (
         ["authentication", "unauthorized", "invalid api key", "invalid_api_key", "401"],
         AuthenticationError,
-        "Authentication failed. Please check your API key in Settings -> Credentials.",
+        "Authentication failed. Please check your API key in Manage -> Models.",
     ),
     # Rate limit errors. Token-rate throttles ("tokens per minute") must be
     # caught here, before the context-length rule below sees "tokens".
@@ -56,22 +56,28 @@ _CLASSIFICATION_RULES: list[
     ),
     # Configuration errors from provision.py (pass through)
     (
-        ["no model configured", "please go to settings"],
+        ["no model configured", "please go to settings", "please go to manage"],
         ConfigurationError,
         None,
     ),
-    # Network errors
+    # Network errors (connect timeouts included: the provider was never reached)
     (
         [
             "connecterror",
-            "timeoutexception",
+            "connecttimeout",
+            "connection timed out",
             "connection refused",
             "connection error",
-            "timed out",
-            "timeout",
         ],
         NetworkError,
         "Could not connect to the AI provider. Please check your network connection and provider URL.",
+    ),
+    # Read timeouts: the provider was reached but didn't answer within
+    # ESPERANTO_LLM_TIMEOUT (180 s unless set)
+    (
+        ["timeoutexception", "timed out", "timeout"],
+        NetworkError,
+        "The AI provider took too long to respond. Try again, use a faster model, or raise ESPERANTO_LLM_TIMEOUT (180 seconds by default).",
     ),
     # Context length errors. This rule is the single source of truth for
     # "the prompt doesn't fit the model's window" — the transformation graph

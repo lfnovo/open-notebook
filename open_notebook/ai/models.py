@@ -174,7 +174,7 @@ class DefaultModels(RecordModel):
     default_tools_model: Optional[str] = None
 
     @classmethod
-    async def get_instance(cls) -> "DefaultModels":
+    async def get_instance(cls, force_reload: bool = False) -> "DefaultModels":
         """Always fetch fresh defaults from database (override parent caching behavior)"""
         result = await repo_query(
             "SELECT * FROM ONLY $record_id",

@@ -10,6 +10,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+from pydantic_core import PydanticUndefined
 
 from open_notebook.database.repository import (
     ensure_record_id,
@@ -27,6 +28,7 @@ from open_notebook.exceptions import (
 )
 
 T = TypeVar("T", bound="ObjectModel")
+RecordT = TypeVar("RecordT", bound="RecordModel")
 
 
 class ObjectModel(BaseModel):
@@ -125,10 +127,15 @@ class ObjectModel(BaseModel):
                 return target_class(**result[0])
             else:
                 raise NotFoundError(f"{table_name} with id {id} not found")
+        except (NotFoundError, InvalidInputError):
+            raise
         except Exception as e:
+            # A database failure (connection, SurrealDB transaction conflict...)
+            # is not "not found": callers treat NotFoundError as permanent (404,
+            # no retry), so surface it as DatabaseOperationError instead.
             logger.error(f"Error fetching object with id {id}: {str(e)}")
             logger.exception(e)
-            raise NotFoundError(f"Object with id {id} not found - {str(e)}")
+            raise DatabaseOperationError(f"Failed to fetch object with id {id}") from e
 
     @classmethod
     def _get_class_by_table_name(cls, table_name: str) -> Optional[Type["ObjectModel"]]:
@@ -282,13 +289,22 @@ class RecordModel(BaseModel):
             object.__setattr__(self, "_initialized", True)
             object.__setattr__(self, "_db_loaded", False)
 
-    async def _load_from_db(self):
-        """Load data from database if not already loaded"""
-        if not getattr(self, "_db_loaded", False):
+    async def _load_from_db(self, force_reload: bool = False):
+        """Load data from database if not already loaded or when forced."""
+        if force_reload or not getattr(self, "_db_loaded", False):
             result = await repo_query(
                 "SELECT * FROM ONLY $record_id",
                 {"record_id": ensure_record_id(self.record_id)},
             )
+
+            # Reset to defaults only once the query has succeeded, so a failed
+            # reload keeps the values already in memory. No await sits between
+            # the reset and the assignments below.
+            if force_reload:
+                for field_name, field_info in type(self).model_fields.items():
+                    default = field_info.get_default(call_default_factory=True)
+                    if default is not PydanticUndefined:
+                        object.__setattr__(self, field_name, default)
 
             # Handle case where record doesn't exist yet
             if result:
@@ -308,10 +324,10 @@ class RecordModel(BaseModel):
             object.__setattr__(self, "_db_loaded", True)
 
     @classmethod
-    async def get_instance(cls) -> "RecordModel":
-        """Get or create the singleton instance and load from DB"""
+    async def get_instance(cls: Type[RecordT], force_reload: bool = False) -> RecordT:
+        """Get or create the singleton instance and load it from the DB."""
         instance = cls()
-        await instance._load_from_db()
+        await instance._load_from_db(force_reload=force_reload)
         return instance
 
     @model_validator(mode="after")

@@ -145,12 +145,12 @@ Never pass user-provided file paths directly to file reading or content extracti
 Open Notebook currently uses simple password-based middleware (`PasswordAuthMiddleware`). This is suitable for single-user self-hosted deployments but should be hardened for production:
 
 - Set `OPEN_NOTEBOOK_PASSWORD` explicitly - there is no hardcoded default password; if it's unset, auth is fully disabled (all requests pass through unchecked)
-- Change the default encryption key (`OPEN_NOTEBOOK_ENCRYPTION_KEY`)
+- Set a strong encryption key (`OPEN_NOTEBOOK_ENCRYPTION_KEY`). There is no default: credential storage is unavailable until it is set
 - Consider deploying behind a reverse proxy with proper authentication (OAuth, OIDC)
 
 ### CORS
 
-The default CORS configuration allows all origins (`allow_origins=["*"]`). `allow_credentials` is tied to that: `False` for the default wildcard (avoids Starlette reflecting any Origin alongside credentials), automatically `True` once `CORS_ORIGINS` is explicitly scoped to specific origins. For production deployments, still restrict `CORS_ORIGINS` to only the frontend URL.
+With `CORS_ORIGINS` unset, the default depends on `OPEN_NOTEBOOK_PASSWORD`. Without a password (auth disabled) only localhost origins and origins whose host name equals the request's `Host` are allowed (`SameHostCORSMiddleware` in `api/cors.py`), so pages from other sites can't read an unauthenticated API's answers through the user's browser while the UI keeps working from the LAN or a VPS. Other pages on the same host name (any port) are allowed, and DNS rebinding is not covered. This is not authentication: simple cross-site requests still reach the API ([ADR-014](decisions/ADR-014-same-host-cors-without-password.md)). With a password, the default allows all origins (`allow_origins=["*"]`). `allow_credentials` is `False` for both defaults (avoids Starlette reflecting any Origin alongside credentials) and becomes `True` only once `CORS_ORIGINS` is explicitly scoped to specific origins. An explicit `CORS_ORIGINS`, including `*`, always wins. For production deployments, still restrict `CORS_ORIGINS` to only the frontend URL.
 
 ---
 
@@ -160,7 +160,7 @@ The default CORS configuration allows all origins (`allow_origins=["*"]`). `allo
 
 `OPEN_NOTEBOOK_ENCRYPTION_KEY` is used to encrypt API keys stored in SurrealDB. In production:
 
-- Set a strong, unique, high-entropy key (do not use the default, a short word, or a reused password). The key is stretched with PBKDF2-HMAC-SHA256 (600k iterations), which slows brute force but cannot save a guessable passphrase — entropy is the actual security.
+- Set a strong, unique, high-entropy key (not a short word, a reused password, or the `change-me-to-a-secret-string` placeholder from the example compose file). The key is stretched with PBKDF2-HMAC-SHA256 (600k iterations), which slows brute force but cannot save a guessable passphrase — entropy is the actual security.
 - Use Docker secrets via `OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE` when possible
 - Never log or expose this value
 - After upgrading, run the one-shot `POST /api/credentials/migrate-encryption` pass to rewrite pre-existing keys into the versioned format. Back up the database first: the new format is forward-breaking — versions predating the migration cannot read it (see CHANGELOG).

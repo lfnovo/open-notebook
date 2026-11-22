@@ -11,7 +11,7 @@ from surreal_commands.core.retry import build_async_retry_instance
 import commands  # noqa: F401 -- register worker retry policies
 from open_notebook.domain.notebook import Source
 from open_notebook.exceptions import ExternalServiceError, IncompleteGenerationError
-from open_notebook.graphs.transformation import run_transformation
+from open_notebook.graphs.transformation import try_full_content
 
 
 @pytest.mark.asyncio
@@ -44,7 +44,7 @@ async def test_default_prompt_is_applied_without_mutating_cached_prompt():
             new_callable=AsyncMock,
         ),
     ):
-        result = await run_transformation(
+        result = await try_full_content(
             {
                 "input_text": "Source content",
                 "transformation": transformation,
@@ -52,7 +52,7 @@ async def test_default_prompt_is_applied_without_mutating_cached_prompt():
             {"configurable": {}},
         )
 
-    assert result == {"output": "Transformed content"}
+    assert result == {"output": "Transformed content", "needs_chunking": False}
     get_default_prompts.assert_awaited_once_with(force_reload=True)
     system_prompt = chain.ainvoke.await_args.args[0][0].content
     assert system_prompt.index(default_prompt) < system_prompt.index(
@@ -88,7 +88,7 @@ def transformation_call():
                 state["source"] = source
             else:
                 state["input_text"] = "Source content"
-            return await run_transformation(state, {"configurable": {}})
+            return await try_full_content(state, {"configurable": {}})
 
         yield invoke, save
 
@@ -143,7 +143,7 @@ async def test_empty_output_is_rejected(transformation_call, content, with_sourc
 async def test_complete_output_is_saved(transformation_call, metadata):
     invoke, save = transformation_call
     result = await invoke("<think>Reasoning</think>Complete answer.", metadata)
-    assert result == {"output": "Complete answer."}
+    assert result == {"output": "Complete answer.", "needs_chunking": False}
     save.assert_awaited_once_with("Summary", "Complete answer.")
 
 

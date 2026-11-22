@@ -22,6 +22,12 @@ const nextConfig: NextConfig = {
     // This allows larger files to be uploaded through the /api/* rewrite proxy to FastAPI.
     // The Add Source dialog checks against the same value before uploading.
     proxyClientMaxBodySize: `${PROXY_MAX_UPLOAD_MB}mb`,
+    // The rewrites proxy defaults to 30s (proxyTimeout || 30000 in
+    // router-utils/proxy-request.js), which is shorter than the browser
+    // client's own budget (DEFAULT_API_TIMEOUT_MS = 600000 in
+    // src/lib/api/client.ts). Slow text searches then abort with
+    // "Failed to proxy ... socket hang up" even though the API finishes.
+    proxyTimeout: 600_000,
   } as NextConfig['experimental'],
 
   // API Rewrites: Proxy /api/* requests to FastAPI backend

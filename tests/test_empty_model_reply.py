@@ -23,39 +23,42 @@ from open_notebook.exceptions import IncompleteGenerationError
 EMPTY_REPLIES = ["", "   \n\t", "<think>only reasoning</think>", None]
 
 
-def _sync_model_returning(content: str) -> MagicMock:
+def _async_model_returning(content: str) -> MagicMock:
     model = MagicMock()
     # AIMessage won't accept content=None; some providers still return it.
     reply = MagicMock(content=None) if content is None else AIMessage(content=content)
     model.invoke = MagicMock(return_value=reply)
+    model.ainvoke = AsyncMock(return_value=reply)
     return model
 
 
 # --- graph nodes -------------------------------------------------------------
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("reply", EMPTY_REPLIES)
-def test_notebook_chat_node_rejects_empty_reply(reply):
+async def test_notebook_chat_node_rejects_empty_reply(reply):
     from open_notebook.graphs.chat import call_model_with_messages
 
     state = {"messages": [HumanMessage(content="hi")], "notebook": None}
     with patch(
         "open_notebook.graphs.chat.provision_langchain_model",
-        new=AsyncMock(return_value=_sync_model_returning(reply)),
+        new=AsyncMock(return_value=_async_model_returning(reply)),
     ):
         with pytest.raises(IncompleteGenerationError, match="empty response"):
-            call_model_with_messages(state, {"configurable": {}})  # type: ignore[arg-type]
+            await call_model_with_messages(state, {"configurable": {}})  # type: ignore[arg-type]
 
 
-def test_notebook_chat_node_keeps_nonempty_reply():
+@pytest.mark.asyncio
+async def test_notebook_chat_node_keeps_nonempty_reply():
     from open_notebook.graphs.chat import call_model_with_messages
 
     state = {"messages": [HumanMessage(content="hi")], "notebook": None}
     with patch(
         "open_notebook.graphs.chat.provision_langchain_model",
-        new=AsyncMock(return_value=_sync_model_returning("<think>x</think>hello")),
+        new=AsyncMock(return_value=_async_model_returning(" thinkingx</think>hello")),
     ):
-        result = call_model_with_messages(state, {"configurable": {}})  # type: ignore[arg-type]
+        result = await call_model_with_messages(state, {"configurable": {}})  # type: ignore[arg-type]
     assert result["messages"].content == "hello"
 
 
@@ -71,7 +74,7 @@ def test_source_chat_node_rejects_empty_reply(reply):
         ),
         patch(
             "open_notebook.graphs.source_chat.provision_langchain_model",
-            new=AsyncMock(return_value=_sync_model_returning(reply)),
+            new=AsyncMock(return_value=_async_model_returning(reply)),
         ),
     ):
         with pytest.raises(IncompleteGenerationError, match="empty response"):

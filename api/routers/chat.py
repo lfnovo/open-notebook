@@ -1,31 +1,50 @@
 import asyncio
 import traceback
-from typing import Any, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
+from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from pydantic import BaseModel, Field
 
+from api.routers import _sse
 from api.routers._chat_shared import (
     ChatMessage,
     SuccessResponse,
     extract_chat_messages,
     get_session_or_404,
 )
+from api.routers._sse import (
+    EMPTY_REPLY_MESSAGE,
+    StreamOutcome,
+    ThinkingFilter,
+    finalize_stream,
+    format_error_event,
+    run_graph,
+    sse,
+    stream_events,
+    stream_headers,
+)
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import ChatSession, Notebook
 from open_notebook.exceptions import (
+    IncompleteGenerationError,
     NotFoundError,
     OpenNotebookError,
 )
+from open_notebook.graphs.chat import NODE_NAME as CHAT_NODE
 from open_notebook.graphs.chat import graph as chat_graph
 from open_notebook.utils import token_count
 from open_notebook.utils.context_builder import build_notebook_context
 from open_notebook.utils.graph_utils import (
     get_session_message_count,
     invoke_chat_turn,
+    last_ai_content,
+    persist_pending_human_turn,
+    settle_streamed_turn,
 )
 
 router = APIRouter()
@@ -398,6 +417,213 @@ async def execute_chat(request: ExecuteChatRequest):
             f"  Traceback:\n{traceback.format_exc()}"
         )
         raise HTTPException(status_code=500, detail=f"Error executing chat: {str(e)}")
+
+
+async def _settle(
+    thread_id: str, content: str, question: Optional[HumanMessage]
+) -> bool:
+    """Persist what a streamed turn produced; report whether it was saved.
+
+    Returns False (after logging) when the checkpoint write fails, so callers
+    can say the partial answer was lost instead of claiming it was kept.
+    """
+    try:
+        await settle_streamed_turn(
+            chat_graph, thread_id, content, question, as_node=CHAT_NODE
+        )
+        return True
+    except Exception:
+        logger.exception(f"Could not settle streamed turn in {thread_id}")
+        return False
+
+
+async def _stream_execute_chat(
+    request: ExecuteChatRequest,
+    http_request: Request,
+    thread_id: str,
+    session: Any,
+    notebook: Optional[Notebook],
+    model_override: Optional[str],
+) -> AsyncGenerator[str, None]:
+    """Stream one notebook-chat turn as SSE: `user_message` -> `token`… -> `complete`.
+
+    Generation runs *inside* the chat graph (`graph.astream` with
+    `stream_mode="messages"`), so the answer goes through the same node, prompt
+    and checkpointer as the buffered endpoint, and future graph features apply
+    to streamed turns too. The endpoint's only extras are the token envelope and
+    the settlement on a turn that ends early: a stopped/`timed-out turn keeps its
+    partial answer, written as the node's output so the thread stays complete.
+    """
+    queue: "asyncio.Queue[Any]" = asyncio.Queue()
+    outcome = StreamOutcome()
+    parts: list[str] = []
+    task: Optional["asyncio.Task[Any]"] = None
+    question: Optional[HumanMessage] = None
+    persisted = False
+    settled = False
+
+    try:
+        # Snapshot the thread before appending the new question.
+        current_state = await asyncio.to_thread(
+            chat_graph.get_state,
+            config=RunnableConfig(configurable={"thread_id": thread_id}),
+        )
+
+        state_values = current_state.values if current_state else {}
+        state_values["messages"] = state_values.get("messages", [])
+        state_values["context"] = request.context
+        state_values["notebook"] = notebook
+        state_values["model_override"] = model_override
+
+        # Explicit id so a failed turn can remove it from the checkpoint.
+        question = HumanMessage(content=request.message, id=str(uuid4()))
+        state_values["messages"].append(question)
+
+        yield sse({"type": "user_message", "content": request.message})
+
+        # Persist the question before generating: tokens reach the client long
+        # before the graph would checkpoint, and a stop during prefill must not
+        # lose what the user asked.
+        await persist_pending_human_turn(
+            chat_graph, thread_id, question, as_node=CHAT_NODE
+        )
+        persisted = True
+
+        task = asyncio.create_task(
+            run_graph(
+                queue,
+                chat_graph,
+                state_values,
+                RunnableConfig(
+                    configurable={"thread_id": thread_id, "model_id": model_override}
+                ),
+                CHAT_NODE,
+                parts,
+                ThinkingFilter(),
+            )
+        )
+        async for frame in stream_events(
+            queue, outcome, is_disconnected=http_request.is_disconnected
+        ):
+            yield frame
+
+        content = "".join(parts)
+
+        if outcome.kind == "done":
+            # The node checkpoints its cleaned answer; take that rather than the
+            # accumulated deltas so `complete` matches history exactly.
+            final = await last_ai_content(chat_graph, thread_id)
+            if not final.strip():
+                raise IncompleteGenerationError(EMPTY_REPLY_MESSAGE)
+            await session.save()
+            settled = True
+            yield sse({"type": "complete", "content": final})
+            return
+
+        if outcome.kind == "timeout":
+            settled = await _settle(thread_id, content, question)
+            message = (
+                f"The model did not finish within {int(_sse.MAX_STREAM_SECONDS)}s."
+            )
+            if content.strip():
+                message += (
+                    " Partial answer kept."
+                    if settled
+                    else " The partial answer could not be saved."
+                )
+            yield format_error_event(IncompleteGenerationError(message))
+            return
+
+        if outcome.kind == "error":
+            payload = outcome.payload
+            if isinstance(payload, BaseException):
+                logger.error(
+                    f"Streamed chat turn failed in {thread_id}: {payload!r}\n"
+                    f"  Traceback:\n{''.join(traceback.format_exception(payload))}"
+                )
+            settled = await _settle(thread_id, content, question)
+            yield format_error_event(
+                payload if isinstance(payload, BaseException) else RuntimeError()
+            )
+            return
+
+        # Disconnected: keep whatever arrived; the client is gone.
+        settled = await _settle(thread_id, content, question)
+
+    except asyncio.CancelledError:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Error streaming chat: {str(e)}\n"
+            f"  Session ID: {request.session_id}\n"
+            f"  Model override: {request.model_override}\n"
+            f"  Traceback:\n{traceback.format_exc()}"
+        )
+        if persisted and question and not settled:
+            settled = await _settle(thread_id, "".join(parts), question)
+        yield format_error_event(e)
+    finally:
+
+        async def _settle_if_needed() -> None:
+            if persisted and question and not settled:
+                await _settle(thread_id, "".join(parts), question)
+
+        await finalize_stream(task, _settle_if_needed)
+
+
+@router.post("/chat/execute/stream")
+async def execute_chat_stream(request: ExecuteChatRequest, http_request: Request):
+    """Execute a chat request and stream the response as SSE.
+
+    Additive sibling of `/chat/execute`, which stays for API consumers: same
+    body, same graph, same persistence, but `text/event-stream` frames.
+    """
+    try:
+        full_session_id, session = await get_session_or_404(request.session_id)
+
+        notebook_query = await repo_query(
+            "SELECT out FROM refers_to WHERE in = $session_id",
+            {"session_id": ensure_record_id(full_session_id)},
+        )
+        notebook = None
+        if notebook_query:
+            notebook = await Notebook.get(notebook_query[0]["out"])
+
+        model_override = (
+            request.model_override
+            if request.model_override is not None
+            else getattr(session, "model_override", None)
+        )
+
+        return StreamingResponse(
+            _stream_execute_chat(
+                request,
+                http_request,
+                full_session_id,
+                session,
+                notebook,
+                model_override,
+            ),
+            media_type="text/event-stream",
+            headers=stream_headers(),
+        )
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Session not found")
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
+    except Exception as e:
+        logger.error(f"Error starting chat stream: {str(e)}")
+        # Startup failures are rarely user-actionable; keep provider/driver
+        # detail out of the client but send something bounded and readable.
+        detail = str(e).strip().splitlines()[0][:200] if str(e).strip() else ""
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error streaming chat: {detail}"
+            if detail
+            else "Error streaming chat",
+        )
 
 
 @router.post("/chat/context", response_model=BuildContextResponse)

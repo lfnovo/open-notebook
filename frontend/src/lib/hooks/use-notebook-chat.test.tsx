@@ -12,8 +12,9 @@ vi.mock('@/lib/api/chat', () => ({
     getSession: vi.fn(),
     createSession: vi.fn(),
     buildContext: vi.fn(),
-    sendMessage: vi.fn(),
+    sendMessageStream: vi.fn(),
   },
+  ChatStreamError: class ChatStreamError extends Error {},
 }))
 
 vi.mock('@/lib/hooks/use-translation', () => ({
@@ -29,6 +30,34 @@ function wrapper({ children }: { children: ReactNode }) {
     defaultOptions: { queries: { retry: false } },
   })
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+}
+
+/** SSE body that already holds `events` and is closed. */
+function sseStream(events: Array<Record<string, unknown>>) {
+  const text = events.map(event => `data: ${JSON.stringify(event)}\n\n`).join('')
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode(text))
+      controller.close()
+    },
+  })
+}
+
+/** SSE body the test pushes events into. */
+function openStream() {
+  let controller!: ReadableStreamDefaultController<Uint8Array>
+  const stream = new ReadableStream<Uint8Array>({
+    start(c) {
+      controller = c
+    },
+  })
+  return {
+    stream,
+    send: (event: Record<string, unknown>) =>
+      controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(event)}\n\n`)),
+    close: () => controller.close(),
+    fail: (error: Error) => controller.error(error),
+  }
 }
 
 // Defined once so the hook's buildContext callback keeps a stable identity
@@ -63,7 +92,7 @@ describe('useNotebookChat', () => {
   it('resolves to false when sending fails', async () => {
     vi.mocked(chatApi.listSessions).mockResolvedValue([session])
     vi.mocked(chatApi.getSession).mockResolvedValue({ ...session, messages: [] })
-    vi.mocked(chatApi.sendMessage).mockRejectedValue(new Error('Network Error'))
+    vi.mocked(chatApi.sendMessageStream).mockRejectedValue(new Error('Network Error'))
 
     const { result } = renderHook(() => useNotebookChat(params), { wrapper })
     await waitFor(() => expect(result.current.currentSessionId).toBe(session.id))
@@ -85,7 +114,7 @@ describe('useNotebookChat', () => {
     let createResolve!: (value: Awaited<ReturnType<typeof chatApi.createSession>>) => void
     vi.mocked(chatApi.createSession).mockReturnValue(new Promise(resolve => { createResolve = resolve }))
     vi.mocked(chatApi.getSession).mockResolvedValue({ ...session, messages: [] })
-    vi.mocked(chatApi.sendMessage).mockResolvedValue({ session_id: session.id, messages: [] })
+    vi.mocked(chatApi.sendMessageStream).mockResolvedValue(sseStream([]))
 
     const { result } = renderHook(() => useNotebookChat(params), { wrapper })
     await waitFor(() => expect(chatApi.listSessions).toHaveBeenCalled())
@@ -113,7 +142,7 @@ describe('useNotebookChat', () => {
     let historyResolve!: (value: Awaited<ReturnType<typeof chatApi.getSession>>) => void
     vi.mocked(chatApi.getSession).mockReturnValue(new Promise(resolve => { historyResolve = resolve }))
     let sendReject!: (reason: Error) => void
-    vi.mocked(chatApi.sendMessage).mockReturnValue(new Promise((_, reject) => { sendReject = reject }))
+    vi.mocked(chatApi.sendMessageStream).mockReturnValue(new Promise((_, reject) => { sendReject = reject }))
 
     const { result } = renderHook(() => useNotebookChat(params), { wrapper })
     await waitFor(() => expect(chatApi.listSessions).toHaveBeenCalled())
@@ -144,16 +173,14 @@ describe('useNotebookChat', () => {
     expect(result.current.messages).toEqual(history)
   })
 
-  it('keeps sent messages when the session refetch fails', async () => {
+  it('keeps streamed content when the final refetch fails', async () => {
     vi.mocked(chatApi.listSessions).mockResolvedValue([session])
-    const sentMessages = [
-      { id: 'm1', type: 'human' as const, content: 'hello' },
-      { id: 'm2', type: 'ai' as const, content: 'hi there' },
-    ]
     vi.mocked(chatApi.getSession)
       .mockResolvedValueOnce({ ...session, messages: [] })
       .mockRejectedValueOnce(new Error('Refetch failed'))
-    vi.mocked(chatApi.sendMessage).mockResolvedValue({ session_id: session.id, messages: sentMessages })
+    vi.mocked(chatApi.sendMessageStream).mockResolvedValue(
+      sseStream([{ type: 'token', content: 'hi there' }, { type: 'complete', content: 'hi there' }])
+    )
 
     const { result } = renderHook(() => useNotebookChat(params), { wrapper })
     await waitFor(() => expect(result.current.currentSessionId).toBe(session.id))
@@ -163,8 +190,7 @@ describe('useNotebookChat', () => {
       expect(await result.current.sendMessage('hello')).toBe(true)
     })
 
-    expect(chatApi.getSession).toHaveBeenCalledTimes(2)
-    expect(result.current.messages).toEqual(sentMessages)
+    expect(result.current.messages.map(message => message.content)).toEqual(['hello', 'hi there'])
   })
 
   // Creating the session enables the session query, which comes back with no
@@ -173,9 +199,12 @@ describe('useNotebookChat', () => {
   it('keeps the first message of a new chat visible while the reply is pending', async () => {
     vi.mocked(chatApi.listSessions).mockResolvedValue([])
     vi.mocked(chatApi.createSession).mockResolvedValue(session)
-    vi.mocked(chatApi.getSession).mockResolvedValue({ ...session, messages: [] })
-    let reply!: (value: Awaited<ReturnType<typeof chatApi.sendMessage>>) => void
-    vi.mocked(chatApi.sendMessage).mockReturnValue(new Promise(resolve => { reply = resolve }))
+    let serverMessages: Array<{ id: string, type: 'human' | 'ai', content: string }> = []
+    vi.mocked(chatApi.getSession).mockImplementation(
+      async () => ({ ...session, messages: serverMessages })
+    )
+    const stream = openStream()
+    vi.mocked(chatApi.sendMessageStream).mockResolvedValue(stream.stream)
 
     const { result } = renderHook(() => useNotebookChat(params), { wrapper })
     await waitFor(() => expect(chatApi.listSessions).toHaveBeenCalled())
@@ -191,18 +220,61 @@ describe('useNotebookChat', () => {
 
     expect(result.current.messages.map(m => m.content)).toEqual(['hello'])
 
-    const messages = [
-      { id: 'm1', type: 'human' as const, content: 'hello' },
-      { id: 'm2', type: 'ai' as const, content: 'hi there' },
+    serverMessages = [
+      { id: 'm1', type: 'human', content: 'hello' },
+      { id: 'm2', type: 'ai', content: 'hi there' },
     ]
-    vi.mocked(chatApi.getSession).mockResolvedValue({ ...session, messages })
     let sent: boolean | undefined
     await act(async () => {
-      reply({ session_id: session.id, messages })
+      stream.send({ type: 'token', content: 'hi ' })
+      stream.send({ type: 'complete', content: 'hi there' })
+      stream.close()
       sent = await sending
     })
 
     expect(sent).toBe(true)
     expect(result.current.messages.map(m => m.content)).toEqual(['hello', 'hi there'])
+  })
+
+  // A stopped turn keeps its partial answer: the composer must treat it as a
+  // successful send (draft stays cleared) and the bubble must survive.
+  it('keeps the partial answer when the turn is stopped', async () => {
+    vi.mocked(chatApi.listSessions).mockResolvedValue([session])
+    vi.mocked(chatApi.getSession).mockResolvedValue({ ...session, messages: [] })
+    const stream = openStream()
+    vi.mocked(chatApi.sendMessageStream).mockImplementation(
+      (_data, signal) => new Promise((resolve, reject) => {
+        signal?.addEventListener('abort', () => {
+          stream.fail(new DOMException('Aborted', 'AbortError'))
+          reject(new DOMException('Aborted', 'AbortError'))
+        })
+        resolve(stream.stream)
+      })
+    )
+
+    const { result } = renderHook(() => useNotebookChat(params), { wrapper })
+    await waitFor(() => expect(result.current.currentSessionId).toBe(session.id))
+
+    let sending!: Promise<boolean>
+    await act(async () => {
+      sending = result.current.sendMessage('hello')
+      stream.send({ type: 'token', content: 'part' })
+    })
+    await waitFor(() => expect(result.current.messages.map(m => m.content)).toEqual(['hello', 'part']))
+
+    vi.mocked(chatApi.getSession).mockResolvedValue({
+      ...session,
+      messages: [
+        { id: 'm1', type: 'human' as const, content: 'hello' },
+        { id: 'm2', type: 'ai' as const, content: 'part' },
+      ],
+    })
+
+    await act(async () => {
+      result.current.stopStreaming()
+      expect(await sending).toBe(true)
+    })
+
+    expect(result.current.messages.map(m => m.content)).toEqual(['hello', 'part'])
   })
 })

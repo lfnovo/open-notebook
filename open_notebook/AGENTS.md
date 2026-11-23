@@ -28,7 +28,7 @@ Normative rules for working on the Python backend. Architecture and design ratio
 
 ## Graphs (`open_notebook/graphs/`)
 
-- Nodes are `async def` (`ask.py`, `source.py`, `transformation.py`, `prompt.py`). Only the SqliteSaver-checkpointed graphs (`chat.py`, `source_chat.py`) use sync nodes with the `asyncio.new_event_loop()` / ThreadPool workaround, because the checkpointer is sync — fragile; don't copy it into new graphs.
+- Nodes are `async def` (`ask.py`, `source.py`, `transformation.py`, `prompt.py`, `chat.py`). The notebook-chat graph runs on `HybridSqliteSaver` (`open_notebook/utils/checkpointing.py`), which bridges the async run path to the sync SQLite connection; the source-chat graph still uses a sync node with the `asyncio.new_event_loop()` / ThreadPool workaround — fragile; don't copy it into new graphs.
 - Every node wraps LLM calls with `classify_error()`:
   ```python
   except Exception as e:

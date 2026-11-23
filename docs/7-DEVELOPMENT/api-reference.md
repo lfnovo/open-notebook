@@ -47,7 +47,7 @@ Use `/docs` for request and response shapes. This map shows where things are:
 | Notebooks | `/api/notebooks`, `/api/notebooks/{id}/sources/{source_id}` (link/unlink), `/api/recently-viewed` |
 | Sources | `/api/sources` (multipart create with optional file upload), `/api/sources/json`, `/api/sources/{id}/status`, `/api/sources/{id}/retry`, `/api/sources/{id}/insights`, `/api/sources/{id}/download` |
 | Notes, insights | `/api/notes`, `/api/insights/{id}`, `/api/insights/{id}/save-as-note` |
-| Chat | `/api/chat/sessions`, `/api/chat/execute`, `/api/chat/context`; source chat under `/api/sources/{id}/chat/sessions` |
+| Chat | `/api/chat/sessions`, `/api/chat/execute`, `/api/chat/execute/stream`, `/api/chat/context`; source chat under `/api/sources/{id}/chat/sessions` |
 | Search and Ask | `/api/search`, `/api/search/ask` (streaming), `/api/search/ask/simple` |
 | Transformations | `/api/transformations`, `/api/transformations/execute`, `/api/transformations/default-prompt` |
 | Models and providers | `/api/models`, `/api/models/defaults`, `/api/models/sync`, `/api/models/auto-assign`, `/api/providers` |
@@ -89,9 +89,18 @@ curl http://localhost:5055/api/chat/execute \
 
 Sending the `context_config` itself to `/api/chat/execute` is accepted, but the model then sees only ids and status strings such as `"full content"`, not the source text. Create the session first with `POST /api/chat/sessions`.
 
+To stream the answer instead of waiting for it, post the same body to `POST /api/chat/execute/stream` and read the events described under [Streaming](#streaming). It runs the same graph and checkpoints the same way, so a streamed turn and a buffered turn leave identical history.
+
 ## Streaming
 
-`POST /api/search/ask` and the source-chat message endpoint return Server-Sent Events (`text/event-stream`). Each event is a `data: {json}` line with a `type` field. For Ask, the types are `strategy`, `answer`, `final_answer`, `complete` and `error`.
+`POST /api/search/ask`, `POST /api/chat/execute/stream` and the source-chat message endpoint return Server-Sent Events (`text/event-stream`). Each event is a `data: {json}` line with a `type` field. For Ask, the types are `strategy`, `answer`, `final_answer`, `complete` and `error`. For a streamed notebook-chat turn they are `user_message`, `token`, `complete` and `error`:
+
+- `user_message` echoes the question.
+- `token` carries a piece of the answer. `thinking` markup is filtered out of these events.
+- `complete` carries the cleaned, final answer, after it has been checkpointed.
+- `error` ends the turn with a message; a partial answer streamed before it is kept, unless nothing had arrived.
+
+Cancelling the request (closing the connection) stops generation on the server and keeps the partial answer. A turn is also capped at 15 minutes.
 
 ```bash
 curl -N http://localhost:5055/api/search/ask \

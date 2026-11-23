@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
+import { Bot, User, Send, Square, Loader2, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import {
   SourceChatMessage,
@@ -38,6 +38,8 @@ interface ChatPanelProps {
   contextIndicators: SourceChatContextIndicator | null
   // Resolves to false when the send failed
   onSendMessage: (message: string, modelOverride?: string) => Promise<boolean>
+  /** Stops the in-flight answer; renders a Stop control when provided. */
+  onStop?: () => void
   modelOverride?: string
   onModelChange?: (model?: string) => void
   // Session management props
@@ -62,6 +64,7 @@ export function ChatPanel({
   isStreaming,
   contextIndicators,
   onSendMessage,
+  onStop,
   modelOverride,
   onModelChange,
   sessions = [],
@@ -102,6 +105,11 @@ export function ChatPanel({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // While the model is still prefilling there is no answer bubble to show yet;
+  // once the first token lands the bubble itself is the progress indicator.
+  const awaitingFirstToken =
+    isStreaming && messages[messages.length - 1]?.type !== 'ai'
 
   return (
     <>
@@ -165,7 +173,7 @@ export function ChatPanel({
                 />
               ))
             )}
-            {isStreaming && (
+            {awaitingFirstToken && (
               <div className="flex gap-3 justify-start">
                 <div className="flex-shrink-0">
                   <div className="h-8 w-8 rounded-full bg-teal-tint flex items-center justify-center">
@@ -221,6 +229,7 @@ export function ChatPanel({
         {/* Input Area */}
         <ChatComposer
           onSendMessage={onSendMessage}
+          onStop={onStop}
           isStreaming={isStreaming}
           modelOverride={modelOverride}
           onModelChange={onModelChange}
@@ -236,6 +245,8 @@ export function ChatPanel({
 // re-render this small component instead of the whole message history.
 interface ChatComposerProps {
   onSendMessage: (message: string, modelOverride?: string) => Promise<boolean>
+  /** Stops the in-flight answer; renders a Stop control when provided. */
+  onStop?: () => void
   isStreaming: boolean
   modelOverride?: string
   onModelChange?: (model?: string) => void
@@ -243,6 +254,7 @@ interface ChatComposerProps {
 
 function ChatComposer({
   onSendMessage,
+  onStop,
   isStreaming,
   modelOverride,
   onModelChange
@@ -258,6 +270,8 @@ function ChatComposer({
 
   const handleSend = async () => {
     const message = input.trim()
+    // While a turn streams the Enter press is ignored, not queued: the draft
+    // stays in the box and the user presses Enter again once the turn ends.
     if (message && !isStreaming && !noChatModel) {
       setInput('')
       // Give the text back if the send failed, so it isn't lost (#1391),
@@ -311,23 +325,37 @@ function ChatComposer({
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={`${t('chat.sendPlaceholder')} (${t('chat.pressToSend', { key: keyHint })})`}
-          disabled={isStreaming}
+          // Left editable while streaming so the next question can be typed
+          // ahead; `handleSend` ignores the send until the turn ends.
           className="flex-1 min-h-[40px] max-h-[100px] resize-none py-2 px-3 min-w-0"
           rows={1}
         />
-        <Button
-          onClick={handleSend}
-          disabled={!input.trim() || isStreaming || noChatModel}
-          size="icon"
-          className="h-[40px] w-[40px] flex-shrink-0"
-          aria-label={t('chat.send')}
-        >
-          {isStreaming ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Send className="h-4 w-4" />
-          )}
-        </Button>
+        {isStreaming && onStop ? (
+          <Button
+            onClick={onStop}
+            size="icon"
+            variant="outline"
+            className="h-[40px] w-[40px] flex-shrink-0"
+            aria-label={t('chat.stop')}
+            title={t('chat.stop')}
+          >
+            <Square className="h-4 w-4 fill-current" />
+          </Button>
+        ) : (
+          <Button
+            onClick={handleSend}
+            disabled={!input.trim() || isStreaming || noChatModel}
+            size="icon"
+            className="h-[40px] w-[40px] flex-shrink-0"
+            aria-label={t('chat.send')}
+          >
+            {isStreaming ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+          </Button>
+        )}
       </div>
     </div>
   )

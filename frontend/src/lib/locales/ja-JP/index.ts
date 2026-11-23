@@ -448,6 +448,12 @@ export const jaJP = {
     maxFilesAllowed: "一括処理は最大{{count}}件までです",
   },
   chat: {
+    errors: {
+      timeout: "モデルが時間内に応答しませんでした。",
+      timeout_partial_kept: "モデルが時間内に応答しませんでした。途中までの回答は保持されました。",
+      timeout_partial_lost: "モデルが時間内に応答せず、途中までの回答も保存できませんでした。",
+      empty_reply: "モデルが空の回答を返しました。もう一度試すか、続く場合は別のモデルを選んでください。",
+    },
     sessions: "セッション",
     sessionTitlePlaceholder: "タイトルを入力...",
     noSessions: "チャットセッションがまだありません",

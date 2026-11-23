@@ -448,6 +448,12 @@ export const ptBR = {
     maxFilesAllowed: "Máximo de {{count}} arquivos permitidos por lote",
   },
   chat: {
+    errors: {
+      timeout: "O modelo não terminou a tempo.",
+      timeout_partial_kept: "O modelo não terminou a tempo. A resposta parcial foi mantida.",
+      timeout_partial_lost: "O modelo não terminou a tempo e a resposta parcial não pôde ser salva.",
+      empty_reply: "O modelo retornou uma resposta vazia. Tente novamente ou escolha outro modelo se isso continuar.",
+    },
     sessions: "Sessões",
     sessionTitlePlaceholder: "Digite um título aqui...",
     noSessions: "Nenhuma sessão de chat ainda",

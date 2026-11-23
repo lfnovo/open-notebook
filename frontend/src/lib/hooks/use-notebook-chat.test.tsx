@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { toast } from 'sonner'
 import { useNotebookChat } from './use-notebook-chat'
-import { chatApi } from '@/lib/api/chat'
+import { chatApi, ChatStreamError } from '@/lib/api/chat'
 
 vi.mock('@/lib/api/chat', () => ({
   chatApi: {
@@ -14,7 +14,16 @@ vi.mock('@/lib/api/chat', () => ({
     buildContext: vi.fn(),
     sendMessageStream: vi.fn(),
   },
-  ChatStreamError: class ChatStreamError extends Error {},
+  ChatStreamError: class ChatStreamError extends Error {
+    status: number
+    code?: string
+
+    constructor(status = 0, detail = '', code?: string) {
+      super(detail)
+      this.status = status
+      this.code = code
+    }
+  },
 }))
 
 vi.mock('@/lib/hooks/use-translation', () => ({
@@ -260,6 +269,7 @@ describe('useNotebookChat', () => {
     let sending!: Promise<boolean>
     await act(async () => {
       sending = result.current.sendMessage('hello')
+      stream.send({ type: 'user_message', content: 'hello' })
       stream.send({ type: 'token', content: 'part' })
     })
     await waitFor(() => expect(result.current.messages.map(m => m.content)).toEqual(['hello', 'part']))
@@ -311,5 +321,76 @@ describe('useNotebookChat', () => {
 
     expect(sent).toBe(false)
     expect(result.current.messages).toEqual([])
+  })
+
+  // Stop after the server acknowledged the question but before any token: the
+  // question is in the thread, so the turn is a success with no answer yet.
+  it('keeps an acknowledged question when stopped during prefill', async () => {
+    vi.mocked(chatApi.listSessions).mockResolvedValue([session])
+    vi.mocked(chatApi.getSession).mockResolvedValue({ ...session, messages: [] })
+    const stream = openStream()
+    vi.mocked(chatApi.sendMessageStream).mockImplementation(
+      (_data, signal) => new Promise((resolve, reject) => {
+        signal?.addEventListener('abort', () => {
+          stream.fail(new DOMException('Aborted', 'AbortError'))
+          reject(new DOMException('Aborted', 'AbortError'))
+        })
+        resolve(stream.stream)
+      })
+    )
+
+    const { result } = renderHook(() => useNotebookChat(params), { wrapper })
+    await waitFor(() => expect(result.current.currentSessionId).toBe(session.id))
+
+    let sending!: Promise<boolean>
+    await act(async () => {
+      sending = result.current.sendMessage('hello')
+      stream.send({ type: 'user_message', content: 'hello' })
+    })
+    await waitFor(() => expect(chatApi.sendMessageStream).toHaveBeenCalled())
+
+    vi.mocked(chatApi.getSession).mockResolvedValue({
+      ...session,
+      messages: [{ id: 'm1', type: 'human' as const, content: 'hello' }],
+    })
+
+    let sent: boolean | undefined
+    await act(async () => {
+      result.current.stopStreaming()
+      sent = await sending
+    })
+
+    expect(sent).toBe(true)
+    expect(result.current.messages.map(m => m.content)).toEqual(['hello'])
+  })
+
+  // The axios interceptor clears auth for every other API call; the fetch-based
+  // stream has to do its own.
+  it('clears auth state and redirects on a 401 from the stream', async () => {
+    vi.mocked(chatApi.listSessions).mockResolvedValue([session])
+    vi.mocked(chatApi.getSession).mockResolvedValue({ ...session, messages: [] })
+    vi.mocked(chatApi.sendMessageStream).mockRejectedValue(new ChatStreamError(401))
+
+    const originalLocation = window.location
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...originalLocation, href: '' },
+    })
+    localStorage.setItem('auth-storage', 'x')
+
+    const { result } = renderHook(() => useNotebookChat(params), { wrapper })
+    await waitFor(() => expect(result.current.currentSessionId).toBe(session.id))
+
+    await act(async () => {
+      expect(await result.current.sendMessage('hello')).toBe(false)
+    })
+
+    expect(localStorage.getItem('auth-storage')).toBeNull()
+    expect(window.location.href).toBe('/login')
+
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: originalLocation,
+    })
   })
 })

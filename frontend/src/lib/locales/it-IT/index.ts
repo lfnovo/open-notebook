@@ -448,6 +448,12 @@ export const itIT = {
     maxFilesAllowed: "Massimo {{count}} file consentiti per batch",
   },
   chat: {
+    errors: {
+      timeout: "Il modello non ha finito in tempo.",
+      timeout_partial_kept: "Il modello non ha finito in tempo. La risposta parziale è stata mantenuta.",
+      timeout_partial_lost: "Il modello non ha finito in tempo e la risposta parziale non è stata salvata.",
+      empty_reply: "Il modello ha restituito una risposta vuota. Riprova o scegli un altro modello se continua.",
+    },
     sessions: "Sessioni",
     sessionTitlePlaceholder: "Digita un titolo qui...",
     noSessions: "Ancora nessuna sessione chat",

@@ -44,12 +44,14 @@ from open_notebook.graphs.chat import NODE_NAME as CHAT_NODE
 from open_notebook.graphs.chat import graph as chat_graph
 from open_notebook.utils import token_count
 from open_notebook.utils.context_builder import build_notebook_context
+from open_notebook.utils.error_classifier import classify_error
 from open_notebook.utils.graph_utils import (
+    StreamEnd,
     ainvoke_chat_turn,
     get_session_message_count,
     last_ai_content,
     persist_pending_human_turn,
-    settle_streamed_turn,
+    settle_turn_end,
 )
 
 router = APIRouter()
@@ -426,33 +428,6 @@ async def execute_chat(request: ExecuteChatRequest):
         raise HTTPException(status_code=500, detail=f"Error executing chat: {str(e)}")
 
 
-async def _settle(
-    thread_id: str,
-    content: str,
-    question: Optional[HumanMessage],
-    *,
-    keep_question: bool = False,
-) -> bool:
-    """Persist what a streamed turn produced; report whether it was saved.
-
-    Returns False (after logging) when the checkpoint write fails, so callers
-    can say the partial answer was lost instead of claiming it was kept.
-    """
-    try:
-        await settle_streamed_turn(
-            chat_graph,
-            thread_id,
-            content,
-            question,
-            as_node=CHAT_NODE,
-            keep_question=keep_question,
-        )
-        return True
-    except Exception:
-        logger.exception(f"Could not settle streamed turn in {thread_id}")
-        return False
-
-
 async def _stream_execute_chat(
     request: ExecuteChatRequest,
     http_request: Request,
@@ -486,8 +461,6 @@ async def _stream_execute_chat(
     settled = False
 
     try:
-        yield sse({"type": "user_message", "content": request.message})
-
         # A turn already in flight on this session is generating from the
         # thread as it was; queue behind it so this turn's snapshot includes
         # its answer. Keepalives cover the wait.
@@ -526,6 +499,11 @@ async def _stream_execute_chat(
         )
         persisted = True
 
+        # The echo doubles as the acknowledgement that the question is
+        # checkpointed: a client that has seen it never needs to restore the
+        # message, even if it stops before the first token.
+        yield sse({"type": "user_message", "content": request.message})
+
         task = asyncio.create_task(
             run_graph(
                 queue,
@@ -552,8 +530,10 @@ async def _stream_execute_chat(
             final = await last_ai_content(chat_graph, thread_id)
             if not final.strip():
                 raise IncompleteGenerationError(EMPTY_REPLY_MESSAGE)
-            await session.save()
+            # Settled before the session save: a disconnect during that await
+            # would otherwise let the teardown settle the answer a second time.
             settled = True
+            await session.save()
             yield sse({"type": "complete", "content": final})
             return
 
@@ -561,17 +541,26 @@ async def _stream_execute_chat(
             # Stop the run before writing the partial answer: a still-running
             # graph could otherwise checkpoint afterwards and overwrite it.
             await stop_task(task)
-            settled = await _settle(thread_id, content, question, keep_question=True)
+            settled = await settle_turn_end(
+                chat_graph,
+                thread_id,
+                content,
+                question,
+                as_node=CHAT_NODE,
+                end=StreamEnd.TIMEOUT,
+            )
             message = (
                 f"The model did not finish within {int(_sse.MAX_STREAM_SECONDS)}s."
             )
+            code: Optional[str] = "timeout"
             if content.strip():
-                message += (
-                    " Partial answer kept."
-                    if settled
-                    else " The partial answer could not be saved."
-                )
-            yield format_error_event(IncompleteGenerationError(message))
+                if settled:
+                    message += " Partial answer kept."
+                    code = "timeout_partial_kept"
+                else:
+                    message += " The partial answer could not be saved."
+                    code = "timeout_partial_lost"
+            yield format_error_event(IncompleteGenerationError(message), code=code)
             return
 
         if outcome.kind == "error":
@@ -583,7 +572,14 @@ async def _stream_execute_chat(
                 )
             # The worker only reports an error once `astream` has raised, so
             # the run is already finished here.
-            settled = await _settle(thread_id, content, question)
+            settled = await settle_turn_end(
+                chat_graph,
+                thread_id,
+                content,
+                question,
+                as_node=CHAT_NODE,
+                end=StreamEnd.ERROR,
+            )
             yield format_error_event(
                 payload if isinstance(payload, BaseException) else RuntimeError()
             )
@@ -593,7 +589,14 @@ async def _stream_execute_chat(
         # before settling so it can't checkpoint over the partial answer. An
         # answerless stop keeps the question: it was accepted, just unanswered.
         await stop_task(task)
-        settled = await _settle(thread_id, content, question, keep_question=True)
+        settled = await settle_turn_end(
+            chat_graph,
+            thread_id,
+            content,
+            question,
+            as_node=CHAT_NODE,
+            end=StreamEnd.STOP,
+        )
 
     except asyncio.CancelledError:
         raise
@@ -605,14 +608,31 @@ async def _stream_execute_chat(
             f"  Traceback:\n{traceback.format_exc()}"
         )
         if persisted and question and not settled:
+            # A cancellation lands here, not in the disconnect branch: the
+            # question was accepted, so it stays even with no answer.
             await stop_task(task)
-            settled = await _settle(thread_id, "".join(parts), question)
-        yield format_error_event(e)
+            settled = await settle_turn_end(
+                chat_graph,
+                thread_id,
+                "".join(parts),
+                question,
+                as_node=CHAT_NODE,
+                end=StreamEnd.STOP,
+            )
+        code = "empty_reply" if str(e) == EMPTY_REPLY_MESSAGE else None
+        yield format_error_event(e, code=code)
     finally:
 
         async def _settle_if_needed() -> None:
             if persisted and question and not settled:
-                await _settle(thread_id, "".join(parts), question)
+                await settle_turn_end(
+                    chat_graph,
+                    thread_id,
+                    "".join(parts),
+                    question,
+                    as_node=CHAT_NODE,
+                    end=StreamEnd.STOP,
+                )
 
         await finalize_stream(task, _settle_if_needed)
         # Released only after the settlement is written, so the next turn
@@ -666,15 +686,11 @@ async def execute_chat_stream(request: ExecuteChatRequest, http_request: Request
         raise
     except Exception as e:
         logger.error(f"Error starting chat stream: {str(e)}")
-        # Startup failures are rarely user-actionable; keep provider/driver
-        # detail out of the client but send something bounded and readable.
-        detail = str(e).strip().splitlines()[0][:200] if str(e).strip() else ""
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error streaming chat: {detail}"
-            if detail
-            else "Error streaming chat",
-        )
+        # Nothing is streaming yet, so this has to be an HTTP response. The
+        # message goes through the classifier (as the mid-stream errors do) so
+        # provider/driver detail stays out of the client.
+        _, detail = classify_error(e)
+        raise HTTPException(status_code=500, detail=detail)
 
 
 @router.post("/chat/context", response_model=BuildContextResponse)

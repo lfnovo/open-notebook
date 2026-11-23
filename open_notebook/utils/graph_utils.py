@@ -1,4 +1,5 @@
 import asyncio
+from enum import Enum
 from typing import Any, Optional
 
 from langchain_core.messages import AIMessage, BaseMessage, RemoveMessage
@@ -145,6 +146,49 @@ async def settle_streamed_turn(
         return
     if question is not None and not keep_question:
         await discard_message(graph, thread_id, question)
+
+
+class StreamEnd(str, Enum):
+    """How a streamed turn ended early."""
+
+    STOP = "stop"
+    TIMEOUT = "timeout"
+    ERROR = "error"
+
+    # A stop or a timeout is a turn the user asked for and accepts unanswered;
+    # a failure is retried, so its question is rolled back instead.
+    @property
+    def keeps_question(self) -> bool:
+        return self is not StreamEnd.ERROR
+
+
+async def settle_turn_end(
+    graph,
+    thread_id: str,
+    content: str,
+    question: Optional[BaseMessage],
+    *,
+    as_node: str,
+    end: StreamEnd,
+) -> bool:
+    """Settle a turn according to why it ended; report whether it was persisted.
+
+    Returns False (after logging) when the checkpoint write fails, so callers
+    can say the partial answer was lost instead of claiming it was kept.
+    """
+    try:
+        await settle_streamed_turn(
+            graph,
+            thread_id,
+            content,
+            question,
+            as_node=as_node,
+            keep_question=end.keeps_question,
+        )
+        return True
+    except Exception:
+        logger.exception(f"Could not settle {end.value} turn in {thread_id}")
+        return False
 
 
 async def last_ai_content(graph, thread_id: str) -> str:

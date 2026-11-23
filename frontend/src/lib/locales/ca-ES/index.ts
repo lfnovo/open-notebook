@@ -448,6 +448,12 @@ export const caES = {
     maxFilesAllowed: "Màxim {{count}} fitxers per lot",
   },
   chat: {
+    errors: {
+      timeout: "El model no ha acabat a temps.",
+      timeout_partial_kept: "El model no ha acabat a temps. S'ha conservat la resposta parcial.",
+      timeout_partial_lost: "El model no ha acabat a temps i no s'ha pogut desar la resposta parcial.",
+      empty_reply: "El model ha retornat una resposta buida. Torna-ho a provar o tria un altre model si continua passant.",
+    },
     sessions: "Sessions",
     sessionTitlePlaceholder: "Escriu un títol aquí...",
     noSessions: "Encara no hi ha sessions de xat",

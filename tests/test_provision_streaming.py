@@ -55,3 +55,12 @@ async def test_streaming_is_left_out_by_default():
     get_default, _ = await _provision()
 
     assert "streaming" not in get_default.await_args.kwargs
+
+
+@pytest.mark.asyncio
+async def test_large_context_model_also_gets_the_streaming_flag():
+    with patch("open_notebook.ai.provision.token_count", return_value=200_000):
+        get_default, _ = await _provision(streaming=True)
+
+    assert get_default.await_args.args[0] == "large_context"
+    assert get_default.await_args.kwargs["streaming"] is True

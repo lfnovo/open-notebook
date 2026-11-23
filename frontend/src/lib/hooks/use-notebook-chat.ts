@@ -27,6 +27,15 @@ interface UseNotebookChatParams {
 const SETTLE_TIMEOUT_MS = 5000
 const SETTLE_POLL_MS = 150
 
+// Error codes the stream endpoint authors itself, mapped to their keys. The
+// literals matter: the locale parity test scans for used keys.
+const STREAM_ERROR_KEYS: Record<string, string> = {
+  timeout: 'chat.errors.timeout',
+  timeout_partial_kept: 'chat.errors.timeout_partial_kept',
+  timeout_partial_lost: 'chat.errors.timeout_partial_lost',
+  empty_reply: 'chat.errors.empty_reply',
+}
+
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 export function useNotebookChat({ notebookId, sources, notes, contextSelections }: UseNotebookChatParams) {
@@ -198,12 +207,12 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
   }, [notebookId, sources, notes, contextSelections])
 
   // Wait until a stopped turn has been persisted server-side. The endpoint
-  // keeps the partial answer; refetching before its cancellation handler has
-  // settled would show a thread without it. Returns the last session read.
+  // keeps the partial answer (or the question alone); refetching before its
+  // cancellation handler has settled would show a thread without it. The
+  // count is the signal: it reaches `minMessages` only once the turn is
+  // written, and no two equal reads mean the same thing.
   const waitForSettlement = useCallback(async (sessionId: string, minMessages: number) => {
     const deadline = Date.now() + SETTLE_TIMEOUT_MS
-    let lastCount = -1
-    let stablePolls = 0
     let latest: Awaited<ReturnType<typeof chatApi.getSession>> | null = null
 
     while (Date.now() < deadline) {
@@ -211,16 +220,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       try {
         const session = await chatApi.getSession(sessionId)
         latest = session
-        const count = session.messages.length
-        if (count >= minMessages) return latest
-        if (count === lastCount) {
-          stablePolls += 1
-          // Nothing streamed (question rolled back) or the server is done.
-          if (stablePolls >= 2) return latest
-        } else {
-          stablePolls = 0
-          lastCount = count
-        }
+        if (session.messages.length >= minMessages) return latest
       } catch {
         return latest
       }
@@ -241,10 +241,10 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     let answer = ''
     let aiId = ''
     let aiStarted = false
-    // Whether the request reached the server (the stream request resolves
-    // with a body only once the response has started). An abort before that
-    // means the server never received the question.
-    let reachedServer = false
+    // Whether the server acknowledged the question (its `user_message` event is
+    // emitted only after the question is checkpointed). An abort before it
+    // means the server never stored the turn.
+    let accepted = false
     let userMessage: NotebookChatMessage | null = null
 
     // A new turn cancels any previous one still in flight.
@@ -321,7 +321,6 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
         context,
         model_override: modelOverride ?? (currentSession?.model_override ?? undefined)
       }, controller.signal)
-      reachedServer = true
 
       const reader = body.getReader()
       const decoder = new TextDecoder()
@@ -341,7 +340,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
           const jsonStr = line.slice(6).trim()
           if (!jsonStr) continue
 
-          let event: { type: string, content?: string, message?: string }
+          let event: { type: string, content?: string, message?: string, code?: string }
           try {
             event = JSON.parse(jsonStr)
           } catch {
@@ -349,7 +348,11 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
             continue
           }
 
-          if (event.type === 'token') {
+          if (event.type === 'user_message') {
+            // The server echoes only after checkpointing the question, so this
+            // is the acknowledgement an abort can rely on.
+            accepted = true
+          } else if (event.type === 'token') {
             renderAnswer(answer + (event.content || ''))
           } else if (event.type === 'complete') {
             // The server sends the cleaned text (thinking stripped) and has
@@ -358,7 +361,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
               renderAnswer(event.content)
             }
           } else if (event.type === 'error') {
-            throw new Error(event.message || '')
+            throw new ChatStreamError(0, event.message, event.code)
           }
         }
       }
@@ -368,12 +371,12 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       return true
     } catch (err: unknown) {
       const aborted = controller.signal.aborted
-      const error = err as { status?: number, message?: string }
+      const error = err as { status?: number, message?: string, code?: string }
 
       if (aborted) {
-        if (!reachedServer) {
-          // Stopped before the request got to the server: it never saw the
-          // question, so drop the optimistic copy and let the composer keep
+        if (!accepted) {
+          // Stopped before the server acknowledged the question: it never
+          // stored it, so drop the optimistic copy and let the composer keep
           // the typed text. Any answer bubble is from an older stream.
           if (userMessage) {
             const droppedId = userMessage.id
@@ -384,7 +387,12 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
         // Stop: the server persists the partial answer, so wait for the
         // cancellation handler to settle instead of racing it with a refetch.
         if (sessionId) {
-          const settled = await waitForSettlement(sessionId, baseline + 2)
+          // Only wait for what the turn can actually produce: the question,
+          // plus an answer if one had started.
+          const settled = await waitForSettlement(
+            sessionId,
+            baseline + (aiStarted ? 2 : 1)
+          )
           if (settled) {
             queryClient.setQueryData(QUERY_KEYS.notebookChatSession(sessionId), settled)
             if (isActive()) {
@@ -405,7 +413,10 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
         }
       } else {
         console.error('Error sending message:', error)
-        toast.error(getApiErrorMessage(error.message, (key) => t(key), 'apiErrors.failedToSendMessage'))
+        // Endpoint-authored errors carry a code, so their text can be
+        // translated; anything else is the backend's reason or the fallback.
+        const key = error.code ? STREAM_ERROR_KEYS[error.code] : undefined
+        toast.error(key ? t(key) : getApiErrorMessage(error.message, (k) => t(k), 'apiErrors.failedToSendMessage'))
         // Remove the optimistic message on failure. A partial answer, if any,
         // is in the checkpoint and comes back with the refetch.
         setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
@@ -436,11 +447,10 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
 
   // Stop the in-flight answer. Generation is cancelled server-side and the
   // partial answer is kept; the aborted send resyncs once the server settles.
+  // `isSending` stays on until that resync finishes, so the session switcher
+  // cannot move to another thread while the stopped one is still landing.
   const stopStreaming = useCallback(() => {
     abortControllerRef.current?.abort()
-    // Unlock the composer now; the aborted turn's cleanup is controller-scoped
-    // so it cannot clear a newer turn's state.
-    setIsSending(false)
   }, [])
 
   // Switch session

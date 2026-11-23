@@ -14,13 +14,16 @@ import {
 /** Non-2xx answer from the streaming endpoint, with the backend's reason. */
 export class ChatStreamError extends Error {
   status: number
+  /** Stable code for endpoint-authored errors (`timeout`, `empty_reply`, …). */
+  code?: string
 
-  constructor(status: number, detail?: string) {
+  constructor(status: number, detail?: string, code?: string) {
     // No generic text: callers fall back to a translated key when detail is
     // empty, exactly like the axios-based calls do.
     super(detail || '')
     this.name = 'ChatStreamError'
     this.status = status
+    this.code = code
   }
 }
 
@@ -106,10 +109,12 @@ export const chatApi = {
 
     if (!response.ok) {
       // Prefer the backend's reason ("Session not found", …) over a status code.
+      // A 422 `detail` is a list of objects, so only strings are used.
       let detail: string | undefined
       try {
         const body = await response.json()
-        detail = body?.detail || body?.message
+        if (typeof body?.detail === 'string') detail = body.detail
+        else if (typeof body?.message === 'string') detail = body.message
       } catch {
         detail = response.statusText || undefined
       }

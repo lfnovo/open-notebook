@@ -451,6 +451,12 @@ export const deDE = {
     maxFilesAllowed: "Maximal {{count}} Dateien pro Sammelimport erlaubt",
   },
   chat: {
+    errors: {
+      timeout: "Das Modell hat nicht rechtzeitig geantwortet.",
+      timeout_partial_kept: "Das Modell hat nicht rechtzeitig geantwortet. Die Teilantwort wurde behalten.",
+      timeout_partial_lost: "Das Modell hat nicht rechtzeitig geantwortet, und die Teilantwort konnte nicht gespeichert werden.",
+      empty_reply: "Das Modell hat eine leere Antwort geliefert. Versuche es erneut oder wähle ein anderes Modell, falls das bleibt.",
+    },
     sessions: "Sitzungen",
     sessionTitlePlaceholder: "Titel hier eingeben...",
     noSessions: "Noch keine Chat-Sitzungen",

@@ -448,6 +448,12 @@ export const zhTW = {
     maxFilesAllowed: "每批最多允許 {{count}} 個檔案",
   },
   chat: {
+    errors: {
+      timeout: "模型未能及時完成。",
+      timeout_partial_kept: "模型未能及時完成。部分回答已保留。",
+      timeout_partial_lost: "模型未能及時完成，且部分回答無法儲存。",
+      empty_reply: "模型回傳了空回答。請重試，若持續發生請換一個模型。",
+    },
     sessions: "對話",
     sessionTitlePlaceholder: "在此輸入標題...",
     noSessions: "暫無對話",

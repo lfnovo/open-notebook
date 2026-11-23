@@ -24,6 +24,7 @@ from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
 
 from api.routers._sse import (
+    LEAD_BUFFER_LIMIT,
     StreamOutcome,
     ThinkingFilter,
     format_error_event,
@@ -32,6 +33,7 @@ from api.routers._sse import (
 from api.routers.chat import ExecuteChatRequest, _stream_execute_chat
 from open_notebook.exceptions import IncompleteGenerationError
 from open_notebook.utils.checkpointing import HybridSqliteSaver
+from open_notebook.utils.graph_utils import persist_state
 
 
 class _State(TypedDict, total=False):
@@ -143,10 +145,29 @@ def test_filter_handles_tags_split_across_chunks():
     assert out == "answer"
 
 
+def test_filter_strips_stray_close_tag_after_a_long_preamble():
+    f = ThinkingFilter()
+    out = f.feed("p" * 500) + f.feed("</think") + f.feed(">answer")
+    assert out == "p" * 500 + "answer"
+
+
+def test_filter_keeps_a_partial_open_tag_at_the_lead_limit():
+    f = ThinkingFilter()
+    preamble = "p" * (LEAD_BUFFER_LIMIT + 1) + "<thi"
+    out = f.feed(preamble) + f.feed("nk>hidden</think>visible")
+    assert out == "p" * (LEAD_BUFFER_LIMIT + 1) + "visible"
+
+
 def test_filter_strips_tagless_preamble():
     f = ThinkingFilter()
     out = f.feed("reasoning here</think") + f.feed(">answer") + f.flush()
     assert out == "answer"
+
+
+def test_filter_strips_an_open_tag_that_appears_in_the_body():
+    f = ThinkingFilter()
+    out = f.feed("p" * 500 + " mid") + f.feed(" thinkinghidden</think>tail")
+    assert out == "p" * 500 + " mid" + "tail"
 
 
 def test_filter_drops_unterminated_thinking_block():
@@ -342,14 +363,14 @@ async def test_settlement_survives_refiring_cancellation(monkeypatch):
     session = MagicMock(save=AsyncMock())
 
     settled = asyncio.Event()
-    original_settle = chat_router._settle
+    original_settle = chat_router.settle_turn_end
 
     async def spy_settle(*args, **kwargs):
         result = await original_settle(*args, **kwargs)
         settled.set()
         return result
 
-    monkeypatch.setattr(chat_router, "_settle", spy_settle)
+    monkeypatch.setattr(chat_router, "settle_turn_end", spy_settle)
 
     async def consume() -> None:
         async for _ in _stream_execute_chat(
@@ -400,6 +421,42 @@ async def test_serialized_turn_excludes_and_evicts():
     )
     # Last holder leaves: the entry is evicted, not kept for the process life.
     assert "chat_session:lock" not in _session_locks
+
+
+@pytest.mark.asyncio
+async def test_settle_policy_keeps_a_stopped_question_and_drops_a_failed_one():
+    """The keep-or-drop rule lives with the settlement, not the router."""
+    from open_notebook.utils.graph_utils import StreamEnd, settle_turn_end
+
+    async def node(state, config):
+        return {"messages": [AIMessage(content="x")]}
+
+    builder = StateGraph(_State)
+    builder.add_node("agent", node)
+    builder.add_edge(START, "agent")
+    builder.add_edge("agent", END)
+    graph = builder.compile(
+        checkpointer=HybridSqliteSaver(
+            sqlite3.connect(":memory:", check_same_thread=False)
+        )
+    )
+
+    async def seed(thread_id: str, question: HumanMessage) -> None:
+        await persist_state(graph, thread_id, {"messages": [question]}, as_node="agent")
+
+    stopped = HumanMessage(content="stopped", id="h1")
+    await seed("stop", stopped)
+    assert await settle_turn_end(
+        graph, "stop", "", stopped, as_node="agent", end=StreamEnd.STOP
+    )
+    assert _history(graph, "stop") == [("human", "stopped")]
+
+    failed = HumanMessage(content="failed", id="h2")
+    await seed("error", failed)
+    assert await settle_turn_end(
+        graph, "error", "", failed, as_node="agent", end=StreamEnd.ERROR
+    )
+    assert _history(graph, "error") == []
 
 
 @pytest.mark.asyncio
@@ -529,8 +586,14 @@ async def test_concurrent_turns_on_one_session_serialize(monkeypatch):
         AsyncMock(return_value=(thread_id, session)),
     )
     monkeypatch.setattr(chat_router, "repo_query", AsyncMock(return_value=[]))
-    # The route closes over its module-level graph; use the real one.
-    monkeypatch.setattr(chat_router, "chat_graph", chat_graph_module.graph)
+    # The node and its state definition are the real ones; only the checkpoint
+    # store is in-memory so the test leaves no thread in the file.
+    graph = chat_graph_module.agent_state.compile(
+        checkpointer=HybridSqliteSaver(
+            sqlite3.connect(":memory:", check_same_thread=False)
+        )
+    )
+    monkeypatch.setattr(chat_router, "chat_graph", graph)
 
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -557,7 +620,7 @@ async def test_concurrent_turns_on_one_session_serialize(monkeypatch):
     ]
     assert ("ai", "answer 1") in queued
 
-    assert _history(chat_graph_module.graph, thread_id) == [
+    assert _history(graph, thread_id) == [
         ("human", "first"),
         ("ai", "answer 1"),
         ("human", "second"),
@@ -584,6 +647,12 @@ def test_buffered_route_runs_the_real_async_graph(monkeypatch):
     model.ainvoke = AsyncMock(return_value=AIMessage(content="a plain answer"))
     session = MagicMock(model_override=None, save=AsyncMock())
     thread_id = f"chat_session:buffered-{uuid4()}"
+    # Real node and state, in-memory checkpoint store (no file thread left).
+    graph = chat_graph_module.agent_state.compile(
+        checkpointer=HybridSqliteSaver(
+            sqlite3.connect(":memory:", check_same_thread=False)
+        )
+    )
 
     with (
         monkeypatch.context() as m,
@@ -593,6 +662,7 @@ def test_buffered_route_runs_the_real_async_graph(monkeypatch):
             "provision_langchain_model",
             AsyncMock(return_value=model),
         )
+        m.setattr(chat_router, "chat_graph", graph)
         m.setattr(
             chat_router,
             "get_session_or_404",
@@ -614,7 +684,7 @@ def test_buffered_route_runs_the_real_async_graph(monkeypatch):
         "question",
         "a plain answer",
     ]
-    assert _history(chat_graph_module.graph, thread_id) == [
+    assert _history(graph, thread_id) == [
         ("human", "question"),
         ("ai", "a plain answer"),
     ]

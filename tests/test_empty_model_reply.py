@@ -62,6 +62,19 @@ async def test_notebook_chat_node_keeps_nonempty_reply():
     assert result["messages"].content == "hello"
 
 
+@pytest.mark.asyncio
+async def test_notebook_chat_node_keeps_reply_after_tagless_preamble():
+    from open_notebook.graphs.chat import call_model_with_messages
+
+    state = {"messages": [HumanMessage(content="hi")], "notebook": None}
+    with patch(
+        "open_notebook.graphs.chat.provision_langchain_model",
+        new=AsyncMock(return_value=_async_model_returning("thinking x</think>hello")),
+    ):
+        result = await call_model_with_messages(state, {"configurable": {}})  # type: ignore[arg-type]
+    assert result["messages"].content == "hello"
+
+
 @pytest.mark.parametrize("reply", EMPTY_REPLIES)
 def test_source_chat_node_rejects_empty_reply(reply):
     from open_notebook.graphs.source_chat import call_model_with_source_context

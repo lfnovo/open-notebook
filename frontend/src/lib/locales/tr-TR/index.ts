@@ -448,6 +448,12 @@ export const trTR = {
     maxFilesAllowed: "Toplu işlem başına en fazla {{count}} dosya",
   },
   chat: {
+    errors: {
+      timeout: "Model zamanında bitirmedi.",
+      timeout_partial_kept: "Model zamanında bitirmedi. Kısmi yanıt korundu.",
+      timeout_partial_lost: "Model zamanında bitirmedi ve kısmi yanıt kaydedilemedi.",
+      empty_reply: "Model boş bir yanıt döndürdü. Tekrar deneyin veya bu sürerse başka bir model seçin.",
+    },
     sessions: "Oturumlar",
     sessionTitlePlaceholder: "Buraya bir başlık yazın...",
     noSessions: "Henüz sohbet oturumu yok",

@@ -62,6 +62,40 @@ QueueItem = Tuple[str, Any]
 OPEN_TAG = " thinking"
 CLOSE_TAG = "</think>"
 
+# Models open reasoning either with a tag or, when the bracket is lost, with the
+# bare word. The bare word is only searched in the lead (the start of the
+# answer), where prose is unlikely to use it; in the body it would false-positive.
+LEAD_OPEN_TAGS = ("<think", "thinking")
+BODY_OPEN_TAGS = (" thinking", "<think")
+
+
+def _first_tag(text: str, tags: tuple) -> int:
+    """Index of the earliest of `tags` in `text`, or -1."""
+    found = -1
+    for tag in tags:
+        index = text.find(tag)
+        if index >= 0 and (found < 0 or index < found):
+            found = index
+    return found
+
+
+def _partial_any_suffix(text: str, tags: tuple) -> int:
+    """Longest suffix of `text` that is a proper prefix of one of `tags`."""
+    return max(_partial_tag_suffix(text, tag) for tag in tags)
+
+
+def _tag_start(text: str, index: int, tag: str) -> int:
+    """Start of the text to emit before a match at `index`.
+
+    A marker opening the reasoning is preceded by a space that belongs to the
+    markup, not to the answer, so one is swallowed with the tag (unless the tag
+    already begins with it).
+    """
+    if index > 0 and not tag.startswith(" ") and text[index - 1] == " ":
+        return index - 1
+    return index
+
+
 # While the stream is still at its beginning, hold text back until we know
 # whether it is a tagless thinking preamble (``reasoning</think>answer``).
 # Past this many characters it is treated as an answer and flushed.
@@ -140,11 +174,14 @@ class ThinkingFilter:
                 continue
 
             if self._state == self._LEAD:
-                opened = self._buf.find(OPEN_TAG)
+                opened = _first_tag(self._buf, LEAD_OPEN_TAGS)
                 closed = self._buf.find(CLOSE_TAG)
                 if opened >= 0 and (closed < 0 or opened < closed):
-                    out.append(self._buf[:opened])
-                    self._buf = self._buf[opened + len(OPEN_TAG) :]
+                    tag = next(
+                        t for t in LEAD_OPEN_TAGS if self._buf.startswith(t, opened)
+                    )
+                    out.append(self._buf[: _tag_start(self._buf, opened, tag)])
+                    self._buf = self._buf[opened + len(tag) :]
                     self._state = self._THINKING
                     continue
                 if closed >= 0:
@@ -153,19 +190,33 @@ class ThinkingFilter:
                     self._state = self._BODY
                     continue
                 if len(self._buf) > LEAD_BUFFER_LIMIT:
-                    out.append(self._buf)
-                    self._buf = ""
+                    # Preamble over the limit: give up and treat it as answer,
+                    # but keep a trailing partial tag for the next chunk.
+                    keep = _partial_any_suffix(self._buf, LEAD_OPEN_TAGS)
+                    out.append(self._buf[:-keep] if keep else self._buf)
+                    self._buf = self._buf[-keep:] if keep else ""
                     self._state = self._BODY
                 break
 
-            # Body: a stray opening tag still starts a thinking block.
-            opened = self._buf.find(OPEN_TAG)
-            if opened >= 0:
-                out.append(self._buf[:opened])
-                self._buf = self._buf[opened + len(OPEN_TAG) :]
+            # Body: a stray opening tag still starts a thinking block, and a
+            # stray closing tag (tagless preamble flushed above the limit)
+            # is dropped rather than shown.
+            opened = _first_tag(self._buf, BODY_OPEN_TAGS)
+            closed = self._buf.find(CLOSE_TAG)
+            if opened >= 0 and (closed < 0 or opened < closed):
+                tag = next(t for t in BODY_OPEN_TAGS if self._buf.startswith(t, opened))
+                out.append(self._buf[: _tag_start(self._buf, opened, tag)])
+                self._buf = self._buf[opened + len(tag) :]
                 self._state = self._THINKING
                 continue
-            keep = _partial_tag_suffix(self._buf, OPEN_TAG)
+            if closed >= 0:
+                out.append(self._buf[:closed])
+                self._buf = self._buf[closed + len(CLOSE_TAG) :]
+                continue
+            keep = max(
+                _partial_any_suffix(self._buf, BODY_OPEN_TAGS),
+                _partial_tag_suffix(self._buf, CLOSE_TAG),
+            )
             if keep:
                 out.append(self._buf[:-keep])
                 self._buf = self._buf[-keep:]
@@ -183,17 +234,22 @@ class ThinkingFilter:
         return rest
 
 
-def format_error_event(error: BaseException) -> str:
+def format_error_event(error: BaseException, *, code: Optional[str] = None) -> str:
     """Build an `error` event without leaking internals to the client.
 
     Typed `OpenNotebookError`s already carry a user-facing message; anything
     else (raw provider exception, transport error) goes through the classifier.
+    `code` marks errors the endpoint (rather than a provider) authored, so the
+    client can show its own translated text instead of the English message.
     """
     if isinstance(error, OpenNotebookError):
         message = str(error)[:MAX_ERROR_CHARS]
     else:
         _, message = classify_error(error)
-    return sse({"type": "error", "message": message})
+    payload: Dict[str, Any] = {"type": "error", "message": message}
+    if code is not None:
+        payload["code"] = code
+    return sse(payload)
 
 
 def stream_headers() -> Dict[str, str]:

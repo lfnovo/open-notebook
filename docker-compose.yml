@@ -26,8 +26,9 @@ services:
   open_notebook:
     # Built from the fork's repository instead of pulled, so the image under
     # test is this branch. A remote context keeps a downloaded compose file
-    # working (no local checkout or Dockerfile needed).
-    build: https://github.com/rumplestilzken/open-notebook.git#main
+    # working (no local checkout or Dockerfile needed); the commit keeps the
+    # code from moving under a running test. Bump the SHA when the branch moves.
+    build: https://github.com/rumplestilzken/open-notebook.git#2429449
     image: open-notebook:local
     ports:
       - "8502:8502"  # Web UI

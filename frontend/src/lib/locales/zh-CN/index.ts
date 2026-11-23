@@ -455,6 +455,7 @@ export const zhCN = {
     deleteSessionDesc: "确定要删除此聊天会话吗？此操作无法撤销。",
     sendPlaceholder: "向您的来源提问...",
     send: "发送消息",
+    stop: "停止",
     noChatModel: "尚未选择聊天模型。请在模型页面设置一个后再开始聊天。",
     sessionsTitle: "聊天会话",
     chatWith: "与{{name}}对话",

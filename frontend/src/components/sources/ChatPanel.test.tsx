@@ -174,7 +174,7 @@ describe('ChatPanel composer', () => {
     uaSpy.mockRestore()
   })
 
-  it('does not send while streaming', () => {
+  it('does not send while streaming, but keeps the draft for type-ahead', () => {
     const onSendMessage = vi.fn()
     render(
       <ChatPanel
@@ -182,14 +182,48 @@ describe('ChatPanel composer', () => {
         isStreaming={true}
         contextIndicators={null}
         onSendMessage={onSendMessage}
+        onStop={vi.fn()}
       />
     )
 
     const textarea = getTextarea()
-    // Textarea is disabled while streaming, but the guard must also hold.
+    // The input stays editable so the next question can be typed ahead, but
+    // the Enter press is ignored until the turn ends — nothing is queued.
+    expect(textarea.disabled).toBe(false)
+    fireEvent.change(textarea, { target: { value: 'next question' } })
     fireEvent.keyDown(textarea, { key: 'Enter', ctrlKey: true })
 
     expect(onSendMessage).not.toHaveBeenCalled()
+    expect(textarea.value).toBe('next question')
+  })
+
+  it('shows a Stop button while streaming when a stop handler exists', () => {
+    const onStop = vi.fn()
+    render(
+      <ChatPanel
+        messages={[]}
+        isStreaming={true}
+        contextIndicators={null}
+        onSendMessage={vi.fn()}
+        onStop={onStop}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'chat.stop' }))
+    expect(onStop).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the spinner when there is no stop handler (source chat)', () => {
+    render(
+      <ChatPanel
+        messages={[]}
+        isStreaming={true}
+        contextIndicators={null}
+        onSendMessage={vi.fn()}
+      />
+    )
+
+    expect(screen.queryByRole('button', { name: 'chat.stop' })).toBeNull()
   })
 })
 

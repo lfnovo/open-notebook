@@ -15,6 +15,10 @@ export async function sseProxy(req: NextRequest, upstreamPath: string) {
     },
     body,
     cache: 'no-store',
+    // Forward the browser's abort signal: without it, clicking Stop during the
+    // model's prefill (before the first byte) leaves the upstream request — and
+    // the generation behind it — running.
+    signal: req.signal,
   })
 
   if (!upstream.ok || !upstream.body) {

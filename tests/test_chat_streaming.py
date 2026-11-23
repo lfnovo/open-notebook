@@ -259,7 +259,7 @@ async def test_stop_keeps_the_partial_answer(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_stop_before_first_token_rolls_the_question_back(monkeypatch):
+async def test_stop_before_first_token_keeps_the_question(monkeypatch):
     import api.routers._sse as sse_module
     import api.routers.chat as chat_router
 
@@ -271,7 +271,61 @@ async def test_stop_before_first_token_rolls_the_question_back(monkeypatch):
     http = _http(1)
     await _drain(_stream_execute_chat(_request(), http, "s3", session, None, None))
 
-    assert _history(graph, "s3") == []
+    # The question was accepted and shown to the client; stopping during
+    # prefill keeps it as an unanswered turn rather than losing it.
+    assert _history(graph, "s3") == [("human", "question")]
+
+
+@pytest.mark.asyncio
+async def test_failed_turn_drops_the_unanswered_question(monkeypatch):
+    import api.routers.chat as chat_router
+
+    async def node(state, config):
+        raise RuntimeError("provider exploded")
+
+    builder = StateGraph(_State)
+    builder.add_node("agent", node)
+    builder.add_edge(START, "agent")
+    builder.add_edge("agent", END)
+    graph = builder.compile(
+        checkpointer=HybridSqliteSaver(
+            sqlite3.connect(":memory:", check_same_thread=False)
+        )
+    )
+    monkeypatch.setattr(chat_router, "chat_graph", graph)
+    session = MagicMock(save=AsyncMock())
+
+    events = await _drain(
+        _stream_execute_chat(_request(), _http(), "s6", session, None, None)
+    )
+
+    assert events[-1]["type"] == "error"
+    # A retry would otherwise stack the same question twice.
+    assert _history(graph, "s6") == []
+
+
+@pytest.mark.asyncio
+async def test_timeout_stops_the_run_before_settling(monkeypatch):
+    import api.routers._sse as sse_module
+    import api.routers.chat as chat_router
+
+    monkeypatch.setattr(sse_module, "MAX_STREAM_SECONDS", 0.2)
+    # A slow stream: the run is still producing when the deadline passes. The
+    # first chunk is longer than the thinking filter's lead buffer, so it is
+    # released to the client at once.
+    graph = _graph_that_streams(["part" * 120, " ial"], delay=0.15)
+    monkeypatch.setattr(chat_router, "chat_graph", graph)
+    session = MagicMock(save=AsyncMock())
+
+    await _drain(_stream_execute_chat(_request(), _http(), "s7", session, None, None))
+    after_settle = _history(graph, "s7")
+
+    # Give a still-running task time to checkpoint over the settlement.
+    await asyncio.sleep(0.2)
+
+    assert _history(graph, "s7") == after_settle
+    assert after_settle[0] == ("human", "question")
+    assert after_settle[-1][0] == "ai"
 
 
 @pytest.mark.asyncio
@@ -361,3 +415,58 @@ def test_stream_route_404s_for_an_unknown_session(monkeypatch):
         json={"session_id": "chat_session:nope", "message": "hi", "context": {}},
     )
     assert response.status_code == 404
+
+
+def test_buffered_route_runs_the_real_async_graph(monkeypatch):
+    """`/api/chat/execute` must survive the node being async.
+
+    The other route tests use toy graphs with sync nodes; the real node is
+    `async def`, and `graph.invoke` refuses those ("no synchronous function").
+    This runs the real compiled graph through the buffered route.
+    """
+    from uuid import uuid4
+
+    from fastapi.testclient import TestClient
+
+    import api.routers.chat as chat_router
+    import open_notebook.graphs.chat as chat_graph_module
+    from api.main import app
+
+    model = MagicMock()
+    model.ainvoke = AsyncMock(return_value=AIMessage(content="a plain answer"))
+    session = MagicMock(model_override=None, save=AsyncMock())
+    thread_id = f"chat_session:buffered-{uuid4()}"
+
+    with (
+        monkeypatch.context() as m,
+    ):
+        m.setattr(
+            chat_graph_module,
+            "provision_langchain_model",
+            AsyncMock(return_value=model),
+        )
+        m.setattr(
+            chat_router,
+            "get_session_or_404",
+            AsyncMock(return_value=(thread_id, session)),
+        )
+        m.setattr(chat_router, "repo_query", AsyncMock(return_value=[]))
+        client = TestClient(app)
+        response = client.post(
+            "/api/chat/execute",
+            json={
+                "session_id": thread_id,
+                "message": "question",
+                "context": {},
+            },
+        )
+
+    assert response.status_code == 200
+    assert [m["content"] for m in response.json()["messages"]] == [
+        "question",
+        "a plain answer",
+    ]
+    assert _history(chat_graph_module.graph, thread_id) == [
+        ("human", "question"),
+        ("ai", "a plain answer"),
+    ]

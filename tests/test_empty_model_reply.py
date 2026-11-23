@@ -13,12 +13,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
-from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
 
 from open_notebook.exceptions import IncompleteGenerationError
+from open_notebook.utils.checkpointing import HybridSqliteSaver
 
 EMPTY_REPLIES = ["", "   \n\t", "<think>only reasoning</think>", None]
 
@@ -125,7 +125,9 @@ def _toy_graph(replies: list):
     builder.add_node("agent", node)
     builder.add_edge(START, "agent")
     builder.add_edge("agent", END)
-    saver = SqliteSaver(sqlite3.connect(":memory:", check_same_thread=False))
+    # Hybrid, so the same toy graph serves the sync source-chat tests and the
+    # now-async buffered notebook route.
+    saver = HybridSqliteSaver(sqlite3.connect(":memory:", check_same_thread=False))
     return builder.compile(checkpointer=saver)
 
 

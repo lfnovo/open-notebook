@@ -51,7 +51,6 @@ What this makes easier, what it makes harder, what to watch. (bullets)
 | [ADR-007](ADR-007-optin-runtimes.md) | Heavy extraction runtimes (Docling, Crawl4AI local) are opt-in, installed at startup | Accepted |
 | [ADR-008](ADR-008-notebook-scoped-search.md) | Notebook scope is an optional filter on the existing search functions | Accepted |
 | [ADR-009](ADR-009-pbkdf2-credential-encryption.md) | PBKDF2 credential key derivation with versioned ciphertext | Accepted |
-| [ADR-010](ADR-010-graph-streamed-chat-turns.md) | Stream chat tokens through the graph, with an async checkpointer bridge | Proposed |
 | [ADR-011](ADR-011-design-token-system.md) | Visual identity is a token contract in globals.css, reviewed through /dev/design | Accepted |
 | [ADR-012](ADR-012-provider-endpoint-overrides.md) | Provider endpoint overrides are declared in the registry | Accepted |
 | [ADR-013](ADR-013-objectmodel-get-error-contract.md) | ObjectModel.get raises NotFoundError only for a missing record | Accepted |

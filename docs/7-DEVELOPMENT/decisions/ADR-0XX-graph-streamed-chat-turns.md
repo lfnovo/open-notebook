@@ -1,7 +1,7 @@
-# ADR-010: Stream chat tokens through the graph, with an async checkpointer bridge
+# ADR-0XX: Stream chat tokens through the graph, with an async checkpointer bridge
 
-- **Status**: Proposed
-- **Date**: 2026-11-23
+- **Status**: Accepted
+- **Date**: 2026-11
 - **Related**: #1412, #1332, [architecture.md](../architecture.md), `api/routers/_sse.py`, `open_notebook/utils/checkpointing.py`
 
 ## Context
@@ -21,7 +21,7 @@ The first draft of this work streamed `model.astream()` from the router and wrot
 
 - `call_model_with_messages` is `async`, provisions with `streaming=True`, and awaits `ainvoke`. Cancelling the consumer closes the provider request.
 - `HybridSqliteSaver` (`open_notebook/utils/checkpointing.py`) subclasses `SqliteSaver` and delegates each async method to the sync one on a worker thread. The module-level sync connection, and every sync `get_state`/`update_state` caller, keep working; the file-based store is not migrated.
-- The endpoint persists the question before generation so a stop during prefill cannot lose it, and settles a turn that ends early: a partial answer is written with `update_state(as_node=NODE_NAME)`, an answerless turn drops the question.
+- The endpoint persists the question before generation so a stop during prefill cannot lose it, and settles a turn that ends early: a partial answer is written with `update_state(as_node=NODE_NAME)`, and a turn that ends answerless either keeps the question (stop, timeout) or drops it (failure, so a retry does not stack it). The generation task is stopped before the settlement is written, so the run cannot checkpoint over it.
 - `AIMessageChunk` deltas are forwarded; a complete `AIMessage` is only forwarded when no deltas were produced (non-streaming model). `ThinkingFilter` strips `thinking` markup across chunk boundaries before anything reaches the client.
 
 ## Alternatives considered
@@ -34,7 +34,7 @@ The first draft of this work streamed `model.astream()` from the router and wrot
 ## Consequences
 
 - Stop cancels generation; a disconnect is detected by polling `request.is_disconnected()` every second, independent of token flow.
-- A streamed turn and a buffered turn produce identical history, and `/api/chat/execute` still works for API consumers.
+- A completed streamed turn leaves the same history as a buffered one, and `/api/chat/execute` still works for API consumers (it runs the graph with `ainvoke`). A stopped or timed-out turn keeps its partial answer rather than rolling the question back.
 - The `thinking` filter is heuristic: a tagless preamble longer than 400 characters is shown before it is recognised, and the `complete` event (or the refetch after a stop) replaces the bubble with the cleaned text.
 - Sync callers of the checkpointer still block the event loop for the duration of one SQLite write; unchanged from before, and small next to the model call.
 - When the source-chat graph is converted (see #1332), it should import `HybridSqliteSaver` rather than copy it.

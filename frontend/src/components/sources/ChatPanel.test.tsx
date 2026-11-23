@@ -224,6 +224,9 @@ describe('ChatPanel composer', () => {
     )
 
     expect(screen.queryByRole('button', { name: 'chat.stop' })).toBeNull()
+    // The Send button stands in as the spinner, and stays disabled while the
+    // turn streams.
+    expect(screen.getByRole('button', { name: 'chat.send' })).toBeDisabled()
   })
 })
 

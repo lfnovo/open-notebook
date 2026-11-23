@@ -87,7 +87,7 @@ Search is two SurrealDB functions, `fn::text_search` (BM25 over titles, full tex
 | `ask.py` | `POST /api/search/ask` | Search strategy → one answer per search (parallel) → final answer, streamed as SSE |
 | `prompt.py` | `api/routers/notes.py` | One node: generate a note title |
 
-The notebook-chat node is `async def` over `HybridSqliteSaver`, a `SqliteSaver` subclass that delegates async calls to the sync connection, so the streaming endpoint can consume the graph. The source-chat graph still uses a sync node with a new event loop because its checkpointer is synchronous ([ADR-010](decisions/ADR-010-graph-streamed-chat-turns.md)).
+The notebook-chat node is `async def` over `HybridSqliteSaver`, a `SqliteSaver` subclass that delegates async calls to the sync connection, so the streaming endpoint can consume the graph. The source-chat graph still uses a sync node with a new event loop because its checkpointer is synchronous ([ADR-0XX](decisions/ADR-0XX-graph-streamed-chat-turns.md)).
 
 ## How a model call happens
 

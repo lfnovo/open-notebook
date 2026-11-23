@@ -13,7 +13,8 @@ to the sync one on a worker thread so `astream`/`aget_state` work without
 migrating the file-based checkpoint store to a different backend.
 
 The per-node SQLite work (a checkpoint write per super-step) is small next to
-the model call, so the thread hop costs nothing measurable per turn.
+the model call, and this is expected to be the case in practice; the hop is a
+thread switch, not a second round of queries.
 
 This module exists so both chat graphs can share one implementation: when the
 source-chat graph is converted to an async node it should import this class

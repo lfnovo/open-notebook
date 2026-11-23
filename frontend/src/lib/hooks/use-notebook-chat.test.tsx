@@ -191,6 +191,8 @@ describe('useNotebookChat', () => {
     })
 
     expect(result.current.messages.map(message => message.content)).toEqual(['hello', 'hi there'])
+    // The final refetch ran and failed; the streamed content survived it.
+    expect(chatApi.getSession).toHaveBeenCalledTimes(2)
   })
 
   // Creating the session enables the session query, which comes back with no
@@ -276,5 +278,38 @@ describe('useNotebookChat', () => {
     })
 
     expect(result.current.messages.map(m => m.content)).toEqual(['hello', 'part'])
+  })
+
+  // Stopping before the request reaches the server must give the question
+  // back: the server never saw it, so its thread is not authoritative.
+  it('returns false and drops the question when stopped before the request is sent', async () => {
+    vi.mocked(chatApi.listSessions).mockResolvedValue([session])
+    vi.mocked(chatApi.getSession).mockResolvedValue({ ...session, messages: [] })
+    vi.mocked(chatApi.sendMessageStream).mockImplementation(
+      (_data, signal) => new Promise((_resolve, reject) => {
+        signal?.addEventListener('abort', () => {
+          reject(new DOMException('Aborted', 'AbortError'))
+        })
+      })
+    )
+
+    const { result } = renderHook(() => useNotebookChat(params), { wrapper })
+    await waitFor(() => expect(result.current.currentSessionId).toBe(session.id))
+
+    let sending!: Promise<boolean>
+    await act(async () => {
+      sending = result.current.sendMessage('hello')
+    })
+    await waitFor(() => expect(chatApi.sendMessageStream).toHaveBeenCalled())
+    expect(result.current.messages.map(m => m.content)).toEqual(['hello'])
+
+    let sent: boolean | undefined
+    await act(async () => {
+      result.current.stopStreaming()
+      sent = await sending
+    })
+
+    expect(sent).toBe(false)
+    expect(result.current.messages).toEqual([])
   })
 })

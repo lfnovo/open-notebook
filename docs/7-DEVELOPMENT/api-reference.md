@@ -89,7 +89,7 @@ curl http://localhost:5055/api/chat/execute \
 
 Sending the `context_config` itself to `/api/chat/execute` is accepted, but the model then sees only ids and status strings such as `"full content"`, not the source text. Create the session first with `POST /api/chat/sessions`.
 
-To stream the answer instead of waiting for it, post the same body to `POST /api/chat/execute/stream` and read the events described under [Streaming](#streaming). It runs the same graph and checkpoints the same way, so a streamed turn and a buffered turn leave identical history.
+To stream the answer instead of waiting for it, post the same body to `POST /api/chat/execute/stream` and read the events described under [Streaming](#streaming). It runs the same graph and checkpoints the same way: a completed turn leaves the same history as a buffered one. A turn that ends early differs: a stopped or timed-out turn keeps its partial answer, and keeps the question even if nothing had been produced yet; a failed turn keeps whatever streamed before the error and otherwise rolls the question back, like a failed buffered turn.
 
 ## Streaming
 
@@ -98,9 +98,9 @@ To stream the answer instead of waiting for it, post the same body to `POST /api
 - `user_message` echoes the question.
 - `token` carries a piece of the answer. `thinking` markup is filtered out of these events.
 - `complete` carries the cleaned, final answer, after it has been checkpointed.
-- `error` ends the turn with a message; a partial answer streamed before it is kept, unless nothing had arrived.
+- `error` ends the turn with a message; a partial answer streamed before it is kept.
 
-Cancelling the request (closing the connection) stops generation on the server and keeps the partial answer. A turn is also capped at 15 minutes.
+Cancelling the request (closing the connection) stops generation on the server and keeps the partial answer; a turn stopped before the first token keeps the question instead, unanswered. A turn is also capped at 15 minutes.
 
 ```bash
 curl -N http://localhost:5055/api/search/ask \

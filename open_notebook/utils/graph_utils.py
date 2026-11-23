@@ -48,7 +48,9 @@ def invoke_chat_turn(
 
     Synchronous on purpose: call it via asyncio.to_thread so the invoke and the
     rollback run together in the worker thread, even if the request task is
-    cancelled while waiting (client disconnect).
+    cancelled while waiting (client disconnect). Only the source-chat graph
+    still runs this way; the notebook-chat graph is async and uses
+    `ainvoke_chat_turn`.
     """
     try:
         # LangGraph accepts a partial state dict at runtime, but its typed
@@ -58,6 +60,23 @@ def invoke_chat_turn(
         thread_id = config.get("configurable", {}).get("thread_id")
         if thread_id:
             discard_unanswered_message(graph, thread_id, user_message)
+        raise
+
+
+async def ainvoke_chat_turn(
+    graph, state: dict, config: RunnableConfig, user_message: BaseMessage
+) -> Any:
+    """Async twin of `invoke_chat_turn` for the async notebook-chat graph.
+
+    The rollback is shielded so a cancellation that lands after the model call
+    still removes the question; the shielded task finishes on its own.
+    """
+    try:
+        return await graph.ainvoke(input=state, config=config)
+    except BaseException:
+        thread_id = config.get("configurable", {}).get("thread_id")
+        if thread_id:
+            await asyncio.shield(discard_message(graph, thread_id, user_message))
         raise
 
 
@@ -105,13 +124,16 @@ async def settle_streamed_turn(
     question: Optional[BaseMessage],
     *,
     as_node: str,
+    keep_question: bool = False,
 ) -> None:
     """Persist what a streamed turn produced, or roll the question back.
 
     A partial answer is checkpointed as if the node had returned it, so it is
     kept in history and the graph is left complete. A turn that produced no text
-    drops the question so a retry doesn't stack it twice. Raises on persistence
-    failure: the caller decides how to report that.
+    drops the question — unless `keep_question` is set (a stop or timeout, where
+    the user asked and expects to see the question) — so a retry doesn't stack
+    it twice. Raises on persistence failure: the caller decides how to report
+    that.
     """
     if content.strip():
         await persist_state(
@@ -121,7 +143,7 @@ async def settle_streamed_turn(
             as_node=as_node,
         )
         return
-    if question is not None:
+    if question is not None and not keep_question:
         await discard_message(graph, thread_id, question)
 
 

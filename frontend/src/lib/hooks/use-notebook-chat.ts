@@ -241,6 +241,11 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     let answer = ''
     let aiId = ''
     let aiStarted = false
+    // Whether the request reached the server (the stream request resolves
+    // with a body only once the response has started). An abort before that
+    // means the server never received the question.
+    let reachedServer = false
+    let userMessage: NotebookChatMessage | null = null
 
     // A new turn cancels any previous one still in flight.
     abortControllerRef.current?.abort()
@@ -299,13 +304,14 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       }
 
       // Add user message optimistically
-      const userMessage: NotebookChatMessage = {
+      const pending: NotebookChatMessage = {
         id: `temp-${Date.now()}`,
         type: 'human',
         content: message,
         timestamp: new Date().toISOString()
       }
-      setMessages(prev => [...prev, userMessage])
+      userMessage = pending
+      setMessages(prev => [...prev, pending])
 
       // Build context and send message
       const context = await buildContext()
@@ -315,6 +321,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
         context,
         model_override: modelOverride ?? (currentSession?.model_override ?? undefined)
       }, controller.signal)
+      reachedServer = true
 
       const reader = body.getReader()
       const decoder = new TextDecoder()
@@ -364,6 +371,16 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       const error = err as { status?: number, message?: string }
 
       if (aborted) {
+        if (!reachedServer) {
+          // Stopped before the request got to the server: it never saw the
+          // question, so drop the optimistic copy and let the composer keep
+          // the typed text. Any answer bubble is from an older stream.
+          if (userMessage) {
+            const droppedId = userMessage.id
+            setMessages(prev => prev.filter(msg => msg.id !== droppedId))
+          }
+          return false
+        }
         // Stop: the server persists the partial answer, so wait for the
         // cancellation handler to settle instead of racing it with a refetch.
         if (sessionId) {

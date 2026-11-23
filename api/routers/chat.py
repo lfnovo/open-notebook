@@ -25,6 +25,7 @@ from api.routers._sse import (
     format_error_event,
     run_graph,
     sse,
+    stop_task,
     stream_events,
     stream_headers,
 )
@@ -40,8 +41,8 @@ from open_notebook.graphs.chat import graph as chat_graph
 from open_notebook.utils import token_count
 from open_notebook.utils.context_builder import build_notebook_context
 from open_notebook.utils.graph_utils import (
+    ainvoke_chat_turn,
     get_session_message_count,
-    invoke_chat_turn,
     last_ai_content,
     persist_pending_human_turn,
     settle_streamed_turn,
@@ -376,14 +377,13 @@ async def execute_chat(request: ExecuteChatRequest):
         user_message = HumanMessage(content=request.message, id=str(uuid4()))
         state_values["messages"].append(user_message)
 
-        # Execute chat graph in a thread so the synchronous LangGraph invoke
-        # (SqliteSaver checkpoints are sync) doesn't block the event loop and
-        # freeze the rest of the API while the LLM responds. Mirrors the
-        # get_state() calls above.
-        # invoke_chat_turn also drops the question from the checkpoint when the
+        # Execute the chat graph. The node is async, so the run goes through
+        # `ainvoke`; the graph's HybridSqliteSaver bridges the checkpoint
+        # writes to the sync connection on a worker thread, so the event loop
+        # is not blocked by them.
+        # ainvoke_chat_turn also drops the question from the checkpoint when the
         # turn fails, so a retry doesn't add it twice.
-        result = await asyncio.to_thread(
-            invoke_chat_turn,
+        result = await ainvoke_chat_turn(
             chat_graph,
             state_values,
             RunnableConfig(
@@ -420,7 +420,11 @@ async def execute_chat(request: ExecuteChatRequest):
 
 
 async def _settle(
-    thread_id: str, content: str, question: Optional[HumanMessage]
+    thread_id: str,
+    content: str,
+    question: Optional[HumanMessage],
+    *,
+    keep_question: bool = False,
 ) -> bool:
     """Persist what a streamed turn produced; report whether it was saved.
 
@@ -429,7 +433,12 @@ async def _settle(
     """
     try:
         await settle_streamed_turn(
-            chat_graph, thread_id, content, question, as_node=CHAT_NODE
+            chat_graph,
+            thread_id,
+            content,
+            question,
+            as_node=CHAT_NODE,
+            keep_question=keep_question,
         )
         return True
     except Exception:
@@ -451,8 +460,10 @@ async def _stream_execute_chat(
     `stream_mode="messages"`), so the answer goes through the same node, prompt
     and checkpointer as the buffered endpoint, and future graph features apply
     to streamed turns too. The endpoint's only extras are the token envelope and
-    the settlement on a turn that ends early: a stopped/`timed-out turn keeps its
-    partial answer, written as the node's output so the thread stays complete.
+    the settlement on a turn that ends early: a stopped or timed-out turn keeps
+    its partial answer, written as the node's output so the thread stays
+    complete, and keeps the question when nothing was produced yet. Only a
+    failed turn drops an unanswered question, so a retry does not stack it.
     """
     queue: "asyncio.Queue[Any]" = asyncio.Queue()
     outcome = StreamOutcome()
@@ -521,7 +532,10 @@ async def _stream_execute_chat(
             return
 
         if outcome.kind == "timeout":
-            settled = await _settle(thread_id, content, question)
+            # Stop the run before writing the partial answer: a still-running
+            # graph could otherwise checkpoint afterwards and overwrite it.
+            await stop_task(task)
+            settled = await _settle(thread_id, content, question, keep_question=True)
             message = (
                 f"The model did not finish within {int(_sse.MAX_STREAM_SECONDS)}s."
             )
@@ -541,14 +555,19 @@ async def _stream_execute_chat(
                     f"Streamed chat turn failed in {thread_id}: {payload!r}\n"
                     f"  Traceback:\n{''.join(traceback.format_exception(payload))}"
                 )
+            # The worker only reports an error once `astream` has raised, so
+            # the run is already finished here.
             settled = await _settle(thread_id, content, question)
             yield format_error_event(
                 payload if isinstance(payload, BaseException) else RuntimeError()
             )
             return
 
-        # Disconnected: keep whatever arrived; the client is gone.
-        settled = await _settle(thread_id, content, question)
+        # Disconnected: keep whatever arrived; the client is gone. Stop the run
+        # before settling so it can't checkpoint over the partial answer. An
+        # answerless stop keeps the question: it was accepted, just unanswered.
+        await stop_task(task)
+        settled = await _settle(thread_id, content, question, keep_question=True)
 
     except asyncio.CancelledError:
         raise
@@ -560,6 +579,7 @@ async def _stream_execute_chat(
             f"  Traceback:\n{traceback.format_exc()}"
         )
         if persisted and question and not settled:
+            await stop_task(task)
             settled = await _settle(thread_id, "".join(parts), question)
         yield format_error_event(e)
     finally:

@@ -1,7 +1,7 @@
 import asyncio
-from typing import Any
+from typing import Any, Optional
 
-from langchain_core.messages import BaseMessage, RemoveMessage
+from langchain_core.messages import AIMessage, BaseMessage, RemoveMessage
 from langchain_core.runnables import RunnableConfig
 from loguru import logger
 
@@ -59,3 +59,84 @@ def invoke_chat_turn(
         if thread_id:
             discard_unanswered_message(graph, thread_id, user_message)
         raise
+
+
+# --- Async helpers for the streaming endpoint ---------------------------------
+
+
+async def persist_state(graph, thread_id: str, values: dict, *, as_node: str) -> None:
+    """Write a checkpoint update off the event loop.
+
+    `as_node` names the node the update is attributed to, so LangGraph advances
+    the graph as if that node had produced it and stops replaying the node.
+    """
+    config = RunnableConfig(configurable={"thread_id": thread_id})
+    await asyncio.to_thread(lambda: graph.update_state(config, values, as_node=as_node))
+
+
+async def persist_pending_human_turn(
+    graph, thread_id: str, message: BaseMessage, *, as_node: str
+) -> bool:
+    """Append the user's question to the checkpoint before generation starts.
+
+    Tokens reach the client long before the graph would checkpoint its input, so
+    the question is written up front: it must survive a stop during prefill (the
+    client refetches the checkpoint afterwards) and be visible to a concurrent
+    read. Keyed on the message id, so replaying the same message is a no-op.
+    """
+    config = RunnableConfig(configurable={"thread_id": thread_id})
+    state = await asyncio.to_thread(graph.get_state, config=config)
+    existing = (state.values or {}).get("messages", []) if state else []
+    if message.id and any(getattr(m, "id", None) == message.id for m in existing):
+        return False
+    await persist_state(graph, thread_id, {"messages": [message]}, as_node=as_node)
+    return True
+
+
+async def discard_message(graph, thread_id: str, message: BaseMessage) -> None:
+    """Async wrapper for `discard_unanswered_message`."""
+    await asyncio.to_thread(discard_unanswered_message, graph, thread_id, message)
+
+
+async def settle_streamed_turn(
+    graph,
+    thread_id: str,
+    content: str,
+    question: Optional[BaseMessage],
+    *,
+    as_node: str,
+) -> None:
+    """Persist what a streamed turn produced, or roll the question back.
+
+    A partial answer is checkpointed as if the node had returned it, so it is
+    kept in history and the graph is left complete. A turn that produced no text
+    drops the question so a retry doesn't stack it twice. Raises on persistence
+    failure: the caller decides how to report that.
+    """
+    if content.strip():
+        await persist_state(
+            graph,
+            thread_id,
+            {"messages": [AIMessage(content=content)]},
+            as_node=as_node,
+        )
+        return
+    if question is not None:
+        await discard_message(graph, thread_id, question)
+
+
+async def last_ai_content(graph, thread_id: str) -> str:
+    """Return the thread's trailing AI message content, or "" if there is none.
+
+    Used after a successful stream: the node checkpoints the *cleaned* answer,
+    so this is more accurate than the accumulated token text.
+    """
+    config = RunnableConfig(configurable={"thread_id": thread_id})
+    state = await asyncio.to_thread(graph.get_state, config=config)
+    messages = (state.values or {}).get("messages", []) if state else []
+    if not messages:
+        return ""
+    last = messages[-1]
+    if getattr(last, "type", None) != "ai":
+        return ""
+    return str(last.content or "")

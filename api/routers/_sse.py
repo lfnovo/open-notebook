@@ -339,11 +339,12 @@ async def finalize_stream(
 ) -> None:
     """Stop generation and run the turn's teardown, cancellation-proof.
 
-    Starlette cancels the response task when the client disconnects, and inside
-    an already-cancelled task every fresh `await` raises immediately: a bare
-    `finally` would be cut off at `stop_task` and the partial answer never
-    persisted. Running the teardown in its own task behind `shield` lets it
-    finish after the response task is gone.
+    Starlette cancels the response task when the client disconnects, and a
+    bare `finally` would be cut off at the first await and the partial answer
+    never persisted. The teardown runs in its own task, and it is awaited in a
+    loop that re-awaits it after each cancellation: some frameworks (anyio
+    cancel scopes, which Starlette uses) re-fire cancellation on *every* await,
+    not once like `Task.cancel()`.
     """
 
     async def _run() -> None:
@@ -351,4 +352,12 @@ async def finalize_stream(
         await stop_task(task)
         await settle()
 
-    await asyncio.shield(_run())
+    inner = asyncio.ensure_future(_run())
+    while True:
+        try:
+            await asyncio.shield(inner)
+            return
+        except asyncio.CancelledError:
+            if inner.done():
+                return
+            # Still settling: re-await instead of leaving the teardown behind.

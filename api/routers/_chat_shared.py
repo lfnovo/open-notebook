@@ -10,9 +10,12 @@ Behavior notes:
   (`NotFoundError` propagates from `ObjectModel.get`, `HTTPException(404)` for
   a missing relation), so each router's existing try/except arms keep mapping
   them to the same status codes and messages as before.
+- `serialized_turn` holds a session's turn lock for the whole turn.
 """
 
-from typing import Any, Iterable, List, Optional, Tuple
+import asyncio
+from contextlib import asynccontextmanager
+from typing import Any, AsyncIterator, Dict, Iterable, List, Optional, Tuple
 
 from fastapi import HTTPException
 from pydantic import BaseModel, Field
@@ -56,6 +59,49 @@ async def get_session_or_404(session_id: str) -> Tuple[str, ChatSession]:
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     return full_session_id, session
+
+
+# --- Per-session turn serialization ------------------------------------------
+#
+# A turn snapshots the thread, appends the question and generates. Two turns
+# racing that sequence on one session each build their prompt from the state
+# before the other's question and their answers interleave in the history, so
+# the whole turn (snapshot, generation, settlement) runs under the session's
+# lock. Entries are reference-counted and evicted when the last holder leaves.
+
+_session_locks: Dict[str, asyncio.Lock] = {}
+_session_holders: Dict[str, int] = {}
+
+
+def session_lock(session_id: str) -> asyncio.Lock:
+    """Take a holder on the session's turn lock and return it."""
+    _session_holders[session_id] = _session_holders.get(session_id, 0) + 1
+    return _session_locks.setdefault(session_id, asyncio.Lock())
+
+
+def release_session_lock(session_id: str) -> None:
+    """Drop a holder; the last one evicts the lock."""
+    holders = _session_holders.get(session_id, 1) - 1
+    if holders <= 0:
+        _session_holders.pop(session_id, None)
+        _session_locks.pop(session_id, None)
+        return
+    _session_holders[session_id] = holders
+
+
+@asynccontextmanager
+async def serialized_turn(session_id: str) -> AsyncIterator[None]:
+    """Hold the session's turn lock for the block.
+
+    Callers that also stream keepalives while queued use the two functions
+    above directly, so the acquire can be split around a yield.
+    """
+    lock = session_lock(session_id)
+    try:
+        async with lock:
+            yield
+    finally:
+        release_session_lock(session_id)
 
 
 async def get_verified_source_session(

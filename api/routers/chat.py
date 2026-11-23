@@ -16,6 +16,9 @@ from api.routers._chat_shared import (
     SuccessResponse,
     extract_chat_messages,
     get_session_or_404,
+    release_session_lock,
+    serialized_turn,
+    session_lock,
 )
 from api.routers._sse import (
     EMPTY_REPLY_MESSAGE,
@@ -25,6 +28,7 @@ from api.routers._sse import (
     format_error_event,
     run_graph,
     sse,
+    sse_keepalive,
     stop_task,
     stream_events,
     stream_headers,
@@ -356,47 +360,50 @@ async def execute_chat(request: ExecuteChatRequest):
             else getattr(session, "model_override", None)
         )
 
-        # Get current state
-        # Use sync get_state() in a thread since SqliteSaver doesn't support async
-        current_state = await asyncio.to_thread(
-            chat_graph.get_state,
-            config=RunnableConfig(configurable={"thread_id": full_session_id}),
-        )
+        # The turn runs under the session's lock: a concurrent turn must not
+        # snapshot the thread before this one's answer is checkpointed.
+        async with serialized_turn(full_session_id):
+            # Get current state
+            # Use sync get_state() in a thread since SqliteSaver doesn't support async
+            current_state = await asyncio.to_thread(
+                chat_graph.get_state,
+                config=RunnableConfig(configurable={"thread_id": full_session_id}),
+            )
 
-        # Prepare state for execution
-        state_values = current_state.values if current_state else {}
-        state_values["messages"] = state_values.get("messages", [])
-        state_values["context"] = request.context
-        state_values["notebook"] = notebook
-        state_values["model_override"] = model_override
+            # Prepare state for execution
+            state_values = current_state.values if current_state else {}
+            state_values["messages"] = state_values.get("messages", [])
+            state_values["context"] = request.context
+            state_values["notebook"] = notebook
+            state_values["model_override"] = model_override
 
-        # Add user message to state
-        from langchain_core.messages import HumanMessage
+            # Add user message to state
+            from langchain_core.messages import HumanMessage
 
-        # Explicit id so a failed turn can remove it from the checkpoint.
-        user_message = HumanMessage(content=request.message, id=str(uuid4()))
-        state_values["messages"].append(user_message)
+            # Explicit id so a failed turn can remove it from the checkpoint.
+            user_message = HumanMessage(content=request.message, id=str(uuid4()))
+            state_values["messages"].append(user_message)
 
-        # Execute the chat graph. The node is async, so the run goes through
-        # `ainvoke`; the graph's HybridSqliteSaver bridges the checkpoint
-        # writes to the sync connection on a worker thread, so the event loop
-        # is not blocked by them.
-        # ainvoke_chat_turn also drops the question from the checkpoint when the
-        # turn fails, so a retry doesn't add it twice.
-        result = await ainvoke_chat_turn(
-            chat_graph,
-            state_values,
-            RunnableConfig(
-                configurable={
-                    "thread_id": full_session_id,
-                    "model_id": model_override,
-                }
-            ),
-            user_message,
-        )
+            # Execute the chat graph. The node is async, so the run goes through
+            # `ainvoke`; the graph's HybridSqliteSaver bridges the checkpoint
+            # writes to the sync connection on a worker thread, so the event loop
+            # is not blocked by them.
+            # ainvoke_chat_turn also drops the question from the checkpoint when
+            # the turn fails, so a retry doesn't add it twice.
+            result = await ainvoke_chat_turn(
+                chat_graph,
+                state_values,
+                RunnableConfig(
+                    configurable={
+                        "thread_id": full_session_id,
+                        "model_id": model_override,
+                    }
+                ),
+                user_message,
+            )
 
-        # Update session timestamp
-        await session.save()
+            # Update session timestamp
+            await session.save()
 
         # Convert messages to response format
         messages = extract_chat_messages(result.get("messages", []))
@@ -464,16 +471,37 @@ async def _stream_execute_chat(
     its partial answer, written as the node's output so the thread stays
     complete, and keeps the question when nothing was produced yet. Only a
     failed turn drops an unanswered question, so a retry does not stack it.
+
+    Turns on one session are serialized by the session lock: a queued turn
+    pings while it waits and snapshots only after the previous turn settled.
     """
     queue: "asyncio.Queue[Any]" = asyncio.Queue()
     outcome = StreamOutcome()
     parts: list[str] = []
     task: Optional["asyncio.Task[Any]"] = None
     question: Optional[HumanMessage] = None
+    lock: Optional[asyncio.Lock] = None
+    held = False
     persisted = False
     settled = False
 
     try:
+        yield sse({"type": "user_message", "content": request.message})
+
+        # A turn already in flight on this session is generating from the
+        # thread as it was; queue behind it so this turn's snapshot includes
+        # its answer. Keepalives cover the wait.
+        lock = session_lock(thread_id)
+        while True:
+            try:
+                await asyncio.wait_for(
+                    lock.acquire(), timeout=_sse.KEEPALIVE_INTERVAL_SECONDS
+                )
+                held = True
+                break
+            except asyncio.TimeoutError:
+                yield sse_keepalive()
+
         # Snapshot the thread before appending the new question.
         current_state = await asyncio.to_thread(
             chat_graph.get_state,
@@ -489,8 +517,6 @@ async def _stream_execute_chat(
         # Explicit id so a failed turn can remove it from the checkpoint.
         question = HumanMessage(content=request.message, id=str(uuid4()))
         state_values["messages"].append(question)
-
-        yield sse({"type": "user_message", "content": request.message})
 
         # Persist the question before generating: tokens reach the client long
         # before the graph would checkpoint, and a stop during prefill must not
@@ -589,6 +615,11 @@ async def _stream_execute_chat(
                 await _settle(thread_id, "".join(parts), question)
 
         await finalize_stream(task, _settle_if_needed)
+        # Released only after the settlement is written, so the next turn
+        # snapshots a settled thread.
+        if held and lock is not None:
+            lock.release()
+            release_session_lock(thread_id)
 
 
 @router.post("/chat/execute/stream")

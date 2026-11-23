@@ -329,6 +329,80 @@ async def test_timeout_stops_the_run_before_settling(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_settlement_survives_refiring_cancellation(monkeypatch):
+    """Cancellation that re-fires (anyio cancel scope, as Starlette uses) must
+    not cut the partial answer off. The teardown has to be finished by the time
+    the generator ends, not left running behind it."""
+    import anyio
+
+    import api.routers.chat as chat_router
+
+    graph = _graph_that_streams(["part" * 120] + [" more"] * 20, delay=0.02)
+    monkeypatch.setattr(chat_router, "chat_graph", graph)
+    session = MagicMock(save=AsyncMock())
+
+    settled = asyncio.Event()
+    original_settle = chat_router._settle
+
+    async def spy_settle(*args, **kwargs):
+        result = await original_settle(*args, **kwargs)
+        settled.set()
+        return result
+
+    monkeypatch.setattr(chat_router, "_settle", spy_settle)
+
+    async def consume() -> None:
+        async for _ in _stream_execute_chat(
+            _request(), _http(), "s8", session, None, None
+        ):
+            pass
+
+    with anyio.CancelScope() as scope:
+
+        async def cancel_soon() -> None:
+            await anyio.sleep(0.1)
+            scope.cancel()
+
+        async with anyio.create_task_group() as tg:
+            tg.start_soon(cancel_soon)
+            await consume()
+
+    # The client is gone at this point; nobody drives the generator any more.
+    # The detached teardown has to finish by itself and persist the partial.
+    for _ in range(100):
+        if settled.is_set():
+            break
+        await anyio.sleep(0.02)
+
+    assert settled.is_set()
+    history = _history(graph, "s8")
+    assert history[0] == ("human", "question")
+    assert history[-1][0] == "ai"
+
+
+@pytest.mark.asyncio
+async def test_serialized_turn_excludes_and_evicts():
+    from api.routers._chat_shared import _session_locks, serialized_turn
+
+    order: list[str] = []
+
+    async def worker(name: str) -> None:
+        async with serialized_turn("chat_session:lock"):
+            order.append(f"{name}-in")
+            await asyncio.sleep(0.01)
+            order.append(f"{name}-out")
+
+    await asyncio.gather(worker("a"), worker("b"))
+
+    assert order in (
+        ["a-in", "a-out", "b-in", "b-out"],
+        ["b-in", "b-out", "a-in", "a-out"],
+    )
+    # Last holder leaves: the entry is evicted, not kept for the process life.
+    assert "chat_session:lock" not in _session_locks
+
+
+@pytest.mark.asyncio
 async def test_timeout_says_partial_kept_only_when_there_is_text(monkeypatch):
     import api.routers._sse as sse_module
     import api.routers.chat as chat_router
@@ -415,6 +489,80 @@ def test_stream_route_404s_for_an_unknown_session(monkeypatch):
         json={"session_id": "chat_session:nope", "message": "hi", "context": {}},
     )
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_concurrent_turns_on_one_session_serialize(monkeypatch):
+    """Two turns racing one session must not build from the same history.
+
+    Without the session lock both snapshot the empty thread, generate blind to
+    each other and interleave their answers; the second prompt here would miss
+    the first answer.
+    """
+    from uuid import uuid4
+
+    import httpx
+    from fastapi import FastAPI
+
+    import api.routers.chat as chat_router
+    import open_notebook.graphs.chat as chat_graph_module
+
+    seen: list[list[tuple[str, str]]] = []
+
+    class Model:
+        async def ainvoke(self, messages):
+            seen.append([(m.type, m.content) for m in messages])
+            await asyncio.sleep(0.05)
+            return AIMessage(content=f"answer {len(seen)}")
+
+    thread_id = f"chat_session:serialized-{uuid4()}"
+    session = MagicMock(model_override=None, save=AsyncMock())
+    app = FastAPI()
+    app.include_router(chat_router.router, prefix="/api")
+
+    monkeypatch.setattr(
+        chat_graph_module, "provision_langchain_model", AsyncMock(return_value=Model())
+    )
+    monkeypatch.setattr(
+        chat_router,
+        "get_session_or_404",
+        AsyncMock(return_value=(thread_id, session)),
+    )
+    monkeypatch.setattr(chat_router, "repo_query", AsyncMock(return_value=[]))
+    # The route closes over its module-level graph; use the real one.
+    monkeypatch.setattr(chat_router, "chat_graph", chat_graph_module.graph)
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+
+        async def post(message: str):
+            return await client.post(
+                "/api/chat/execute",
+                json={"session_id": thread_id, "message": message, "context": {}},
+            )
+
+        first, second = await asyncio.gather(post("first"), post("second"))
+
+    assert first.status_code == 200 and second.status_code == 200
+
+    # `seen` is the full payload: system prompt plus history. The first turn
+    # saw one human message, the queued one saw the earlier question and its
+    # answer too.
+    assert sorted(len(prompt) for prompt in seen) == [2, 4]
+    queued = max(seen, key=len)
+    assert [content for kind, content in queued if kind == "human"] == [
+        "first",
+        "second",
+    ]
+    assert ("ai", "answer 1") in queued
+
+    assert _history(chat_graph_module.graph, thread_id) == [
+        ("human", "first"),
+        ("ai", "answer 1"),
+        ("human", "second"),
+        ("ai", "answer 2"),
+    ]
 
 
 def test_buffered_route_runs_the_real_async_graph(monkeypatch):

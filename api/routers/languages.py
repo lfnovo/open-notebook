@@ -57,7 +57,9 @@ async def list_languages():
                     display = loc.get_display_name("en")
                     if bcp47 not in seen:
                         seen.add(bcp47)
-                        languages.append(LanguageResponse(code=bcp47, name=display))
+                        languages.append(
+                            LanguageResponse(code=bcp47, name=display or bcp47)
+                        )
                     continue
             except Exception:
                 pass
@@ -75,7 +77,7 @@ async def list_languages():
             if bcp47 not in seen:
                 seen.add(bcp47)
                 display = loc.get_display_name("en")
-                languages.append(LanguageResponse(code=bcp47, name=display))
+                languages.append(LanguageResponse(code=bcp47, name=display or bcp47))
         except Exception:
             pass
 

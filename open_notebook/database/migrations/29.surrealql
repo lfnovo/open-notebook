@@ -1,0 +1,116 @@
+-- Migration 29: text search reads its full-text indexes again (#1636)
+--
+-- Migration 24 scoped every branch with
+-- `AND (!$scoped OR source IN $scoped_sources)`. SurrealDB's planner does not
+-- support unary operators in a WHERE clause (nor an OR with a side that has no
+-- index), so it dropped the full-text index and scanned each table, embeddings
+-- and full texts included, for every search, even one that matched nothing.
+--
+-- Each branch is now two AND-only SELECTs, chosen by $scoped. The scoped one
+-- names its index: given `content @1@ ... AND source IN ...` the planner picks
+-- the index on `source` instead, which reads every chunk of the notebook.
+-- The signature, the returned rows and their order are unchanged.
+
+REMOVE FUNCTION IF EXISTS fn::text_search;
+
+DEFINE FUNCTION IF NOT EXISTS fn::text_search($query_text: string, $match_count: int, $sources: bool, $show_notes: bool, $notebook_ids: option<array<record<notebook>>>) {
+
+    let $scoped = $notebook_ids != NONE AND array::len($notebook_ids) > 0;
+    let $scoped_sources = IF $scoped { (SELECT VALUE in FROM reference WHERE out IN $notebook_ids) } ELSE { [] };
+    let $scoped_notes = IF $scoped { (SELECT VALUE in FROM artifact WHERE out IN $notebook_ids) } ELSE { [] };
+
+    let $source_title_search =
+        IF $sources AND $scoped {(
+            SELECT id, title, search::highlight('`', '`', 1) as content, id as parent_id, math::max(search::score(1)) AS relevance
+            FROM source WITH INDEX idx_source_title
+            WHERE title @1@ $query_text AND id IN $scoped_sources
+            GROUP BY id)}
+        ELSE IF $sources {(
+            SELECT id, title, search::highlight('`', '`', 1) as content, id as parent_id, math::max(search::score(1)) AS relevance
+            FROM source
+            WHERE title @1@ $query_text
+            GROUP BY id)}
+        ELSE { [] };
+
+    let $source_embedding_search =
+        IF $sources AND $scoped {(
+            SELECT source.id as id, source.title as title, search::highlight('`', '`', 1) as content, source.id as parent_id, math::max(search::score(1)) AS relevance
+            FROM source_embedding WITH INDEX idx_source_embed_chunk
+            WHERE content @1@ $query_text AND source IN $scoped_sources
+            GROUP BY id)}
+        ELSE IF $sources {(
+            SELECT source.id as id, source.title as title, search::highlight('`', '`', 1) as content, source.id as parent_id, math::max(search::score(1)) AS relevance
+            FROM source_embedding
+            WHERE content @1@ $query_text
+            GROUP BY id)}
+        ELSE { [] };
+
+    let $source_full_search =
+        IF $sources AND $scoped {(
+            SELECT id, title, search::highlight('`', '`', 1) as content, id as parent_id, math::max(search::score(1)) AS relevance
+            FROM source WITH INDEX idx_source_full_text
+            WHERE full_text @1@ $query_text AND id IN $scoped_sources
+            GROUP BY id)}
+        ELSE IF $sources {(
+            SELECT id, title, search::highlight('`', '`', 1) as content, id as parent_id, math::max(search::score(1)) AS relevance
+            FROM source
+            WHERE full_text @1@ $query_text
+            GROUP BY id)}
+        ELSE { [] };
+
+    let $source_insight_search =
+        IF $sources AND $scoped {(
+            SELECT id, insight_type + " - " + (source.title OR '') as title, search::highlight('`', '`', 1) as content, source.id as parent_id, math::max(search::score(1)) AS relevance
+            FROM source_insight WITH INDEX idx_source_insight
+            WHERE content @1@ $query_text AND source IN $scoped_sources
+            GROUP BY id)}
+        ELSE IF $sources {(
+            SELECT id, insight_type + " - " + (source.title OR '') as title, search::highlight('`', '`', 1) as content, source.id as parent_id, math::max(search::score(1)) AS relevance
+            FROM source_insight
+            WHERE content @1@ $query_text
+            GROUP BY id)}
+        ELSE { [] };
+
+    let $note_title_search =
+        IF $show_notes AND $scoped {(
+            SELECT id, title, search::highlight('`', '`', 1) as content, id as parent_id, math::max(search::score(1)) AS relevance
+            FROM note WITH INDEX idx_note_title
+            WHERE title @1@ $query_text AND id IN $scoped_notes
+            GROUP BY id)}
+        ELSE IF $show_notes {(
+            SELECT id, title, search::highlight('`', '`', 1) as content, id as parent_id, math::max(search::score(1)) AS relevance
+            FROM note
+            WHERE title @1@ $query_text
+            GROUP BY id)}
+        ELSE { [] };
+
+    let $note_content_search =
+        IF $show_notes AND $scoped {(
+            SELECT id, title, search::highlight('`', '`', 1) as content, id as parent_id, math::max(search::score(1)) AS relevance
+            FROM note WITH INDEX idx_note
+            WHERE content @1@ $query_text AND id IN $scoped_notes
+            GROUP BY id)}
+        ELSE IF $show_notes {(
+            SELECT id, title, search::highlight('`', '`', 1) as content, id as parent_id, math::max(search::score(1)) AS relevance
+            FROM note
+            WHERE content @1@ $query_text
+            GROUP BY id)}
+        ELSE { [] };
+
+    let $source_chunk_results = array::union($source_embedding_search, $source_full_search);
+
+    let $source_asset_results = array::union($source_title_search, $source_insight_search);
+
+    let $source_results = array::union($source_chunk_results, $source_asset_results );
+    let $note_results = array::union($note_title_search, $note_content_search );
+    let $final_results = array::union($source_results, $note_results );
+
+    -- Group FIRST, then order and limit over the grouped set: SurrealDB returns
+    -- grouped rows in group-key order (migration 26, #1505).
+    let $grouped = (select id, parent_id, title, math::max(relevance) as relevance
+        from $final_results where id is not None
+        group by id, parent_id, title);
+
+    RETURN (SELECT * FROM $grouped ORDER BY relevance DESC, id ASC LIMIT $match_count);
+
+};

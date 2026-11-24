@@ -36,6 +36,7 @@ from api.routers._sse import (
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import ChatSession, Notebook
 from open_notebook.exceptions import (
+    ExternalServiceError,
     IncompleteGenerationError,
     NotFoundError,
     OpenNotebookError,
@@ -581,7 +582,12 @@ async def _stream_execute_chat(
                 end=StreamEnd.ERROR,
             )
             yield format_error_event(
-                payload if isinstance(payload, BaseException) else RuntimeError()
+                payload if isinstance(payload, BaseException) else RuntimeError(),
+                suffix=(
+                    "The partial answer could not be saved."
+                    if content.strip() and not settled
+                    else None
+                ),
             )
             return
 
@@ -686,10 +692,14 @@ async def execute_chat_stream(request: ExecuteChatRequest, http_request: Request
         raise
     except Exception as e:
         logger.error(f"Error starting chat stream: {str(e)}")
-        # Nothing is streaming yet, so this has to be an HTTP response. The
-        # message goes through the classifier (as the mid-stream errors do) so
-        # provider/driver detail stays out of the client.
+        # Nothing is streaming yet, so this has to be an HTTP response. The message
+        # goes through the classifier (as the mid-stream errors do) so
+        # provider/driver detail stays out of the client — but an unmatched
+        # error may be internal (a database fault, say), and calling that an AI
+        # service error would mislabel it, so it becomes a plain 500.
         exc_class, detail = classify_error(e)
+        if exc_class is ExternalServiceError and detail.startswith("AI service error:"):
+            raise OpenNotebookError("Could not start the chat stream.") from e
         raise exc_class(detail) from e
 
 

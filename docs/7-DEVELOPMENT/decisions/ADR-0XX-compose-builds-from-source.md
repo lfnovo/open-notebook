@@ -25,3 +25,4 @@ A remote build context means a downloaded compose file still works on its own, `
 - The shipped file now needs network access and a first `docker compose up` build; that is slower than a pull.
 - Until the fork's `main` is folded back, releases following `v1-latest` need the `image:`/`build:` lines pointed back at `lfnovo/open_notebook:v1-latest`; the CHANGELOG entry says so.
 - `pull_policy: build` rebuilds on `up`, so local edits are always picked up, at the cost of a rebuild each time.
+- The build context is a personal fork, pinned to a commit. If the fork disappears, compose cannot build; point `build:`/`image:` back at `lfnovo/open_notebook:v1-latest` (the CHANGELOG entry says so). Moving the pin to an upstream commit after the merge removes the dependency.

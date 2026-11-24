@@ -252,18 +252,24 @@ class ThinkingFilter:
         return rest
 
 
-def format_error_event(error: BaseException, *, code: Optional[str] = None) -> str:
+def format_error_event(
+    error: BaseException, *, code: Optional[str] = None, suffix: Optional[str] = None
+) -> str:
     """Build an `error` event without leaking internals to the client.
 
     Typed `OpenNotebookError`s already carry a user-facing message; anything
     else (raw provider exception, transport error) goes through the classifier.
     `code` marks errors the endpoint (rather than a provider) authored, so the
-    client can show its own translated text instead of the English message.
+    client can show its own translated text instead of the English message;
+    `suffix` appends a settlement warning.
     """
     if isinstance(error, OpenNotebookError):
         message = str(error)[:MAX_ERROR_CHARS]
     else:
         _, message = classify_error(error)
+    if suffix:
+        keep = max(0, MAX_ERROR_CHARS - len(suffix) - 1)
+        message = f"{message[:keep].rstrip()} {suffix}"
     payload: Dict[str, Any] = {"type": "error", "message": message}
     if code is not None:
         payload["code"] = code

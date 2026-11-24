@@ -209,6 +209,16 @@ def test_format_error_event_truncates_typed_message():
     assert len(message) == 200
 
 
+def test_format_error_event_appends_a_suffix_within_the_bound():
+    frame = format_error_event(
+        IncompleteGenerationError("x" * 500),
+        suffix="The partial answer could not be saved.",
+    )
+    message = json.loads(frame[len("data: ") :])["message"]
+    assert message.endswith("The partial answer could not be saved.")
+    assert len(message) <= 200
+
+
 # --- keepalive / deadline ----------------------------------------------------
 
 

@@ -80,18 +80,28 @@ def _first_tag(text: str, tags: tuple) -> int:
 
 
 def _partial_any_suffix(text: str, tags: tuple) -> int:
-    """Longest suffix of `text` that is a proper prefix of one of `tags`."""
-    return max(_partial_tag_suffix(text, tag) for tag in tags)
+    """Longest suffix of `text` that is a proper prefix of one of `tags`.
+
+    The bare-word marker swallows a space before it, so one is kept with the
+    partial too; otherwise where a chunk boundary falls would change the text.
+    """
+    best = 0
+    for tag in tags:
+        size = _partial_tag_suffix(text, tag)
+        if size and tag == "thinking" and size < len(text) and text[-size - 1] == " ":
+            size += 1
+        best = max(best, size)
+    return best
 
 
 def _tag_start(text: str, index: int, tag: str) -> int:
     """Start of the text to emit before a match at `index`.
 
-    A marker opening the reasoning is preceded by a space that belongs to the
-    markup, not to the answer, so one is swallowed with the tag (unless the tag
-    already begins with it).
+    The bare-word marker is prose's own word, so the space before it belongs to
+    the markup and is swallowed. A bracketed tag keeps the separator, which the
+    answer needs once the tag is removed.
     """
-    if index > 0 and not tag.startswith(" ") and text[index - 1] == " ":
+    if tag == "thinking" and index > 0 and text[index - 1] == " ":
         return index - 1
     return index
 
@@ -176,10 +186,18 @@ class ThinkingFilter:
             if self._state == self._LEAD:
                 opened = _first_tag(self._buf, LEAD_OPEN_TAGS)
                 closed = self._buf.find(CLOSE_TAG)
-                if opened >= 0 and (closed < 0 or opened < closed):
-                    tag = next(
-                        t for t in LEAD_OPEN_TAGS if self._buf.startswith(t, opened)
-                    )
+                tag = (
+                    next(t for t in LEAD_OPEN_TAGS if self._buf.startswith(t, opened))
+                    if opened >= 0
+                    else ""
+                )
+                # The bare word only marks reasoning at the very start; further
+                # in it is prose ("thinking about it, the answer is …").
+                if (
+                    opened >= 0
+                    and (closed < 0 or opened < closed)
+                    and (tag != "thinking" or opened <= 1)
+                ):
                     out.append(self._buf[: _tag_start(self._buf, opened, tag)])
                     self._buf = self._buf[opened + len(tag) :]
                     self._state = self._THINKING

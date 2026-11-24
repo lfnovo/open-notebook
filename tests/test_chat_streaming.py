@@ -158,6 +158,25 @@ def test_filter_keeps_a_partial_open_tag_at_the_lead_limit():
     assert out == "p" * (LEAD_BUFFER_LIMIT + 1) + "visible"
 
 
+def test_filter_keeps_a_bare_word_in_the_middle_of_the_lead_as_prose():
+    f = ThinkingFilter()
+    text = "Sure, thinking it over gives 42"
+    out = f.feed(text) + f.flush()
+    assert out == text
+
+
+def test_filter_keeps_the_separator_before_a_bracketed_tag():
+    f = ThinkingFilter()
+    out = f.feed("answer <thinkhidden</think>tail")
+    assert out == "answer tail"
+
+
+def test_filter_keeps_the_separator_when_the_bracket_tag_is_split():
+    f = ThinkingFilter()
+    out = f.feed("answer <thi") + f.feed("nk>hidden</think>tail")
+    assert out == "answer tail"
+
+
 def test_filter_strips_tagless_preamble():
     f = ThinkingFilter()
     out = f.feed("reasoning here</think") + f.feed(">answer") + f.flush()

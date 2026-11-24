@@ -689,8 +689,8 @@ async def execute_chat_stream(request: ExecuteChatRequest, http_request: Request
         # Nothing is streaming yet, so this has to be an HTTP response. The
         # message goes through the classifier (as the mid-stream errors do) so
         # provider/driver detail stays out of the client.
-        _, detail = classify_error(e)
-        raise HTTPException(status_code=500, detail=detail)
+        exc_class, detail = classify_error(e)
+        raise exc_class(detail) from e
 
 
 @router.post("/chat/context", response_model=BuildContextResponse)

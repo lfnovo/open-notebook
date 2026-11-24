@@ -364,6 +364,47 @@ describe('useNotebookChat', () => {
     expect(result.current.messages.map(m => m.content)).toEqual(['hello'])
   })
 
+  // The ack can be in flight when the stop lands: if the server stored the
+  // question anyway, the turn is accepted and must not be retried blindly.
+  it('accepts a stopped turn whose question the server did store', async () => {
+    vi.mocked(chatApi.listSessions).mockResolvedValue([session])
+    vi.mocked(chatApi.getSession).mockResolvedValue({ ...session, messages: [] })
+    const stream = openStream()
+    vi.mocked(chatApi.sendMessageStream).mockImplementation(
+      (_data, signal) => new Promise((resolve, reject) => {
+        signal?.addEventListener('abort', () => {
+          stream.fail(new DOMException('Aborted', 'AbortError'))
+          reject(new DOMException('Aborted', 'AbortError'))
+        })
+        resolve(stream.stream)
+      })
+    )
+
+    const { result } = renderHook(() => useNotebookChat(params), { wrapper })
+    await waitFor(() => expect(result.current.currentSessionId).toBe(session.id))
+
+    let sending!: Promise<boolean>
+    await act(async () => {
+      sending = result.current.sendMessage('hello')
+    })
+    await waitFor(() => expect(chatApi.sendMessageStream).toHaveBeenCalled())
+
+    // Stored server-side, but the ack event never made it to the client.
+    vi.mocked(chatApi.getSession).mockResolvedValue({
+      ...session,
+      messages: [{ id: 'm1', type: 'human' as const, content: 'hello' }],
+    })
+
+    let sent: boolean | undefined
+    await act(async () => {
+      result.current.stopStreaming()
+      sent = await sending
+    })
+
+    expect(sent).toBe(true)
+    expect(result.current.messages.map(m => m.content)).toEqual(['hello'])
+  })
+
   // The axios interceptor clears auth for every other API call; the fetch-based
   // stream has to do its own.
   it('clears auth state and redirects on a 401 from the stream', async () => {

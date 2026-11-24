@@ -228,6 +228,22 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     return latest
   }, [])
 
+  // After an abort that beat the acknowledgement, look for the question in the
+  // thread. If the server stored it, the turn is accepted after all and a retry
+  // would duplicate it.
+  const reconciledAbort = useCallback(async (sessionId: string, baseline: number, message: string) => {
+    try {
+      const session = await chatApi.getSession(sessionId)
+      const lastHuman = [...session.messages].reverse().find(m => m.type === 'human')
+      if (session.messages.length > baseline && lastHuman?.content === message) {
+        return session
+      }
+    } catch {
+      // Treat an unreadable session as "not stored".
+    }
+    return null
+  }, [])
+
   // Send message (SSE streaming; tokens render as they arrive)
   const sendMessage = useCallback(async (message: string, modelOverride?: string): Promise<boolean> => {
     // Mark sending before any await (including session creation) so the
@@ -375,9 +391,20 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
 
       if (aborted) {
         if (!accepted) {
-          // Stopped before the server acknowledged the question: it never
-          // stored it, so drop the optimistic copy and let the composer keep
-          // the typed text. Any answer bubble is from an older stream.
+          // The acknowledgement can have been in flight when the abort landed,
+          // and the server may have stored the question already. Ask before
+          // restoring it, or the retry leaves a duplicate turn behind.
+          if (sessionId) {
+            const reconciled = await reconciledAbort(sessionId, baseline, message)
+            if (reconciled) {
+              queryClient.setQueryData(QUERY_KEYS.notebookChatSession(sessionId), reconciled)
+              if (isActive()) setMessages(reconciled.messages)
+              return true
+            }
+          }
+          // Stopped before the server stored the question: drop the optimistic
+          // copy and let the composer keep the typed text. Any answer bubble is
+          // from an older stream.
           if (userMessage) {
             const droppedId = userMessage.id
             setMessages(prev => prev.filter(msg => msg.id !== droppedId))
@@ -442,6 +469,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     refetchCurrentSession,
     queryClient,
     waitForSettlement,
+    reconciledAbort,
     t
   ])
 

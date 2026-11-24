@@ -74,7 +74,11 @@ _session_holders: Dict[str, int] = {}
 
 
 def session_lock(session_id: str) -> asyncio.Lock:
-    """Take a holder on the session's turn lock and return it."""
+    """Take a holder on the session's turn lock and return it.
+
+    There is no wait bound: a turn is bounded by its provider's own timeouts, so
+    the lock is too. A stuck turn therefore delays later turns on its session.
+    """
     _session_holders[session_id] = _session_holders.get(session_id, 0) + 1
     return _session_locks.setdefault(session_id, asyncio.Lock())
 

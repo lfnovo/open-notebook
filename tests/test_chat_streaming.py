@@ -453,6 +453,42 @@ async def test_serialized_turn_excludes_and_evicts():
 
 
 @pytest.mark.asyncio
+async def test_cancelled_while_queued_does_not_leak_the_lock(monkeypatch):
+    """A turn cancelled before it acquires must still drop its holder."""
+    import api.routers.chat as chat_router
+    from api.routers._chat_shared import (
+        _session_holders,
+        _session_locks,
+        release_session_lock,
+        session_lock,
+    )
+
+    graph = _graph_that_streams(["x"])
+    monkeypatch.setattr(chat_router, "chat_graph", graph)
+    session = MagicMock(save=AsyncMock())
+
+    blocker = session_lock("s11")
+    await blocker.acquire()
+    try:
+        gen = _stream_execute_chat(_request(), _http(), "s11", session, None, None)
+
+        async def consume() -> None:
+            async for _ in gen:
+                pass
+
+        task = asyncio.create_task(consume())
+        await asyncio.sleep(0.05)  # parked on the lock
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+    finally:
+        blocker.release()
+        release_session_lock("s11")
+
+    assert "s11" not in _session_holders
+    assert "s11" not in _session_locks
+
+
+@pytest.mark.asyncio
 async def test_settle_policy_keeps_a_stopped_question_and_drops_a_failed_one():
     """The keep-or-drop rule lives with the settlement, not the router."""
     from open_notebook.utils.graph_utils import StreamEnd, settle_turn_end

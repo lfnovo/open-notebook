@@ -646,8 +646,11 @@ async def _stream_execute_chat(
         await finalize_stream(task, _settle_if_needed)
         # Released only after the settlement is written, so the next turn
         # snapshots a settled thread.
-        if held and lock is not None:
-            lock.release()
+        if lock is not None:
+            if held:
+                lock.release()
+            # A turn cancelled while still queued never acquired the lock, but
+            # it did take a holder; drop it either way.
             release_session_lock(thread_id)
 
 

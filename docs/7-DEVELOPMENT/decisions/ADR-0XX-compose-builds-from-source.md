@@ -12,6 +12,8 @@
 
 The `open_notebook` service builds from the repository instead of pulling: `build: https://github.com/rumplestilzken/open-notebook.git#<sha>`, `pull_policy: build`, tagged `open-notebook:local`.
 
+The URL names the fork because the commit under review lives there; after this lands, pin an upstream commit and switch the URL to `lfnovo/open_notebook.git`.
+
 A remote build context means a downloaded compose file still works on its own, `docker compose up` compiles the code under test, and `pull_policy: build` rebuilds on every `up` rather than reusing a stale image. The context is pinned to a commit rather than the branch tip, so a merge or a push cannot silently swap the running code; bump the SHA when the branch moves.
 
 ## Alternatives considered

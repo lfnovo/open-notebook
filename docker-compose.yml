@@ -28,7 +28,7 @@ services:
     # test is this branch. A remote context keeps a downloaded compose file
     # working (no local checkout or Dockerfile needed); the commit keeps the
     # code from moving under a running test. Bump the SHA when the branch moves.
-    build: https://github.com/rumplestilzken/open-notebook.git#23f481b
+    build: https://github.com/rumplestilzken/open-notebook.git#63046cd
     image: open-notebook:local
     ports:
       - "8502:8502"  # Web UI

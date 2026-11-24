@@ -453,6 +453,7 @@ export const caES = {
       timeout_partial_kept: "El model no ha acabat a temps. S'ha conservat la resposta parcial.",
       timeout_partial_lost: "El model no ha acabat a temps i no s'ha pogut desar la resposta parcial.",
       empty_reply: "El model ha retornat una resposta buida. Torna-ho a provar o tria un altre model si continua passant.",
+      partial_lost: "No s'ha pogut desar la resposta parcial.",
     },
     sessions: "Sessions",
     sessionTitlePlaceholder: "Escriu un títol aquí...",

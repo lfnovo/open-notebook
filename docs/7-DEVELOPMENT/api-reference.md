@@ -98,7 +98,7 @@ To stream the answer instead of waiting for it, post the same body to `POST /api
 - `user_message` echoes the question once it has been checkpointed. A client can treat it as the acknowledgement: a turn stopped before this event was never stored, and the question belongs back in the composer.
 - `token` carries a piece of the answer. `thinking` markup is filtered out of these events.
 - `complete` carries the cleaned, final answer, after it has been checkpointed.
-- `error` ends the turn with a message. A partial answer streamed before it is kept when the settlement is written; if that write fails the error says so. Endpoint-authored errors also carry a `code` (`timeout`, `timeout_partial_kept`, `timeout_partial_lost`, `empty_reply`) for clients that translate their own text.
+- `error` ends the turn with a message. A partial answer streamed before it is kept when the settlement is written; if that write fails the error says so. Endpoint-authored errors also carry a `code` (`timeout`, `timeout_partial_kept`, `timeout_partial_lost`, `empty_reply`), and the extra sentence a `suffix_code` (`partial_lost`), for clients that translate their own text.
 
 Cancelling the request (closing the connection) stops generation on the server and keeps the partial answer; a turn stopped before the first token keeps the question instead, unanswered. A turn is also capped at 15 minutes.
 

@@ -453,6 +453,7 @@ export const plPL = {
       timeout_partial_kept: "Model nie zdążył odpowiedzieć. Częściowa odpowiedź została zachowana.",
       timeout_partial_lost: "Model nie zdążył odpowiedzieć, a częściowej odpowiedzi nie udało się zapisać.",
       empty_reply: "Model zwrócił pustą odpowiedź. Spróbuj ponownie lub wybierz inny model, jeśli to się powtarza.",
+      partial_lost: "Nie udało się zapisać częściowej odpowiedzi.",
     },
     sessions: "Sesje",
     sessionTitlePlaceholder: "Wpisz tutaj tytuł...",

@@ -453,6 +453,7 @@ export const trTR = {
       timeout_partial_kept: "Model zamanında bitirmedi. Kısmi yanıt korundu.",
       timeout_partial_lost: "Model zamanında bitirmedi ve kısmi yanıt kaydedilemedi.",
       empty_reply: "Model boş bir yanıt döndürdü. Tekrar deneyin veya bu sürerse başka bir model seçin.",
+      partial_lost: "Kısmi yanıt kaydedilemedi.",
     },
     sessions: "Oturumlar",
     sessionTitlePlaceholder: "Buraya bir başlık yazın...",

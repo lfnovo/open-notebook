@@ -453,6 +453,7 @@ export const ptBR = {
       timeout_partial_kept: "O modelo não terminou a tempo. A resposta parcial foi mantida.",
       timeout_partial_lost: "O modelo não terminou a tempo e a resposta parcial não pôde ser salva.",
       empty_reply: "O modelo retornou uma resposta vazia. Tente novamente ou escolha outro modelo se isso continuar.",
+      partial_lost: "Não foi possível salvar a resposta parcial.",
     },
     sessions: "Sessões",
     sessionTitlePlaceholder: "Digite um título aqui...",

@@ -16,14 +16,17 @@ export class ChatStreamError extends Error {
   status: number
   /** Stable code for endpoint-authored errors (`timeout`, `empty_reply`, …). */
   code?: string
+  /** Code for the extra sentence, e.g. a lost partial answer. */
+  suffixCode?: string
 
-  constructor(status: number, detail?: string, code?: string) {
+  constructor(status: number, detail?: string, code?: string, suffixCode?: string) {
     // No generic text: callers fall back to a translated key when detail is
     // empty, exactly like the axios-based calls do.
     super(detail || '')
     this.name = 'ChatStreamError'
     this.status = status
     this.code = code
+    this.suffixCode = suffixCode
   }
 }
 

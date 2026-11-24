@@ -577,6 +577,79 @@ def test_stream_route_404s_for_an_unknown_session(monkeypatch):
     assert response.status_code == 404
 
 
+def test_stream_startup_failure_is_a_plain_500(monkeypatch):
+    """An unknown startup fault must not be passed off as an AI-provider 502."""
+    from fastapi.testclient import TestClient
+
+    import api.routers.chat as chat_router
+    from api.main import app
+
+    monkeypatch.setattr(
+        chat_router,
+        "get_session_or_404",
+        AsyncMock(side_effect=RuntimeError("weird internal thing")),
+    )
+    response = TestClient(app).post(
+        "/api/chat/execute/stream",
+        json={"session_id": "chat_session:x", "message": "hi", "context": {}},
+    )
+
+    assert response.status_code == 500
+    assert response.json()["detail"] == "Could not start the chat stream."
+
+
+def test_stream_startup_connection_failure_names_a_service(monkeypatch):
+    from fastapi.testclient import TestClient
+
+    import api.routers.chat as chat_router
+    from api.main import app
+
+    monkeypatch.setattr(
+        chat_router,
+        "get_session_or_404",
+        AsyncMock(side_effect=ConnectionRefusedError(111, "connection refused")),
+    )
+    response = TestClient(app).post(
+        "/api/chat/execute/stream",
+        json={"session_id": "chat_session:x", "message": "hi", "context": {}},
+    )
+
+    assert response.status_code == 500
+    assert "Could not reach a service" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_partial_answer_that_fails_to_settle_says_so(monkeypatch):
+    import api.routers.chat as chat_router
+
+    model = StreamingFakeModel(chunks=["part" * 120, " tail"], streaming=True)
+
+    async def node(state, config):
+        await model.ainvoke([HumanMessage(content="x")])
+        raise RuntimeError("provider exploded")
+
+    builder = StateGraph(_State)
+    builder.add_node("agent", node)
+    builder.add_edge(START, "agent")
+    builder.add_edge("agent", END)
+    graph = builder.compile(
+        checkpointer=HybridSqliteSaver(
+            sqlite3.connect(":memory:", check_same_thread=False)
+        )
+    )
+    monkeypatch.setattr(chat_router, "chat_graph", graph)
+    monkeypatch.setattr(chat_router, "settle_turn_end", AsyncMock(return_value=False))
+    session = MagicMock(save=AsyncMock())
+
+    events = await _drain(
+        _stream_execute_chat(_request(), _http(), "s10", session, None, None)
+    )
+
+    assert events[-1]["type"] == "error"
+    assert events[-1]["suffix_code"] == "partial_lost"
+    assert events[-1]["message"].endswith("The partial answer could not be saved.")
+
+
 @pytest.mark.asyncio
 async def test_concurrent_turns_on_one_session_serialize(monkeypatch):
     """Two turns racing one session must not build from the same history.

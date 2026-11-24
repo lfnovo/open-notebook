@@ -453,6 +453,7 @@ export const frFR = {
       timeout_partial_kept: "Le modèle n'a pas terminé à temps. La réponse partielle a été conservée.",
       timeout_partial_lost: "Le modèle n'a pas terminé à temps et la réponse partielle n'a pas pu être enregistrée.",
       empty_reply: "Le modèle a renvoyé une réponse vide. Réessayez ou choisissez un autre modèle si cela persiste.",
+      partial_lost: "La réponse partielle n'a pas pu être enregistrée.",
     },
     sessions: "Sessions",
     sessionTitlePlaceholder: "Saisissez un titre ici...",

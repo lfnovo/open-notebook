@@ -453,6 +453,7 @@ export const esES = {
       timeout_partial_kept: "El modelo no terminó a tiempo. Se conservó la respuesta parcial.",
       timeout_partial_lost: "El modelo no terminó a tiempo y no se pudo guardar la respuesta parcial.",
       empty_reply: "El modelo devolvió una respuesta vacía. Inténtalo de nuevo o elige otro modelo si sigue pasando.",
+      partial_lost: "No se pudo guardar la respuesta parcial.",
     },
     sessions: "Sesiones",
     sessionTitlePlaceholder: "Escribe un título aquí...",

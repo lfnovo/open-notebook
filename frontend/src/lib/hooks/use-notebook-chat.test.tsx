@@ -17,11 +17,13 @@ vi.mock('@/lib/api/chat', () => ({
   ChatStreamError: class ChatStreamError extends Error {
     status: number
     code?: string
+    suffixCode?: string
 
-    constructor(status = 0, detail = '', code?: string) {
+    constructor(status = 0, detail = '', code?: string, suffixCode?: string) {
       super(detail)
       this.status = status
       this.code = code
+      this.suffixCode = suffixCode
     }
   },
 }))
@@ -403,6 +405,29 @@ describe('useNotebookChat', () => {
 
     expect(sent).toBe(true)
     expect(result.current.messages.map(m => m.content)).toEqual(['hello'])
+  })
+
+  // Endpoint-authored suffix text is translated and appended to the reason.
+  it('appends the translated suffix to a streamed error', async () => {
+    vi.mocked(chatApi.listSessions).mockResolvedValue([session])
+    vi.mocked(chatApi.getSession).mockResolvedValue({ ...session, messages: [] })
+    vi.mocked(chatApi.sendMessageStream).mockResolvedValue(
+      sseStream([
+        { type: 'token', content: 'part' },
+        { type: 'error', message: 'provider exploded', suffix_code: 'partial_lost' },
+      ])
+    )
+
+    const { result } = renderHook(() => useNotebookChat(params), { wrapper })
+    await waitFor(() => expect(result.current.currentSessionId).toBe(session.id))
+
+    await act(async () => {
+      expect(await result.current.sendMessage('hello')).toBe(false)
+    })
+
+    expect(toast.error).toHaveBeenCalledWith(
+      'provider exploded chat.errors.partial_lost'
+    )
   })
 
   // The axios interceptor clears auth for every other API call; the fetch-based

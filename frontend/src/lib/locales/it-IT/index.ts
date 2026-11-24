@@ -453,6 +453,7 @@ export const itIT = {
       timeout_partial_kept: "Il modello non ha finito in tempo. La risposta parziale è stata mantenuta.",
       timeout_partial_lost: "Il modello non ha finito in tempo e la risposta parziale non è stata salvata.",
       empty_reply: "Il modello ha restituito una risposta vuota. Riprova o scegli un altro modello se continua.",
+      partial_lost: "Non è stato possibile salvare la risposta parziale.",
     },
     sessions: "Sessioni",
     sessionTitlePlaceholder: "Digita un titolo qui...",

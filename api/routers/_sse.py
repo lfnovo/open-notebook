@@ -253,15 +253,18 @@ class ThinkingFilter:
 
 
 def format_error_event(
-    error: BaseException, *, code: Optional[str] = None, suffix: Optional[str] = None
+    error: BaseException,
+    *,
+    code: Optional[str] = None,
+    suffix: Optional[str] = None,
+    suffix_code: Optional[str] = None,
 ) -> str:
     """Build an `error` event without leaking internals to the client.
 
     Typed `OpenNotebookError`s already carry a user-facing message; anything
     else (raw provider exception, transport error) goes through the classifier.
-    `code` marks errors the endpoint (rather than a provider) authored, so the
-    client can show its own translated text instead of the English message;
-    `suffix` appends a settlement warning.
+    `code`/`suffix_code` mark text the endpoint authored, so the client can show
+    its own translated copy; `suffix` is the English extra sentence.
     """
     if isinstance(error, OpenNotebookError):
         message = str(error)[:MAX_ERROR_CHARS]
@@ -273,6 +276,8 @@ def format_error_event(
     payload: Dict[str, Any] = {"type": "error", "message": message}
     if code is not None:
         payload["code"] = code
+    if suffix_code is not None:
+        payload["suffix_code"] = suffix_code
     return sse(payload)
 
 

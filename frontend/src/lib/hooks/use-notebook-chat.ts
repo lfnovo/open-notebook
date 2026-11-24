@@ -36,6 +36,11 @@ const STREAM_ERROR_KEYS: Record<string, string> = {
   empty_reply: 'chat.errors.empty_reply',
 }
 
+// Extra-sentence codes, appended to the main message.
+const STREAM_SUFFIX_KEYS: Record<string, string> = {
+  partial_lost: 'chat.errors.partial_lost',
+}
+
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 export function useNotebookChat({ notebookId, sources, notes, contextSelections }: UseNotebookChatParams) {
@@ -356,7 +361,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
           const jsonStr = line.slice(6).trim()
           if (!jsonStr) continue
 
-          let event: { type: string, content?: string, message?: string, code?: string }
+          let event: { type: string, content?: string, message?: string, code?: string, suffix_code?: string }
           try {
             event = JSON.parse(jsonStr)
           } catch {
@@ -377,7 +382,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
               renderAnswer(event.content)
             }
           } else if (event.type === 'error') {
-            throw new ChatStreamError(0, event.message, event.code)
+            throw new ChatStreamError(0, event.message, event.code, event.suffix_code)
           }
         }
       }
@@ -387,7 +392,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       return true
     } catch (err: unknown) {
       const aborted = controller.signal.aborted
-      const error = err as { status?: number, message?: string, code?: string }
+      const error = err as { status?: number, message?: string, code?: string, suffixCode?: string }
 
       if (aborted) {
         if (!accepted) {
@@ -443,7 +448,10 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
         // Endpoint-authored errors carry a code, so their text can be
         // translated; anything else is the backend's reason or the fallback.
         const key = error.code ? STREAM_ERROR_KEYS[error.code] : undefined
-        toast.error(key ? t(key) : getApiErrorMessage(error.message, (k) => t(k), 'apiErrors.failedToSendMessage'))
+        let text = key ? t(key) : getApiErrorMessage(error.message, (k) => t(k), 'apiErrors.failedToSendMessage')
+        const suffixKey = error.suffixCode ? STREAM_SUFFIX_KEYS[error.suffixCode] : undefined
+        if (suffixKey) text = `${text} ${t(suffixKey)}`
+        toast.error(text)
         // Remove the optimistic message on failure. A partial answer, if any,
         // is in the checkpoint and comes back with the refetch.
         setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))

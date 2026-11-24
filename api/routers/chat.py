@@ -588,6 +588,9 @@ async def _stream_execute_chat(
                     if content.strip() and not settled
                     else None
                 ),
+                suffix_code=(
+                    "partial_lost" if content.strip() and not settled else None
+                ),
             )
             return
 
@@ -698,6 +701,15 @@ async def execute_chat_stream(request: ExecuteChatRequest, http_request: Request
         # error may be internal (a database fault, say), and calling that an AI
         # service error would mislabel it, so it becomes a plain 500.
         exc_class, detail = classify_error(e)
+        # A connection fault at startup is usually the database, not the model;
+        # the classifier would report it as an AI-provider error.
+        if isinstance(e, (ConnectionError, OSError)) or type(e).__name__ in {
+            "ConnectionClosed",
+            "ConnectionClosedError",
+        }:
+            raise OpenNotebookError(
+                "Could not reach a service needed to start the chat."
+            ) from e
         if exc_class is ExternalServiceError and detail.startswith("AI service error:"):
             raise OpenNotebookError("Could not start the chat stream.") from e
         raise exc_class(detail) from e

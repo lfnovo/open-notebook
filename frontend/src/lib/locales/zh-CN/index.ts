@@ -453,6 +453,7 @@ export const zhCN = {
       timeout_partial_kept: "模型未能及时完成。部分回答已保留。",
       timeout_partial_lost: "模型未能及时完成，且部分回答无法保存。",
       empty_reply: "模型返回了空回答。请重试，若持续出现请换一个模型。",
+      partial_lost: "部分回答无法保存。",
     },
     sessions: "会话",
     sessionTitlePlaceholder: "在此输入标题...",

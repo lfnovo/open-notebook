@@ -456,6 +456,7 @@ export const deDE = {
       timeout_partial_kept: "Das Modell hat nicht rechtzeitig geantwortet. Die Teilantwort wurde behalten.",
       timeout_partial_lost: "Das Modell hat nicht rechtzeitig geantwortet, und die Teilantwort konnte nicht gespeichert werden.",
       empty_reply: "Das Modell hat eine leere Antwort geliefert. Versuche es erneut oder wähle ein anderes Modell, wenn das weiterhin passiert.",
+      partial_lost: "Die Teilantwort konnte nicht gespeichert werden.",
     },
     sessions: "Sitzungen",
     sessionTitlePlaceholder: "Titel hier eingeben...",

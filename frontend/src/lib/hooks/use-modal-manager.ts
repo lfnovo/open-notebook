@@ -33,11 +33,13 @@ export function useModalManager() {
    * Close the currently open modal by removing modal params from URL
    */
   const closeModal = useCallback(() => {
-    const params = new URLSearchParams(searchParams?.toString() || '')
-    params.delete('modal')
-    params.delete('id')
-    router.push(`${pathname}?${params.toString()}`, { scroll: false })
-  }, [router, searchParams, pathname])
+    const url = new URL(window.location.href)
+    url.searchParams.delete('modal')
+    url.searchParams.delete('id')
+    // Next.js syncs useSearchParams with native history updates. Closing this
+    // client-only UI state must not wait for an RSC navigation to finish.
+    window.history.pushState(null, '', `${url.pathname}${url.search}${url.hash}`)
+  }, [])
 
   return {
     modalType,

@@ -19,6 +19,7 @@ describe('useModalManager', () => {
     vi.mocked(useRouter).mockReturnValue({ push: pushMock } as any)
     vi.mocked(usePathname).mockReturnValue(pathnameMock)
     pushMock.mockClear()
+    window.history.replaceState(null, '', pathnameMock)
   })
 
   it('should return null modal state when no params present', () => {
@@ -50,7 +51,8 @@ describe('useModalManager', () => {
     expect(pushMock).toHaveBeenCalledWith('/test-path?modal=source&id=abc', { scroll: false })
   })
 
-  it('should call router.push when closing a modal', () => {
+  it('closes a modal without leaving an empty query string', () => {
+    window.history.replaceState(null, '', '/test-path?modal=note&id=123')
     vi.mocked(useSearchParams).mockReturnValue(new URLSearchParams('modal=note&id=123') as any)
     const { result } = renderHook(() => useModalManager())
     
@@ -58,6 +60,30 @@ describe('useModalManager', () => {
       result.current.closeModal()
     })
     
-    expect(pushMock).toHaveBeenCalledWith('/test-path?', { scroll: false })
+    expect(window.location.href).toBe(`${window.location.origin}/test-path`)
+  })
+
+  it('preserves other query parameters and the fragment when closing', () => {
+    window.history.replaceState(null, '', '/test-path?keep=one&modal=source&id=123&keep=two#section')
+    vi.mocked(useSearchParams).mockReturnValue(new URLSearchParams(window.location.search) as any)
+    const { result } = renderHook(() => useModalManager())
+
+    act(() => {
+      result.current.closeModal()
+    })
+
+    expect(window.location.href).toBe(`${window.location.origin}/test-path?keep=one&keep=two#section`)
+  })
+
+  it('uses the current address when another URL update preceded the close', () => {
+    vi.mocked(useSearchParams).mockReturnValue(new URLSearchParams('modal=source&id=old') as any)
+    const { result } = renderHook(() => useModalManager())
+    window.history.replaceState(null, '', '/new-path?filter=recent&modal=insight&id=new#latest')
+
+    act(() => {
+      result.current.closeModal()
+    })
+
+    expect(window.location.href).toBe(`${window.location.origin}/new-path?filter=recent#latest`)
   })
 })

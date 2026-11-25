@@ -158,5 +158,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build
+      - name: Install Chromium
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/frontend/.playwright-browsers
+        run: npm exec -- playwright install chromium --with-deps --no-shell
+
+      - name: Build and run browser regressions
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+          PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/frontend/.playwright-browsers
+          # Chromium creates a Unix socket under TMPDIR. Keep its path short.
+          TMPDIR: ${{ github.workspace }}/temp
+        run: |
+          mkdir -p "$TMPDIR"
+          npm run test:e2e
+
+      - name: Upload browser failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: frontend-browser-failures
+          path: frontend/playwright-results/
+          if-no-files-found: ignore

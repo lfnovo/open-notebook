@@ -15,6 +15,10 @@ uv run pytest tests/ --cov=open_notebook --cov=api     # with coverage
 npm run test              # vitest run, once
 npm run test:watch        # watch mode
 npm run test:coverage     # what CI runs
+
+# Browser regressions (inside frontend/)
+npm exec -- playwright install chromium --no-shell  # once; add --with-deps on Linux
+npm run test:e2e          # production build, then Playwright
 ```
 
 The backend suite needs **no running SurrealDB, worker or AI provider**. CI runs it with nothing but `uv sync`. SurrealDB access, models and HTTP requests are mocked; a few tests use in-memory substitutes instead (for example an in-memory `SqliteSaver` in `tests/test_empty_model_reply.py`).
@@ -77,6 +81,10 @@ def test_delete_notebook_missing_returns_404(mock_get, client):
 Tests are colocated with the code as `*.test.ts` / `*.test.tsx` (for example `src/lib/locales/index.test.ts`, `src/components/common/ConfirmDialog.test.tsx`). `frontend/src/test/` holds only the shared setup (`setup.ts`: jest-dom matchers and mocks for `next/navigation`, `matchMedia` and `@/lib/hooks/use-translation`, whose `t()` returns the key itself, so assert on keys rather than English text).
 
 Vitest runs in `jsdom` with globals enabled and the `@/` alias (`frontend/vitest.config.ts`). Use Testing Library to render components; mock API modules rather than the network.
+
+Browser regressions live in `frontend/e2e/*.e2e.ts`, outside Vitest's test patterns. Playwright starts the production standalone server on `127.0.0.1:3139` and shuts it down after the suite. These tests use the real App Router, providers and dialogs, with fixed API responses intercepted at the HTTP boundary; no backend, database or model provider is needed. They do not load the Vitest setup's module mocks. Run `npm run test:e2e` to build and test, or `npm exec -- playwright test` to reuse a production build.
+
+The modal navigation regression (#1399) holds RSC navigation requests unresolved while testing close buttons, Esc, hard refreshes and browser history for sources, notes and insights. It also checks other query parameters, URL fragments and restored page interaction. Screenshots and traces from failures are written to the ignored `frontend/playwright-results/` directory. The frontend build CI job runs the browser suite and uploads failure artifacts.
 
 ## What to test
 

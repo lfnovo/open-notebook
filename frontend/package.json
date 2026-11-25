@@ -9,11 +9,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "node start-server.js",
-    "lint": "eslint src/",
+    "lint": "eslint src/ e2e/ playwright.config.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "npm run build && playwright test"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -65,6 +66,7 @@
     "zustand": "^5.1.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",

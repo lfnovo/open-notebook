@@ -16,7 +16,6 @@
 /playwright-results/
 /playwright-report/
 /.playwright-browsers/
-/.playwright-tmp/
 
 # next.js
 /.next/

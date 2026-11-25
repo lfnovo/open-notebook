@@ -167,9 +167,10 @@ jobs:
         env:
           NEXT_TELEMETRY_DISABLED: '1'
           PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/frontend/.playwright-browsers
-          TMPDIR: ${{ github.workspace }}/frontend/.playwright-tmp
+          # Chromium creates a Unix socket under TMPDIR. Keep its path short.
+          TMPDIR: ${{ github.workspace }}/temp
         run: |
-          mkdir -p .playwright-tmp
+          mkdir -p "$TMPDIR"
           npm run test:e2e
 
       - name: Upload browser failure artifacts

@@ -90,22 +90,40 @@ export function DiscoverModelsDialog({
     setCustomModelSelected(false)
   }, [searchQuery])
 
+  // Models that carry a type only show under that type; untyped ones show under every type
+  const typeModels = useMemo(
+    () => discoveredModels.filter(m => !m.model_type || m.model_type === selectedType),
+    [discoveredModels, selectedType]
+  )
+
   // Filter discovered models by search query
   const filteredModels = useMemo(() => {
-    if (!searchQuery.trim()) return discoveredModels
+    if (!searchQuery.trim()) return typeModels
     const q = searchQuery.toLowerCase()
-    return discoveredModels.filter(m => m.name.toLowerCase().includes(q))
-  }, [discoveredModels, searchQuery])
+    return typeModels.filter(m => m.name.toLowerCase().includes(q))
+  }, [typeModels, searchQuery])
 
-  // Show custom model option when search doesn't exactly match any discovered model
+  // Show custom model option when search doesn't exactly match any listed model
   const showCustomOption = useMemo(() => {
     if (!searchQuery.trim()) return false
     const q = searchQuery.trim().toLowerCase()
-    return !discoveredModels.some(m => m.name.toLowerCase() === q)
-  }, [discoveredModels, searchQuery])
+    return !typeModels.some(m => m.name.toLowerCase() === q)
+  }, [typeModels, searchQuery])
+
+  const handleTypeChange = (type: string) => {
+    setSelectedType(type)
+    setSelectedModels(prev => {
+      const visible = new Set(
+        discoveredModels
+          .filter(m => !m.model_type || m.model_type === type)
+          .map(m => m.name)
+      )
+      return new Set([...prev].filter(name => visible.has(name)))
+    })
+  }
 
   const handleRegister = () => {
-    const selected = discoveredModels
+    const selected = typeModels
       .filter(m => selectedModels.has(m.name))
       .map(m => ({
         name: m.name,
@@ -181,7 +199,7 @@ export function DiscoverModelsDialog({
             {/* Model type selector */}
             <div className="space-y-2">
               <Label>{t('models.modelType')}</Label>
-              <Select value={selectedType} onValueChange={setSelectedType}>
+              <Select value={selectedType} onValueChange={handleTypeChange}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

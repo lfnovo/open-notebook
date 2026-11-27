@@ -22,6 +22,10 @@ const nextConfig: NextConfig = {
     // This allows larger files to be uploaded through the /api/* rewrite proxy to FastAPI.
     // The Add Source dialog checks against the same value before uploading.
     proxyClientMaxBodySize: `${PROXY_MAX_UPLOAD_MB}mb`,
+    // Next.js cuts a proxied request after 30s by default. A RAG ask over
+    // /api/search/ask streams for minutes, so the default would cut the
+    // answer in half. Milliseconds, aligned with the API timeout (300s).
+    proxyTimeout: 300_000,
   } as NextConfig['experimental'],
 
   // API Rewrites: Proxy /api/* requests to FastAPI backend

@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { FileText } from 'lucide-react'
+import { FileText, StickyNote } from 'lucide-react'
 import {MarkdownRenderer} from '@/components/ui/markdown-renderer'
-import { useInsight } from '@/lib/hooks/use-insights'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useInsight, useSaveInsightAsNote } from '@/lib/hooks/use-insights'
+import { useNotebooks } from '@/lib/hooks/use-notebooks'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { ContentUnavailable } from '@/components/common/ContentUnavailable'
@@ -23,9 +25,11 @@ interface SourceInsightDialogProps {
     source_id?: string
   }
   onDelete?: (insightId: string) => Promise<void>
+  // When set, "Save as note" saves straight to this notebook; otherwise the user picks one
+  notebookId?: string
 }
 
-export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: SourceInsightDialogProps) {
+export function SourceInsightDialog({ open, onOpenChange, insight, onDelete, notebookId }: SourceInsightDialogProps) {
   const { t } = useTranslation()
   const { openModal } = useModalManager()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -142,7 +146,64 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
             )}
           </div>
         )}
+
+        {!showDeleteConfirm && !isLoading && !isError && displayInsight && (
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t pt-3">
+            {notebookId ? (
+              <SaveAsNoteButton insightId={insightIdWithPrefix} notebookId={notebookId} />
+            ) : (
+              <SaveAsNoteWithPicker insightId={insightIdWithPrefix} />
+            )}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
+  )
+}
+
+function SaveAsNoteButton({ insightId, notebookId }: { insightId: string; notebookId: string }) {
+  const { t } = useTranslation()
+  const saveAsNote = useSaveInsightAsNote()
+
+  return (
+    <Button
+      size="sm"
+      className="gap-1"
+      onClick={() => saveAsNote.mutate({ insightId, notebookId })}
+      disabled={!notebookId || saveAsNote.isPending}
+    >
+      <StickyNote className="h-3 w-3" />
+      {saveAsNote.isPending ? t('common.saving') : t('sources.saveAsNote')}
+    </Button>
+  )
+}
+
+// Mounted only without a notebook context, so the notebooks query runs only when a pick is needed
+function SaveAsNoteWithPicker({ insightId }: { insightId: string }) {
+  const { t } = useTranslation()
+  const { data: notebooks, isLoading } = useNotebooks(false) // false = not archived
+  const [pickedId, setPickedId] = useState('')
+
+  // Preselect when there is only one notebook to choose from
+  const notebookId = pickedId || (notebooks?.length === 1 ? notebooks[0].id : '')
+
+  if (!isLoading && !notebooks?.length) {
+    return <p className="text-sm text-muted-foreground">{t('sources.noNotebooksFound')}</p>
+  }
+
+  return (
+    <>
+      <Select value={notebookId} onValueChange={setPickedId} disabled={isLoading}>
+        <SelectTrigger className="w-56" aria-label={t('sources.chooseNotebook')}>
+          <SelectValue placeholder={t('sources.chooseNotebook')} />
+        </SelectTrigger>
+        <SelectContent>
+          {notebooks?.map(nb => (
+            <SelectItem key={nb.id} value={nb.id}>{nb.name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <SaveAsNoteButton insightId={insightId} notebookId={notebookId} />
+    </>
   )
 }

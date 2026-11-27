@@ -13,6 +13,7 @@ import { useExecuteTransformation } from '@/lib/hooks/use-transformations'
 import { ModelSelector } from '@/components/common/ModelSelector'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import ReactMarkdown from 'react-markdown'
+import remarkCjkFriendly from 'remark-cjk-friendly'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
@@ -128,7 +129,7 @@ export function TransformationPlayground({ transformations, selectedTransformati
                   <CardContent className="pt-6">
                     <div className="prose prose-sm max-w-none dark:prose-invert">
                       <ReactMarkdown
-                        remarkPlugins={[remarkGfm, remarkMath]}
+                        remarkPlugins={[remarkGfm, remarkCjkFriendly, remarkMath]}
                         rehypePlugins={[[rehypeKatex, KATEX_OPTIONS]]}
                         components={{
                           table: ({ children }) => (

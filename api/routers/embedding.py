@@ -66,6 +66,10 @@ async def embed_content(embed_request: EmbedRequest):
                     command_id=command_id,
                 )
 
+            except OpenNotebookError:
+                # Typed errors (e.g. a NUL byte in item_id) reach the global
+                # handlers instead of becoming a 500
+                raise
             except Exception as e:
                 logger.error(f"Failed to submit async embedding command: {e}")
                 raise HTTPException(

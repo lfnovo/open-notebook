@@ -1,5 +1,6 @@
 import operator
 import os
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
@@ -13,11 +14,17 @@ from loguru import logger
 from typing_extensions import Annotated, TypedDict
 
 from open_notebook.ai.models import Model, ModelManager
+from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.domain.content_settings import ContentSettings
-from open_notebook.domain.notebook import Asset, Source
+from open_notebook.domain.notebook import (
+    Asset,
+    Source,
+    is_replaceable_source_title,
+)
 from open_notebook.domain.transformation import Transformation
 from open_notebook.graphs.transformation import graph as transform_graph
 from open_notebook.utils.runtime_capabilities import engine_runtime_missing
+from open_notebook.utils.url_validation import validate_url
 
 # content-core >= 2.1 disables its own Loguru logging for library consumers.
 # Both the API and the worker import this module before extracting anything,
@@ -41,6 +48,14 @@ YOUTUBE_PREFERRED_LANGUAGES = [
     "zh-CN",
     "zh-TW",
 ]
+
+# ContentSettings fields that share their name with a ContentCoreConfig field.
+# The API key is not among them: it stays in CCORE_DOCLING_VISION_API_KEY.
+_DOCLING_VISION_SETTINGS = (
+    "docling_vision_url",
+    "docling_vision_model",
+    "docling_vision_prompt",
+)
 
 
 class SourceState(TypedDict):
@@ -157,8 +172,30 @@ def _extraction_error(error: "cc.ContentCoreError", url: str) -> ValueError:
     return ValueError("Could not extract content from this source.")
 
 
+async def validate_content_state(content_state: Dict[str, Any]) -> None:
+    """Apply the source-input guards at the point of extraction.
+
+    The API validates input when a source is created, but this graph is also
+    reached from other entry points (retries, sync processing), so the
+    file-path containment and SSRF checks are enforced here too, where the
+    file is actually read (and possibly deleted) and the URL fetched. Raises
+    ValueError, which process_source treats as a permanent failure.
+    """
+    file_path = content_state.get("file_path")
+    if file_path:
+        uploads_resolved = Path(UPLOADS_FOLDER).resolve()
+        if not str(Path(file_path).resolve()).startswith(
+            str(uploads_resolved) + os.sep
+        ):
+            raise ValueError("Invalid file path: must be within the uploads directory")
+    url = content_state.get("url")
+    if url:
+        await validate_url(url, "source")
+
+
 async def content_process(state: SourceState) -> dict:
     content_state: Dict[str, Any] = state["content_state"]
+    await validate_content_state(content_state)
 
     # content-core 2.x takes engine/model overrides via ContentCoreConfig
     # (keyword-only), not inside the input dict.
@@ -171,7 +208,9 @@ async def content_process(state: SourceState) -> dict:
     # "auto"/"docling"/"simple" for documents; falling back to "auto" keeps the
     # previous behavior when settings are unset.
     try:
-        settings: ContentSettings = await ContentSettings.get_instance()  # type: ignore[assignment]
+        settings: ContentSettings = await ContentSettings.get_instance(  # type: ignore[assignment]
+            force_reload=True
+        )
         if settings.youtube_preferred_languages:
             config_kwargs["youtube_languages"] = settings.youtube_preferred_languages
         if settings.default_content_processing_engine_url:
@@ -188,12 +227,38 @@ async def content_process(state: SourceState) -> dict:
             config_kwargs["docling_formulas"] = settings.docling_formulas
         if settings.docling_vision is not None:
             config_kwargs["docling_vision"] = settings.docling_vision
+        # Pass the vision endpoint fields only while image description is on
+        # (otherwise Docling never uses them, and the URL re-check below would
+        # do a DNS lookup for every source), and only when filled in: an empty
+        # field must leave the CCORE_DOCLING_VISION_* worker variables in
+        # effect, since ContentCoreConfig prefers explicit kwargs over its env
+        # vars.
+        if settings.docling_vision:
+            for field in _DOCLING_VISION_SETTINGS:
+                value = (getattr(settings, field) or "").strip()
+                if value:
+                    config_kwargs[field] = value
     except Exception as e:
         # Keep the server-side traceback for diagnosing DB/deserialization
         # failures while still falling back to defaults (non-fatal).
         logger.opt(exception=True).warning(
             f"Failed to load content settings, using defaults: {e}"
         )
+
+    # PUT /api/settings already validated the URL, but DNS can change since
+    # then, and Docling resolves it again for every image request. Re-check
+    # right before use, like _revalidate_config_urls() does for credentials.
+    # On failure, drop all three settings so the worker variables (or
+    # Docling's local model) apply as a whole, instead of sending this model
+    # name and prompt to a different endpoint.
+    vision_url = config_kwargs.get("docling_vision_url")
+    if vision_url:
+        try:
+            await validate_url(vision_url, "docling_vision")
+        except ValueError as e:
+            for field in _DOCLING_VISION_SETTINGS:
+                config_kwargs.pop(field, None)
+            logger.warning(f"Ignoring the Docling vision settings: {e}")
 
     try:
         model_manager = ModelManager()
@@ -203,6 +268,20 @@ async def content_process(state: SourceState) -> dict:
             if stt_model:
                 config_kwargs["audio_provider"] = stt_model.provider
                 config_kwargs["audio_model"] = stt_model.name
+                # content-core builds its own speech-to-text client from
+                # environment variables only (ContentCoreConfig has no
+                # api_key/base_url fields for audio). Provision the env vars
+                # from the model's linked credential (or the provider's first
+                # credential when none is linked), mirroring the fallback used
+                # for language/embedding models in open_notebook/ai/models.py
+                # and podcast models in open_notebook/podcasts/models.py (see
+                # #567 for the same class of bug fixed for embeddings).
+                from open_notebook.ai.key_provider import provision_provider_keys
+
+                await provision_provider_keys(
+                    stt_model.provider,
+                    credential=await stt_model.get_credential_obj(),
+                )
                 logger.debug(
                     f"Using speech-to-text model: {stt_model.provider}/{stt_model.name}"
                 )
@@ -284,7 +363,10 @@ async def save_source(state: SourceState) -> dict:
     source.full_text = extraction.content
 
     # Preserve user-set title; only overwrite placeholder or empty titles
-    if extraction.title and (not source.title or source.title == "Processing..."):
+    # (the placeholder, or the fallback a failed earlier attempt left behind)
+    if extraction.title and is_replaceable_source_title(
+        source.title, content_state.get("url"), content_state.get("file_path")
+    ):
         source.title = extraction.title
 
     await source.save()

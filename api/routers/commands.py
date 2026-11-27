@@ -2,27 +2,13 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from surreal_commands import registry
 
 from api.command_service import CommandService
 from open_notebook.exceptions import OpenNotebookError
 
 router = APIRouter()
-
-
-class CommandExecutionRequest(BaseModel):
-    command: str = Field(
-        ..., description="Command function name (e.g., 'generate_podcast')"
-    )
-    app: str = Field(..., description="Application name (e.g., 'open_notebook')")
-    input: Dict[str, Any] = Field(..., description="Arguments to pass to the command")
-
-
-class CommandJobResponse(BaseModel):
-    job_id: str
-    status: str
-    message: str
 
 
 class CommandJobStatusResponse(BaseModel):
@@ -33,47 +19,6 @@ class CommandJobStatusResponse(BaseModel):
     created: Optional[str] = None
     updated: Optional[str] = None
     progress: Optional[Dict[str, Any]] = None
-
-
-@router.post("/commands/jobs", response_model=CommandJobResponse)
-async def execute_command(request: CommandExecutionRequest):
-    """
-    Submit a command for background processing.
-    Returns immediately with job ID for status tracking.
-
-    Example request:
-    {
-        "command": "generate_podcast",
-        "app": "open_notebook",
-        "input": {
-            "episode_profile": "tech_experts",
-            "speaker_profile": "tech_experts",
-            "episode_name": "My Episode",
-            "content": "Content to discuss"
-        }
-    }
-    """
-    try:
-        # Submit command using app name (not module name)
-        job_id = await CommandService.submit_command_job(
-            module_name=request.app,  # This should be "open_notebook"
-            command_name=request.command,
-            command_args=request.input,
-        )
-
-        return CommandJobResponse(
-            job_id=job_id,
-            status="submitted",
-            message=f"Command '{request.command}' submitted successfully",
-        )
-
-    except HTTPException:
-        raise
-    except OpenNotebookError:
-        raise
-    except Exception as e:
-        logger.error(f"Error submitting command: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to submit command")
 
 
 @router.get("/commands/jobs/{job_id}", response_model=CommandJobStatusResponse)

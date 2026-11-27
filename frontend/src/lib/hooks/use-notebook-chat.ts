@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { getApiErrorMessage } from '@/lib/utils/error-handler'
@@ -29,6 +29,11 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<NotebookChatMessage[]>([])
   const [isSending, setIsSending] = useState(false)
+  // Same as isSending, but readable from the session effect without re-running it
+  const sendingRef = useRef(false)
+  // A failed refetch after a successful send can leave currentSession stale.
+  // Keep the response messages for the effect pass that follows that send.
+  const preserveMessagesAfterSendRef = useRef(false)
   const [tokenCount, setTokenCount] = useState<number>(0)
   const [charCount, setCharCount] = useState<number>(0)
   // Pending model override for when user changes model before a session exists
@@ -55,12 +60,18 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     enabled: !!notebookId && !!currentSessionId
   })
 
-  // Update messages when current session changes
+  // Update messages when current session changes. Skipped while a send is in
+  // flight: the session can load mid-send without the optimistic message, and
+  // would hide it until the reply arrives (#1391).
   useEffect(() => {
-    if (currentSession?.messages) {
+    if (preserveMessagesAfterSendRef.current && !sendingRef.current) {
+      preserveMessagesAfterSendRef.current = false
+      return
+    }
+    if (currentSession?.messages && !sendingRef.current) {
       setMessages(currentSession.messages)
     }
-  }, [currentSession])
+  }, [currentSession, isSending])
 
   // Auto-select most recent session when sessions are loaded
   useEffect(() => {
@@ -174,45 +185,49 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
 
   // Send message (synchronous, no streaming)
   const sendMessage = useCallback(async (message: string, modelOverride?: string) => {
-    let sessionId = currentSessionId
-
-    // Auto-create session if none exists
-    if (!sessionId) {
-      try {
-        const defaultTitle = message.length > 30
-          ? `${message.substring(0, 30)}...`
-          : message
-        const newSession = await chatApi.createSession({
-          notebook_id: notebookId,
-          title: defaultTitle,
-          // Include pending model override when creating session
-          model_override: pendingModelOverride ?? undefined
-        })
-        sessionId = newSession.id
-        setCurrentSessionId(sessionId)
-        // Clear pending model override now that it's applied to the session
-        setPendingModelOverride(null)
-        queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.notebookChatSessions(notebookId)
-        })
-      } catch (err: unknown) {
-        const error = err as { response?: { data?: { detail?: string } }, message?: string };
-        toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToCreateSession'))
-        return
-      }
-    }
-
-    // Add user message optimistically
-    const userMessage: NotebookChatMessage = {
-      id: `temp-${Date.now()}`,
-      type: 'human',
-      content: message,
-      timestamp: new Date().toISOString()
-    }
-    setMessages(prev => [...prev, userMessage])
+    // Mark sending before any await (including session creation) so the
+    // composer and session switcher stay disabled for the whole send (#1597).
+    sendingRef.current = true
     setIsSending(true)
 
     try {
+      let sessionId = currentSessionId
+
+      // Auto-create session if none exists
+      if (!sessionId) {
+        try {
+          const defaultTitle = message.length > 30
+            ? `${message.substring(0, 30)}...`
+            : message
+          const newSession = await chatApi.createSession({
+            notebook_id: notebookId,
+            title: defaultTitle,
+            // Include pending model override when creating session
+            model_override: pendingModelOverride ?? undefined
+          })
+          sessionId = newSession.id
+          setCurrentSessionId(sessionId)
+          // Clear pending model override now that it's applied to the session
+          setPendingModelOverride(null)
+          queryClient.invalidateQueries({
+            queryKey: QUERY_KEYS.notebookChatSessions(notebookId)
+          })
+        } catch (err: unknown) {
+          const error = err as { response?: { data?: { detail?: string } }, message?: string };
+          toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToCreateSession'))
+          return false
+        }
+      }
+
+      // Add user message optimistically
+      const userMessage: NotebookChatMessage = {
+        id: `temp-${Date.now()}`,
+        type: 'human',
+        content: message,
+        timestamp: new Date().toISOString()
+      }
+      setMessages(prev => [...prev, userMessage])
+
       // Build context and send message
       const context = await buildContext()
       const response = await chatApi.sendMessage({
@@ -224,16 +239,20 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
 
       // Update messages with API response
       setMessages(response.messages)
+      preserveMessagesAfterSendRef.current = true
 
       // Refetch current session to get updated data
       await refetchCurrentSession()
+      return true
     } catch (err: unknown) {
       const error = err as { response?: { data?: { detail?: string } }, message?: string };
       console.error('Error sending message:', error)
       toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToSendMessage'))
       // Remove optimistic message on error
       setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
+      return false
     } finally {
+      sendingRef.current = false
       setIsSending(false)
     }
   }, [

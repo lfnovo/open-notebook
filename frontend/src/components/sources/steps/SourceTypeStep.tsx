@@ -250,7 +250,7 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
                         type="file"
                         multiple
                         {...register('file')}
-                        accept=".pdf,.doc,.docx,.pptx,.ppt,.xlsx,.xls,.odt,.ods,.odp,.txt,.md,.epub,.mp4,.avi,.mov,.wmv,.mp3,.wav,.m4a,.aac,.jpg,.jpeg,.png,.tiff,.zip,.tar,.gz,.html,.htm"
+                        accept=".pdf,.doc,.docx,.pptx,.ppt,.xlsx,.xls,.odt,.ods,.odp,.txt,.md,.epub,.mp4,.avi,.mov,.wmv,.mp3,.wav,.m4a,.aac,.jpg,.jpeg,.png,.tiff,.html,.htm"
                       />
                       <p className="text-xs text-muted-foreground mt-1">
                         {t('sources.selectMultipleFilesHint')}

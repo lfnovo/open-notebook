@@ -24,7 +24,7 @@ Yes, with local models for everything: Ollama, LM Studio or oMLX for chat and em
 
 ### What can I add as a source?
 
-Files (PDF, Word, PowerPoint, Excel, EPUB, OpenDocument, HTML, plain text and Markdown; audio and video such as MP3, WAV, M4A and MP4; ZIP archives), web pages, YouTube videos and pasted text. Images and scanned documents need the optional Docling engine (`OPEN_NOTEBOOK_ENABLE_DOCLING=true`). Audio, video and YouTube videos without captions need a speech-to-text model. See [Adding Sources](../3-USER-GUIDE/adding-sources.md).
+Files (PDF, Word, PowerPoint, Excel, EPUB, OpenDocument, HTML, plain text and Markdown; audio and video such as MP3, WAV, M4A and MP4), web pages, YouTube videos and pasted text. Images and scanned documents need the optional Docling engine (`OPEN_NOTEBOOK_ENABLE_DOCLING=true`). Audio, video and YouTube videos without captions need a speech-to-text model. See [Adding Sources](../3-USER-GUIDE/adding-sources.md).
 
 ### How much does it cost?
 

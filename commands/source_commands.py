@@ -5,8 +5,12 @@ from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from surreal_commands import CommandInput, CommandOutput, command
 
-from open_notebook.database.repository import ensure_record_id
-from open_notebook.domain.notebook import Source
+from open_notebook.database.repository import ensure_record_id, repo_query
+from open_notebook.domain.notebook import (
+    PLACEHOLDER_SOURCE_TITLE,
+    Source,
+    fallback_source_title,
+)
 from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import (
     ConfigurationError,
@@ -39,6 +43,37 @@ class SourceProcessingOutput(CommandOutput):
     insights_created: int = 0
     processing_time: float
     error_message: Optional[str] = None
+
+
+async def _replace_placeholder_title(input_data: SourceProcessingInput) -> None:
+    """Give a source that failed processing a title other than "Processing...".
+
+    The placeholder is only replaced on success, so a failed source kept it
+    forever. Use the URL or file name instead, or clear the title so the UI
+    shows "Untitled source". Best effort: never masks the original failure.
+    """
+    try:
+        content_state = input_data.content_state or {}
+        title = fallback_source_title(
+            content_state.get("url"), content_state.get("file_path")
+        )
+        # One conditional UPDATE instead of load-and-save: it cannot overwrite
+        # a title the user set meanwhile, and `title = NONE` clears the field
+        # (save() skips None values).
+        await repo_query(
+            "UPDATE $id SET title = "
+            + ("$title" if title else "NONE")
+            + " WHERE title = $placeholder",
+            {
+                "id": ensure_record_id(input_data.source_id),
+                "title": title,
+                "placeholder": PLACEHOLDER_SOURCE_TITLE,
+            },
+        )
+    except Exception as e:
+        logger.debug(
+            f"Could not replace placeholder title of source {input_data.source_id}: {e}"
+        )
 
 
 @command(
@@ -160,6 +195,7 @@ async def process_source_command(
         logger.error(
             f"Generation failed (permanent) for source {input_data.source_id}: {e}"
         )
+        await _replace_placeholder_title(input_data)
         raise  # Preserve failed job status; stop_on prevents automatic retries.
     except NotFoundError as e:
         # E.g. the source was deleted while extraction ran (save_source re-reads
@@ -176,10 +212,15 @@ async def process_source_command(
         # which hid extraction failures and left the source without a retryable
         # `failed` status in the UI.
         logger.error(f"Source processing failed (permanent): {e}")
+        await _replace_placeholder_title(input_data)
         raise
     except Exception as e:
         # Transient failure - will be retried (surreal-commands logs final failure)
         logger.debug(f"Transient error processing source {input_data.source_id}: {e}")
+        # The command cannot tell its last attempt from an earlier one, so the
+        # fallback is written on every failure; a later successful attempt
+        # still replaces it with the extracted title (see save_source).
+        await _replace_placeholder_title(input_data)
         raise
 
 

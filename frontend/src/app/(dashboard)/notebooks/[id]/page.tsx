@@ -16,7 +16,9 @@ import { useIsDesktop } from '@/lib/hooks/use-media-query'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { FileText, StickyNote, MessageSquare } from 'lucide-react'
+import { ArrowLeft, FileText, StickyNote, MessageSquare } from 'lucide-react'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 import {
   applyBulkSourceContext,
   applyBulkNoteContext,
@@ -146,6 +148,12 @@ export default function NotebookPage() {
         <div className="p-6">
           <h1 className="text-2xl font-bold mb-4">{t('notebooks.notFound')}</h1>
           <p className="text-muted-foreground">{t('notebooks.notFoundDesc')}</p>
+          <Button asChild variant="outline" className="mt-4">
+            <Link href="/notebooks">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              {t('navigation.notebooks')}
+            </Link>
+          </Button>
         </div>
       </AppShell>
     )

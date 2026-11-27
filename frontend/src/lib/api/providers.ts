@@ -7,6 +7,8 @@ export interface ProviderInfo {
   modalities: string[]
   docs_url?: string | null
   env_configured: boolean
+  // API version the backend uses when a credential sets none (Azure only)
+  default_api_version?: string | null
 }
 
 export const providersApi = {

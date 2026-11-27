@@ -5,7 +5,8 @@ import { podcastsApi, EpisodeProfileInput, SpeakerProfileInput } from '@/lib/api
 import { QUERY_KEYS } from '@/lib/api/query-client'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { getApiErrorKey } from '@/lib/utils/error-handler'
+import { getApiErrorKey, getApiErrorMessage } from '@/lib/utils/error-handler'
+
 import {
   ACTIVE_EPISODE_STATUSES,
   EpisodeProfile,
@@ -15,6 +16,11 @@ import {
   groupEpisodesByStatus,
   speakerUsageMap,
 } from '@/lib/types/podcasts'
+
+// Only the server's detail bypasses translation; a network or timeout error
+// yields '' so the localized fallback is shown instead of axios's message.
+const serverDetail = (error: unknown): string =>
+  (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? ''
 
 export function useLanguages() {
   return useQuery({
@@ -105,7 +111,7 @@ export function useRetryPodcastEpisode() {
     onError: (error: unknown) => {
       toast({
         title: t('podcasts.failedToRetry'),
-        description: getApiErrorKey(error, t('common.error')),
+        description: getApiErrorMessage(serverDetail(error), t, 'common.error'),
         variant: 'destructive',
       })
     },
@@ -407,7 +413,7 @@ export function useGeneratePodcast() {
     onError: (error: unknown) => {
       toast({
         title: t('podcasts.failedToStartGeneration'),
-        description: getApiErrorKey(error, t('podcasts.tryAgainMoment')),
+        description: getApiErrorMessage(serverDetail(error), t, 'podcasts.tryAgainMoment'),
         variant: 'destructive',
       })
     },

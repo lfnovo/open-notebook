@@ -37,6 +37,18 @@ updates:
     cooldown:
       default-days: 7
     groups:
+      # Packages that only work at matching versions move as one PR, majors
+      # included. Dependabot uses the first group a package matches, so these
+      # come before all-npm. @vitest/* pins an exact vitest peer (#1570 could
+      # not even install), and eslint-config-next follows next (#1571).
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+      next:
+        patterns:
+          - "next"
+          - "eslint-config-next"
       # Minor and patch updates travel together; majors arrive as their own PRs
       # so one breaking package can't block the rest (#1371, #1410 failed whole).
       all-npm:
@@ -55,6 +67,11 @@ updates:
       # match the renderer's version, so katex moves when rehype-katex does.
       - dependency-name: "katex"
         versions: [">=0.17.0"]
+      # Node's types follow the Node we run (Dockerfile and test.yml), not the
+      # newest release: newer types let tsc accept APIs the runtime lacks
+      # (#1572). Bump the major by hand in the same PR that moves Node.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "docker"
     directory: "/"

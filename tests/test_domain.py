@@ -9,7 +9,7 @@ import sys
 import tempfile
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from pydantic import ValidationError
@@ -57,6 +57,57 @@ class TestRecordModelSingleton:
         assert instance2.value == 99  # Value was updated
 
         # Cleanup
+        TestRecord.clear_instance()
+
+    @pytest.mark.asyncio
+    async def test_recordmodel_force_reload_refreshes_cached_instance(self):
+        """Test that force_reload refreshes a cached singleton from the database."""
+
+        class TestRecord(RecordModel):
+            record_id = "test:force-reload"
+            value: str = ""
+
+        TestRecord.clear_instance()
+        cached_instance = TestRecord(value="ALPHA")
+
+        with patch(
+            "open_notebook.domain.base.repo_query",
+            new=AsyncMock(side_effect=[[{"value": "ALPHA"}], [{"value": "BETA"}]]),
+        ) as repo_query:
+            await TestRecord.get_instance()
+            refreshed_instance = await TestRecord.get_instance(force_reload=True)
+
+        assert refreshed_instance is cached_instance
+        assert refreshed_instance.value == "BETA"
+        assert repo_query.await_count == 2
+        assert repo_query.await_args is not None
+        assert repo_query.await_args.args[0] == "SELECT * FROM ONLY $record_id"
+        record_id = repo_query.await_args.args[1]["record_id"]
+        assert record_id.table_name == "test"
+        assert "force-reload" in str(record_id)
+        TestRecord.clear_instance()
+
+    @pytest.mark.asyncio
+    async def test_recordmodel_force_reload_resets_missing_fields(self):
+        """Test that a missing database record restores field defaults."""
+
+        class TestRecord(RecordModel):
+            record_id = "test:force-reload-empty"
+            value: str | None = None
+
+        TestRecord.clear_instance()
+        cached_instance = TestRecord(value="ALPHA")
+
+        with patch(
+            "open_notebook.domain.base.repo_query",
+            new=AsyncMock(side_effect=[[{"value": "ALPHA"}], []]),
+        ) as repo_query:
+            await TestRecord.get_instance()
+            refreshed_instance = await TestRecord.get_instance(force_reload=True)
+
+        assert refreshed_instance is cached_instance
+        assert refreshed_instance.value is None
+        assert repo_query.await_count == 2
         TestRecord.clear_instance()
 
 
@@ -304,9 +355,14 @@ class TestSourceDomain:
             assert tmp_path.exists()
 
             # Mock the parent delete method to avoid database operations
-            with patch.object(
-                Source.__bases__[0], "delete", new_callable=AsyncMock
-            ) as mock_delete:
+            with (
+                patch(
+                    "open_notebook.domain.notebook.repo_query", new_callable=AsyncMock
+                ),
+                patch.object(
+                    Source.__bases__[0], "delete", new_callable=AsyncMock
+                ) as mock_delete,
+            ):
                 mock_delete.return_value = True
 
                 # Delete the source
@@ -331,9 +387,12 @@ class TestSourceDomain:
         source = Source(id="source:test_no_file", title="Test Source", asset=None)
 
         # Mock the parent delete method
-        with patch.object(
-            Source.__bases__[0], "delete", new_callable=AsyncMock
-        ) as mock_delete:
+        with (
+            patch("open_notebook.domain.notebook.repo_query", new_callable=AsyncMock),
+            patch.object(
+                Source.__bases__[0], "delete", new_callable=AsyncMock
+            ) as mock_delete,
+        ):
             mock_delete.return_value = True
 
             # Delete should complete without error
@@ -352,9 +411,12 @@ class TestSourceDomain:
         )
 
         # Mock the parent delete method
-        with patch.object(
-            Source.__bases__[0], "delete", new_callable=AsyncMock
-        ) as mock_delete:
+        with (
+            patch("open_notebook.domain.notebook.repo_query", new_callable=AsyncMock),
+            patch.object(
+                Source.__bases__[0], "delete", new_callable=AsyncMock
+            ) as mock_delete,
+        ):
             mock_delete.return_value = True
 
             # Delete should complete even though file doesn't exist
@@ -437,6 +499,27 @@ class TestNoteDomain:
         # Test with None content - valid, no embedding will be submitted
         note2 = Note(title="Test", content=None)
         assert note2.content is None
+
+    @pytest.mark.asyncio
+    async def test_insight_saved_as_note_is_marked_ai(self):
+        """A note saved from a source insight is AI-generated, not human (#1469)."""
+        insight = SourceInsight(
+            id="source_insight:test",
+            insight_type="Summary",
+            content="Insight content",
+        )
+        source = Source(id="source:test", title="Paper")
+        with (
+            patch.object(
+                SourceInsight, "get_source", new=AsyncMock(return_value=source)
+            ),
+            patch.object(Note, "save", new=AsyncMock()),
+            patch.object(Note, "add_to_notebook", new=AsyncMock()) as mock_add,
+        ):
+            note = await insight.save_as_note("notebook:test")
+
+        assert note.note_type == "ai"
+        mock_add.assert_awaited_once_with("notebook:test")
 
 
 # ============================================================================
@@ -532,14 +615,22 @@ class TestPodcastService:
 
         with (
             patch.object(
-                EpisodeProfile, "get_by_name", new=AsyncMock(return_value=object())
+                EpisodeProfile,
+                "get_by_name",
+                new=AsyncMock(
+                    return_value=SimpleNamespace(
+                        name="Episode", outline_llm="model:o", transcript_llm="model:t"
+                    )
+                ),
             ),
             patch.object(
                 SpeakerProfile,
                 "get_by_name",
                 new=AsyncMock(
                     return_value=SimpleNamespace(
-                        id="speaker_profile:speakers", name="Speakers"
+                        id="speaker_profile:speakers",
+                        name="Speakers",
+                        voice_model="model:v",
                     )
                 ),
             ),
@@ -566,6 +657,96 @@ class TestPodcastService:
         assert "First source full text for submitted podcast content." in content
         assert "Second source full text for submitted podcast content." in content
         assert "Notebook(id=" not in content
+
+    @pytest.mark.parametrize(
+        "missing, message",
+        [
+            (
+                "outline_llm",
+                "Episode profile 'Episode' has no outline model.*select an outline",
+            ),
+            ("transcript_llm", "Episode profile 'Episode' has no transcript model"),
+            ("voice_model", "Speaker profile 'Speakers' has no voice model"),
+        ],
+    )
+    @pytest.mark.asyncio
+    async def test_incomplete_profile_is_rejected_before_queueing(
+        self, missing, message
+    ):
+        """An incomplete profile is a 400 naming the missing model, and no job
+        is queued: the worker would fail before creating an episode (#1400)."""
+        episode = SimpleNamespace(
+            name="Episode", outline_llm="model:o", transcript_llm="model:t"
+        )
+        speaker = SimpleNamespace(
+            id="speaker_profile:s", name="Speakers", voice_model="model:v"
+        )
+        setattr(episode if missing != "voice_model" else speaker, missing, None)
+        submit = Mock()
+
+        with (
+            patch(
+                "api.podcast_service.DefaultModels.get_instance",
+                new=AsyncMock(
+                    return_value=SimpleNamespace(default_text_to_speech_model=None)
+                ),
+            ),
+            patch.object(
+                EpisodeProfile, "get_by_name", new=AsyncMock(return_value=episode)
+            ),
+            patch.object(
+                SpeakerProfile, "resolve", new=AsyncMock(return_value=speaker)
+            ),
+            patch("api.podcast_service.submit_command", new=submit),
+        ):
+            with pytest.raises(InvalidInputError, match=message):
+                await PodcastService.submit_generation_job(
+                    episode_profile_name="Episode",
+                    speaker_profile_name="Speakers",
+                    episode_name="Episode Name",
+                    content="content",
+                )
+
+        submit.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_missing_voice_model_with_default_tts_is_queued(self):
+        """A speaker profile without a voice model is accepted when a default
+        Text-to-Speech model is set: the worker falls back to it (#1467)."""
+        episode = SimpleNamespace(
+            name="Episode", outline_llm="model:o", transcript_llm="model:t"
+        )
+        speaker = SimpleNamespace(
+            id="speaker_profile:s", name="Speakers", voice_model=None
+        )
+        submit = Mock(return_value="command:podcast")
+
+        with (
+            patch(
+                "api.podcast_service.DefaultModels.get_instance",
+                new=AsyncMock(
+                    return_value=SimpleNamespace(
+                        default_text_to_speech_model="model:tts"
+                    )
+                ),
+            ),
+            patch.object(
+                EpisodeProfile, "get_by_name", new=AsyncMock(return_value=episode)
+            ),
+            patch.object(
+                SpeakerProfile, "resolve", new=AsyncMock(return_value=speaker)
+            ),
+            patch("api.podcast_service.submit_command", new=submit),
+        ):
+            job_id = await PodcastService.submit_generation_job(
+                episode_profile_name="Episode",
+                speaker_profile_name="Speakers",
+                episode_name="Episode Name",
+                content="content",
+            )
+
+        assert job_id == "command:podcast"
+        submit.assert_called_once()
 
 
 # ============================================================================
@@ -636,6 +817,15 @@ class TestContentSettings:
         settings = ContentSettings()
         assert settings.docling_vision is False
         assert ContentSettings(docling_vision=True).docling_vision is True
+
+    def test_docling_vision_endpoint_fields_default_unset(self):
+        """The vision endpoint fields default to None, so the
+        CCORE_DOCLING_VISION_* worker variables apply until set (#1561)."""
+        settings = ContentSettings()
+        assert settings.docling_vision_url is None
+        assert settings.docling_vision_model is None
+        assert settings.docling_vision_prompt is None
+        assert not hasattr(settings, "docling_vision_api_key")
 
 
 # ============================================================================

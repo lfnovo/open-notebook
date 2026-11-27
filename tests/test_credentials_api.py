@@ -1,6 +1,7 @@
 """Tests for the credentials API endpoint."""
 
 import os
+from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import httpx
@@ -11,12 +12,66 @@ from pydantic import SecretStr
 from api import credentials_service
 
 
+@pytest.mark.asyncio
+async def test_status_reports_when_public_example_encryption_key_is_used(monkeypatch):
+    monkeypatch.setattr(credentials_service, "PROVIDER_ENV_CONFIG", {})
+    monkeypatch.setenv(
+        "OPEN_NOTEBOOK_ENCRYPTION_KEY", credentials_service.DEFAULT_ENCRYPTION_KEY
+    )
+    monkeypatch.delenv("OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE", raising=False)
+
+    status = await credentials_service.get_provider_status()
+
+    assert status["encryption_configured"] is True
+    assert status["encryption_key_is_default"] is True
+
+
+@pytest.mark.asyncio
+async def test_status_does_not_flag_custom_or_file_encryption_keys(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setattr(credentials_service, "PROVIDER_ENV_CONFIG", {})
+    monkeypatch.setenv("OPEN_NOTEBOOK_ENCRYPTION_KEY", "private-test-key")
+    monkeypatch.delenv("OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE", raising=False)
+
+    custom_status = await credentials_service.get_provider_status()
+    assert custom_status["encryption_key_is_default"] is False
+
+    secret_file = tmp_path / "encryption-key"
+    secret_file.write_text("private-test-key")
+    monkeypatch.delenv("OPEN_NOTEBOOK_ENCRYPTION_KEY", raising=False)
+    monkeypatch.setenv("OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE", str(secret_file))
+
+    file_status = await credentials_service.get_provider_status()
+    assert file_status["encryption_configured"] is True
+    assert file_status["encryption_key_is_default"] is False
+
+
 @pytest.fixture
 def client():
     """Create test client after environment variables have been cleared by conftest."""
     from api.main import app
 
     return TestClient(app)
+
+
+def test_status_endpoint_returns_the_default_key_flag(client, monkeypatch):
+    from api.routers import credentials as credentials_router
+
+    async def fake_status():
+        return {
+            "configured": {},
+            "source": {},
+            "encryption_configured": True,
+            "encryption_key_is_default": True,
+        }
+
+    monkeypatch.setattr(credentials_router, "get_provider_status", fake_status)
+
+    response = client.get("/api/credentials/status")
+
+    assert response.status_code == 200
+    assert response.json()["encryption_key_is_default"] is True
 
 
 class TestCredentialCascadeDelete:
@@ -553,6 +608,165 @@ class TestCredentialVertexConfig:
         assert "vertex_location" not in config
 
 
+class TestCredentialAzureApiVersion:
+    """#1470 - an Azure credential without an API version must work for models,
+    not only for the connection test."""
+
+    AZURE_ENV = (
+        "AZURE_OPENAI_API_KEY",
+        "AZURE_OPENAI_ENDPOINT",
+        "AZURE_OPENAI_API_VERSION",
+        "AZURE_OPENAI_API_VERSION_LLM",
+        "AZURE_OPENAI_API_VERSION_EMBEDDING",
+        "AZURE_OPENAI_API_VERSION_STT",
+        "AZURE_OPENAI_API_VERSION_TTS",
+        "OPENAI_API_VERSION",
+    )
+
+    def _clear_azure_env(self, monkeypatch):
+        # setenv registers an undo, so values the code writes are removed
+        # after the test. Esperanto treats an empty value as unset.
+        from open_notebook.domain import credential as credential_module
+
+        for var in self.AZURE_ENV:
+            monkeypatch.setenv(var, "")
+        monkeypatch.setattr(
+            credential_module,
+            "_azure_api_version_from_env",
+            credential_module._NOT_CAPTURED,
+        )
+
+    def _azure_credential(self, api_version=None):
+        from open_notebook.domain.credential import Credential
+
+        return Credential(
+            name="Azure",
+            provider="azure",
+            modalities=["language"],
+            api_key=SecretStr("azure-key"),
+            base_url="https://example.openai.azure.com",
+            api_version=api_version,
+        )
+
+    def test_language_model_builds_without_a_configured_version(self, monkeypatch):
+        from esperanto import AIFactory
+        from esperanto.providers.llm.azure import AzureLanguageModel
+
+        self._clear_azure_env(monkeypatch)
+        config = self._azure_credential().to_esperanto_config()
+
+        # Before the fix Esperanto raised "Azure OpenAI API version not found"
+        model = AIFactory.create_language(
+            model_name="gpt-4o-1470", provider="azure", config=config
+        )
+        assert isinstance(model, AzureLanguageModel)
+        assert model.api_version == "2024-10-21"
+
+    def test_saved_version_wins(self, monkeypatch):
+        self._clear_azure_env(monkeypatch)
+        monkeypatch.setenv("AZURE_OPENAI_API_VERSION", "2024-06-01")
+        config = self._azure_credential("2025-01-01-preview").to_esperanto_config()
+        assert config["api_version"] == "2025-01-01-preview"
+
+    def test_env_version_is_left_to_esperanto(self, monkeypatch):
+        self._clear_azure_env(monkeypatch)
+        monkeypatch.setenv("AZURE_OPENAI_API_VERSION_LLM", "2025-04-01-preview")
+        assert "api_version" not in self._azure_credential().to_esperanto_config()
+        # Modalities without their own variable fall back to the default
+        assert os.environ["AZURE_OPENAI_API_VERSION"] == "2024-10-21"
+
+    @pytest.mark.asyncio
+    async def test_modality_env_version_does_not_leave_a_leftover(self, monkeypatch):
+        from open_notebook.ai import key_provider
+
+        self._clear_azure_env(monkeypatch)
+        monkeypatch.setenv("AZURE_OPENAI_API_VERSION", "2024-06-01")
+        monkeypatch.setenv("AZURE_OPENAI_API_VERSION_LLM", "2025-04-01-preview")
+
+        await key_provider._provision_azure(self._provisionable("2025-01-01-preview"))
+        assert "api_version" not in self._azure_credential().to_esperanto_config()
+        # Modalities without their own variable fall back to this one
+        assert os.environ["AZURE_OPENAI_API_VERSION"] == "2024-06-01"
+
+    def test_other_providers_get_no_api_version(self, monkeypatch):
+        from open_notebook.domain.credential import Credential
+
+        self._clear_azure_env(monkeypatch)
+        cred = Credential(name="OpenAI", provider="openai", api_key=SecretStr("sk"))
+        assert "api_version" not in cred.to_esperanto_config()
+
+    @pytest.mark.asyncio
+    async def test_env_provisioning_sets_the_default_version(self, monkeypatch):
+        from types import SimpleNamespace
+
+        from open_notebook.ai import key_provider
+
+        self._clear_azure_env(monkeypatch)
+        cred = SimpleNamespace(
+            api_key=SecretStr("azure-key"),
+            api_version=None,
+            endpoint=None,
+            base_url="https://example.openai.azure.com",
+            endpoint_llm=None,
+            endpoint_embedding=None,
+            endpoint_stt=None,
+            endpoint_tts=None,
+        )
+        monkeypatch.setattr(
+            key_provider, "_get_default_credential", AsyncMock(return_value=cred)
+        )
+
+        assert await key_provider._provision_azure() is True
+        assert os.environ["AZURE_OPENAI_API_VERSION"] == "2024-10-21"
+
+    def _provisionable(self, api_version=None):
+        from types import SimpleNamespace
+
+        return SimpleNamespace(
+            api_key=SecretStr("azure-key"),
+            api_version=api_version,
+            endpoint=None,
+            base_url="https://example.openai.azure.com",
+            endpoint_llm=None,
+            endpoint_embedding=None,
+            endpoint_stt=None,
+            endpoint_tts=None,
+        )
+
+    @pytest.mark.asyncio
+    async def test_versionless_credential_does_not_inherit_a_previous_version(
+        self, monkeypatch
+    ):
+        from open_notebook.ai import key_provider
+
+        self._clear_azure_env(monkeypatch)
+
+        await key_provider._provision_azure(self._provisionable("2025-01-01-preview"))
+        assert os.environ["AZURE_OPENAI_API_VERSION"] == "2025-01-01-preview"
+
+        # The config path must not fall through to the leftover env value
+        config = self._azure_credential().to_esperanto_config()
+        assert config["api_version"] == "2024-10-21"
+
+        await key_provider._provision_azure(self._provisionable())
+        assert os.environ["AZURE_OPENAI_API_VERSION"] == "2024-10-21"
+
+    @pytest.mark.asyncio
+    async def test_versionless_credential_gets_the_env_version_back(self, monkeypatch):
+        from open_notebook.ai import key_provider
+
+        self._clear_azure_env(monkeypatch)
+        monkeypatch.setenv("AZURE_OPENAI_API_VERSION", "2024-06-01")
+
+        await key_provider._provision_azure(self._provisionable("2025-01-01-preview"))
+        config = self._azure_credential().to_esperanto_config()
+        assert config["api_version"] == "2024-06-01"
+
+        await key_provider._provision_azure(self._provisionable())
+        assert os.environ["AZURE_OPENAI_API_VERSION"] == "2024-06-01"
+        assert "api_version" not in self._azure_credential().to_esperanto_config()
+
+
 class TestAudioProviderWiring:
     """Tests for the new audio providers (Mistral STT/TTS, Deepgram TTS, xAI TTS)."""
 
@@ -1031,3 +1245,69 @@ class TestMiniMaxRegionalBaseUrl:
 
         assert requested == ["https://api.minimax.cn/v1/models"]
         assert "speech-2.8-hd" in [m["name"] for m in models]
+
+
+class TestProvisionExplicitCredential:
+    """provision_provider_keys(provider, credential=...) provisions that exact
+    credential, so a model linked to one of several credentials for the same
+    provider authenticates as the account it is linked to (#1534)."""
+
+    @pytest.mark.asyncio
+    async def test_simple_provider_uses_given_credential(self, monkeypatch):
+        from types import SimpleNamespace
+
+        from open_notebook.ai import key_provider
+
+        monkeypatch.setenv("OPENAI_API_KEY", "")
+        default = AsyncMock(
+            return_value=SimpleNamespace(api_key=SecretStr("first"), base_url=None)
+        )
+        monkeypatch.setattr(key_provider, "_get_default_credential", default)
+        linked: Any = SimpleNamespace(api_key=SecretStr("linked"), base_url=None)
+
+        assert (
+            await key_provider.provision_provider_keys("openai", credential=linked)
+            is True
+        )
+        assert os.environ["OPENAI_API_KEY"] == "linked"
+        default.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_compatible_provider_uses_given_credential(self, monkeypatch):
+        from types import SimpleNamespace
+
+        from open_notebook.ai import key_provider
+
+        monkeypatch.setenv("OPENAI_COMPATIBLE_API_KEY", "")
+        monkeypatch.setenv("OPENAI_COMPATIBLE_BASE_URL", "")
+        default = AsyncMock(return_value=None)
+        monkeypatch.setattr(key_provider, "_get_default_credential", default)
+        linked: Any = SimpleNamespace(
+            api_key=SecretStr("linked"), base_url="http://localhost:9000/v1"
+        )
+
+        assert (
+            await key_provider.provision_provider_keys(
+                "openai_compatible", credential=linked
+            )
+            is True
+        )
+        assert os.environ["OPENAI_COMPATIBLE_API_KEY"] == "linked"
+        assert os.environ["OPENAI_COMPATIBLE_BASE_URL"] == "http://localhost:9000/v1"
+        default.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_without_credential_falls_back_to_default(self, monkeypatch):
+        from types import SimpleNamespace
+
+        from open_notebook.ai import key_provider
+
+        monkeypatch.setenv("OPENAI_API_KEY", "")
+        default = AsyncMock(
+            return_value=SimpleNamespace(api_key=SecretStr("first"), base_url=None)
+        )
+        monkeypatch.setattr(key_provider, "_get_default_credential", default)
+
+        assert await key_provider.provision_provider_keys("openai") is True
+        assert os.environ["OPENAI_API_KEY"] == "first"
+        default.assert_awaited_once_with("openai")

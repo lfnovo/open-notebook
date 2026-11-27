@@ -6,19 +6,28 @@ The complete list of environment variables Open Notebook and its libraries read.
 
 ## How to set a variable
 
-**Docker Compose:** add it under the `open_notebook` service's `environment:` block in `docker-compose.yml`, then run `docker compose up -d`. `docker compose restart` keeps the old environment, so it does not apply changes.
+**Docker Compose:** the shipped `docker-compose.yml` reads four variables from a `.env` file next to it: `OPEN_NOTEBOOK_ENCRYPTION_KEY`, `OPEN_NOTEBOOK_PASSWORD`, `SURREAL_USER` and `SURREAL_PASSWORD`. Everything else goes under the `open_notebook` service's `environment:` block. Then run `docker compose up -d`. `docker compose restart` keeps the old environment, so it does not apply changes.
+
+```text
+# .env — these four are the ones the shipped compose file reads.
+# Leave the password empty to leave authentication off.
+# root:root is the local database default.
+OPEN_NOTEBOOK_ENCRYPTION_KEY=<generated-key>
+OPEN_NOTEBOOK_PASSWORD=
+SURREAL_USER=root
+SURREAL_PASSWORD=root
+```
 
 ```yaml
 services:
   open_notebook:
     environment:
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=<generated-key>
       - ESPERANTO_LLM_TIMEOUT=300
 ```
 
 Replace `<generated-key>` with a value you generate yourself, for example with `openssl rand -hex 32` (on Windows, see [Set your encryption key](../1-INSTALLATION/docker-compose.md#step-2-set-your-encryption-key)). Don't reuse an example value.
 
-The shipped `docker-compose.yml` does not load an env file into the container. A `.env` file next to it only fills the `${...}` placeholders in the compose file (`SURREAL_USER`, `SURREAL_PASSWORD`). If you prefer a file, add `env_file: .env` to the `open_notebook` service yourself.
+Editing those four lines in `docker-compose.yml` is a valid alternative. The compose file does not load the rest of `.env` into the container (there is no `env_file:`).
 
 **From source:** put backend variables in `.env` in the project root and restart the API and the worker (`make api`, `make worker-start` both load `.env`). The exception is `OPEN_NOTEBOOK_WORKER_MAX_TASKS`: `make worker-start` reads it from your shell before `.env` is loaded, so `export` it.
 
@@ -45,25 +54,25 @@ Variables read by the frontend (`API_URL`, `INTERNAL_API_URL`, `NEXT_PUBLIC_*`, 
 | `OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE` | none | API + Worker | Path to a file holding the encryption key (Docker secrets). Checked before `OPEN_NOTEBOOK_ENCRYPTION_KEY` |
 | `OPEN_NOTEBOOK_PASSWORD` | none | API | Password for the UI and the REST API. Unset means authentication is off. See [Security](security.md) |
 | `OPEN_NOTEBOOK_PASSWORD_FILE` | none | API | Path to a file holding the password (Docker secrets). Checked before `OPEN_NOTEBOOK_PASSWORD` |
-| `CORS_ORIGINS` | `*` | API | Comma-separated origins allowed to call the API, e.g. `https://notebook.example.com`. The API logs a warning at startup while it is unset. Restart the API after changing it. See [Security](security.md#cors-origins) |
+| `CORS_ORIGINS` | `*` (localhost and same host only without a password) | API | Comma-separated origins allowed to call the API, e.g. `https://notebook.example.com`. An explicit value, including `*`, replaces the default. While it is unset or blank, the API allows any origin when a password is set (`OPEN_NOTEBOOK_PASSWORD` or `OPEN_NOTEBOOK_PASSWORD_FILE`), and otherwise only localhost origins and pages on the same host name as the API. It logs which default applies. Restart the API after changing it. See [Security](security.md#cors-origins) |
 
 ---
 
 ## Database (SurrealDB)
 
-Set all five `SURREAL_*` variables explicitly, as the shipped compose file does. The API and the job queue (the surreal-commands library) fall back to different defaults when they are missing: the API uses `open_notebook` for namespace and database, the job queue uses `test`. With mismatched defaults, jobs are written where the worker never looks.
+Set all five `SURREAL_*` variables explicitly, as the shipped compose file does. Namespace and database default to `open_notebook` in the API and the job queue (the surreal-commands library) alike. The user and password defaults still differ between the two (see the table), so with those unset sign-in fails.
 
 | Variable | Default when unset | Read by | Description |
 |----------|--------------------|---------|-------------|
 | `SURREAL_URL` | built from `SURREAL_ADDRESS`/`SURREAL_PORT` | API + Worker | WebSocket URL, e.g. `ws://surrealdb:8000/rpc` (compose) or `ws://localhost:8000/rpc` (from source). See [Database](database.md) |
 | `SURREAL_USER` | none in the API (sign-in fails); `test` in the job queue | API + Worker | SurrealDB user. Must match the `--user` the database was started with |
 | `SURREAL_PASSWORD` | `root` in the API; `test` in the job queue | API + Worker | SurrealDB password. Must match `--pass`. Change it before exposing the instance |
-| `SURREAL_NAMESPACE` | `open_notebook` in the API; `test` in the job queue | API + Worker | SurrealDB namespace |
-| `SURREAL_DATABASE` | `open_notebook` in the API; `test` in the job queue | API + Worker | SurrealDB database |
+| `SURREAL_NAMESPACE` | `open_notebook` | API + Worker | SurrealDB namespace |
+| `SURREAL_DATABASE` | `open_notebook` | API + Worker | SurrealDB database |
 | `SURREAL_ADDRESS`, `SURREAL_PORT` | `localhost`, `8000` | API + Worker | Legacy fallback used only when `SURREAL_URL` is unset. `SURREAL_ADDRESS` may already include the port. Prefer `SURREAL_URL` |
 | `SURREAL_PASS` | none | API + Worker | Legacy alias of `SURREAL_PASSWORD` |
 
-With Docker Compose, `SURREAL_USER` and `SURREAL_PASSWORD` are the two values you can keep in `.env`: the compose file passes them to both the `surrealdb` and `open_notebook` services.
+With Docker Compose, the shipped compose file reads `OPEN_NOTEBOOK_ENCRYPTION_KEY`, `OPEN_NOTEBOOK_PASSWORD`, `SURREAL_USER` and `SURREAL_PASSWORD` from `.env`, and it passes the database user and password to both the `surrealdb` and `open_notebook` services. Every other variable goes under `environment:`.
 
 ---
 
@@ -171,6 +180,13 @@ Open Notebook passes these to the content-core library, which runs extraction in
 | `CCORE_YOUTUBE_COOKIES_FILE` | none | Worker | Path inside the container to a Netscape-format `cookies.txt` exported from a browser signed in to YouTube. A missing or unreadable file fails YouTube sources with a configuration error |
 | `CCORE_AUDIO_SEGMENT_MINUTES` | `10` | Worker | Long audio and video is split into segments of this many minutes before transcription. `0` sends the file whole (for self-hosted speech-to-text without an upload limit) |
 | `CCORE_AUDIO_CONCURRENCY` | `3` | Worker | Segments transcribed in parallel (1 to 10) |
+| `CCORE_DOCLING_VISION_URL` | none | Worker | OpenAI-compatible chat completions URL (vLLM, Ollama, LM Studio, a hosted API) used for image descriptions when **Describe images and charts** is on, e.g. `http://host.docker.internal:11434/v1/chat/completions` (reaching a server on the host from Docker on Linux needs `extra_hosts`; see [OpenAI-compatible endpoints](openai-compatible.md) and [Ollama](ollama.md)). **Vision endpoint URL** in Settings → Content Processing takes precedence when filled in. Only when both are empty does Docling's small built-in model describe the images, with nothing leaving the machine |
+| `CCORE_DOCLING_VISION_MODEL` | none | Worker | Model name sent to that endpoint. **Vision model** in Settings takes precedence when filled in |
+| `CCORE_DOCLING_VISION_API_KEY` | none | Worker | Bearer token for that endpoint. Env-only: Settings are stored unencrypted, so the key has no Settings field |
+| `CCORE_DOCLING_VISION_PROMPT` | Docling's | Worker | Prompt for each image description, e.g. to ask for descriptions in your corpus's language. **Image description prompt** in Settings takes precedence when filled in |
+| `CCORE_DOCLING_VISION_MAX_TOKENS` | `400` | Worker | Token limit per image description |
+| `CCORE_DOCLING_VISION_TIMEOUT` | `20` | Worker | Seconds per image description request |
+| `CCORE_DOCLING_VISION_TOKEN_PARAM` | `max_completion_tokens` | Worker | Name of the token-limit field the endpoint expects: `max_completion_tokens` or `max_tokens` |
 
 The speech-to-text model, the URL and document engines and the preferred YouTube transcript languages come from Open Notebook's settings, so the matching `CCORE_*` variables (`CCORE_AUDIO_MODEL`, `CCORE_URL_ENGINE`, `CCORE_YOUTUBE_LANGUAGES` and so on) are overridden and have no effect.
 

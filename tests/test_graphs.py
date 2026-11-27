@@ -6,7 +6,8 @@ without heavy mocking of the actual processing logic.
 """
 
 from datetime import datetime
-from typing import cast
+from types import SimpleNamespace
+from typing import Iterator, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -22,6 +23,156 @@ from open_notebook.graphs.transformation import (
 from open_notebook.graphs.transformation import (
     graph as transformation_graph,
 )
+
+
+class TestContentProcessSettingsRefresh:
+    @pytest.fixture
+    def settings_extraction(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> Iterator[tuple[AsyncMock, AsyncMock]]:
+        from content_core.common import ExtractionOutput
+
+        from open_notebook.domain.content_settings import ContentSettings
+
+        ContentSettings.clear_instance()
+        monkeypatch.setenv("CCORE_DOCLING_OCR", "true")
+        monkeypatch.setenv("CCORE_DOCLING_FORMULAS", "false")
+        monkeypatch.setenv("CCORE_DOCLING_VISION", "false")
+        try:
+            with (
+                patch(
+                    "open_notebook.domain.base.repo_query", new_callable=AsyncMock
+                ) as query,
+                patch(
+                    "open_notebook.graphs.source.extract_content",
+                    new_callable=AsyncMock,
+                ) as extract,
+                patch(
+                    "open_notebook.graphs.source.ModelManager.get_defaults",
+                    new=AsyncMock(
+                        return_value=SimpleNamespace(default_speech_to_text_model=None)
+                    ),
+                ),
+            ):
+                extract.return_value = ExtractionOutput(title="Text", content="Body")
+                yield query, extract
+        finally:
+            ContentSettings.clear_instance()
+
+    @pytest.mark.asyncio
+    async def test_settings_refresh_between_extractions(
+        self, settings_extraction: tuple[AsyncMock, AsyncMock]
+    ) -> None:
+        """A long-lived worker must see settings saved between sources (#1616)."""
+        from open_notebook.graphs.source import SourceState, content_process
+
+        query, extract = settings_extraction
+        query.side_effect = [
+            [{"docling_ocr": True, "youtube_preferred_languages": ["en"]}],
+            [{"docling_ocr": False, "youtube_preferred_languages": ["ja"]}],
+        ]
+        state = cast(SourceState, {"content_state": {"content": "Body"}})
+
+        await content_process(state)
+        await content_process(state)
+
+        first_config, second_config = (
+            call.kwargs["config"] for call in extract.await_args_list
+        )
+        assert first_config.docling_ocr is True
+        assert first_config.youtube_languages == ["en"]
+        assert second_config.docling_ocr is False
+        assert second_config.youtube_languages == ["ja"]
+        assert query.await_count == 2
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "second_row",
+        [
+            [],
+            [{}],
+            [
+                {
+                    "docling_ocr": None,
+                    "docling_formulas": None,
+                    "youtube_preferred_languages": None,
+                }
+            ],
+        ],
+    )
+    async def test_removed_settings_do_not_survive_refresh(
+        self,
+        second_row: list[dict[str, object]],
+        settings_extraction: tuple[AsyncMock, AsyncMock],
+    ) -> None:
+        from open_notebook.graphs.source import (
+            YOUTUBE_PREFERRED_LANGUAGES,
+            SourceState,
+            content_process,
+        )
+
+        query, extract = settings_extraction
+        query.side_effect = [
+            [
+                {
+                    "docling_ocr": False,
+                    "docling_formulas": True,
+                    "youtube_preferred_languages": ["fr"],
+                }
+            ],
+            second_row,
+        ]
+        state = cast(SourceState, {"content_state": {"content": "Body"}})
+
+        await content_process(state)
+        await content_process(state)
+
+        first_config, second_config = (
+            call.kwargs["config"] for call in extract.await_args_list
+        )
+        assert first_config.docling_ocr is False
+        assert first_config.docling_formulas is True
+        assert first_config.youtube_languages == ["fr"]
+        assert second_config.docling_ocr is True
+        assert second_config.docling_formulas is False
+        assert second_config.youtube_languages == YOUTUBE_PREFERRED_LANGUAGES
+        assert query.await_count == 2
+
+    @pytest.mark.asyncio
+    async def test_failed_refresh_uses_config_defaults_without_resetting_cache(
+        self, settings_extraction: tuple[AsyncMock, AsyncMock]
+    ) -> None:
+        from loguru import logger
+
+        from open_notebook.domain.content_settings import ContentSettings
+        from open_notebook.graphs.source import SourceState, content_process
+
+        query, extract = settings_extraction
+        query.side_effect = [
+            [{"docling_ocr": False, "docling_formulas": True}],
+            RuntimeError("Settings database unavailable"),
+        ]
+        state = cast(SourceState, {"content_state": {"content": "Body"}})
+        warnings: list[str] = []
+        sink = logger.add(
+            lambda message: warnings.append(str(message)), level="WARNING"
+        )
+        try:
+            await content_process(state)
+            await content_process(state)
+        finally:
+            logger.remove(sink)
+
+        assert extract.await_count == 2
+        assert extract.await_args is not None
+        config = extract.await_args.kwargs["config"]
+        assert config.docling_ocr is True
+        assert config.docling_formulas is False
+        assert ContentSettings().docling_ocr is False
+        assert ContentSettings().docling_formulas is True
+        assert any("Failed to load content settings" in warning for warning in warnings)
+        assert query.await_count == 2
+
 
 # ============================================================================
 # TEST SUITE 1: Graph Tools
@@ -311,6 +462,11 @@ class TestSaveSourceTitlePreservation:
 class TestContentProcessDeleteSource:
     """content-core 2.x no longer deletes the uploaded file; the graph must."""
 
+    @pytest.fixture(autouse=True)
+    def _uploads_in_tmp_path(self, tmp_path, monkeypatch):
+        # content_process only reads (and deletes) files inside the uploads folder.
+        monkeypatch.setattr("open_notebook.graphs.source.UPLOADS_FOLDER", str(tmp_path))
+
     @pytest.mark.asyncio
     @patch("open_notebook.graphs.source.extract_content")
     @patch("open_notebook.graphs.source.ModelManager")
@@ -438,6 +594,9 @@ class TestContentProcessDeleteSource:
                 docling_ocr=False,
                 docling_formulas=True,
                 docling_vision=True,
+                docling_vision_url=None,
+                docling_vision_model=None,
+                docling_vision_prompt=None,
             )
         )
         mock_extract.return_value = ExtractionOutput(title="T", content="body")
@@ -457,6 +616,244 @@ class TestContentProcessDeleteSource:
         assert config.docling_ocr is False
         assert config.docling_formulas is True
         assert config.docling_vision is True
+
+    @pytest.mark.asyncio
+    @patch("open_notebook.graphs.source.ContentSettings")
+    @patch("open_notebook.graphs.source.engine_runtime_missing", return_value=None)
+    @patch("open_notebook.graphs.source.extract_content")
+    @patch("open_notebook.graphs.source.ModelManager")
+    async def test_docling_vision_endpoint_env_reaches_config(
+        self,
+        mock_model_manager,
+        mock_extract,
+        _mock_runtime,
+        mock_settings,
+        monkeypatch,
+    ):
+        """The CCORE_DOCLING_VISION_* worker variables (#1478) still apply when
+        content_process builds ContentCoreConfig with its own overrides."""
+        from content_core.common import ExtractionOutput
+
+        from open_notebook.graphs.source import SourceState, content_process
+
+        monkeypatch.setenv(
+            "CCORE_DOCLING_VISION_URL", "http://vlm.local:8000/v1/chat/completions"
+        )
+        monkeypatch.setenv("CCORE_DOCLING_VISION_MODEL", "qwen2.5-vl-7b")
+        monkeypatch.setenv("CCORE_DOCLING_VISION_API_KEY", "test-key")
+
+        mm_instance = MagicMock()
+        mm_instance.get_defaults = AsyncMock(
+            return_value=MagicMock(default_speech_to_text_model=None)
+        )
+        mock_model_manager.return_value = mm_instance
+        mock_settings.get_instance = AsyncMock(
+            return_value=MagicMock(
+                youtube_preferred_languages=None,
+                default_content_processing_engine_url=None,
+                default_content_processing_engine_doc="docling",
+                docling_ocr=None,
+                docling_formulas=None,
+                docling_vision=True,
+                docling_vision_url=None,
+                docling_vision_model=None,
+                docling_vision_prompt=None,
+            )
+        )
+        mock_extract.return_value = ExtractionOutput(title="T", content="body")
+
+        state = {
+            "source_id": "source:123",
+            "content_state": {"url": "https://example.com"},
+            "embed": False,
+            "apply_transformations": [],
+        }
+
+        await content_process(cast(SourceState, state))
+
+        config = mock_extract.await_args.kwargs["config"]
+        assert config.docling_vision is True
+        assert config.docling_vision_url == "http://vlm.local:8000/v1/chat/completions"
+        assert config.docling_vision_model == "qwen2.5-vl-7b"
+        assert config.docling_vision_api_key == "test-key"
+
+    @staticmethod
+    async def _config_with_vision_settings(**vision_settings):
+        """Run content_process with Docling vision on and the given vision
+        endpoint settings, and return the ContentCoreConfig it builds."""
+        from content_core.common import ExtractionOutput
+
+        from open_notebook.graphs.source import SourceState, content_process
+
+        settings = MagicMock(
+            youtube_preferred_languages=None,
+            default_content_processing_engine_url=None,
+            default_content_processing_engine_doc="docling",
+            docling_ocr=None,
+            docling_formulas=None,
+            docling_vision=True,
+            docling_vision_url=None,
+            docling_vision_model=None,
+            docling_vision_prompt=None,
+        )
+        for name, value in vision_settings.items():
+            setattr(settings, name, value)
+
+        mm_instance = MagicMock()
+        mm_instance.get_defaults = AsyncMock(
+            return_value=MagicMock(default_speech_to_text_model=None)
+        )
+        state = {
+            "source_id": "source:123",
+            "content_state": {"url": "https://example.com"},
+            "embed": False,
+            "apply_transformations": [],
+        }
+        with (
+            patch("open_notebook.graphs.source.ContentSettings") as mock_settings,
+            patch(
+                "open_notebook.graphs.source.engine_runtime_missing",
+                return_value=None,
+            ),
+            patch("open_notebook.graphs.source.extract_content") as mock_extract,
+            patch("open_notebook.graphs.source.ModelManager", return_value=mm_instance),
+        ):
+            mock_settings.get_instance = AsyncMock(return_value=settings)
+            mock_extract.return_value = ExtractionOutput(title="T", content="body")
+            await content_process(cast(SourceState, state))
+
+        assert mock_extract.await_args is not None
+        return mock_extract.await_args.kwargs["config"]
+
+    @pytest.mark.asyncio
+    async def test_docling_vision_settings_override_env(self, monkeypatch):
+        """Vision endpoint fields saved in Settings (#1561) reach
+        ContentCoreConfig and win over the CCORE_DOCLING_VISION_* variables,
+        while the API key still comes from its env var."""
+        monkeypatch.setenv("CCORE_DOCLING_VISION_URL", "http://env.local/v1")
+        monkeypatch.setenv("CCORE_DOCLING_VISION_MODEL", "env-model")
+        monkeypatch.setenv("CCORE_DOCLING_VISION_API_KEY", "test-key")
+
+        config = await self._config_with_vision_settings(
+            docling_vision_url=" http://192.168.1.20:1234/v1/chat/completions ",
+            docling_vision_model="qwen2.5-vl-7b",
+            docling_vision_prompt="Describe the chart.",
+        )
+
+        assert (
+            config.docling_vision_url == "http://192.168.1.20:1234/v1/chat/completions"
+        )
+        assert config.docling_vision_model == "qwen2.5-vl-7b"
+        assert config.docling_vision_prompt == "Describe the chart."
+        assert config.docling_vision_api_key == "test-key"
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("blank", [None, "", "   "])
+    async def test_blank_docling_vision_settings_keep_env(self, blank, monkeypatch):
+        """Empty vision endpoint fields are not passed to content-core, so the
+        CCORE_DOCLING_VISION_* worker variables keep applying (#1561)."""
+        monkeypatch.setenv("CCORE_DOCLING_VISION_URL", "http://env.local/v1")
+        monkeypatch.setenv("CCORE_DOCLING_VISION_MODEL", "env-model")
+        monkeypatch.setenv("CCORE_DOCLING_VISION_PROMPT", "env prompt")
+
+        config = await self._config_with_vision_settings(
+            docling_vision_url=blank,
+            docling_vision_model=blank,
+            docling_vision_prompt=blank,
+        )
+
+        assert config.docling_vision_url == "http://env.local/v1"
+        assert config.docling_vision_model == "env-model"
+        assert config.docling_vision_prompt == "env prompt"
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "blank_field",
+        ["docling_vision_url", "docling_vision_model", "docling_vision_prompt"],
+    )
+    async def test_each_blank_docling_vision_setting_keeps_its_env(
+        self, blank_field, monkeypatch
+    ):
+        """Each field falls back on its own: an empty one leaves its
+        CCORE_DOCLING_VISION_* variable in effect while the other two still
+        come from Settings (#1561)."""
+        env = {
+            "docling_vision_url": "http://env.local/v1",
+            "docling_vision_model": "env-model",
+            "docling_vision_prompt": "env prompt",
+        }
+        stored = {
+            "docling_vision_url": "http://192.168.1.20:1234/v1/chat/completions",
+            "docling_vision_model": "qwen2.5-vl-7b",
+            "docling_vision_prompt": "Describe the chart.",
+        }
+        for field, value in env.items():
+            monkeypatch.setenv(f"CCORE_{field.upper()}", value)
+
+        config = await self._config_with_vision_settings(**{**stored, blank_field: ""})
+
+        for field in stored:
+            expected = env[field] if field == blank_field else stored[field]
+            assert getattr(config, field) == expected
+
+    @pytest.mark.asyncio
+    async def test_docling_vision_settings_unused_while_vision_off(self, monkeypatch):
+        """With image description off, the stored endpoint is neither passed
+        to content-core nor re-validated, so other extractions do no DNS
+        lookup for it."""
+        for field in ("URL", "MODEL", "PROMPT"):
+            monkeypatch.delenv(f"CCORE_DOCLING_VISION_{field}", raising=False)
+
+        with patch(
+            "open_notebook.graphs.source.validate_url", new_callable=AsyncMock
+        ) as mock_validate:
+            config = await self._config_with_vision_settings(
+                docling_vision=False,
+                docling_vision_url="http://192.168.1.20:1234/v1/chat/completions",
+                docling_vision_model="qwen2.5-vl-7b",
+                docling_vision_prompt="Describe the chart.",
+            )
+
+        checked = [call.args[1] for call in mock_validate.await_args_list]
+        assert "docling_vision" not in checked
+        assert config.docling_vision is False
+        assert config.docling_vision_url is None
+        assert config.docling_vision_model is None
+        assert config.docling_vision_prompt is None
+
+    @pytest.mark.asyncio
+    async def test_unsafe_docling_vision_url_is_not_used(self, monkeypatch):
+        """A stored vision URL that fails validate_url() at extraction time
+        (e.g. it now points at a cloud metadata address) is dropped instead of
+        receiving document images."""
+        monkeypatch.delenv("CCORE_DOCLING_VISION_URL", raising=False)
+
+        config = await self._config_with_vision_settings(
+            docling_vision_url="http://169.254.169.254/latest/meta-data/",
+        )
+
+        assert config.docling_vision_url is None
+        assert config.docling_vision is True
+
+    @pytest.mark.asyncio
+    async def test_unsafe_docling_vision_url_falls_back_to_env_as_a_whole(
+        self, monkeypatch
+    ):
+        """When the stored URL is dropped, the stored model and prompt go with
+        it, so the worker's endpoint gets its own model name, not ours."""
+        monkeypatch.setenv("CCORE_DOCLING_VISION_URL", "http://env.local/v1")
+        monkeypatch.setenv("CCORE_DOCLING_VISION_MODEL", "env-model")
+        monkeypatch.delenv("CCORE_DOCLING_VISION_PROMPT", raising=False)
+
+        config = await self._config_with_vision_settings(
+            docling_vision_url="http://169.254.169.254/latest/meta-data/",
+            docling_vision_model="qwen2.5-vl-7b",
+            docling_vision_prompt="Describe the chart.",
+        )
+
+        assert config.docling_vision_url == "http://env.local/v1"
+        assert config.docling_vision_model == "env-model"
+        assert config.docling_vision_prompt is None
 
     @pytest.mark.asyncio
     @patch("open_notebook.graphs.source.ContentSettings")
@@ -486,6 +883,9 @@ class TestContentProcessDeleteSource:
                 docling_ocr=None,
                 docling_formulas=None,
                 docling_vision=None,
+                docling_vision_url=None,
+                docling_vision_model=None,
+                docling_vision_prompt=None,
             )
         )
         mock_extract.return_value = ExtractionOutput(title="T", content="body")
@@ -536,6 +936,9 @@ class TestContentProcessDeleteSource:
                 docling_ocr=True,
                 docling_formulas=False,
                 docling_vision=False,
+                docling_vision_url=None,
+                docling_vision_model=None,
+                docling_vision_prompt=None,
             )
         )
         mock_extract.return_value = ExtractionOutput(title="T", content="body")
@@ -585,6 +988,9 @@ class TestContentProcessDeleteSource:
                 docling_ocr=True,
                 docling_formulas=False,
                 docling_vision=False,
+                docling_vision_url=None,
+                docling_vision_model=None,
+                docling_vision_prompt=None,
             )
         )
         mock_extract.return_value = ExtractionOutput(title="T", content="body")
@@ -601,6 +1007,103 @@ class TestContentProcessDeleteSource:
         config = mock_extract.await_args.kwargs["config"]
         assert config.url_engine == "firecrawl"
         assert config.document_engine == "simple"
+
+    @staticmethod
+    def _stt_setup(mock_model_manager, mock_model, linked_credential):
+        mm_instance = MagicMock()
+        mm_instance.get_defaults = AsyncMock(
+            return_value=MagicMock(default_speech_to_text_model="model:stt1")
+        )
+        mock_model_manager.return_value = mm_instance
+        # `name=` can't be passed via the MagicMock constructor: it sets the
+        # mock's own repr name, not a `.name` attribute.
+        mock_stt_model = MagicMock()
+        mock_stt_model.provider = "openai"
+        mock_stt_model.name = "gpt-4o-mini-transcribe"
+        mock_stt_model.get_credential_obj = AsyncMock(return_value=linked_credential)
+        mock_model.get = AsyncMock(return_value=mock_stt_model)
+
+    @pytest.mark.asyncio
+    @patch("open_notebook.ai.key_provider.provision_provider_keys")
+    @patch("open_notebook.graphs.source.Model")
+    @patch("open_notebook.graphs.source.extract_content")
+    @patch("open_notebook.graphs.source.ModelManager")
+    async def test_stt_key_provisioned_before_extraction(
+        self, mock_model_manager, mock_extract, mock_model, mock_provision, tmp_path
+    ):
+        """The default STT model's provider env vars must be provisioned before
+        content-core runs, the same fallback resolve_* / get_model use for
+        language and embedding models (see #567, which fixed the same class
+        of bug for embeddings).
+
+        content-core builds its speech-to-text client from process env vars
+        only, so without this it raises ConfigurationError when
+        OPENAI_API_KEY is unset, even though a credential is configured in
+        the UI.
+        """
+        from content_core.common import ExtractionOutput
+
+        from open_notebook.graphs.source import SourceState, content_process
+
+        self._stt_setup(mock_model_manager, mock_model, linked_credential=None)
+        calls: list[str] = []
+
+        async def provision(*args, **kwargs):
+            calls.append("provision")
+            return True
+
+        async def extract(*args, **kwargs):
+            calls.append("extract")
+            return ExtractionOutput(title="T", content="body")
+
+        mock_provision.side_effect = provision
+        mock_extract.side_effect = extract
+        audio = tmp_path / "audio.mp3"
+        audio.write_bytes(b"fake")
+
+        state = {
+            "source_id": "source:123",
+            "content_state": {"file_path": str(audio)},
+            "embed": False,
+            "apply_transformations": [],
+        }
+
+        await content_process(cast(SourceState, state))
+
+        assert calls == ["provision", "extract"]
+        mock_provision.assert_awaited_once_with("openai", credential=None)
+
+    @pytest.mark.asyncio
+    @patch("open_notebook.ai.key_provider.provision_provider_keys")
+    @patch("open_notebook.graphs.source.Model")
+    @patch("open_notebook.graphs.source.extract_content")
+    @patch("open_notebook.graphs.source.ModelManager")
+    async def test_stt_model_linked_credential_is_provisioned(
+        self, mock_model_manager, mock_extract, mock_model, mock_provision, tmp_path
+    ):
+        """With several credentials for one provider, the STT model's own linked
+        credential is provisioned, not the provider's first one."""
+        from content_core.common import ExtractionOutput
+
+        from open_notebook.graphs.source import SourceState, content_process
+
+        linked = MagicMock()
+        self._stt_setup(mock_model_manager, mock_model, linked_credential=linked)
+        mock_provision.return_value = True
+        mock_extract.return_value = ExtractionOutput(title="T", content="body")
+        audio = tmp_path / "audio.mp3"
+        audio.write_bytes(b"fake")
+
+        state = {
+            "source_id": "source:123",
+            "content_state": {"file_path": str(audio)},
+            "embed": False,
+            "apply_transformations": [],
+        }
+
+        await content_process(cast(SourceState, state))
+
+        mock_provision.assert_awaited_once_with("openai", credential=linked)
 
 
 # ============================================================================

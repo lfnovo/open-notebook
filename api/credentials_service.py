@@ -25,6 +25,7 @@ from open_notebook.ai.model_discovery import (
 from open_notebook.ai.provider_registry import PROVIDERS
 from open_notebook.domain.credential import Credential
 from open_notebook.utils.encryption import (
+    DEFAULT_ENCRYPTION_KEY,
     PBKDF2_MARKER,
     decrypt_value,
     encrypt_value,
@@ -216,7 +217,8 @@ async def get_provider_status() -> dict:
     Get configuration status: encryption key status, and per-provider
     configured/source information.
     """
-    encryption_configured = bool(get_secret_from_env("OPEN_NOTEBOOK_ENCRYPTION_KEY"))
+    encryption_key = get_secret_from_env("OPEN_NOTEBOOK_ENCRYPTION_KEY")
+    encryption_configured = bool(encryption_key)
 
     configured: Dict[str, bool] = {}
     source: Dict[str, str] = {}
@@ -242,6 +244,7 @@ async def get_provider_status() -> dict:
         "configured": configured,
         "source": source,
         "encryption_configured": encryption_configured,
+        "encryption_key_is_default": encryption_key == DEFAULT_ENCRYPTION_KEY,
     }
 
 
@@ -603,7 +606,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
 
     if provider == "azure":
         endpoint = config.get("endpoint")
-        api_version = config.get("api_version", "2024-10-21")
+        api_version = config.get("api_version", PROVIDERS["azure"].default_api_version)
         if not endpoint or not api_key:
             return []
         try:

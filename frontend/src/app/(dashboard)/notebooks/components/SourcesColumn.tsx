@@ -187,7 +187,7 @@ export function SourcesColumn({
                 )}
                 <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
                   <DropdownMenuTrigger asChild>
-                    <Button size="sm">
+                    <Button size="sm" className="shrink-0 whitespace-nowrap">
                       <Plus className="h-4 w-4 mr-2" />
                       {t('sources.addSource')}
                       <ChevronDown className="h-4 w-4 ml-2" />
@@ -233,7 +233,7 @@ export function SourcesColumn({
                     onRemoveFromNotebook={handleRemoveFromNotebook}
                     onRefresh={onRefresh}
                     showRemoveFromNotebook={true}
-                    contextMode={contextSelections?.[source.id]}
+                    contextMode={contextSelections?.[source.id] ?? 'off'}
                     onContextModeChange={onContextModeChange
                       ? (mode) => onContextModeChange(source.id, mode)
                       : undefined

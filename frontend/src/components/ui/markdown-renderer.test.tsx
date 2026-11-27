@@ -26,6 +26,15 @@ describe('MarkdownRenderer', () => {
     expect(container.textContent).toContain('some content')
   })
 
+  it.each([
+    ['Korean', '**요일(일)**입니다', '요일(일)'],
+    ['Chinese', '**注意：**请先备份数据。', '注意：'],
+    ['Japanese', '**この文は強調されます。**次の文。', 'この文は強調されます。'],
+  ])('bolds %s text when ** sits between punctuation and a CJK letter', (_, source, bold) => {
+    const { container } = render(<MarkdownRenderer>{source}</MarkdownRenderer>)
+    expect(container.querySelector('strong')?.textContent).toBe(bold)
+  })
+
   it('renders inline code without a highlighter block', () => {
     const { container } = render(<MarkdownRenderer>{'Use `npm ci` here'}</MarkdownRenderer>)
     expect(container.querySelector('code')?.textContent).toBe('npm ci')

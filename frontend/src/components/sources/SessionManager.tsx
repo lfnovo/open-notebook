@@ -185,13 +185,14 @@ export function SessionManager({
                           autoFocus
                         />
                         <div className="flex gap-2">
-                          <Button size="sm" onClick={handleSaveEdit}>
+                          <Button size="sm" onClick={handleSaveEdit} aria-label={t('common.save')}>
                             <Check className="h-3 w-3" />
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={handleCancelEdit}
+                            aria-label={t('common.cancel')}
                           >
                             <X className="h-3 w-3" />
                           </Button>

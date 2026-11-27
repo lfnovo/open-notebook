@@ -108,7 +108,7 @@ See [Reverse Proxy → Troubleshooting](../5-CONFIGURATION/reverse-proxy.md#trou
 
 ## Login problems
 
-- **"Invalid password"**: the password doesn't match `OPEN_NOTEBOOK_PASSWORD`. If you just changed it in `docker-compose.yml`, apply it with `docker compose up -d`.
+- **"Invalid password"**: the password doesn't match `OPEN_NOTEBOOK_PASSWORD`. If you just changed it in `.env` or `docker-compose.yml`, apply it with `docker compose up -d`.
 - **Logged out, or "Unauthorized access, please check your password"** after changing the password: the browser still holds the old one. Sign out and log in again.
 
 See [Security](../5-CONFIGURATION/security.md#password-protection).

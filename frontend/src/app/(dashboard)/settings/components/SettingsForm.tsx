@@ -6,6 +6,8 @@ import { z } from 'zod'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -13,6 +15,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { useSettings, useUpdateSettings } from '@/lib/hooks/use-settings'
 import { useCapabilities } from '@/lib/hooks/use-capabilities'
+import { useDismissibleWarning } from '@/lib/hooks/use-dismissible-warning'
+import { useAuthStore } from '@/lib/stores/auth-store'
 import { useEffect, useState } from 'react'
 import { ChevronDownIcon } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -25,12 +29,20 @@ const settingsSchema = z.object({
   docling_ocr: z.boolean().optional(),
   docling_formulas: z.boolean().optional(),
   docling_vision: z.boolean().optional(),
+  docling_vision_url: z.string().optional(),
+  docling_vision_model: z.string().optional(),
+  docling_vision_prompt: z.string().optional(),
 })
 
 type SettingsFormData = z.infer<typeof settingsSchema>
 
 export function SettingsForm() {
   const { t } = useTranslation()
+  const authRequired = useAuthStore(state => state.authRequired)
+  const authWarning = useDismissibleWarning(
+    'open-notebook-no-password-warning',
+    authRequired === false
+  )
   const { data: settings, isLoading, error } = useSettings()
   const { data: capabilities, isError: capabilitiesError } = useCapabilities()
   const updateSettings = useUpdateSettings()
@@ -53,8 +65,10 @@ export function SettingsForm() {
   
   const {
     control,
+    register,
     handleSubmit,
     reset,
+    watch,
     formState: { isDirty }
   } = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
@@ -66,8 +80,13 @@ export function SettingsForm() {
       docling_ocr: undefined,
       docling_formulas: undefined,
       docling_vision: undefined,
+      docling_vision_url: undefined,
+      docling_vision_model: undefined,
+      docling_vision_prompt: undefined,
     }
   })
+  // The vision endpoint fields only matter while image description is on.
+  const visionEnabled = watch('docling_vision') ?? false
 
 
   const toggleSection = (section: string) => {
@@ -84,6 +103,9 @@ export function SettingsForm() {
         docling_ocr: settings.docling_ocr ?? true,
         docling_formulas: settings.docling_formulas ?? false,
         docling_vision: settings.docling_vision ?? false,
+        docling_vision_url: settings.docling_vision_url ?? '',
+        docling_vision_model: settings.docling_vision_model ?? '',
+        docling_vision_prompt: settings.docling_vision_prompt ?? '',
       }
       reset(formData)
       setHasResetForm(true)
@@ -115,6 +137,24 @@ export function SettingsForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {authRequired === false && !authWarning.dismissed && (
+        <Alert className="border-warn/30 bg-warn-tint">
+          <AlertTitle className="flex items-center justify-between gap-3 text-warn">
+            {t('securityWarnings.noPasswordTitle')}
+            <button
+              type="button"
+              aria-label={t('common.close')}
+              onClick={authWarning.dismiss}
+              className="rounded-sm opacity-70 hover:opacity-100"
+            >
+              ×
+            </button>
+          </AlertTitle>
+          <AlertDescription className="text-warn">
+            {t('securityWarnings.noPasswordDescription')}
+          </AlertDescription>
+        </Alert>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>{t('settings.contentProcessing')}</CardTitle>
@@ -216,6 +256,41 @@ export function SettingsForm() {
               <Label htmlFor="docling_vision">{t('settings.visionEnabled')}</Label>
             </div>
             <p className="text-sm text-muted-foreground">{t('settings.visionHelp')}</p>
+            {visionEnabled && (
+              <div className="space-y-4 border-l pl-4 pt-2">
+                <div className="space-y-2">
+                  <Label htmlFor="docling_vision_url">{t('settings.visionUrl')}</Label>
+                  <Input
+                    id="docling_vision_url"
+                    type="url"
+                    autoComplete="off"
+                    disabled={isLoading || !doclingAvailable}
+                    {...register('docling_vision_url')}
+                  />
+                  <p className="text-sm text-muted-foreground">{t('settings.visionUrlHelp')}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="docling_vision_model">{t('settings.visionModel')}</Label>
+                  <Input
+                    id="docling_vision_model"
+                    autoComplete="off"
+                    disabled={isLoading || !doclingAvailable}
+                    {...register('docling_vision_model')}
+                  />
+                  <p className="text-sm text-muted-foreground">{t('settings.visionModelHelp')}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="docling_vision_prompt">{t('settings.visionPrompt')}</Label>
+                  <Textarea
+                    id="docling_vision_prompt"
+                    rows={3}
+                    disabled={isLoading || !doclingAvailable}
+                    {...register('docling_vision_prompt')}
+                  />
+                  <p className="text-sm text-muted-foreground">{t('settings.visionPromptHelp')}</p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-3">

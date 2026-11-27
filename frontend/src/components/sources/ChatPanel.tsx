@@ -22,6 +22,7 @@ import { convertReferencesToCompactMarkdown, createCompactReferenceLinkComponent
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { useModelDefaults } from '@/lib/hooks/use-models'
 
 interface NotebookContextStats {
   sourcesInsights: number
@@ -35,7 +36,8 @@ interface ChatPanelProps {
   messages: SourceChatMessage[]
   isStreaming: boolean
   contextIndicators: SourceChatContextIndicator | null
-  onSendMessage: (message: string, modelOverride?: string) => void
+  // Resolves to false when the send failed
+  onSendMessage: (message: string, modelOverride?: string) => Promise<boolean>
   modelOverride?: string
   onModelChange?: (model?: string) => void
   // Session management props
@@ -117,7 +119,8 @@ export function ChatPanel({
                 size="sm"
                 className="gap-2 text-muted-foreground"
                 onClick={() => setSessionManagerOpen(true)}
-                disabled={loadingSessions}
+                // Switching mid-reply would show the old session's messages (#1391)
+                disabled={loadingSessions || isStreaming}
               >
                 <Clock className="h-4 w-4" />
                 <span className="text-xs">{t('chat.sessions')}</span>
@@ -148,7 +151,7 @@ export function ChatPanel({
               <div className="text-center text-muted-foreground py-8">
                 <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p className="text-sm">
-                  {t('chat.startConversation', { type: contextType === 'source' ? t('navigation.sources') : t('common.notebook') })}
+                  {contextType === 'source' ? t('chat.startConversationSource') : t('chat.startConversationNotebook')}
                 </p>
                 <p className="text-xs mt-2">{t('chat.askQuestions')}</p>
               </div>
@@ -185,7 +188,7 @@ export function ChatPanel({
               {contextIndicators.sources?.length > 0 && (
                 <Badge variant="outline" className="gap-1">
                   <FileText className="h-3 w-3" />
-                  {contextIndicators.sources.length} {t('navigation.sources')}
+                  {t('chat.sourcesCount', { count: contextIndicators.sources.length })}
                 </Badge>
               )}
               {contextIndicators.insights?.length > 0 && (
@@ -232,7 +235,7 @@ export function ChatPanel({
 // Composer owns the input state so keystrokes (including IME composition) only
 // re-render this small component instead of the whole message history.
 interface ChatComposerProps {
-  onSendMessage: (message: string, modelOverride?: string) => void
+  onSendMessage: (message: string, modelOverride?: string) => Promise<boolean>
   isStreaming: boolean
   modelOverride?: string
   onModelChange?: (model?: string) => void
@@ -248,10 +251,21 @@ function ChatComposer({
   const chatInputId = useId()
   const [input, setInput] = useState('')
 
-  const handleSend = () => {
-    if (input.trim() && !isStreaming) {
-      onSendMessage(input.trim(), modelOverride)
+  // Without a default chat model or a per-session override the request can
+  // only fail, so don't offer it (Ask does the same). Unknown while loading.
+  const { data: modelDefaults } = useModelDefaults()
+  const noChatModel = !modelOverride && !!modelDefaults && !modelDefaults.default_chat_model
+
+  const handleSend = async () => {
+    const message = input.trim()
+    if (message && !isStreaming && !noChatModel) {
       setInput('')
+      // Give the text back if the send failed, so it isn't lost (#1391),
+      // unless something new was typed while it was pending
+      const sent = await onSendMessage(message, modelOverride)
+      if (!sent) {
+        setInput(currentInput => currentInput || message)
+      }
     }
   }
 
@@ -284,6 +298,10 @@ function ChatComposer({
         </div>
       )}
 
+      {noChatModel && (
+        <p className="text-xs text-muted-foreground" role="status">{t('chat.noChatModel')}</p>
+      )}
+
       <div className="flex gap-2 items-end min-w-0">
         <Textarea
           id={chatInputId}
@@ -299,9 +317,10 @@ function ChatComposer({
         />
         <Button
           onClick={handleSend}
-          disabled={!input.trim() || isStreaming}
+          disabled={!input.trim() || isStreaming || noChatModel}
           size="icon"
           className="h-[40px] w-[40px] flex-shrink-0"
+          aria-label={t('chat.send')}
         >
           {isStreaming ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -340,7 +359,7 @@ const ChatMessage = memo(function ChatMessage({
           </div>
         </div>
       )}
-      <div className="flex flex-col gap-2 max-w-[80%]">
+      <div className="flex flex-col gap-2 max-w-[80%] min-w-0">
         <div
           className={`rounded-lg px-4 py-2 border ${
             message.type === 'human'

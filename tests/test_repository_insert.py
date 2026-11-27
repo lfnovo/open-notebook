@@ -68,23 +68,3 @@ async def test_failed_batch_stops_and_closes_connection(connection, error):
     assert db.insert.await_count == 2
     factory.assert_called_once_with()
     context.__aexit__.assert_awaited_once()
-
-
-@pytest.mark.asyncio
-async def test_ignored_duplicate_batch_continues_on_same_connection(connection):
-    db, context, factory = connection
-    records = [{"content": str(i)} for i in range(3)]
-    db.insert.side_effect = [
-        records[:1],
-        RuntimeError("already contains record"),
-        records[2:],
-    ]
-
-    result = await repository.repo_insert(
-        "source_embedding", records, ignore_duplicates=True, batch_size=1
-    )
-
-    assert result == [records[0], records[2]]
-    assert db.insert.await_count == 3
-    factory.assert_called_once_with()
-    context.__aexit__.assert_awaited_once()

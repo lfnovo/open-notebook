@@ -1,7 +1,10 @@
 import asyncio
+import hashlib
 import os
+import re
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse, urlunparse
 
 from content_core import check_file_support
 from fastapi import (
@@ -26,6 +29,9 @@ from api.models import (
     DiscoveredSource,
     DiscoverSourcesRequest,
     DiscoverSourcesResponse,
+    DuplicateCheckRequest,
+    DuplicateCheckResponse,
+    DuplicateSourceInfo,
     InsightCreationResponse,
     SourceCreate,
     SourceInsightResponse,
@@ -37,7 +43,12 @@ from api.models import (
 from commands.source_commands import SourceProcessingInput
 from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.database.repository import ensure_record_id, repo_query
-from open_notebook.domain.notebook import Asset, Notebook, Source
+from open_notebook.domain.notebook import (
+    PLACEHOLDER_SOURCE_TITLE,
+    Asset,
+    Notebook,
+    Source,
+)
 from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import (
     InvalidInputError,
@@ -88,6 +99,15 @@ def _truncate_error(msg: Optional[str], limit: int = 200) -> Optional[str]:
     return msg if len(msg) <= limit else msg[:limit] + "…"
 
 
+def _with_truncated_error(
+    processing_info: Optional[Dict[str, Any]],
+) -> Optional[Dict[str, Any]]:
+    """Cap the failure reason in a source's processing info before returning it."""
+    if processing_info and processing_info.get("error"):
+        return {**processing_info, "error": _truncate_error(processing_info["error"])}
+    return processing_info
+
+
 SOURCE_SORT_FIELDS = {
     "created": "created",
     "updated": "updated",
@@ -104,6 +124,190 @@ SOURCE_TYPE_EXPRESSION = (
     "IF asset.file_path != NONE THEN 'file' "
     "ELSE IF asset.url != NONE THEN 'link' ELSE 'text' END"
 )
+
+
+_PERCENT_ESCAPE_RE = re.compile(r"%([0-9A-Fa-f]{2})")
+
+# RFC 3986 unreserved characters: the only percent-encodings safe to normalize.
+_UNRESERVED_CHARS = frozenset(
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
+)
+
+
+def _decode_unreserved(text: str) -> str:
+    """Percent-decode only unreserved characters.
+
+    Decoding reserved characters (%2F, %3F, %23, ...) would conflate distinct
+    resources, so those escapes are left intact (uppercased for stability).
+    """
+
+    def _repl(match: re.Match) -> str:
+        char = chr(int(match.group(1), 16))
+        return char if char in _UNRESERVED_CHARS else match.group(0).upper()
+
+    return _PERCENT_ESCAPE_RE.sub(_repl, text)
+
+
+def normalize_source_url(url: str) -> str:
+    """Normalize a link URL for duplicate comparison (Issue #257).
+
+    Lowercases scheme/host, strips the default port (80 for http, 443 for
+    https), trailing slashes, fragments, tracking query params (utm_*), and
+    percent-encoding noise on unreserved characters so that
+    trivially-different spellings of the same link still match. Never raises:
+    unparsable input falls back to a lowercased strip so the duplicate probe
+    stays fail-open.
+    """
+    raw = url.strip()
+    try:
+        parsed = urlparse(raw)
+        scheme = (parsed.scheme or "http").lower()
+        host = (parsed.hostname or "").lower()
+        if not host:
+            return raw.lower()
+        try:
+            port_number = parsed.port
+        except ValueError:
+            port_number = None
+        is_default_port = (scheme == "http" and port_number == 80) or (
+            scheme == "https" and port_number == 443
+        )
+        port = f":{port_number}" if port_number and not is_default_port else ""
+        path = _decode_unreserved(parsed.path).rstrip("/") or ""
+        query_parts = sorted(
+            _decode_unreserved(p)
+            for p in parsed.query.split("&")
+            if p and not _decode_unreserved(p).lower().startswith("utm_")
+        )
+        return urlunparse(
+            (scheme, f"{host}{port}", path, "", "&".join(query_parts), "")
+        )
+    except Exception:
+        return raw.lower()
+
+
+def normalize_filename(name: Optional[str]) -> str:
+    """Normalize a filename/title for weak duplicate matching."""
+    return (name or "").strip().lower()
+
+
+def content_hash(text: Optional[str]) -> Optional[str]:
+    """SHA-256 of normalized extracted text; None when there is nothing to hash."""
+    if not text or not text.strip():
+        return None
+    return hashlib.sha256(" ".join(text.split()).encode("utf-8")).hexdigest()
+
+
+def _row_to_duplicate_info(row: dict, match_reason: str) -> DuplicateSourceInfo:
+    asset = row.get("asset") or {}
+    filename = None
+    if asset.get("file_path"):
+        filename = os.path.basename(str(asset.get("file_path")))
+    full_text = row.get("full_text") or ""
+    return DuplicateSourceInfo(
+        id=str(row.get("id")),
+        title=row.get("title"),
+        filename=filename,
+        url=asset.get("url"),
+        created=str(row.get("created")) if row.get("created") else None,
+        updated=str(row.get("updated")) if row.get("updated") else None,
+        excerpt=full_text[:200] if full_text else None,
+        match_reason=match_reason,
+    )
+
+
+async def find_duplicate_sources(
+    source_type: Optional[str] = None,
+    url: Optional[str] = None,
+    title: Optional[str] = None,
+    content: Optional[str] = None,
+    filename: Optional[str] = None,
+) -> List[DuplicateSourceInfo]:
+    """Find existing sources matching the candidate (#257).
+
+    Filters rows by candidate keys (URL host, stored full text, title,
+    uploaded file) instead of scanning the whole table, then compares
+    normalized values in Python. Priority order: normalized URL for links,
+    exact content hash for text sources, normalized filename/title as a weak
+    fallback. Returns [] (never raises) so a duplicate lookup can never block
+    source creation.
+    """
+    norm_url = normalize_source_url(url) if url else None
+    wanted_hash = content_hash(content)
+    norm_title = normalize_filename(title)
+    norm_filename = normalize_filename(filename)
+    weak = norm_filename or (norm_title if source_type != "link" else None)
+
+    try:
+        host = urlparse(norm_url).hostname if norm_url else None
+    except Exception:
+        host = None
+    clauses: List[str] = []
+    params: dict[str, Any] = {}
+    if host:
+        clauses.append(
+            "(asset.url != NONE AND "
+            "string::contains(string::lowercase(asset.url), $host))"
+        )
+        params["host"] = host
+    if wanted_hash:
+        # Bounded prefilter: stored full_text is un-normalized and the hash
+        # ignores whitespace, so the bounds are proportional (half to double)
+        # rather than a fixed margin, and the exact hash compare decides. The
+        # DB still skips wildly mismatched rows before any copying+hashing.
+        raw_len = len(content or "")
+        clauses.append(
+            "(full_text != NONE AND string::len(full_text) >= $min_len "
+            "AND string::len(full_text) <= $max_len)"
+        )
+        params["min_len"] = raw_len // 2
+        params["max_len"] = raw_len * 2 + 512
+    if weak:
+        clauses.append(
+            "((title != NONE AND string::lowercase(string::trim(title)) = $weak_title) "
+            "OR (asset.file_path != NONE AND "
+            "string::contains(string::lowercase(asset.file_path), $weak_file)))"
+        )
+        params["weak_title"] = weak
+        params["weak_file"] = weak.rsplit(".", 1)[0] if "." in weak else weak
+    if not clauses:
+        return []
+    # Select full_text only for rows that can content-match; filename/URL-only
+    # candidates skip the heavy column in the query and get excerpt=NONE.
+    want_text = bool(wanted_hash)
+    try:
+        rows = await repo_query(
+            "SELECT id, title, asset, created, updated"
+            + (", full_text" if want_text else "")
+            + " FROM source WHERE "
+            + " OR ".join(clauses),
+            params,
+        )
+    except Exception as e:  # pragma: no cover - defensive
+        logger.warning(f"Duplicate lookup skipped (query failed): {e}")
+        return []
+    duplicates: List[DuplicateSourceInfo] = []
+    for row in rows:
+        asset = row.get("asset") or {}
+        if norm_url and asset.get("url"):
+            try:
+                if normalize_source_url(str(asset["url"])) == norm_url:
+                    duplicates.append(_row_to_duplicate_info(row, "url"))
+                    continue
+            except Exception:
+                pass
+        if wanted_hash and row.get("full_text"):
+            if content_hash(str(row["full_text"])) == wanted_hash:
+                duplicates.append(_row_to_duplicate_info(row, "content"))
+                continue
+        candidates = [normalize_filename(row.get("title"))]
+        if asset.get("file_path"):
+            candidates.append(
+                normalize_filename(os.path.basename(str(asset["file_path"])))
+            )
+        if weak and weak in candidates:
+            duplicates.append(_row_to_duplicate_info(row, "filename"))
+    return duplicates
 
 
 async def _stamp_source_view(source_id: str) -> None:
@@ -256,6 +460,33 @@ def parse_source_form_data(
         raise
 
     return source_data, file
+
+
+@router.post("/sources/check-duplicates", response_model=DuplicateCheckResponse)
+async def check_duplicates(payload: DuplicateCheckRequest):
+    """Pre-creation duplicate probe for the add-source flow (#257).
+
+    Returns matching sources with a summary (title, filename, dates, excerpt)
+    so the client can warn and offer Cancel vs Proceed-anyway. Never blocks:
+    returns an empty list when nothing matches or the lookup fails.
+    """
+    if payload.type == "link" and not payload.url:
+        raise InvalidInputError("URL is required for link type")
+    if payload.url:
+        # Same SSRF guard as source creation: never normalize or echo a URL
+        # that points at internal/metadata addresses.
+        try:
+            await validate_url(payload.url, "source")
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+    duplicates = await find_duplicate_sources(
+        source_type=payload.type,
+        url=payload.url,
+        title=payload.title,
+        content=payload.content,
+        filename=payload.filename,
+    )
+    return DuplicateCheckResponse(duplicates=duplicates)
 
 
 @router.get("/sources", response_model=List[SourceListResponse])
@@ -499,7 +730,7 @@ async def _create_source_async_path(
         source_asset = None
 
     source = Source(
-        title=source_data.title or "Processing...",
+        title=source_data.title or PLACEHOLDER_SOURCE_TITLE,
         topics=[],
         asset=source_asset,
     )
@@ -581,7 +812,7 @@ async def _create_source_sync_path(
 
         # Create source record - let SurrealDB generate the ID
         source = Source(
-            title=source_data.title or "Processing...",
+            title=source_data.title or PLACEHOLDER_SOURCE_TITLE,
             topics=[],
         )
         await source.save()
@@ -884,7 +1115,9 @@ async def get_source(source_id: str):
         if source.command:
             try:
                 status = await source.get_status()
-                processing_info = await source.get_processing_progress()
+                processing_info = _with_truncated_error(
+                    await source.get_processing_progress()
+                )
             except Exception as e:
                 logger.warning(f"Failed to get status for source {source_id}: {e}")
                 status = "unknown"
@@ -977,13 +1210,18 @@ async def get_source_status(source_id: str):
         # Get command status and processing info
         try:
             status = await source.get_status()
-            processing_info = await source.get_processing_progress()
+            processing_info = _with_truncated_error(
+                await source.get_processing_progress()
+            )
 
             # Generate descriptive message based on status
             if status == "completed":
                 message = "Source processing completed successfully"
             elif status == "failed":
-                message = "Source processing failed"
+                # Say why it failed when the command recorded a reason
+                message = (processing_info or {}).get(
+                    "error"
+                ) or "Source processing failed"
             elif status == "running":
                 message = "Source processing in progress"
             elif status == "queued":

@@ -55,7 +55,7 @@ An **insight** is the output of running a [transformation](../3-USER-GUIDE/trans
 - **They are the "Summary" option in podcasts.** When you pick content for an episode, *Summary* sends the source's insights.
 - **They are searchable.** Text search, vector search and Ask all include insights.
 - **They can be cited.** Chat answers can reference an insight, and clicking the reference opens it.
-- **They can become notes**, but only through the API today (`POST /api/insights/{insight_id}/save-as-note`). The UI has no button for this.
+- **They can become notes.** Open an insight and click **Save as Note** to copy it into a notebook as an AI-generated note. See [Working with Notes](../3-USER-GUIDE/working-with-notes.md#turn-an-insight-into-a-note).
 
 You create insights when you add a source (step 3 of the Add Source wizard) or later from the source's Insights tab with **Generate New Insight**.
 

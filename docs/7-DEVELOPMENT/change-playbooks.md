@@ -50,6 +50,8 @@ Every playbook ends the same way: tests, a CHANGELOG entry under `[Unreleased]`,
 
 Open Notebook never calls provider SDKs directly; every model is created through [Esperanto](https://github.com/lfnovo/esperanto). So step 0 is: **Esperanto must already support the provider**, under the same provider name. If support arrived in a newer Esperanto release, bump `esperanto` in `pyproject.toml` and run `uv lock`.
 
+**Where a new provider is decided.** Whether a provider or hosted gateway gets first-class support is decided in Esperanto, not here: Open Notebook reflects what Esperanto supports. To propose one, open the proposal in [lfnovo/esperanto](https://github.com/lfnovo/esperanto/issues). Once an Esperanto release includes it, registering it here is the mechanical work below and needs no separate proposal. Until then, any host that speaks the OpenAI API already works through the [OpenAI Compatible](../5-CONFIGURATION/openai-compatible.md) provider, with no code change. The docs don't carry setup pages for individual hosted gateways.
+
 The provider registry is the source of truth. Most backend tables and the frontend read from it, but a few copies are still maintained by hand. This is the full list for a provider with a single API key (the common case):
 
 | Step | File | What to do |
@@ -153,6 +155,8 @@ Providers that need several config fields (like `azure`, `vertex`, `openai_compa
 | 3 | Component | `const { t } = useTranslation()`, then `t('section.key')`. |
 
 You can't forget a locale silently: each non-en-US locale ends with `satisfies TranslationShape`, so a missing or extra key fails `npm run build` (type check), and `src/lib/locales/index.test.ts` checks parity at runtime.
+
+**Counts:** a label that changes with a number is one key per CLDR plural form, called with `t('section.key', { count })`. Add all six forms (`_zero`, `_one`, `_two`, `_few`, `_many`, `_other`) to every locale, because a language that needs `zero` or `two` (Arabic, for example) cannot add keys en-US lacks. In a language that does not use `zero` or `two`, repeat the form it uses for 0 and for 2: i18next picks `_zero` for a count of 0 in every language. `src/lib/locales/interpolation.test.ts` checks this for the count labels listed there.
 
 ### Adding a new language
 

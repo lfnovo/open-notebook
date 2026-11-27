@@ -103,7 +103,7 @@ function DefaultModelSelect({
           </SelectContent>
         </Select>
         {!config.required && currentValue && (
-          <Button variant="ghost" size="icon" onClick={() => onChange(config.key, "")} className="h-8 w-8 shrink-0">
+          <Button variant="ghost" size="icon" onClick={() => onChange(config.key, "")} className="h-8 w-8 shrink-0" aria-label={`${t('searchPage.scopeClear')}: ${config.label}`}>
             <X className="h-3 w-3" />
           </Button>
         )}

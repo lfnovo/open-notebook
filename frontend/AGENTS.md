@@ -23,7 +23,7 @@ Normative rules for working on the Next.js frontend. Architecture and flow walkt
 - Zustand stores with `persist`: check `hasHydrated` before rendering persisted state (SSR hydration mismatch), and keep each store's `name` key unique (localStorage collision).
 - `NEXT_PUBLIC_API_TIMEOUT_MS`: default 600000 (10 min) for slow LLM calls; `0` disables the timeout.
 - SSE (`useAsk`): incomplete lines stay in the buffer between reads; incomplete JSON is silently skipped — don't "simplify" the buffer handling.
-- `useSourceStatus` polls every 2s while status is `running`/`queued`/`new`.
+- `useSourceStatus` polls every 2s while status is `running`/`queued`/`new`; `unknown` checks back off with the query's update count, up to 30s.
 - Cache invalidation is deliberately broad (e.g. `['sources']` hits all source queries) — a simplicity/perf trade-off, be precise only when it matters.
 - Dark mode requires the `dark` class on the document root, not just `prefers-color-scheme`. It's hand-rolled: the zustand `theme-store` (persisted as `theme-storage`) sets the class via `ThemeProvider` — no next-themes.
 - Dialogs don't auto-reset form state (parent clears it) and auto-focus the first input (layout shift risk with conditional inputs). Fixed overlays use `z-50`.

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { NotebookResponse } from '@/lib/types/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { MoreHorizontal, Archive, ArchiveRestore, Trash2, FileText, StickyNote } from 'lucide-react'
@@ -52,7 +53,15 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
               <div className="flex-1 min-w-0">
                 <span aria-hidden className="mb-2 block h-2 w-2 rounded-[3px] bg-teal" />
                 <CardTitle className="text-base truncate">
-                  {notebook.name}
+                  {/* The card is mouse-clickable; this link is what keyboard and
+                      screen-reader users open (same pattern as NotebookRow). */}
+                  <Link
+                    href={`/notebooks/${encodeURIComponent(notebook.id)}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {notebook.name}
+                  </Link>
                 </CardTitle>
                 {notebook.archived && (
                   <Badge variant="secondary" className="mt-1">

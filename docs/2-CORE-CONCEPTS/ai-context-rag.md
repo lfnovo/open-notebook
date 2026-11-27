@@ -78,7 +78,7 @@ Things to know:
 - **Ask needs an embedding model.** Without a default Embedding Model the page tells you to set one up and Ask is unavailable.
 - **Ask only sees embedded content.** It searches embedded source chunks, insights and notes. Insights are embedded on their own, so a source added with embedding turned off can still be found through its insights, but not through its full text until you embed it.
 - **Ask searches everything by default.** Leave the **Notebooks** selector empty to search your whole knowledge base, or pick notebooks to limit it. Chat context levels don't apply.
-- **Three model slots.** Strategy, Answer and Final Answer use your Chat Model default unless you change them under **Advanced** on the Ask tab.
+- **Three model slots.** Strategy, Answer and Final Answer use your Tools Model default (or the Chat Model when no Tools Model is set) unless you change them under **Advanced** on the Ask tab.
 - **Ask is single-turn.** There are no follow-ups. Save a useful answer with **Save to Notebooks**, or take the topic to Chat.
 
 ---

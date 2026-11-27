@@ -135,15 +135,15 @@ function SourceCardImpl({
   // completed source — that scaled linearly with the number of cards and caused the
   // list lag reported in #503.
   //
-  // A source with a `command_id` but no resolved `status` yet is still ambiguous
-  // (it renders as a synthetic "new"), so keep polling those until a real status
-  // arrives — otherwise such a card would be stuck "processing" forever.
-  const shouldFetchStatus =
+  // A command status that is missing or "unknown" still renders as "new",
+  // so keep polling until it resolves instead of leaving the card stuck.
+  const sourceIsProcessing =
     sourceWithStatus.status === 'new' ||
     sourceWithStatus.status === 'queued' ||
     sourceWithStatus.status === 'running' ||
-    (!!sourceWithStatus.command_id && !sourceWithStatus.status) ||
-    wasProcessing // Keep polling if we were processing to catch the completion
+    sourceWithStatus.status === 'unknown' ||
+    (!!sourceWithStatus.command_id && !sourceWithStatus.status)
+  const shouldFetchStatus = sourceIsProcessing || wasProcessing
 
   const { data: statusData, isLoading: statusLoading } = useSourceStatus(
     source.id,
@@ -158,12 +158,22 @@ function SourceCardImpl({
     : (sourceWithStatus.command_id ? 'new' : 'completed')
 
 
+  // Remember pending list data even when the first polled status is terminal.
+  useEffect(() => {
+    if (sourceIsProcessing) setWasProcessing(true)
+  }, [sourceIsProcessing, sourceWithStatus.command_id])
+
   // Track processing state and detect completion
   useEffect(() => {
     const currentStatusFromData = statusData?.status || sourceWithStatus.status
 
-    // If we're currently processing, mark that we were processing
-    if (currentStatusFromData === 'new' || currentStatusFromData === 'running' || currentStatusFromData === 'queued') {
+    // Remember unresolved responses even after a stale terminal cache was read.
+    if (
+      currentStatusFromData === 'new' ||
+      currentStatusFromData === 'running' ||
+      currentStatusFromData === 'queued' ||
+      currentStatusFromData === 'unknown'
+    ) {
       setWasProcessing(true)
     }
 
@@ -184,6 +194,16 @@ function SourceCardImpl({
   const SourceTypeIcon = SOURCE_TYPE_ICONS[sourceType]
   
    const title = source.title || t('sources.untitledSource')
+
+  // The polled status only exists while a card watched the source process;
+  // the list response carries the same reason for sources that failed earlier.
+  const polledError = statusData?.processing_info?.error
+  const listedError = sourceWithStatus.processing_info?.error
+  const failureReason =
+    (typeof polledError === 'string' && polledError) ||
+    (typeof listedError === 'string' && listedError) ||
+    statusData?.message ||
+    ''
 
   const handleRetry = () => {
     if (onRetry) {
@@ -264,10 +284,18 @@ function SourceCardImpl({
               </h4>
             </div>
 
-            {/* Processing message for active statuses */}
-            {statusData?.message && (isProcessing || isFailed) && (
+            {/* Progress message while processing, failure reason once failed */}
+            {isProcessing && statusData?.message && (
               <p className="text-xs text-muted-foreground mb-2 italic">
                 {statusData.message}
+              </p>
+            )}
+            {isFailed && failureReason && (
+              <p
+                className="text-xs text-muted-foreground mb-2 italic line-clamp-3 break-words"
+                title={failureReason}
+              >
+                {failureReason}
               </p>
             )}
 
@@ -313,8 +341,9 @@ function SourceCardImpl({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="absolute top-1.5 right-1.5 h-7 w-7 p-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-1.5 right-1.5 h-7 w-7 p-0 text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                   onClick={(e) => e.stopPropagation()}
+                  aria-label={t('common.actions')}
                 >
                   <MoreVertical className="h-4 w-4" />
                 </Button>
@@ -453,6 +482,8 @@ function areEqual(prev: SourceCardProps, next: SourceCardProps): boolean {
     p.updated === n.updated &&
     p.status === n.status &&
     p.command_id === n.command_id &&
+    // the failure reason shown on a failed card
+    p.processing_info?.error === n.processing_info?.error &&
     p.embedded === n.embedded &&
     p.insights_count === n.insights_count &&
     p.asset?.url === n.asset?.url &&

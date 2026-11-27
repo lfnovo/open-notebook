@@ -53,13 +53,13 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
       <div className="border-b pb-6">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 flex-1">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
               <InlineEdit
                 id="notebook-name"
                 name="notebook-name"
                 value={notebook.name}
                 onSave={handleUpdateName}
-                className="font-display text-2xl font-bold tracking-tight"
+                className="font-display text-2xl font-bold tracking-tight line-clamp-2 break-words text-left"
                 inputClassName="font-display text-2xl font-bold tracking-tight"
                 placeholder={t('notebooks.namePlaceholder')}
               />

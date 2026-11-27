@@ -12,6 +12,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={effectiveTheme as ToasterProps["theme"]}
       className="toaster group"
+      // Bottom-right (the default) covers the chat composer and its send button,
+      // and the top-right corner holds page actions (Archive, Delete)
+      position="top-center"
       style={
         {
           "--normal-bg": "var(--popover)",

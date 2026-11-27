@@ -1180,18 +1180,21 @@ async def retry_source_processing(source_id: str):
 
         # Check if source already has a running command
         if source.command:
+            status = None
             try:
                 status = await source.get_status()
-                if status in ["running", "queued"]:
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Source is already processing. Cannot retry while processing is active.",
-                    )
             except Exception as e:
                 logger.warning(
                     f"Failed to check current status for source {source_id}: {e}"
                 )
                 # Continue with retry if we can't check status
+
+            # Raised outside the try so the broad except above can't swallow it.
+            if status in ["running", "queued"]:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Source is already processing. Cannot retry while processing is active.",
+                )
 
         # Get notebooks that this source belongs to. `reference` is a graph edge
         # (RELATE source->reference->notebook), so it only has `in`/`out` columns —

@@ -208,6 +208,57 @@ class TestRetrySourceProcessing:
         assert response.status_code == 400
         assert "not associated with any notebooks" in response.json()["detail"]
 
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("status", ["running", "queued"])
+    @patch(
+        "api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock
+    )
+    @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
+    @patch("api.routers.sources.Source.get", new_callable=AsyncMock)
+    async def test_retry_rejected_while_already_processing(
+        self, mock_get, mock_repo_query, mock_submit, status, client
+    ):
+        source = MagicMock()
+        source.id = "source:1"
+        source.command = "command:123"
+        source.get_status = AsyncMock(return_value=status)
+        mock_get.return_value = source
+        mock_repo_query.return_value = ["notebook:1"]
+
+        response = client.post("/api/sources/source:1/retry")
+
+        assert response.status_code == 400
+        assert "already processing" in response.json()["detail"]
+        mock_submit.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    @patch(
+        "api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock
+    )
+    @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
+    @patch("api.routers.sources.Source.get", new_callable=AsyncMock)
+    async def test_retry_still_queues_when_status_check_fails(
+        self, mock_get, mock_repo_query, mock_submit, client
+    ):
+        source = MagicMock()
+        source.id = "source:1"
+        source.command = "command:123"
+        source.get_status = AsyncMock(side_effect=RuntimeError("db unavailable"))
+        source.title = "My source"
+        source.topics = []
+        source.full_text = None
+        source.asset = MagicMock(file_path=None, url="https://example.com/post")
+        source.save = AsyncMock()
+        source.get_embedded_chunks = AsyncMock(return_value=0)
+        mock_get.return_value = source
+        mock_repo_query.return_value = ["notebook:1"]
+        mock_submit.return_value = "command:456"
+
+        response = client.post("/api/sources/source:1/retry")
+
+        assert response.status_code == 200
+        mock_submit.assert_awaited_once()
+
 
 class TestGetSourceNotFound:
     """GET /sources/{id} must return 404 (not 500) for a missing/deleted source.

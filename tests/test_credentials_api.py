@@ -156,9 +156,7 @@ class TestCredentialModelDiscovery:
     """Tests for credential-backed model discovery."""
 
     @pytest.mark.asyncio
-    async def test_openrouter_discovery_types_language_and_embedding(
-        self, monkeypatch
-    ):
+    async def test_openrouter_discovery_types_language_and_embedding(self, monkeypatch):
         """OpenRouter chat and embedding catalogues are fetched and typed."""
         from open_notebook.utils.url_validation import PinnedHttpTarget
 
@@ -180,9 +178,7 @@ class TestCredentialModelDiscovery:
                     data = {"data": [{"id": "openai/text-embedding-3-small"}]}
                 else:
                     data = {"data": [{"id": "openai/gpt-4o", "name": "GPT-4o"}]}
-                return httpx.Response(
-                    200, json=data, request=httpx.Request("GET", url)
-                )
+                return httpx.Response(200, json=data, request=httpx.Request("GET", url))
 
         async def fake_prepare_pinned(url, provider):
             return PinnedHttpTarget(url=url)

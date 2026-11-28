@@ -772,9 +772,11 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
                 seen = {m["name"] for m in discovered}
                 for name, model_type in audio_seed(provider):
                     if name not in seen:
-                        entry = {"name": name, "provider": provider}
-                        if provider == "openrouter":
-                            entry["model_type"] = model_type
+                        entry = {
+                            "name": name,
+                            "provider": provider,
+                            "model_type": model_type,
+                        }
                         discovered.append(entry)
                         seen.add(name)
             return discovered

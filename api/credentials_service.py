@@ -737,14 +737,47 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
                 for m in data.get("data", [])
                 if m.get("id")
             ]
+            if provider == "openrouter":
+                # OpenRouter serves chat models at /models and embedding
+                # models at a separate /embeddings/models endpoint.
+                for m in discovered:
+                    m["model_type"] = "language"
+                embeddings_url = (
+                    discovery_url.rstrip("/").removesuffix("/models")
+                    + "/embeddings/models"
+                )
+                try:
+                    emb_response = await client.get(
+                        embeddings_url,
+                        headers=headers,
+                        timeout=30.0,
+                    )
+                    emb_response.raise_for_status()
+                    discovered.extend(
+                        {
+                            "name": m.get("id", ""),
+                            "provider": provider,
+                            "description": m.get("name"),
+                            "model_type": "embedding",
+                        }
+                        for m in emb_response.json().get("data", [])
+                        if m.get("id")
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to discover openrouter embeddings: {e}")
             # Some /models listings (OpenRouter, MiniMax) don't surface their
             # TTS/STT catalog, so seed the audio model ids esperanto supports
             # (only on top of a successful listing).
             if discovered:
                 seen = {m["name"] for m in discovered}
-                for name, _model_type in audio_seed(provider):
+                for name, model_type in audio_seed(provider):
                     if name not in seen:
-                        discovered.append({"name": name, "provider": provider})
+                        entry = {
+                            "name": name,
+                            "provider": provider,
+                            "model_type": model_type,
+                        }
+                        discovered.append(entry)
                         seen.add(name)
             return discovered
     except Exception as e:

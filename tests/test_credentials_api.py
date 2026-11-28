@@ -204,6 +204,47 @@ class TestCredentialModelDiscovery:
         assert by_name["microsoft/mai-voice-2"]["model_type"] == "text_to_speech"
 
     @pytest.mark.asyncio
+    async def test_openrouter_embeddings_failure_keeps_chat_models_and_audio(
+        self, monkeypatch
+    ):
+        """A failing embeddings endpoint must not drop chat models or audio seeds."""
+        from open_notebook.utils.url_validation import PinnedHttpTarget
+
+        class FakeAsyncClient:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return None
+
+            async def get(self, url, headers=None, timeout=None, extensions=None):
+                if url.endswith("/embeddings/models"):
+                    raise httpx.HTTPError("embeddings catalogue unavailable")
+                data = {"data": [{"id": "openai/gpt-4o", "name": "GPT-4o"}]}
+                return httpx.Response(200, json=data, request=httpx.Request("GET", url))
+
+        async def fake_prepare_pinned(url, provider):
+            return PinnedHttpTarget(url=url)
+
+        monkeypatch.setattr(credentials_service.httpx, "AsyncClient", FakeAsyncClient)
+        monkeypatch.setattr(
+            credentials_service, "prepare_pinned_http_target", fake_prepare_pinned
+        )
+
+        models = await credentials_service.discover_with_config(
+            "openrouter", {"api_key": "sk-or-test"}
+        )
+
+        by_name = {m["name"]: m for m in models}
+        assert by_name["openai/gpt-4o"]["model_type"] == "language"
+        # Audio seeds still come back typed when the embeddings call fails.
+        assert by_name["openai/whisper-1"]["model_type"] == "speech_to_text"
+        assert not any(m["model_type"] == "embedding" for m in models)
+
+    @pytest.mark.asyncio
     async def test_openai_discovery_respects_base_url(self, monkeypatch):
         """OpenAI model discovery should call the configured API base URL."""
         from open_notebook.utils.url_validation import PinnedHttpTarget

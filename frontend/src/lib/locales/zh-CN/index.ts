@@ -448,6 +448,13 @@ export const zhCN = {
     maxFilesAllowed: "每批最多允许 {{count}} 个文件",
   },
   chat: {
+    errors: {
+      timeout: "模型未能及时完成。",
+      timeout_partial_kept: "模型未能及时完成。部分回答已保留。",
+      timeout_partial_lost: "模型未能及时完成，且部分回答无法保存。",
+      empty_reply: "模型返回了空回答。请重试，若持续出现请换一个模型。",
+      partial_lost: "部分回答无法保存。",
+    },
     sessions: "会话",
     sessionTitlePlaceholder: "在此输入标题...",
     noSessions: "暂无会话",
@@ -455,6 +462,7 @@ export const zhCN = {
     deleteSessionDesc: "确定要删除此聊天会话吗？此操作无法撤销。",
     sendPlaceholder: "向您的来源提问...",
     send: "发送消息",
+    stop: "停止",
     noChatModel: "尚未选择聊天模型。请在模型页面设置一个后再开始聊天。",
     sessionsTitle: "聊天会话",
     chatWith: "与{{name}}对话",

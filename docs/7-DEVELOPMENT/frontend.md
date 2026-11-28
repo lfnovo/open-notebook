@@ -21,9 +21,9 @@ Provider tree in `app/layout.tsx` (outermost → innermost): ErrorBoundary → T
 ## Flow walkthrough: notebook chat
 
 1. `notebooks/[id]/page.tsx` passes `notebookId` to `ChatColumn`.
-2. `useNotebookChat()` queries sessions, manages message state, returns `{ messages, sendMessage(), setModelOverride() }`.
-3. On send: `buildContext()` assembles selected sources/notes (token/char counts), calls `chatApi.sendMessage()`, and applies an **optimistic update** (message added locally; on error it's removed and the composer gets the text back). While a send is in flight, a session refetch doesn't replace the message list, and `ChatPanel` disables the **Sessions** button so the session can't change mid-reply.
-4. Response updates the TanStack Query cache; related source/note mutations elsewhere invalidate broadly so stale UI refreshes.
+2. `useNotebookChat()` queries sessions, manages message state, returns `{ messages, sendMessage(), stopStreaming(), setModelOverride() }`.
+3. On send: `buildContext()` assembles selected sources/notes (token/char counts), calls `chatApi.sendMessageStream()`, and applies an **optimistic update**: the question is added locally and a bubble is appended on the first token. On a failed send the optimistic message is removed and the composer gets the typed text back; a stopped turn keeps its partial answer and resyncs from the server once the cancellation has been persisted. While a turn is in flight, a session refetch doesn't replace the message list, and `ChatPanel` disables the **Sessions** button so the session can't change mid-reply.
+4. `token` events append to the in-flight bubble; `complete` replaces it with the cleaned, checkpointed answer, then the thread is refetched into the TanStack Query cache. Related source/note mutations elsewhere invalidate broadly so stale UI refreshes.
 5. Model override before a session exists is stored as pending and applied on session creation.
 
 ## Flow walkthrough: file upload

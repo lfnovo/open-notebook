@@ -446,6 +446,13 @@ export const enUS = {
     maxFilesAllowed: "Maximum {{count}} files allowed per batch",
   },
   chat: {
+    errors: {
+      timeout: "The model did not finish in time.",
+      timeout_partial_kept: "The model did not finish in time. The partial answer was kept.",
+      timeout_partial_lost: "The model did not finish in time, and the partial answer could not be saved.",
+      empty_reply: "The model returned an empty response. Try again, or pick a different model if this keeps happening.",
+      partial_lost: "The partial answer could not be saved.",
+    },
     sessions: "Sessions",
     sessionTitlePlaceholder: "Type a title here...",
     noSessions: "No chat sessions yet",
@@ -453,6 +460,7 @@ export const enUS = {
     deleteSessionDesc: "Are you sure you want to delete this chat session? This action cannot be undone.",
     sendPlaceholder: "Ask anything about your sources...",
     send: "Send message",
+    stop: "Stop",
     noChatModel: "No chat model is selected. Set one up in the Models page to start chatting.",
     sessionsTitle: "Chat Sessions",
     chatWith: "Chat with {{name}}",

@@ -448,6 +448,13 @@ export const trTR = {
     maxFilesAllowed: "Toplu işlem başına en fazla {{count}} dosya",
   },
   chat: {
+    errors: {
+      timeout: "Model zamanında bitirmedi.",
+      timeout_partial_kept: "Model zamanında bitirmedi. Kısmi yanıt korundu.",
+      timeout_partial_lost: "Model zamanında bitirmedi ve kısmi yanıt kaydedilemedi.",
+      empty_reply: "Model boş bir yanıt döndürdü. Tekrar deneyin veya bu sürerse başka bir model seçin.",
+      partial_lost: "Kısmi yanıt kaydedilemedi.",
+    },
     sessions: "Oturumlar",
     sessionTitlePlaceholder: "Buraya bir başlık yazın...",
     noSessions: "Henüz sohbet oturumu yok",
@@ -455,6 +462,7 @@ export const trTR = {
     deleteSessionDesc: "Bu sohbet oturumunu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
     sendPlaceholder: "Kaynaklarınız hakkında herhangi bir şey sorun...",
     send: "Mesajı gönder",
+    stop: "Durdur",
     noChatModel: "Seçili bir sohbet modeli yok. Sohbet etmek için Modeller sayfasında bir tane ayarlayın.",
     sessionsTitle: "Sohbet Oturumları",
     chatWith: "{{name}} ile sohbet et",

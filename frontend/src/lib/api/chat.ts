@@ -1,4 +1,5 @@
 import apiClient from './client'
+import { getAuthToken } from '@/lib/auth-token'
 import {
   NotebookChatSession,
   NotebookChatSessionWithMessages,
@@ -9,6 +10,25 @@ import {
   BuildContextRequest,
   BuildContextResponse,
 } from '@/lib/types/api'
+
+/** Non-2xx answer from the streaming endpoint, with the backend's reason. */
+export class ChatStreamError extends Error {
+  status: number
+  /** Stable code for endpoint-authored errors (`timeout`, `empty_reply`, …). */
+  code?: string
+  /** Code for the extra sentence, e.g. a lost partial answer. */
+  suffixCode?: string
+
+  constructor(status: number, detail?: string, code?: string, suffixCode?: string) {
+    // No generic text: callers fall back to a translated key when detail is
+    // empty, exactly like the axios-based calls do.
+    super(detail || '')
+    this.name = 'ChatStreamError'
+    this.status = status
+    this.code = code
+    this.suffixCode = suffixCode
+  }
+}
 
 export const chatApi = {
   // Session management
@@ -65,6 +85,50 @@ export const chatApi = {
       data
     )
     return response.data
+  },
+
+  /**
+   * Streaming variant of `sendMessage`.
+   *
+   * Uses the dedicated route handler (not the rewrite proxy, which gzips the
+   * response to completion) and returns the raw SSE body for the caller to
+   * parse. `signal` cancels the request, which stops server-side generation.
+   */
+  sendMessageStream: async (
+    data: SendNotebookChatMessageRequest,
+    signal?: AbortSignal
+  ) => {
+    const token = getAuthToken()
+
+    const response = await fetch('/api/chat/execute/stream', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify(data),
+      signal,
+    })
+
+    if (!response.ok) {
+      // Prefer the backend's reason ("Session not found", …) over a status code.
+      // A 422 `detail` is a list of objects, so only strings are used.
+      let detail: string | undefined
+      try {
+        const body = await response.json()
+        if (typeof body?.detail === 'string') detail = body.detail
+        else if (typeof body?.message === 'string') detail = body.message
+      } catch {
+        detail = response.statusText || undefined
+      }
+      throw new ChatStreamError(response.status, detail)
+    }
+
+    if (!response.body) {
+      throw new ChatStreamError(response.status)
+    }
+
+    return response.body
   },
 }
 

@@ -448,6 +448,13 @@ export const plPL = {
     maxFilesAllowed: "Maksymalna liczba plików w partii: {{count}}",
   },
   chat: {
+    errors: {
+      timeout: "Model nie zdążył odpowiedzieć.",
+      timeout_partial_kept: "Model nie zdążył odpowiedzieć. Częściowa odpowiedź została zachowana.",
+      timeout_partial_lost: "Model nie zdążył odpowiedzieć, a częściowej odpowiedzi nie udało się zapisać.",
+      empty_reply: "Model zwrócił pustą odpowiedź. Spróbuj ponownie lub wybierz inny model, jeśli to się powtarza.",
+      partial_lost: "Nie udało się zapisać częściowej odpowiedzi.",
+    },
     sessions: "Sesje",
     sessionTitlePlaceholder: "Wpisz tutaj tytuł...",
     noSessions: "Brak sesji czatu",
@@ -455,6 +462,7 @@ export const plPL = {
     deleteSessionDesc: "Czy na pewno chcesz usunąć tę sesję czatu? Tej operacji nie można cofnąć.",
     sendPlaceholder: "Zapytaj o cokolwiek dotyczące swoich źródeł...",
     send: "Wyślij wiadomość",
+    stop: "Zatrzymaj",
     noChatModel: "Nie wybrano modelu czatu. Skonfiguruj go na stronie Modele, aby rozmawiać.",
     sessionsTitle: "Sesje czatu",
     chatWith: "Czat z {{name}}",

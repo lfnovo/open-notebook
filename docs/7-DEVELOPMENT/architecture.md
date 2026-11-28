@@ -38,7 +38,7 @@ The Docker image runs the API, worker and frontend under supervisord (`superviso
 | Path | What lives there |
 |---|---|
 | `api/main.py` | App setup: middleware (password auth, body-size limit, CORS), exception handlers, router registration (`prefix="/api"`), startup migrations |
-| `api/routers/` | One module per resource (22 of them, plus the `_chat_shared.py` helper). Most call domain models and `repo_*` functions directly |
+| `api/routers/` | One module per resource (22 of them, plus the `_chat_shared.py` and `_sse.py` helpers). Most call domain models and `repo_*` functions directly |
 | `api/*_service.py` | Shared or orchestration logic: `command_service.py` (job submission), `credentials_service.py` (credential lifecycle, discovery), `podcast_service.py` |
 | `api/models.py` | Pydantic request and response schemas |
 | `open_notebook/domain/` | Domain models on `ObjectModel` / `RecordModel` (`base.py`): `Notebook`, `Source`, `Note`, `SourceInsight`, `ChatSession`, `Transformation`, `Credential`, settings singletons |
@@ -82,12 +82,12 @@ Search is two SurrealDB functions, `fn::text_search` (BM25 over titles, full tex
 |---|---|---|
 | `source.py` | `process_source` command | `content_process` (content-core extraction) → `save_source` → `transform_content` (one branch per requested transformation). Embedding is a separate `embed_source` job |
 | `transformation.py` | `run_transformation` command, `POST /api/transformations/execute` | One node: apply a transformation prompt to a source |
-| `chat.py` | `api/routers/chat.py` | One node, checkpointed in SQLite (notebook chat) |
+| `chat.py` | `api/routers/chat.py` | One node, checkpointed in SQLite (notebook chat); `/api/chat/execute/stream` streams it as SSE |
 | `source_chat.py` | `api/routers/source_chat.py` | One node, checkpointed in SQLite, streamed as SSE |
 | `ask.py` | `POST /api/search/ask` | Search strategy → one answer per search (parallel) → final answer, streamed as SSE |
 | `prompt.py` | `api/routers/notes.py` | One node: generate a note title |
 
-Nodes are `async def`, except in the two checkpointed chat graphs, which use sync nodes with a new event loop because `SqliteSaver` is synchronous.
+The notebook-chat node is `async def` over `HybridSqliteSaver`, a `SqliteSaver` subclass that delegates async calls to the sync connection, so the streaming endpoint can consume the graph. The source-chat graph still uses a sync node with a new event loop because its checkpointer is synchronous ([ADR-0XX](decisions/ADR-0XX-graph-streamed-chat-turns.md)).
 
 ## How a model call happens
 

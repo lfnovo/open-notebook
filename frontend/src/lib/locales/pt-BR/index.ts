@@ -448,6 +448,13 @@ export const ptBR = {
     maxFilesAllowed: "Máximo de {{count}} arquivos permitidos por lote",
   },
   chat: {
+    errors: {
+      timeout: "O modelo não terminou a tempo.",
+      timeout_partial_kept: "O modelo não terminou a tempo. A resposta parcial foi mantida.",
+      timeout_partial_lost: "O modelo não terminou a tempo e a resposta parcial não pôde ser salva.",
+      empty_reply: "O modelo retornou uma resposta vazia. Tente novamente ou escolha outro modelo se isso continuar.",
+      partial_lost: "Não foi possível salvar a resposta parcial.",
+    },
     sessions: "Sessões",
     sessionTitlePlaceholder: "Digite um título aqui...",
     noSessions: "Nenhuma sessão de chat ainda",
@@ -455,6 +462,7 @@ export const ptBR = {
     deleteSessionDesc: "Tem certeza que deseja excluir esta sessão de chat? Esta ação não pode ser desfeita.",
     sendPlaceholder: "Pergunte qualquer coisa sobre suas fontes...",
     send: "Enviar mensagem",
+    stop: "Parar",
     noChatModel: "Nenhum modelo de chat selecionado. Configure um na página de Modelos para conversar.",
     sessionsTitle: "Sessões de Chat",
     chatWith: "Conversar com {{name}}",

@@ -448,6 +448,13 @@ export const frFR = {
     maxFilesAllowed: "Maximum {{count}} fichiers autorisés par lot",
   },
   chat: {
+    errors: {
+      timeout: "Le modèle n'a pas terminé à temps.",
+      timeout_partial_kept: "Le modèle n'a pas terminé à temps. La réponse partielle a été conservée.",
+      timeout_partial_lost: "Le modèle n'a pas terminé à temps et la réponse partielle n'a pas pu être enregistrée.",
+      empty_reply: "Le modèle a renvoyé une réponse vide. Réessayez ou choisissez un autre modèle si cela persiste.",
+      partial_lost: "La réponse partielle n'a pas pu être enregistrée.",
+    },
     sessions: "Sessions",
     sessionTitlePlaceholder: "Saisissez un titre ici...",
     noSessions: "Aucune session de chat pour le moment",
@@ -455,6 +462,7 @@ export const frFR = {
     deleteSessionDesc: "Êtes-vous sûr de vouloir supprimer cette session de chat ? Cette action est irréversible.",
     sendPlaceholder: "Posez n'importe quelle question sur vos sources...",
     send: "Envoyer le message",
+    stop: "Arrêter",
     noChatModel: "Aucun modèle de chat n'est sélectionné. Configurez-en un dans la page Modèles pour discuter.",
     sessionsTitle: "Sessions de Chat",
     chatWith: "Discuter avec {{name}}",

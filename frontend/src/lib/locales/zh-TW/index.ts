@@ -448,6 +448,13 @@ export const zhTW = {
     maxFilesAllowed: "每批最多允許 {{count}} 個檔案",
   },
   chat: {
+    errors: {
+      timeout: "模型未能及時完成。",
+      timeout_partial_kept: "模型未能及時完成。部分回答已保留。",
+      timeout_partial_lost: "模型未能及時完成，且部分回答無法儲存。",
+      empty_reply: "模型回傳了空回答。請重試，若持續發生請換一個模型。",
+      partial_lost: "部分回答無法儲存。",
+    },
     sessions: "對話",
     sessionTitlePlaceholder: "在此輸入標題...",
     noSessions: "暫無對話",
@@ -455,6 +462,7 @@ export const zhTW = {
     deleteSessionDesc: "確定要刪除此聊天會話嗎？此操作無法撤銷。",
     sendPlaceholder: "向您的來源提問...",
     send: "傳送訊息",
+    stop: "停止",
     noChatModel: "尚未選擇聊天模型。請在模型頁面設定一個後再開始聊天。",
     sessionsTitle: "對話列表",
     chatWith: "與 {{name}} 對話",

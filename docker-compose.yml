@@ -24,7 +24,12 @@ services:
     pull_policy: always
 
   open_notebook:
-    image: lfnovo/open_notebook:v1-latest
+    # Built from the fork's repository instead of pulled, so the image under
+    # test is this branch. A remote context keeps a downloaded compose file
+    # working (no local checkout or Dockerfile needed); the commit keeps the
+    # code from moving under a running test. Bump the SHA when the branch moves.
+    build: https://github.com/rumplestilzken/open-notebook.git#63046cd
+    image: open-notebook:local
     ports:
       - "8502:8502"  # Web UI
       - "5055:5055"  # REST API
@@ -63,4 +68,5 @@ services:
     depends_on:
       - surrealdb
     restart: always
-    pull_policy: always
+    # `up` rebuilds instead of reusing the previous image.
+    pull_policy: build

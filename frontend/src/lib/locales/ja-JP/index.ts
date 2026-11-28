@@ -448,6 +448,13 @@ export const jaJP = {
     maxFilesAllowed: "一括処理は最大{{count}}件までです",
   },
   chat: {
+    errors: {
+      timeout: "モデルが制限時間内に回答を完了できませんでした。",
+      timeout_partial_kept: "モデルが制限時間内に回答を完了できませんでした。途中までの回答は保持されました。",
+      timeout_partial_lost: "モデルが制限時間内に回答を完了できず、途中までの回答も保存できませんでした。",
+      empty_reply: "モデルが空の回答を返しました。もう一度試すか、続く場合は別のモデルを選んでください。",
+      partial_lost: "途中までの回答を保存できませんでした。",
+    },
     sessions: "セッション",
     sessionTitlePlaceholder: "タイトルを入力...",
     noSessions: "チャットセッションがまだありません",
@@ -455,6 +462,7 @@ export const jaJP = {
     deleteSessionDesc: "このチャットセッションを削除しますか？この操作は元に戻せません。",
     sendPlaceholder: "ソースについて何でも質問してください...",
     send: "メッセージを送信",
+    stop: "停止",
     noChatModel: "チャットモデルが選択されていません。チャットするにはモデルページで設定してください。",
     sessionsTitle: "チャットセッション",
     chatWith: "{{name}}とチャット",

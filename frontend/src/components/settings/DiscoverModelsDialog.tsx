@@ -90,10 +90,14 @@ export function DiscoverModelsDialog({
     setCustomModelSelected(false)
   }, [searchQuery])
 
-  // Models that carry a type only show under that type; untyped ones show under every type
+  // OpenRouter discovery returns typed entries, so filter by type there. Other providers
+  // keep their previous behaviour (Ollama only types models by a name heuristic).
   const typeModels = useMemo(
-    () => discoveredModels.filter(m => !m.model_type || m.model_type === selectedType),
-    [discoveredModels, selectedType]
+    () =>
+      credential.provider === 'openrouter'
+        ? discoveredModels.filter(m => !m.model_type || m.model_type === selectedType)
+        : discoveredModels,
+    [credential.provider, discoveredModels, selectedType]
   )
 
   // Filter discovered models by search query
